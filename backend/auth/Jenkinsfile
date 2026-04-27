@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SERVICE_NAME           = 'service-auth'
+        SERVICE_NAME           = 'auth-service'
         SERVICE_NAME_KO        = "유니버스 인증 서비스"
         SERVICE_ENV_VAR_NAME   = 'AUTH_SERVICE_VERSION'
         REPOSITORY             = "/univs-gate/${SERVICE_NAME}"
