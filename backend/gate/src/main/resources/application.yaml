@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: gate-service
+  config:
+    import: optional:configserver:http://config-server:8888
+
+---
+
+server:
+  port: 8080
+
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+    openfeign:
+      client:
+        config:
+          payment-service:
+            url: http://localhost:8081
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://192.168.0.135:3306/gate
+    username: root
+    password: univs0411!
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  jpa:
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+# Json Web Token
+jwt:
+  secret: ${JWT_SECRET:357638792F423F4428472B4B6250655368566D597133743677397A2443264629}
+  create-user-token-expiry: 300000
+
+# Api Key
+api-key:
+  prefix: gate_
+  length: 31
+  expiry-days: 365
+
+# Redis channel
+redis:
+  demo:
+    channel: demo:result
+
+# Gateway
+gateway:
+  url: https://gate.univs.ai:18090
+
+# Gate demo
+gate:
+  demo:
+    url: https://gate.univs.ai/demo
+
+# Docs
+springdoc:
+  api-docs:
+    path: /api-docs/gate
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Security logging
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+# File
+file:
+  enable:
+    upload: true
+  api-endpoint:
+    get: /api/v1/file
+  root-path: ${file_save-path:C:/univs/image/sample}
+  secret-key: ${file_secret-key:L2Hh9zu6T8xii7gAF48UtzRPOqKU3BOh}
+  algorithm:
+    way: ${file_algorithm_way:AES}
+    mod: ${file_algorithm_mod:AES/ECB/PKCS5Padding}

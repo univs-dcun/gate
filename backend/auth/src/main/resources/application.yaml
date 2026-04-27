@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: auth-service
+  config:
+    import: optional:configserver:http://config-server:8888
+
+---
+
+server:
+  port: 8080
+
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://192.168.0.135:3306/auth
+    username: root
+    password: univs0411!
+
+  jpa:
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  thymeleaf:
+    prefix: classpath:/templates/mail/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    check-template-location: true
+    cache: false
+
+# Json Web Token
+jwt:
+  secret: ${JWT_SECRET:357638792F423F4428472B4B6250655368566D597133743677397A2443264629}
+  create-user-token-expiry: 300000
+  access-token-expiry: 900000
+  refresh-token-expiry: 604800000
+
+# Docs
+springdoc:
+  api-docs:
+    path: /api-docs/auth
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Mail (Google OAuth2 SMTP)
+google:
+  oauth2:
+    email: ${GOOGLE_OAUTH2_EMAIL:email}
+    client-id: ${GOOGLE_OAUTH2_CLIENT_ID:client-id}
+    client-secret: ${GOOGLE_OAUTH2_CLIENT_SECRET:client-secret}
+    refresh-token: ${GOOGLE_OAUTH2_REFRESH_TOKEN:refresh-token}
+    access-token-url: ${GOOGLE_OAUTH2_ACCESS_TOKEN_URL:https://oauth2.googleapis.com/token}
+
+# Security logging
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+# Mail activation
+mail:
+  enabled: true

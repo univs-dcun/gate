@@ -1,0 +1,18 @@
+spring:
+  config:
+    activate:
+      on-profile: oracle
+  datasource:
+    driverClassName: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@192.168.79.9:1521:ORCL
+    username: univs
+    password: univs0411
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+        dialect: org.hibernate.dialect.OracleDialect
+  flyway:
+    locations: classpath:db/migration/oracle

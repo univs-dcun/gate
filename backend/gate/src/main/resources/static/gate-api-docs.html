@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script>document.documentElement.lang = new URLSearchParams(location.search).get('lang') || 'ko';</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNIVSGATE API Documentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --sw:264px;--hh:56px;
+  --accent:#1E7BE4;--accent-dark:#1565C0;
+  --border:#E5EAF2;
+  --text-main:#1A2035;--text-sec:#6B7280;--text-muted:#9CA3AF;
+  --code-bg:#0f172a;
+  --sb-hover:#F0F5FF;--sb-active:#EBF4FF;
+}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#F4F6FA;color:#1A2035;line-height:1.6;font-size:14px}
+code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF4FF;padding:1px 5px;border-radius:3px;color:#1565C0}
+
+/* ── HEADER ── */
+.hdr{position:fixed;top:0;left:0;right:0;height:var(--hh);background:#fff;display:flex;align-items:center;padding:0 24px;z-index:200;border-bottom:1px solid var(--border);box-shadow:0 1px 4px rgba(30,123,228,.06)}
+.hdr-logo{display:flex;align-items:center;gap:10px}
+.hdr-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.hdr-name{font-size:17px;font-weight:700;color:#1A2035;letter-spacing:-.3px}
+.hdr-name span{color:var(--accent)}
+.hdr-ver{margin-left:10px;font-size:11px;color:var(--text-sec);background:#F0F5FF;padding:2px 8px;border-radius:20px;border:1px solid var(--border)}
+
+/* ── SIDEBAR ── */
+.sb{position:fixed;top:var(--hh);left:0;bottom:0;width:var(--sw);background:#fff;overflow-y:auto;z-index:100;padding-bottom:24px;border-right:1px solid var(--border)}
+.sb::-webkit-scrollbar{width:3px}.sb::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+.sb-top{padding:18px 16px 12px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.sb-api{font-size:13px;font-weight:600;color:#1A2035;margin-bottom:3px}
+.sb-ver{font-size:11px;color:var(--text-muted)}
+.sb-intro{padding:9px 16px;font-size:13px;color:var(--text-sec);cursor:pointer;display:flex;align-items:center;gap:8px;border-left:2px solid transparent;transition:all .15s}
+.sb-intro:hover,.sb-intro.active{color:var(--accent);background:var(--sb-hover);border-left-color:var(--accent)}
+.sb-sec{margin-top:6px}
+.sb-grp{padding:9px 16px 5px;font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;transition:color .15s}
+.sb-grp:hover{color:var(--text-sec)}
+.sb-arr{font-size:9px;transition:transform .2s}
+.sb-arr.open{transform:rotate(90deg)}
+.sb-list{list-style:none;overflow:hidden;transition:max-height .3s ease;max-height:500px}
+.sb-list.collapsed{max-height:0}
+.sb-item{display:flex;align-items:center;padding:8px 16px 8px 20px;cursor:pointer;color:var(--text-sec);font-size:13px;border-left:2px solid transparent;transition:all .15s;gap:9px}
+.sb-item:hover{color:#1A2035;background:var(--sb-hover)}
+.sb-item.active{color:var(--accent);background:var(--sb-active);border-left-color:var(--accent);font-weight:500}
+.mb-sm{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:3px;flex-shrink:0}
+.mb-post-sm{background:rgba(16,185,129,.12);color:#059669}
+.mb-get-sm{background:rgba(30,123,228,.12);color:#1E7BE4}
+
+/* ── MAIN ── */
+.main{margin-left:var(--sw);margin-top:var(--hh);min-height:calc(100vh - var(--hh))}
+.page{display:none}.page.active{display:block}
+
+/* ── INTRO HERO ── */
+.hero{background:linear-gradient(135deg,#1A2035 0%,#1E3A5F 55%,#1E7BE4 100%);padding:60px 60px 52px;color:#fff;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-40px;width:320px;height:320px;background:radial-gradient(circle,rgba(30,123,228,.28) 0%,transparent 70%);border-radius:50%}
+.hero-badge{display:inline-block;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.28);padding:3px 14px;border-radius:20px;font-size:11.5px;font-weight:600;margin-bottom:20px;letter-spacing:.07em;text-transform:uppercase}
+.hero h1{font-size:38px;font-weight:700;letter-spacing:-1px;margin-bottom:14px;line-height:1.2}
+.hero h1 span{color:#7EC8FF}
+.hero p{font-size:15px;color:rgba(255,255,255,.72);max-width:1000px;line-height:1.75}
+.hero-meta{display:flex;gap:32px;margin-top:34px}
+.meta-item{display:flex;flex-direction:column;gap:3px}
+.meta-lbl{font-size:10.5px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em}
+.meta-val{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.92)}
+
+/* ── INTRO BODY ── */
+.intro-body{padding:44px 60px;max-width:880px}
+.intro-sec{margin-bottom:36px}
+.intro-sec h2{font-size:19px;font-weight:600;color:#1A2035;margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.intro-sec p{font-size:14px;color:#475569;line-height:1.75;margin-bottom:10px}
+.base-box{background:#0f172a;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-top:14px}
+.base-lbl{font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;flex-shrink:0}
+.base-val{font-family:'Consolas','Fira Code',monospace;font-size:13.5px;color:#e2e8f0}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.info-card{background:#fff;border:1px solid var(--border);border-radius:9px;padding:18px;box-shadow:0 1px 4px rgba(30,123,228,.06)}
+.info-card h3{font-size:13.5px;font-weight:600;color:#1A2035;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.info-card p{font-size:12.5px;color:#64748b;line-height:1.65;margin:0}
+.info-card code{font-size:11.5px}
+.iico{width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:12px}
+
+/* ── ENDPOINT HEADER ── */
+.ep-hdr{padding:34px 60px 26px;border-bottom:1px solid var(--border);background:#fff}
+.ep-crumb{font-size:12px;color:var(--text-muted);margin-bottom:11px;display:flex;align-items:center;gap:5px}
+.ep-crumb span{color:var(--text-sec)}
+.ep-title{font-size:25px;font-weight:700;color:#1A2035;letter-spacing:-.4px;margin-bottom:7px}
+.ep-desc{font-size:14px;color:#475569;line-height:1.72;max-width:620px}
+.ep-url{display:flex;align-items:center;gap:12px;margin-top:18px;background:#F8FAFF;border:1.5px solid var(--border);border-radius:9px;padding:11px 16px;max-width:580px;width:fit-content}
+.mb{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:5px;letter-spacing:.04em;flex-shrink:0}
+.mb-post{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.22)}
+.mb-get{background:rgba(30,123,228,.1);color:#1E7BE4;border:1px solid rgba(30,123,228,.22)}
+.ep-path{font-family:'Consolas','Fira Code',monospace;font-size:13.5px;color:#1A2035}
+
+/* ── ENDPOINT BODY ── */
+.ep-body{padding:36px 60px;display:grid;grid-template-columns:1fr 1fr;gap:44px;max-width:1180px}
+.sec-blk{margin-bottom:28px}
+.sec-ttl{font-size:11.5px;font-weight:700;color:#1A2035;text-transform:uppercase;letter-spacing:.08em;margin-bottom:13px;padding-bottom:8px;border-bottom:1.5px solid var(--border)}
+
+/* ── AUTH BADGE ── */
+.auth-req{display:inline-flex;align-items:center;gap:6px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500}
+.auth-none{display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500}
+
+/* ── TABLES ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;padding:7px 11px;font-size:10.5px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.06em;background:#F8FAFF;border-bottom:1px solid var(--border)}
+.tbl td{padding:9px 11px;border-bottom:1px solid #F0F4FF;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.pname{font-family:'Consolas','Fira Code',monospace;font-size:12px;color:#1A2035;font-weight:500}
+.ptyp{display:inline-block;background:#EBF4FF;color:#1E7BE4;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:500;font-family:'Consolas',monospace}
+.preq{display:inline-block;background:#fef2f2;color:#ef4444;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.05em}
+.popt{display:inline-block;background:#f0fdf4;color:#22c55e;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.05em}
+.pdsc{color:var(--text-sec);font-size:12.5px}
+.ct-note{font-size:11.5px;color:var(--text-muted);margin-bottom:9px}
+
+/* ── CODE BLOCK ── */
+.cblk{background:var(--code-bg);border-radius:9px;overflow:hidden;margin-bottom:4px}
+.cblk-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 15px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.06)}
+.cblk-ttl{font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em}
+.cblk-lng{font-size:11px;color:#64748b}
+.cblk pre{padding:15px;font-family:'Consolas','Fira Code',monospace;font-size:12px;line-height:1.75;color:#e2e8f0;overflow-x:auto;white-space:pre-wrap}
+.jk{color:#7dd3fc}.js{color:#a3e635}.jn{color:#fb923c}.jb{color:#f472b6}.jnu{color:#94a3b8}
+
+/* ── STATUS ── */
+.rs{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.st{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:5px}
+.st200{background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.28)}
+.st400{background:rgba(239,68,68,.1);color:#dc2626;border:1px solid rgba(239,68,68,.22)}
+.st-desc{font-size:12.5px;color:var(--text-sec)}
+.rs+.cblk{margin-bottom:16px}
+
+/* ── LANGUAGE SWITCHER ── */
+.lang-wrap{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;border-top:1px solid var(--border)}
+.lang-trigger{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:7px;cursor:pointer;background:#F4F6FA;border:1px solid var(--border);transition:background .15s;user-select:none}
+.lang-trigger:hover{background:#EBF4FF}
+.lang-globe{font-size:14px;flex-shrink:0}
+.lang-label{flex:1;font-size:12.5px;font-weight:500;color:#1A2035}
+.lang-chevron{font-size:10px;color:var(--text-muted);transition:transform .2s}
+.lang-chevron.open{transform:rotate(180deg)}
+.lang-popup{display:none;position:absolute;bottom:calc(100% + 4px);left:12px;right:12px;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 4px 16px rgba(30,123,228,.12);overflow:hidden;z-index:200}
+.lang-popup.show{display:block}
+.lang-opt{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;cursor:pointer;color:var(--text-sec);transition:background .12s}
+.lang-opt:hover{background:#F0F5FF;color:#1A2035}
+.lang-opt.active{background:#EBF4FF;color:var(--accent);font-weight:600}
+.lang-opt-check{font-size:11px;margin-left:auto;color:var(--accent);opacity:0}
+.lang-opt.active .lang-opt-check{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-icon"><img src="logo-vector.svg" alt="Gate" style="width:28px;height:28px"></div>
+    <span class="hdr-name">UNIVSGATE <span>Documentation</span></span>
+    <span class="hdr-ver">API v1</span>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sb" style="padding-bottom:72px">
+  <div class="sb-top">
+    <div class="sb-api" data-i18n="sb-api">e-KYC API</div>
+    <div class="sb-ver">Version 1.0 · REST</div>
+  </div>
+
+  <div class="sb-intro active" onclick="show('intro',this)">📋 &nbsp;<span data-i18n="nav-overview">Overview</span></div>
+
+  <div class="sb-sec">
+    <div class="sb-grp" onclick="tog('g-auth')">AUTH <span class="sb-arr open" id="arr-g-auth">▶</span></div>
+    <ul class="sb-list" id="g-auth">
+      <li class="sb-item" onclick="show('auth-login',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-login">로그인</span></li>
+      <li class="sb-item" onclick="show('auth-refresh',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-token-refresh">토큰 재발급</span></li>
+    </ul>
+  </div>
+
+  <div class="sb-sec">
+    <div class="sb-grp" onclick="tog('g-ekyc')">e-KYC <span class="sb-arr open" id="arr-g-ekyc">▶</span></div>
+    <ul class="sb-list" id="g-ekyc">
+      <li class="sb-item" onclick="show('user-create',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-user-create">사용자 등록</span></li>
+      <li class="sb-item" onclick="show('match-verify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-verify">1:1 확인</span></li>
+      <li class="sb-item" onclick="show('match-identify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-identify">1:N 매칭</span></li>
+      <li class="sb-item" onclick="show('match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-liveness">라이브니스</span></li>
+    </ul>
+  </div>
+
+  <div class="sb-sec">
+    <div class="sb-grp" onclick="tog('g-qr')">e-KYC QR <span class="sb-arr open" id="arr-g-qr">▶</span></div>
+    <ul class="sb-list" id="g-qr">
+      <li class="sb-item" onclick="show('qr-user-create',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-qr-user">사용자 등록 QR 생성</span></li>
+      <li class="sb-item" onclick="show('qr-match-verify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-qr-verify">1:1 확인 QR 생성</span></li>
+      <li class="sb-item" onclick="show('qr-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-qr-identify">1:N 매칭 QR 생성</span></li>
+      <li class="sb-item" onclick="show('qr-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-qr-liveness">라이브니스 QR 생성</span></li>
+      <li class="sb-item" onclick="show('sdk-config-apikey',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-sdk-config-apikey">API Key 기반 설정 조회</span></li>
+      <li class="sb-item" onclick="show('sdk-config-code',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-sdk-config-code">코드 기반 설정 조회</span></li>
+    </ul>
+  </div>
+
+  <!-- LANGUAGE SWITCHER -->
+  <div class="lang-wrap">
+    <div class="lang-popup" id="lang-popup">
+      <div class="lang-opt active" data-lang="ko" onclick="setLang('ko')">🇰🇷 &nbsp;한국어 / Korean <span class="lang-opt-check">✓</span></div>
+      <div class="lang-opt" data-lang="en" onclick="setLang('en')">🇺🇸 &nbsp;English / 영어 <span class="lang-opt-check">✓</span></div>
+    </div>
+    <div class="lang-trigger" onclick="toggleLang()">
+      <span class="lang-globe">🌐</span>
+      <span class="lang-label" id="lang-label">한국어 / Korean</span>
+      <span class="lang-chevron" id="lang-chevron">▲</span>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ══ INTRO ══ -->
+<div class="page active" id="p-intro">
+  <div class="hero">
+    <div class="hero-badge">API Reference</div>
+    <h1>Gate Service <span>API</span></h1>
+    <p>생체인증 기반 e-KYC 게이트 서비스의 공식 API 레퍼런스입니다. 얼굴 인식, 1:1 확인, 1:N 매칭, 라이브니스 감지 기능을 REST API로 제공합니다.</p>
+    <div class="hero-meta">
+      <div class="meta-item"><span class="meta-lbl">Base URL</span><span class="meta-val">https://gate-api.univs.ai</span></div>
+      <div class="meta-item"><span class="meta-lbl">Version</span><span class="meta-val">v1.0</span></div>
+      <div class="meta-item"><span class="meta-lbl">Protocol</span><span class="meta-val">HTTPS · REST</span></div>
+      <div class="meta-item"><span class="meta-lbl">Format</span><span class="meta-val">JSON / Multipart</span></div>
+    </div>
+  </div>
+  <div class="intro-body">
+    <div class="intro-sec">
+      <h2>소개</h2>
+      <p>UnivsGate API는 프로젝트별 API Key를 기반으로 얼굴 인식 e-KYC 기능을 외부 서비스에 통합할 수 있는 RESTful API입니다. JWT 인증과 API Key 인증을 함께 사용하며, 파일 업로드가 필요한 엔드포인트는 <code>multipart/form-data</code> 형식을 사용합니다.</p>
+      <p>API를 사용하기 전에 <a href="https://gate.univs.ai" target="_blank" style="color:var(--primary)">gate.univs.ai</a>에서 회원가입 및 로그인 후 프로젝트를 생성하고 API Key를 발급받으세요. API Key는 모든 e-KYC 요청에 필수 인증 수단입니다.</p>
+      <p>모든 API 응답은 <code>{"success": boolean, "data": ..., "errors": ...}</code> 형식의 통일된 구조로 반환됩니다.</p>
+    </div>
+    <div class="intro-sec">
+      <h2>Base URL</h2>
+      <div class="base-box">
+        <span class="base-lbl">Base URL</span>
+        <span class="base-val">https://gate-api.univs.ai/api/v1</span>
+      </div>
+    </div>
+    <div class="intro-sec">
+      <h2>인증 방식</h2>
+      <p>매칭 및 사용자 관련 API는 두 가지 인증 헤더가 모두 필요합니다. 로그인 API는 인증 불필요합니다.</p>
+      <div class="info-grid">
+        <div class="info-card">
+          <h3><span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token</h3>
+          <p>로그인 후 발급된 accessToken을 Authorization 헤더에 포함합니다.<br><br><code>Authorization: Bearer {accessToken}</code></p>
+        </div>
+        <div class="info-card">
+          <h3><span class="iico" style="background:#eff6ff">🔑</span>API Key</h3>
+          <p>프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다.<br><br><code>X-Api-Key: {apiKey}</code></p>
+        </div>
+      </div>
+    </div>
+    <div class="intro-sec">
+      <h2>응답 구조</h2>
+      <p>성공/실패 모두 HTTP 200으로 응답합니다. <code>success</code> 필드로 처리 결과를 구분합니다.</p>
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>✅ 성공 응답</h3>
+          <div class="cblk" style="margin-top:8px">
+            <pre style="padding:10px 13px;font-size:11.5px">{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: { ... },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+          </div>
+        </div>
+        <div class="info-card">
+          <h3>❌ 오류 응답</h3>
+          <div class="cblk" style="margin-top:8px">
+            <pre style="padding:10px 13px;font-size:11.5px">{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"ERROR_CODE"</span>,
+    <span class="jk">"message"</span>: <span class="js">"..."</span>
+  }
+}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="intro-sec">
+      <h2>타임존 처리</h2>
+      <p>응답의 날짜/시간 필드는 기본적으로 UTC 기준입니다. <code>Accept-TimeZone</code> 헤더로 원하는 타임존을 지정하면 자동 변환됩니다.</p>
+      <div class="base-box"><span class="base-lbl">Example</span><span class="base-val">Accept-TimeZone: Asia/Seoul</span></div>
+    </div>
+    <div class="intro-sec">
+      <h2>다국어 처리</h2>
+      <p>현재 다국어 지원으로 한국어/영어 를 지원합니다. <code>Accept-Language</code> 헤더로 원하는 언어를 지정하면 자동 변역됩니다.</p>
+      <div class="base-box"><span class="base-lbl">Example</span><span class="base-val">Accept-Language: ko or en</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AUTH: LOGIN ══ -->
+<div class="page" id="p-auth-login">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>Auth</span> › 로그인</div>
+    <div class="ep-title">로그인</div>
+    <div class="ep-desc">이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/auth/login</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-none" data-i18n-html="auth-none">✓ &nbsp;인증 불필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: application/json</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">email</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">로그인 이메일 주소 (최대 255자)</td></tr>
+            <tr><td><span class="pname">password</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">로그인 비밀번호 (최대 255자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">accessToken</span></td><td><span class="ptyp">string</span></td><td class="pdsc">API 요청에 사용할 JWT 액세스 토큰</td></tr>
+            <tr><td><span class="pname">refreshToken</span></td><td><span class="ptyp">string</span></td><td class="pdsc">액세스 토큰 갱신용 리프레시 토큰</td></tr>
+            <tr><td><span class="pname">tokenType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">토큰 타입 — <code>Bearer</code></td></tr>
+            <tr><td><span class="pname">expiresIn</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">토큰 만료 시간 (초 단위)</td></tr>
+            <tr><td><span class="pname">accountResponseDTO</span></td><td><span class="ptyp">object</span></td><td class="pdsc">로그인 계정 정보 객체</td></tr>
+            <tr><td><span class="pname">&nbsp;&nbsp;↳ accountId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">계정 식별 ID</td></tr>
+            <tr><td><span class="pname">&nbsp;&nbsp;↳ email</span></td><td><span class="ptyp">string</span></td><td class="pdsc">계정 이메일</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Example</div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Body</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"email"</span>: <span class="js">"user@example.com"</span>,
+  <span class="jk">"password"</span>: <span class="js">"your_password"</span>
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"accessToken"</span>: <span class="js">"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOi..."</span>,
+    <span class="jk">"refreshToken"</span>: <span class="js">"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOi..."</span>,
+    <span class="jk">"tokenType"</span>: <span class="js">"Bearer"</span>,
+    <span class="jk">"expiresIn"</span>: <span class="jn">3600</span>,
+    <span class="jk">"accountResponseDTO"</span>: {
+      <span class="jk">"accountId"</span>: <span class="jn">1</span>,
+      <span class="jk">"email"</span>: <span class="js">"user@example.com"</span>
+    }
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">잘못된 이메일 또는 비밀번호</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"AUTH-001"</span>,
+    <span class="jk">"message"</span>: <span class="js" data-i18n="ex-msg-wrong-credentials">"이메일 또는 비밀번호가 올바르지 않습니다."</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AUTH: TOKEN REFRESH ══ -->
+<div class="page" id="p-auth-refresh">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>Auth</span> › 토큰 재발급</div>
+    <div class="ep-title">Access Token 재발급</div>
+    <div class="ep-desc">만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 리프레시 토큰은 로그인 시 발급되며, 유효한 경우 새로운 <code>accessToken</code>이 반환됩니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/auth/token/refresh</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-none" data-i18n-html="auth-none">✓ &nbsp;인증 불필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: application/json</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">refreshToken</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">로그인 시 발급받은 리프레시 토큰 (최대 255자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">accessToken</span></td><td><span class="ptyp">string</span></td><td class="pdsc">새로 발급된 JWT 액세스 토큰</td></tr>
+            <tr><td><span class="pname">tokenType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">토큰 타입 — <code>Bearer</code></td></tr>
+            <tr><td><span class="pname">expiresIn</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">토큰 만료 시간 (초 단위)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Example</div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Body</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"refreshToken"</span>: <span class="js">"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOi..."</span>
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"accessToken"</span>: <span class="js">"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOi..."</span>,
+    <span class="jk">"tokenType"</span>: <span class="js">"Bearer"</span>,
+    <span class="jk">"expiresIn"</span>: <span class="jn">3600</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">유효하지 않은 리프레시 토큰</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"AUTH-005"</span>,
+    <span class="jk">"message"</span>: <span class="js" data-i18n="ex-msg-invalid-refresh-token">"유효하지 않은 리프레시 토큰입니다."</span>
+  }
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400" style="background:rgba(239,173,68,.1);color:#b45309;border:1px solid rgba(239,173,68,.3)">401</span><span class="st-desc">만료된 리프레시 토큰</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"AUTH-006"</span>,
+    <span class="jk">"message"</span>: <span class="js" data-i18n="ex-msg-token-expired">"토큰이 만료되었습니다."</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MATCH: VERIFY 1:1 ══ -->
+<div class="page" id="p-match-verify">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC</span> › 1:1 확인</div>
+    <div class="ep-title">1:1 확인 (Verify by FaceId)</div>
+    <div class="ep-desc">특정 <code>faceId</code>를 가진 등록 사용자와 제출된 얼굴 이미지를 1:1로 비교합니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/match/verify/id</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key (최대 36자)</td></tr>
+            <tr><td><span class="pname">Accept-TimeZone</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">응답 시간 변환 타임존 (예: <code>Asia/Seoul</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: multipart/form-data</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 대상 등록 사용자의 faceId (최대 100자)</td></tr>
+            <tr><td><span class="pname">matchingFaceImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">확인할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 ID</td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>VERIFY</code></td></tr>
+            <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
+            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 체크 수행 여부</td></tr>
+            <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">확인 성공 여부</td></tr>
+            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 사용자의 faceId</td></tr>
+            <tr><td><span class="pname">userId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭된 사용자 ID (성공 시)</td></tr>
+            <tr><td><span class="pname">userDescription</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 사용자 설명 (성공 시)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (MISMATCH 등)</td></tr>
+            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">확인 성공</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matchingHistoryId"</span>: <span class="jn">100</span>,
+    <span class="jk">"projectId"</span>: <span class="jn">5</span>,
+    <span class="jk">"matchType"</span>: <span class="js">"VERIFY"</span>,
+    <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
+    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
+    <span class="jk">"success"</span>: <span class="jb">true</span>,
+    <span class="jk">"faceId"</span>: <span class="js">"abc123def456"</span>,
+    <span class="jk">"userId"</span>: <span class="jn">42</span>,
+    <span class="jk">"userDescription"</span>: <span class="js" data-i18n="ex-user-description">"홍길동"</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">0.98</span>,
+    <span class="jk">"matchingFaceImagePath"</span>: <span class="js">"https://files.univs.ai/m/img.jpg"</span>,
+    <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">""</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st200">200</span><span class="st-desc">확인 실패 (불일치)</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Mismatch</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matchingHistoryId"</span>: <span class="jn">101</span>,
+    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
+    <span class="jk">"success"</span>: <span class="jb">false</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">0.42</span>,
+    <span class="jk">"failureType"</span>: <span class="js">"MISMATCH"</span>,
+    <span class="jk">"failureReason"</span>: <span class="js" data-i18n="ex-msg-face-mismatch">"얼굴이 일치하지 않습니다."</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440001"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MATCH: IDENTIFY 1:N ══ -->
+<div class="page" id="p-match-identify">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC</span> › 1:N 매칭</div>
+    <div class="ep-title">1:N 매칭 (Identify)</div>
+    <div class="ep-desc">제출된 얼굴 이미지를 프로젝트에 등록된 전체 사용자와 비교하여 가장 유사한 사용자를 찾습니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/match/identify</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key (최대 36자)</td></tr>
+            <tr><td><span class="pname">Accept-TimeZone</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">응답 시간 변환 타임존</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: multipart/form-data</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">matchingFaceImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 ID</td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>IDENTIFY</code></td></tr>
+            <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
+            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 체크 수행 여부</td></tr>
+            <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 성공 여부</td></tr>
+            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 사용자의 faceId (성공 시)</td></tr>
+            <tr><td><span class="pname">userId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭된 사용자 ID (성공 시)</td></tr>
+            <tr><td><span class="pname">userDescription</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 사용자 설명 (성공 시)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">faceImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 사용자 얼굴 이미지 경로 (성공 시)</td></tr>
+            <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (NOT_MATCH 등)</td></tr>
+            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">매칭 성공</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matchingHistoryId"</span>: <span class="jn">200</span>,
+    <span class="jk">"projectId"</span>: <span class="jn">5</span>,
+    <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
+    <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
+    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
+    <span class="jk">"success"</span>: <span class="jb">true</span>,
+    <span class="jk">"faceId"</span>: <span class="js">"abc123def456"</span>,
+    <span class="jk">"userId"</span>: <span class="jn">42</span>,
+    <span class="jk">"userDescription"</span>: <span class="js" data-i18n="ex-user-description">"홍길동"</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">0.97</span>,
+    <span class="jk">"faceImagePath"</span>: <span class="js">"https://files.univs.ai/u/42.jpg"</span>,
+    <span class="jk">"matchingFaceImagePath"</span>: <span class="js">"https://files.univs.ai/m/img.jpg"</span>,
+    <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">""</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st200">200</span><span class="st-desc">매칭 실패 (미인식)</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">No Match</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matchingHistoryId"</span>: <span class="jn">201</span>,
+    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
+    <span class="jk">"success"</span>: <span class="jb">false</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">0.00</span>,
+    <span class="jk">"failureType"</span>: <span class="js">"NOT_MATCH"</span>,
+    <span class="jk">"failureReason"</span>: <span class="js" data-i18n="ex-msg-no-match">"일치하는 사용자를 찾을 수 없습니다."</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440001"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MATCH: LIVENESS ══ -->
+<div class="page" id="p-match-liveness">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC</span> › 라이브니스</div>
+    <div class="ep-title">라이브니스 (Liveness)</div>
+    <div class="ep-desc">제출된 얼굴 이미지가 실제 생체인지 감지합니다. 사진, 영상, 마스크 등을 이용한 스푸핑 시도를 방지합니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/match/liveness</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key (최대 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: multipart/form-data</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">matchingFaceImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 통과 여부</td></tr>
+            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지 (실패 시)</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">라이브니스 통과</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Pass</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"success"</span>: <span class="jb">true</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">""</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st200">200</span><span class="st-desc">라이브니스 실패</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Fail</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"success"</span>: <span class="jb">false</span>,
+    <span class="jk">"failureReason"</span>: <span class="js" data-i18n="ex-msg-liveness-fail">"실제 생체가 아닌 것으로 감지되었습니다."</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440001"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USER: CREATE ══ -->
+<div class="page" id="p-user-create">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC</span> › 사용자 등록</div>
+    <div class="ep-title">사용자 등록</div>
+    <div class="ep-desc">얼굴 이미지를 업로드하여 프로젝트에 새 사용자를 등록합니다. 등록 시 외부 얼굴 AI 서비스에 자동 동기화되며 고유한 <code>faceId</code>가 발급됩니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/users</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key (최대 36자)</td></tr>
+            <tr><td><span class="pname">Accept-TimeZone</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">응답 시간 변환 타임존</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: multipart/form-data</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">faceImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">등록할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">사용자 지정 faceId (최대 255자, 미전송 시 자동 생성)</td></tr>
+            <tr><td><span class="pname">userDescription</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">사용자 설명 또는 이름 (최대 1000자)</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">userId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">등록된 사용자 ID</td></tr>
+            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">발급된 얼굴 식별 ID</td></tr>
+            <tr><td><span class="pname">userDescription</span></td><td><span class="ptyp">string</span></td><td class="pdsc">사용자 설명</td></tr>
+            <tr><td><span class="pname">faceImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로</td></tr>
+            <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"userId"</span>: <span class="jn">42</span>,
+    <span class="jk">"faceId"</span>: <span class="js">"abc123def456"</span>,
+    <span class="jk">"userDescription"</span>: <span class="js" data-i18n="ex-user-description">"홍길동"</span>,
+    <span class="jk">"faceImagePath"</span>: <span class="js">"https://files.univs.ai/users/abc123.jpg"</span>,
+    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">Bad Request</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"INVALID_FILE"</span>,
+    <span class="jk">"message"</span>: <span class="js" data-i18n="ex-msg-invalid-file">"유효하지 않은 이미지 파일입니다."</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SDK: CONFIG BY API KEY ══ -->
+<div class="page" id="p-sdk-config-apikey">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC QR</span> › API Key 기반 설정 조회</div>
+    <div class="ep-title">API Key 기반 프로젝트 설정 조회</div>
+    <div class="ep-desc">API Key를 기반으로 프로젝트 이름 및 라이브니스 설정을 조회합니다. SDK 초기화 시 사용됩니다.</div>
+    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/sdk/config</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-apikey">🔐 &nbsp;X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">projectName</span></td><td><span class="ptyp">string</span></td><td class="pdsc">프로젝트 이름</td></tr>
+            <tr><td><span class="pname">livenessRecordingEnabled</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사용자 등록 시 라이브니스 감지 적용 여부</td></tr>
+            <tr><td><span class="pname">livenessVerifyingEnabled</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">1:1 확인 시 라이브니스 감지 적용 여부</td></tr>
+            <tr><td><span class="pname">livenessIdentifyingEnabled</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">1:N 매칭 시 라이브니스 감지 적용 여부</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"projectName"</span>: <span class="js">"My Project"</span>,
+    <span class="jk">"livenessRecordingEnabled"</span>: <span class="jb">true</span>,
+    <span class="jk">"livenessVerifyingEnabled"</span>: <span class="jb">false</span>,
+    <span class="jk">"livenessIdentifyingEnabled"</span>: <span class="jb">true</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs"><span class="st st400">400</span><span class="st-desc">Bad Request</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: [{ <span class="jk">"code"</span>: <span class="js">"PJ-105"</span>, <span class="jk">"message"</span>: <span class="js">"API key not found."</span> }]
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SDK: CONFIG BY CODE ══ -->
+<div class="page" id="p-sdk-config-code">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC QR</span> › 코드 기반 설정 조회</div>
+    <div class="ep-title">코드 기반 프로젝트 설정 조회</div>
+    <div class="ep-desc">QR 코드에 포함된 UUID 코드를 기반으로 프로젝트 이름 및 라이브니스 설정을 조회합니다. 별도 인증이 필요 없으며 SDK 페이지 초기화 시 사용됩니다.</div>
+    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/sdk/config/{code}</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-none">✓ &nbsp;인증 불필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Path Parameters</div>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">code</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 설정 조회 코드 (UUID, 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">projectName</span></td><td><span class="ptyp">string</span></td><td class="pdsc">프로젝트 이름</td></tr>
+            <tr><td><span class="pname">livenessRecordingEnabled</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사용자 등록 시 라이브니스 감지 적용 여부</td></tr>
+            <tr><td><span class="pname">livenessVerifyingEnabled</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">1:1 확인 시 라이브니스 감지 적용 여부</td></tr>
+            <tr><td><span class="pname">livenessIdentifyingEnabled</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">1:N 매칭 시 라이브니스 감지 적용 여부</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"projectName"</span>: <span class="js">"My Project"</span>,
+    <span class="jk">"livenessRecordingEnabled"</span>: <span class="jb">true</span>,
+    <span class="jk">"livenessVerifyingEnabled"</span>: <span class="jb">false</span>,
+    <span class="jk">"livenessIdentifyingEnabled"</span>: <span class="jb">true</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs"><span class="st st400">400</span><span class="st-desc">Bad Request</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: [{ <span class="jk">"code"</span>: <span class="js">"PJ-105"</span>, <span class="jk">"message"</span>: <span class="js">"API key not found."</span> }]
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR: USER CREATE ══ -->
+<div class="page" id="p-qr-user-create">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC QR</span> › 사용자 등록 QR 생성</div>
+    <div class="ep-title">사용자 등록 QR / Link 생성</div>
+    <div class="ep-desc">사용자 등록 플로우를 시작하는 QR 코드와 링크를 생성합니다. 발급된 링크를 사용자에게 전달하면, 사용자는 별도 인증 없이 얼굴 이미지를 업로드하여 등록을 완료할 수 있습니다.</div>
+    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/sdk/user/qr</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">base64QrCode</span></td><td><span class="ptyp">string</span></td><td class="pdsc">Base64 인코딩된 QR 코드 이미지 (<code>data:image/png;base64,...</code> 형식으로 사용)</td></tr>
+            <tr><td><span class="pname">link</span></td><td><span class="ptyp">string</span></td><td class="pdsc">사용자 등록 페이지 직접 접근 URL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"base64QrCode"</span>: <span class="js">"iVBORw0KGgoAAAANSUhEUgAA..."</span>,
+    <span class="jk">"link"</span>: <span class="js">"https://sdk.univs.ai/user?code=550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Usage Note</div>
+        <div class="info-card" style="margin-top:0">
+          <h3 data-i18n="note-qr-title">📱 QR / Link 활용</h3>
+          <p data-i18n-html="note-qr-user-p">생성된 <code>link</code>를 QR 코드나 버튼으로 사용자에게 전달하세요. 사용자는 해당 링크에 접속하여 카메라로 얼굴을 촬영하면 등록이 완료됩니다. 링크는 만료 시간이 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR: MATCH VERIFY ══ -->
+<div class="page" id="p-qr-match-verify">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC QR</span> › 1:1 확인 QR 생성</div>
+    <div class="ep-title">1:1 확인 QR / Link 생성</div>
+    <div class="ep-desc">특정 사용자(<code>faceId</code>)에 대한 1:1 확인 플로우를 시작하는 QR 코드와 링크를 생성합니다. 사용자는 링크에 접속하여 얼굴을 촬영하면 인증이 완료됩니다.</div>
+    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/sdk/verify/qr/{faceId}</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Path Parameter</div>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">확인 대상 등록 사용자의 faceId</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">base64QrCode</span></td><td><span class="ptyp">string</span></td><td class="pdsc">Base64 인코딩된 QR 코드 이미지</td></tr>
+            <tr><td><span class="pname">link</span></td><td><span class="ptyp">string</span></td><td class="pdsc">1:1 확인 페이지 직접 접근 URL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"base64QrCode"</span>: <span class="js">"iVBORw0KGgoAAAANSUhEUgAA..."</span>,
+    <span class="jk">"link"</span>: <span class="js">"https://sdk.univs.ai/verify?code=550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">Bad Request</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"USER-001"</span>,
+    <span class="jk">"message"</span>: <span class="js" data-i18n="ex-msg-invalid-user">"유효하지 않은 사용자입니다."</span>
+  }
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Usage Note</div>
+        <div class="info-card" style="margin-top:0">
+          <h3 data-i18n="note-qr-title">📱 QR / Link 활용</h3>
+          <p data-i18n-html="note-qr-verify-p">생성된 링크를 사용자에게 공유하면, 사용자는 얼굴을 촬영하는 것만으로 1:1 확인이 수행됩니다. 확인 결과는 웹훅으로 수신하거나 이력 조회 API로 확인할 수 있습니다. 링크는 만료 시간이 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR: MATCH IDENTIFY ══ -->
+<div class="page" id="p-qr-match-identify">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC QR</span> › 1:N 매칭 QR 생성</div>
+    <div class="ep-title">1:N 매칭 QR / Link 생성</div>
+    <div class="ep-desc">1:N 매칭 플로우를 시작하는 QR 코드와 링크를 생성합니다. 사용자는 링크에 접속하여 얼굴을 촬영하면 프로젝트에 등록된 전체 사용자 중 가장 유사한 사람으로 매칭됩니다.</div>
+    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/sdk/identify/qr</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">base64QrCode</span></td><td><span class="ptyp">string</span></td><td class="pdsc">Base64 인코딩된 QR 코드 이미지</td></tr>
+            <tr><td><span class="pname">link</span></td><td><span class="ptyp">string</span></td><td class="pdsc">1:N 매칭 페이지 직접 접근 URL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"base64QrCode"</span>: <span class="js">"iVBORw0KGgoAAAANSUhEUgAA..."</span>,
+    <span class="jk">"link"</span>: <span class="js">"https://sdk.univs.ai/identify?code=550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Usage Note</div>
+        <div class="info-card" style="margin-top:0">
+          <h3 data-i18n="note-qr-title">📱 QR / Link 활용</h3>
+          <p data-i18n-html="note-qr-identify-p">생성된 링크를 사용자에게 공유하면, 사용자는 얼굴을 촬영하는 것만으로 1:N 매칭이 수행됩니다. 매칭 결과는 웹훅으로 수신하거나 이력 조회 API로 확인할 수 있습니다. 링크는 만료 시간이 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QR: LIVENESS ══ -->
+<div class="page" id="p-qr-match-liveness">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>e-KYC QR</span> › 라이브니스 QR 생성</div>
+    <div class="ep-title">라이브니스 QR / Link 생성</div>
+    <div class="ep-desc">라이브니스 감지 플로우를 시작하는 QR 코드와 링크를 생성합니다. 사용자는 링크에 접속하여 얼굴을 촬영하면 실제 생체 여부가 감지됩니다.</div>
+    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/sdk/liveness/qr</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req" data-i18n-html="auth-req-both">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Headers</div>
+        <table class="tbl">
+          <thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">Authorization</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc"><code>Bearer {accessToken}</code></td></tr>
+            <tr><td><span class="pname">X-Api-Key</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">프로젝트 API Key</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">base64QrCode</span></td><td><span class="ptyp">string</span></td><td class="pdsc">Base64 인코딩된 QR 코드 이미지</td></tr>
+            <tr><td><span class="pname">link</span></td><td><span class="ptyp">string</span></td><td class="pdsc">라이브니스 감지 페이지 직접 접근 URL</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"base64QrCode"</span>: <span class="js">"iVBORw0KGgoAAAANSUhEUgAA..."</span>,
+    <span class="jk">"link"</span>: <span class="js">"https://sdk.univs.ai/liveness?code=550e8400-e29b-41d4-a716-446655440000"</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Usage Note</div>
+        <div class="info-card" style="margin-top:0">
+          <h3 data-i18n="note-liveness-title">🔍 라이브니스 단독 사용</h3>
+          <p data-i18n-html="note-liveness-p">로그인/매칭 없이 생체 여부만 확인할 때 사용합니다. 결과는 웹훅으로 수신하거나 이력 조회 API를 통해 확인할 수 있습니다. 링크는 만료 시간이 있습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+var _active = null;
+
+function show(id, el) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('p-' + id).classList.add('active');
+  document.querySelectorAll('.sb-item, .sb-intro').forEach(function(i){ i.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function tog(gid) {
+  var list = document.getElementById(gid);
+  var arr  = document.getElementById('arr-' + gid);
+  if(list.classList.contains('collapsed')) {
+    list.classList.remove('collapsed');
+    arr.classList.add('open');
+  } else {
+    list.classList.add('collapsed');
+    arr.classList.remove('open');
+  }
+}
+
+// ── LANGUAGE SWITCHER ────────────────────────────────────
+var currentLang = 'ko';
+
+// Nav item translations
+var T = {
+  ko: {
+    'nav-overview':     'Overview',
+    'nav-login':        '로그인',
+    'nav-token-refresh':'토큰 재발급',
+    'nav-apikey-get':   'API Key 조회',
+    'nav-user-create':  '사용자 등록',
+    'nav-verify':       '1:1 확인',
+    'nav-identify':     '1:N 매칭',
+    'nav-liveness':     '라이브니스',
+    'nav-qr-user':      '사용자 등록 QR 생성',
+    'nav-qr-verify':    '1:1 확인 QR 생성',
+    'nav-qr-identify':  '1:N 매칭 QR 생성',
+    'nav-qr-liveness':  '라이브니스 QR 생성',
+    // JSON example string values
+    'ex-user-description':          '"홍길동"',
+    'ex-msg-wrong-credentials':     '"이메일 또는 비밀번호가 올바르지 않습니다."',
+    'ex-msg-invalid-refresh-token': '"유효하지 않은 리프레시 토큰입니다."',
+    'ex-msg-token-expired':         '"토큰이 만료되었습니다."',
+    'ex-msg-face-mismatch':         '"얼굴이 일치하지 않습니다."',
+    'ex-msg-no-match':              '"일치하는 사용자를 찾을 수 없습니다."',
+    'ex-msg-liveness-fail':         '"실제 생체가 아닌 것으로 감지되었습니다."',
+    'ex-msg-invalid-file':          '"유효하지 않은 이미지 파일입니다."',
+    'ex-msg-project-not-found':     '"프로젝트를 찾을 수 없습니다."',
+    'ex-msg-invalid-user':          '"유효하지 않은 사용자입니다."',
+    // Usage Note titles
+    'note-qr-title':      '📱 QR / Link 활용',
+    'note-liveness-title':'🔍 라이브니스 단독 사용',
+    // SDK Config
+    'nav-sdk-config-apikey': 'API Key 기반 설정 조회',
+    'nav-sdk-config-code':   '코드 기반 설정 조회'
+  },
+  en: {
+    'nav-overview':     'Overview',
+    'nav-login':        'Login',
+    'nav-token-refresh':'Token Refresh',
+    'nav-apikey-get':   'Get API Key',
+    'nav-user-create':  'Register User',
+    'nav-verify':       '1:1 Verify',
+    'nav-identify':     '1:N Identify',
+    'nav-liveness':     'Liveness',
+    'nav-qr-user':      'Create User QR',
+    'nav-qr-verify':    'Verify QR',
+    'nav-qr-identify':  'Identify QR',
+    'nav-qr-liveness':  'Liveness QR',
+    // JSON example string values
+    'ex-user-description':          '"John Doe"',
+    'ex-msg-wrong-credentials':     '"Invalid email or password."',
+    'ex-msg-invalid-refresh-token': '"Invalid refresh token."',
+    'ex-msg-token-expired':         '"Token has expired."',
+    'ex-msg-face-mismatch':         '"Face does not match."',
+    'ex-msg-no-match':              '"No matching user found."',
+    'ex-msg-liveness-fail':         '"Not detected as a live face."',
+    'ex-msg-invalid-file':          '"Invalid image file."',
+    'ex-msg-project-not-found':     '"Project not found."',
+    'ex-msg-invalid-user':          '"Invalid user."',
+    // Usage Note titles
+    'note-qr-title':      '📱 QR / Link',
+    'note-liveness-title':'🔍 Liveness Only',
+    // SDK Config
+    'nav-sdk-config-apikey': 'Get Config by API Key',
+    'nav-sdk-config-code':   'Get Config by Code'
+  }
+};
+
+// Auth badge translations (HTML)
+var TH = {
+  ko: {
+    'auth-none':      '✓ &nbsp;인증 불필요',
+    'auth-req-both':  '🔐 &nbsp;JWT Bearer + X-Api-Key 필요',
+    'auth-req-jwt':   '🔐 &nbsp;JWT Bearer 필요',
+    'auth-req-apikey':'🔐 &nbsp;X-Api-Key 필요',
+    // Usage Note body
+    'note-qr-user-p':     '생성된 <code>link</code>를 QR 코드나 버튼으로 사용자에게 전달하세요. 사용자는 해당 링크에 접속하여 카메라로 얼굴을 촬영하면 등록이 완료됩니다. 링크는 만료 시간이 있습니다.',
+    'note-qr-verify-p':   '생성된 링크를 사용자에게 공유하면, 사용자는 얼굴을 촬영하는 것만으로 1:1 확인이 수행됩니다. 확인 결과는 웹훅으로 수신하거나 이력 조회 API로 확인할 수 있습니다. 링크는 만료 시간이 있습니다.',
+    'note-qr-identify-p': '생성된 링크를 사용자에게 공유하면, 사용자는 얼굴을 촬영하는 것만으로 1:N 매칭이 수행됩니다. 매칭 결과는 웹훅으로 수신하거나 이력 조회 API로 확인할 수 있습니다. 링크는 만료 시간이 있습니다.',
+    'note-liveness-p':    '로그인/매칭 없이 생체 여부만 확인할 때 사용합니다. 결과는 웹훅으로 수신하거나 이력 조회 API를 통해 확인할 수 있습니다. 링크는 만료 시간이 있습니다.'
+  },
+  en: {
+    'auth-none':      '✓ &nbsp;Not required',
+    'auth-req-both':  '🔐 &nbsp;JWT Bearer + X-Api-Key required',
+    'auth-req-jwt':   '🔐 &nbsp;JWT Bearer required',
+    'auth-req-apikey':'🔐 &nbsp;X-Api-Key required',
+    // Usage Note body
+    'note-qr-user-p':     'Share the generated <code>link</code> with the user as a QR code or button. The user simply opens the link and takes a photo to complete registration. The link has an expiration time.',
+    'note-qr-verify-p':   'Share the generated link with the user. The user simply takes a photo to perform 1:1 verification. Results can be received via webhook or checked through the history API. The link has an expiration time.',
+    'note-qr-identify-p': 'Share the generated link with the user. The user simply takes a photo to perform 1:N matching. Results can be received via webhook or checked through the history API. The link has an expiration time.',
+    'note-liveness-p':    'Use this when you only need to verify liveness without login or matching. Results can be received via webhook or checked through the history API. The link has an expiration time.'
+  }
+};
+
+// Per-page title / desc / crumb translations
+var PAGES = {
+  'p-auth-login': {
+    crumb: { ko: '<span>Auth</span> › 로그인', en: '<span>Auth</span> › Login' },
+    title: { ko: '로그인', en: 'Login' },
+    desc:  {
+      ko: '이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다.',
+      en: 'Log in with email and password to receive a JWT access token. The issued <code>accessToken</code> is used in all API requests that require authentication.'
+    }
+  },
+  'p-auth-refresh': {
+    crumb: { ko: '<span>Auth</span> › 토큰 재발급', en: '<span>Auth</span> › Token Refresh' },
+    title: { ko: 'Access Token 재발급', en: 'Refresh Access Token' },
+    desc:  {
+      ko: '만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 리프레시 토큰은 로그인 시 발급되며, 유효한 경우 새로운 <code>accessToken</code>이 반환됩니다.',
+      en: 'Issue a new access token using a refresh token. The refresh token is provided at login and a new <code>accessToken</code> is returned if it is still valid.'
+    }
+  },
+  'p-match-verify': {
+    crumb: { ko: '<span>Match</span> › 1:1 확인', en: '<span>Match</span> › Verify' },
+    title: { ko: '1:1 확인 (Verify by FaceId)', en: '1:1 Verify (by FaceId)' },
+    desc:  {
+      ko: '특정 <code>faceId</code>를 가진 등록 사용자와 제출된 얼굴 이미지를 1:1로 비교합니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.',
+      en: 'Compares a submitted face image against a registered user identified by <code>faceId</code> in a 1:1 comparison. Liveness detection may also run based on project settings.'
+    }
+  },
+  'p-match-identify': {
+    crumb: { ko: '<span>Match</span> › 1:N 매칭', en: '<span>Match</span> › Identify' },
+    title: { ko: '1:N 매칭 (Identify)', en: '1:N Identify' },
+    desc:  {
+      ko: '제출된 얼굴 이미지를 프로젝트에 등록된 전체 사용자와 비교하여 가장 유사한 사용자를 찾습니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.',
+      en: 'Compares a submitted face image against all users registered in the project to find the best match. Liveness detection may also run based on project settings.'
+    }
+  },
+  'p-match-liveness': {
+    crumb: { ko: '<span>Match</span> › 라이브니스', en: '<span>Match</span> › Liveness' },
+    title: { ko: '라이브니스 (Liveness)', en: 'Liveness Detection' },
+    desc:  {
+      ko: '제출된 얼굴 이미지가 실제 생체인지 감지합니다. 사진, 영상, 마스크 등을 이용한 스푸핑 시도를 방지합니다.',
+      en: 'Detects whether the submitted face image is from a live person. Prevents spoofing attempts using photos, videos, or masks.'
+    }
+  },
+  'p-user-create': {
+    crumb: { ko: '<span>User</span> › 사용자 등록', en: '<span>User</span> › Register User' },
+    title: { ko: '사용자 등록', en: 'Register User' },
+    desc:  {
+      ko: '얼굴 이미지를 업로드하여 프로젝트에 새 사용자를 등록합니다. 고유한 <code>faceId</code>가 발급됩니다.',
+      en: 'Register a new user in the project by uploading a face image and issue a unique <code>faceId</code>.'
+    }
+  },
+  'p-sdk-config-apikey': {
+    crumb: { ko: '<span>e-KYC QR</span> › API Key 기반 설정 조회', en: '<span>e-KYC QR</span> › Get Config by API Key' },
+    title: { ko: 'API Key 기반 프로젝트 설정 조회', en: 'Get Project Config by API Key' },
+    desc:  {
+      ko: 'API Key를 기반으로 프로젝트 이름 및 라이브니스 설정을 조회합니다. SDK 초기화 시 사용됩니다.',
+      en: 'Retrieves the project name and liveness settings based on the API Key. Used during SDK initialization.'
+    }
+  },
+  'p-sdk-config-code': {
+    crumb: { ko: '<span>e-KYC QR</span> › 코드 기반 설정 조회', en: '<span>e-KYC QR</span> › Get Config by Code' },
+    title: { ko: '코드 기반 프로젝트 설정 조회', en: 'Get Project Config by Code' },
+    desc:  {
+      ko: 'QR 코드에 포함된 UUID 코드를 기반으로 프로젝트 이름 및 라이브니스 설정을 조회합니다. 별도 인증이 필요 없으며 SDK 페이지 초기화 시 사용됩니다.',
+      en: 'Retrieves project name and liveness settings based on the UUID code embedded in the QR code. No authentication required. Used during SDK page initialization.'
+    }
+  },
+  'p-qr-user-create': {
+    crumb: { ko: '<span>e-KYC QR</span> › 사용자 등록 QR 생성', en: '<span>e-KYC QR</span> › Create User QR' },
+    title: { ko: '사용자 등록 QR / Link 생성', en: 'Create User QR / Link' },
+    desc:  {
+      ko: '사용자 등록 플로우를 시작하는 QR 코드와 링크를 생성합니다. 발급된 링크를 사용자에게 전달하면, 사용자는 별도 인증 없이 얼굴 이미지를 업로드하여 등록을 완료할 수 있습니다.',
+      en: 'Generates a QR code and link to start the user registration flow. Share the link with the user so they can upload a face image and complete registration without additional authentication.'
+    }
+  },
+  'p-qr-match-verify': {
+    crumb: { ko: '<span>e-KYC QR</span> › 1:1 확인 QR 생성', en: '<span>e-KYC QR</span> › Verify QR' },
+    title: { ko: '1:1 확인 QR / Link 생성', en: '1:1 Verify QR / Link' },
+    desc:  {
+      ko: '특정 사용자(<code>faceId</code>)에 대한 1:1 확인 플로우를 시작하는 QR 코드와 링크를 생성합니다. 사용자는 링크에 접속하여 얼굴을 촬영하면 인증이 완료됩니다.',
+      en: 'Generates a QR code and link to start a 1:1 verification flow for a specific user (<code>faceId</code>). The user accesses the link, takes a photo, and verification is completed.'
+    }
+  },
+  'p-qr-match-identify': {
+    crumb: { ko: '<span>e-KYC QR</span> › 1:N 매칭 QR 생성', en: '<span>e-KYC QR</span> › Identify QR' },
+    title: { ko: '1:N 매칭 QR / Link 생성', en: '1:N Identify QR / Link' },
+    desc:  {
+      ko: '1:N 매칭 플로우를 시작하는 QR 코드와 링크를 생성합니다. 사용자는 링크에 접속하여 얼굴을 촬영하면 프로젝트에 등록된 전체 사용자 중 가장 유사한 사람으로 매칭됩니다.',
+      en: 'Generates a QR code and link to start a 1:N identification flow. The user accesses the link, takes a photo, and is matched against all registered users in the project.'
+    }
+  },
+  'p-qr-match-liveness': {
+    crumb: { ko: '<span>e-KYC QR</span> › 라이브니스 QR 생성', en: '<span>e-KYC QR</span> › Liveness QR' },
+    title: { ko: '라이브니스 QR / Link 생성', en: 'Liveness QR / Link' },
+    desc:  {
+      ko: '라이브니스 감지 플로우를 시작하는 QR 코드와 링크를 생성합니다. 사용자는 링크에 접속하여 얼굴을 촬영하면 실제 생체 여부가 감지됩니다.',
+      en: 'Generates a QR code and link to start a liveness detection flow. The user accesses the link, takes a photo, and liveness is verified.'
+    }
+  }
+};
+
+// Intro page section-level translations
+var INTRO_SECS = [
+  { // 0: 소개 / Introduction
+    hKo: '소개', hEn: 'Introduction',
+    pKo: [
+      'UnivsGate API는 프로젝트별 API Key를 기반으로 얼굴 인식 e-KYC 기능을 외부 서비스에 통합할 수 있는 RESTful API입니다. JWT 인증과 API Key 인증을 함께 사용하며, 파일 업로드가 필요한 엔드포인트는 <code>multipart/form-data</code> 형식을 사용합니다.',
+      'API를 사용하기 전에 <a href="https://gate.univs.ai" target="_blank" style="color:var(--primary)">gate.univs.ai</a>에서 회원가입 및 로그인 후 프로젝트를 생성하고 API Key를 발급받으세요. API Key는 모든 e-KYC 요청에 필수 인증 수단입니다.',
+      '모든 API 응답은 <code>{"success": boolean, "data": ..., "errors": ...}</code> 형식의 통일된 구조로 반환됩니다.'
+    ],
+    pEn: [
+      'UnivsGate API is a RESTful API for integrating face recognition e-KYC into external services, using a project-specific API Key. It requires both JWT authentication and API Key authentication. Endpoints with file uploads use <code>multipart/form-data</code>.',
+      'Before using the API, sign up and log in at <a href="https://gate.univs.ai" target="_blank" style="color:var(--primary)">gate.univs.ai</a>, create a project, and obtain your API Key. The API Key is required to authenticate all e-KYC requests.',
+      'All API responses follow a unified structure: <code>{"success": boolean, "data": ..., "errors": ...}</code>.'
+    ]
+  },
+  null, // 1: Base URL (no translation needed)
+  { // 2: 인증 방식 / Authentication
+    hKo: '인증 방식', hEn: 'Authentication',
+    pKo: ['e-KYC API는 두 가지 인증 헤더가 모두 필요합니다. 로그인 API는 인증 불필요합니다.'],
+    pEn: ['e-KYC APIs require both authentication headers. The login API does not require authentication.'],
+    cardPKo: [
+      '로그인 후 발급된 accessToken을 Authorization 헤더에 포함합니다.<br><br><code>Authorization: Bearer {accessToken}</code>',
+      '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다.<br><br><code>X-Api-Key: {apiKey}</code>'
+    ],
+    cardPEn: [
+      'Include the accessToken issued after login in the Authorization header.<br><br><code>Authorization: Bearer {accessToken}</code>',
+      'Include the project-specific API Key in the X-Api-Key header.<br><br><code>X-Api-Key: {apiKey}</code>'
+    ]
+  },
+  { // 3: 응답 구조 / Response Structure
+    hKo: '응답 구조', hEn: 'Response Structure',
+    pKo: ['성공/실패 모두 HTTP 200으로 응답합니다. <code>success</code> 필드로 처리 결과를 구분합니다.'],
+    pEn: ['Both success and failure return HTTP 200. Use the <code>success</code> field to determine the outcome.'],
+    cardHKo: ['✅ 성공 응답', '❌ 오류 응답'],
+    cardHEn: ['✅ Success Response', '❌ Error Response']
+  },
+  { // 4: 타임존 처리 / Timezone Handling
+    hKo: '타임존 처리', hEn: 'Timezone Handling',
+    pKo: ['응답의 날짜/시간 필드는 기본적으로 UTC 기준입니다. <code>Accept-TimeZone</code> 헤더로 원하는 타임존을 지정하면 자동 변환됩니다.'],
+    pEn: ['Date/time fields in responses default to UTC. Specify the desired timezone using the <code>Accept-TimeZone</code> header for automatic conversion.']
+  },
+  { // 5: 다국어 처리 / Multilingual Handling
+      hKo: '다국어 처리', hEn: 'Multilingual Handling',
+      pKo: ['현재 다국어 지원으로 한국어/영어 를 지원합니다. <code>Accept-Language</code> 헤더로 원하는 언어를 지정하면 자동 변역됩니다.'],
+      pEn: ['Currently supports Korean and English for multilingual responses. Specify the desired language using the <code>Accept-Language</code> header for automatic translation.']
+  }
+];
+
+function applyIntro(lang) {
+  var intro = document.getElementById('p-intro');
+  if (!intro) return;
+  var heroP = intro.querySelector('.hero p');
+  if (heroP) heroP.innerHTML = lang === 'ko'
+    ? '생체인증 기반 e-KYC 게이트 서비스의 공식 API 레퍼런스입니다. 얼굴 인식, 1:1 확인, 1:N 매칭, 라이브니스 감지 기능을 REST API로 제공합니다.'
+    : 'Official API reference for the biometric e-KYC gateway service. Provides face recognition, 1:1 verification, 1:N identification, and liveness detection via REST API.';
+  var secs = intro.querySelectorAll('.intro-sec');
+  secs.forEach(function(sec, idx) {
+    var data = INTRO_SECS[idx];
+    if (!data) return;
+    var h2 = sec.querySelector('h2');
+    if (h2) h2.textContent = lang === 'ko' ? data.hKo : data.hEn;
+    var ps = sec.querySelectorAll(':scope > p');
+    ps.forEach(function(p, pi) {
+      var arr = lang === 'ko' ? data.pKo : data.pEn;
+      if (arr && arr[pi] !== undefined) p.innerHTML = arr[pi];
+    });
+    if (data.cardPKo) {
+      sec.querySelectorAll('.info-card').forEach(function(card, ci) {
+        var cardP = card.querySelector('p');
+        if (cardP) cardP.innerHTML = lang === 'ko' ? data.cardPKo[ci] : data.cardPEn[ci];
+      });
+    }
+    if (data.cardHKo) {
+      sec.querySelectorAll('.info-card').forEach(function(card, ci) {
+        var cardH = card.querySelector('h3');
+        if (cardH) cardH.innerHTML = lang === 'ko' ? data.cardHKo[ci] : data.cardHEn[ci];
+      });
+    }
+  });
+}
+
+// Per-page field description (.pdsc) and response status (.st-desc) translations
+var PAGE_FIELDS = {
+  'p-auth-login': {
+    pdsc: {
+      ko: [
+        '로그인 이메일 주소 (최대 255자)',
+        '로그인 비밀번호 (최대 255자)',
+        'API 요청에 사용할 JWT 액세스 토큰',
+        '액세스 토큰 갱신용 리프레시 토큰',
+        '토큰 타입 — <code>Bearer</code>',
+        '토큰 만료 시간 (초 단위)',
+        '로그인 계정 정보 객체',
+        '계정 식별 ID',
+        '계정 이메일'
+      ],
+      en: [
+        'Login email address (max 255 chars)',
+        'Login password (max 255 chars)',
+        'JWT access token for API requests',
+        'Refresh token for renewing the access token',
+        'Token type — <code>Bearer</code>',
+        'Token expiration time (in seconds)',
+        'Logged-in account information object',
+        'Account identifier ID',
+        'Account email'
+      ]
+    },
+    stDesc: {
+      ko: ['OK', '잘못된 이메일 또는 비밀번호'],
+      en: ['OK', 'Invalid email or password']
+    }
+  },
+  'p-auth-refresh': {
+    pdsc: {
+      ko: [
+        '로그인 시 발급받은 리프레시 토큰 (최대 255자)',
+        '새로 발급된 JWT 액세스 토큰',
+        '토큰 타입 — <code>Bearer</code>',
+        '토큰 만료 시간 (초 단위)'
+      ],
+      en: [
+        'Refresh token issued at login (max 255 chars)',
+        'Newly issued JWT access token',
+        'Token type — <code>Bearer</code>',
+        'Token expiration time (in seconds)'
+      ]
+    },
+    stDesc: {
+      ko: ['OK', '유효하지 않은 리프레시 토큰', '만료된 리프레시 토큰'],
+      en: ['OK', 'Invalid refresh token', 'Expired refresh token']
+    }
+  },
+  'p-match-verify': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key (최대 36자)',
+        '응답 시간 변환 타임존 (예: <code>Asia/Seoul</code>)',
+        '비교 대상 등록 사용자의 faceId (최대 100자)',
+        '확인할 얼굴 이미지 (jpg, jpeg, png)',
+        '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)',
+        '매칭 이력 ID',
+        '매칭 유형 — <code>VERIFY</code>',
+        '매칭 수행 일시',
+        '라이브니스 체크 수행 여부',
+        '확인 성공 여부',
+        '매칭된 사용자의 faceId',
+        '매칭된 사용자 ID (성공 시)',
+        '매칭된 사용자 설명 (성공 시)',
+        '유사도 점수 (0.0 ~ 1.0)',
+        '실패 코드 (MISMATCH 등)',
+        '실패 원인 메시지',
+        '요청 식별 UUID'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key (max 36 chars)',
+        'Response time conversion timezone (e.g., <code>Asia/Seoul</code>)',
+        'faceId of the registered user to compare (max 100 chars)',
+        'Face image to verify (jpg, jpeg, png)',
+        'Request identifier UUID (auto-generated if not provided, max 36 chars)',
+        'Matching history ID',
+        'Match type — <code>VERIFY</code>',
+        'Match execution datetime',
+        'Whether liveness check was performed',
+        'Whether verification succeeded',
+        'faceId of the matched user',
+        'Matched user ID (on success)',
+        'Matched user description (on success)',
+        'Similarity score (0.0 ~ 1.0)',
+        'Failure code (MISMATCH, etc.)',
+        'Failure reason message',
+        'Request identifier UUID'
+      ]
+    },
+    stDesc: {
+      ko: ['확인 성공', '확인 실패 (불일치)'],
+      en: ['Verification successful', 'Verification failed (mismatch)']
+    }
+  },
+  'p-match-identify': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key (최대 36자)',
+        '응답 시간 변환 타임존',
+        '매칭할 얼굴 이미지 (jpg, jpeg, png)',
+        '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)',
+        '매칭 이력 ID',
+        '매칭 유형 — <code>IDENTIFY</code>',
+        '매칭 수행 일시',
+        '라이브니스 체크 수행 여부',
+        '매칭 성공 여부',
+        '매칭된 사용자의 faceId (성공 시)',
+        '매칭된 사용자 ID (성공 시)',
+        '매칭된 사용자 설명 (성공 시)',
+        '유사도 점수 (0.0 ~ 1.0)',
+        '등록된 사용자 얼굴 이미지 경로 (성공 시)',
+        '실패 코드 (NOT_MATCH 등)',
+        '실패 원인 메시지',
+        '요청 식별 UUID'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key (max 36 chars)',
+        'Response time conversion timezone',
+        'Face image to match (jpg, jpeg, png)',
+        'Request identifier UUID (auto-generated if not provided, max 36 chars)',
+        'Matching history ID',
+        'Match type — <code>IDENTIFY</code>',
+        'Match execution datetime',
+        'Whether liveness check was performed',
+        'Whether matching succeeded',
+        'faceId of the matched user (on success)',
+        'Matched user ID (on success)',
+        'Matched user description (on success)',
+        'Similarity score (0.0 ~ 1.0)',
+        'Registered user face image path (on success)',
+        'Failure code (NOT_MATCH, etc.)',
+        'Failure reason message',
+        'Request identifier UUID'
+      ]
+    },
+    stDesc: {
+      ko: ['매칭 성공', '매칭 실패 (미인식)'],
+      en: ['Matching successful', 'Matching failed (no match found)']
+    }
+  },
+  'p-match-liveness': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key (최대 36자)',
+        '라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)',
+        '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)',
+        '라이브니스 통과 여부',
+        '실패 원인 메시지 (실패 시)',
+        '요청 식별 UUID'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key (max 36 chars)',
+        'Face image for liveness check (jpg, jpeg, png)',
+        'Request identifier UUID (auto-generated if not provided, max 36 chars)',
+        'Whether liveness passed',
+        'Failure reason message (on failure)',
+        'Request identifier UUID'
+      ]
+    },
+    stDesc: {
+      ko: ['라이브니스 통과', '라이브니스 실패'],
+      en: ['Liveness passed', 'Liveness failed']
+    }
+  },
+  'p-user-create': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key (최대 36자)',
+        '응답 시간 변환 타임존',
+        '등록할 얼굴 이미지 (jpg, jpeg, png)',
+        '사용자 지정 faceId (최대 255자, 미전송 시 자동 생성)',
+        '사용자 설명 또는 이름 (최대 1000자)',
+        '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)',
+        '등록된 사용자 ID',
+        '발급된 얼굴 식별 ID',
+        '사용자 설명',
+        '저장된 얼굴 이미지 경로',
+        '등록 일시',
+        '요청 식별 UUID'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key (max 36 chars)',
+        'Response time conversion timezone',
+        'Face image to register (jpg, jpeg, png)',
+        'Custom faceId (max 255 chars, auto-generated if not provided)',
+        'User description or name (max 1000 chars)',
+        'Request identifier UUID (auto-generated if not provided, max 36 chars)',
+        'Registered user ID',
+        'Issued face identifier ID',
+        'User description',
+        'Stored face image path',
+        'Registration datetime',
+        'Request identifier UUID'
+      ]
+    },
+    stDesc: {
+      ko: ['OK', 'Bad Request'],
+      en: ['OK', 'Bad Request']
+    }
+  },
+  'p-sdk-config-apikey': {
+    pdsc: {
+      ko: [
+        '프로젝트 API Key',
+        '프로젝트 이름',
+        '사용자 등록 시 라이브니스 감지 적용 여부',
+        '1:1 확인 시 라이브니스 감지 적용 여부',
+        '1:N 매칭 시 라이브니스 감지 적용 여부'
+      ],
+      en: [
+        'Project API Key',
+        'Project name',
+        'Whether liveness detection is applied during user registration',
+        'Whether liveness detection is applied during 1:1 verification',
+        'Whether liveness detection is applied during 1:N matching'
+      ]
+    },
+    stDesc: {
+      ko: ['OK', 'Bad Request'],
+      en: ['OK', 'Bad Request']
+    }
+  },
+  'p-sdk-config-code': {
+    pdsc: {
+      ko: [
+        '프로젝트 설정 조회 코드 (UUID, 36자)',
+        '프로젝트 이름',
+        '사용자 등록 시 라이브니스 감지 적용 여부',
+        '1:1 확인 시 라이브니스 감지 적용 여부',
+        '1:N 매칭 시 라이브니스 감지 적용 여부'
+      ],
+      en: [
+        'Project config retrieval code (UUID, 36 chars)',
+        'Project name',
+        'Whether liveness detection is applied during user registration',
+        'Whether liveness detection is applied during 1:1 verification',
+        'Whether liveness detection is applied during 1:N matching'
+      ]
+    },
+    stDesc: {
+      ko: ['OK', 'Bad Request'],
+      en: ['OK', 'Bad Request']
+    }
+  },
+  'p-qr-user-create': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key',
+        'Base64 인코딩된 QR 코드 이미지 (<code>data:image/png;base64,...</code> 형식으로 사용)',
+        '사용자 등록 페이지 직접 접근 URL'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key',
+        'Base64 encoded QR code image (use as <code>data:image/png;base64,...</code>)',
+        'Direct access URL to the user registration page'
+      ]
+    },
+    stDesc: {
+      ko: ['OK'],
+      en: ['OK']
+    }
+  },
+  'p-qr-match-verify': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key',
+        '확인 대상 등록 사용자의 faceId',
+        'Base64 인코딩된 QR 코드 이미지',
+        '1:1 확인 페이지 직접 접근 URL'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key',
+        'faceId of the registered user to verify',
+        'Base64 encoded QR code image',
+        'Direct access URL to the 1:1 verification page'
+      ]
+    },
+    stDesc: {
+      ko: ['OK', 'Bad Request'],
+      en: ['OK', 'Bad Request']
+    }
+  },
+  'p-qr-match-identify': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key',
+        'Base64 인코딩된 QR 코드 이미지',
+        '1:N 매칭 페이지 직접 접근 URL'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key',
+        'Base64 encoded QR code image',
+        'Direct access URL to the 1:N matching page'
+      ]
+    },
+    stDesc: {
+      ko: ['OK'],
+      en: ['OK']
+    }
+  },
+  'p-qr-match-liveness': {
+    pdsc: {
+      ko: [
+        '<code>Bearer {accessToken}</code>',
+        '프로젝트 API Key',
+        'Base64 인코딩된 QR 코드 이미지',
+        '라이브니스 감지 페이지 직접 접근 URL'
+      ],
+      en: [
+        '<code>Bearer {accessToken}</code>',
+        'Project API Key',
+        'Base64 encoded QR code image',
+        'Direct access URL to the liveness detection page'
+      ]
+    },
+    stDesc: {
+      ko: ['OK'],
+      en: ['OK']
+    }
+  }
+};
+
+function setLang(lang) {
+  // nav text-only elements
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.dataset.i18n;
+    if (T[lang][key] !== undefined) el.textContent = T[lang][key];
+  });
+  // auth badges (HTML)
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+    var key = el.dataset.i18nHtml;
+    if (TH[lang][key] !== undefined) el.innerHTML = TH[lang][key];
+  });
+  // per-page title / desc / crumb
+  Object.keys(PAGES).forEach(function(pageId) {
+    var page = document.getElementById(pageId);
+    if (!page) return;
+    var c = PAGES[pageId];
+    var crumbEl = page.querySelector('.ep-crumb');
+    if (crumbEl && c.crumb) crumbEl.innerHTML = c.crumb[lang];
+    var titleEl = page.querySelector('.ep-title');
+    if (titleEl && c.title) titleEl.textContent = c.title[lang];
+    var descEl = page.querySelector('.ep-desc');
+    if (descEl && c.desc) descEl.innerHTML = c.desc[lang];
+  });
+  // field descriptions and response status labels per page
+  Object.keys(PAGE_FIELDS).forEach(function(pageId) {
+    var page = document.getElementById(pageId);
+    if (!page) return;
+    var pf = PAGE_FIELDS[pageId];
+    if (pf.pdsc) {
+      page.querySelectorAll('.pdsc').forEach(function(el, i) {
+        if (pf.pdsc[lang][i] !== undefined) el.innerHTML = pf.pdsc[lang][i];
+      });
+    }
+    if (pf.stDesc) {
+      page.querySelectorAll('.st-desc').forEach(function(el, i) {
+        if (pf.stDesc[lang][i] !== undefined) el.textContent = pf.stDesc[lang][i];
+      });
+    }
+  });
+  // intro page
+  applyIntro(lang);
+  // update picker UI
+  currentLang = lang;
+  var labelEl = document.getElementById('lang-label');
+  if (labelEl) labelEl.textContent = lang === 'ko' ? '한국어 / Korean' : 'English / English';
+  document.querySelectorAll('.lang-opt').forEach(function(o) {
+    o.classList.toggle('active', o.dataset.lang === lang);
+  });
+  // close dropdown
+  document.getElementById('lang-popup').classList.remove('show');
+  document.getElementById('lang-chevron').classList.remove('open');
+  localStorage.setItem('docs-lang', lang);
+}
+
+function toggleLang() {
+  document.getElementById('lang-popup').classList.toggle('show');
+  document.getElementById('lang-chevron').classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.lang-wrap')) {
+    document.getElementById('lang-popup').classList.remove('show');
+    document.getElementById('lang-chevron').classList.remove('open');
+  }
+});
+
+// init: URL param > saved language > browser language
+(function() {
+  var urlLang = new URLSearchParams(location.search).get('lang');
+  if (urlLang === 'ko' || urlLang === 'en') {
+    currentLang = urlLang; setLang(urlLang); return;
+  }
+  var saved = localStorage.getItem('docs-lang');
+  if (saved) {
+    if (saved !== 'ko') { currentLang = saved; setLang(saved); }
+  } else {
+    var browserLang = (navigator.language || navigator.userLanguage || 'ko').toLowerCase();
+    if (!browserLang.startsWith('ko')) { currentLang = 'en'; setLang('en'); }
+  }
+})();
+</script>
+</body>
+</html>

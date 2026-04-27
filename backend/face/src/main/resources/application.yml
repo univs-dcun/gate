@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: face-service
+  config:
+    import: optional:configserver:http://config-server:8888
+
+---
+
+server.port: 8080
+
+spring:
+  config:
+    activate:
+      on-profile: local
+  servlet:
+    multipart:
+      max-file-size: 4GB
+      max-request-size: 4GB
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
+        default-page-size: 10
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+    openfeign:
+      client:
+        config:
+          default:
+            readTimeout: 10000
+            connectTimeout: 10000
+            loggerLevel: basic
+
+face:
+  match:
+    threshold: 0.85
+
+springdoc:
+  api-docs:
+    path: /api-docs/face
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace

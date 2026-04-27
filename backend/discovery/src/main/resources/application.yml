@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: discovery-server
+  config:
+    import: optional:configserver:http://config-server:8888
+
+---
+
+server.port: 8761
+
+spring:
+  config:
+    activate:
+      on-profile: local
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+# actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

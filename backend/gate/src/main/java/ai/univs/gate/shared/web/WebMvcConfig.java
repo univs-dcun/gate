@@ -1,0 +1,22 @@
+package ai.univs.gate.shared.web;
+
+import ai.univs.gate.shared.auth.UserContextInterceptor;
+import ai.univs.gate.shared.locale.LocaleConfig;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+@RequiredArgsConstructor
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final UserContextInterceptor userContextInterceptor;
+    private final LocaleConfig localeConfig;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(localeConfig.localeChangeInterceptor());
+        registry.addInterceptor(userContextInterceptor);
+    }
+}

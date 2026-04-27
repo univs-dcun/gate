@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: match-server
+  config:
+    import: optional:configserver:http://config-server:8888
+
+---
+
+server.port: 8080
+
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+springdoc:
+  api-docs:
+    path: /api-docs/matcher
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace

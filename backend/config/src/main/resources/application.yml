@@ -1,0 +1,31 @@
+server.port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://univs-psh01@bitbucket.org/univs-ai/config-repo.git
+          default-label: main
+          username: ${GIT_USERNAME}
+          password: ${GIT_PASSWORD}
+        native:
+          search-locations: file:///config-repo
+
+# true: 안전하게 종료, prometheus: actuator 에서 허용할 api (ex./actuator/prometheus)
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+
+# tomcat metric 설정 (그라파나에서 Jetty metric(default) 대신 tomcat 을 보기 위함
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true

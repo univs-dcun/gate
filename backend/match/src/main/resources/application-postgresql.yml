@@ -1,0 +1,21 @@
+spring:
+  config:
+    activate:
+      on-profile: postgresql
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://192.168.0.135:5432/faces
+    username: postgres
+#   전시회 PC
+#    password: 1234
+#   고사양 PC
+#    password: univs0411
+#   개발 PC
+    password: univs0411!
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect

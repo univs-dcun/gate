@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "messages": {
+    "NOT_MATCH":                          { "ko": "얼굴이 일치하지 않습니다.", "en": "Face does not match." },
+    "MISMATCH":                           { "ko": "얼굴 매칭 결과가 불일치합니다.", "en": "Face matching result is a mismatch." },
+    "FACE_NOT_FOUND":                     { "ko": "이미지에서 얼굴을 찾을 수 없습니다.", "en": "No faces are found on the image." },
+    "TOO_MANY_FACES":                     { "ko": "이미지에 두 개 이상의 얼굴이 있습니다.", "en": "There is more than one face on the image." },
+    "SMALL_FACE_SIZE":                    { "ko": "얼굴 크기가 너무 작습니다.", "en": "The face box is too small." },
+    "SMALL_RELATIVE_FACE_SIZE":           { "ko": "얼굴의 상대적인 크기가 너무 작습니다.", "en": "The face relative size is too small." },
+    "SMALL_PUPILLARY_DISTANCE":           { "ko": "동공 간 거리가 너무 짧습니다.", "en": "The distance between pupils on the face is too small." },
+    "LARGE_FACE_ROTATION_ANGLE":          { "ko": "머리(얼굴)의 회전 각도가 너무 큽니다.", "en": "The rotation angle of the head is too big." },
+    "FACE_TOO_CLOSE":                     { "ko": "얼굴이 카메라에 너무 가깝습니다.", "en": "The face is too close to the camera." },
+    "FACE_CLOSE_TO_BORDER":               { "ko": "얼굴이 이미지 가장자리에 너무 가깝습니다.", "en": "The face is too close to one or more image borders." },
+    "FACE_CROPPED":                       { "ko": "얼굴이 잘렸습니다.", "en": "The face is cropped." },
+    "FACE_OCCLUDED":                      { "ko": "얼굴이 가려졌습니다. (예: 의료용 마스크)", "en": "The face is occluded, for example with a medical mask." },
+    "EYES_CLOSED":                        { "ko": "눈이 감겨 있습니다.", "en": "The eyes are closed." },
+    "DARK_IMAGE":                         { "ko": "이미지가 너무 어둡습니다.", "en": "The image is too dark." },
+    "FAKE":                               { "ko": "실제 얼굴 이미지로 확인되지 않습니다. 다시 시도해 주시기 바랍니다.", "en": "Not verified with a real face image. Please try again." },
+    "FACE_IS_OCCLUDED":                   { "ko": "얼굴이 가려졌습니다.", "en": "The face is occluded." },
+    "FACE_TOO_SMALL":                     { "ko": "얼굴 이미지가 너무 작습니다.", "en": "Face size is too small." },
+    "FACE_ANGLE_TOO_LARGE":               { "ko": "얼굴의 회전 각도가 너무 큽니다.", "en": "Face angle is too large." }
+  }
+}
