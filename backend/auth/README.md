@@ -29,7 +29,12 @@
 ---
 
 ### [v1.0.2] - 27/04/2026
-- Test jenkins
+- Test jenkins (OK)
+- Test jenkins SCM (X), give a jenkinsfile path wrong.
+- Test jenkins SCM (X), mismatch file name
+- Test jenkins SCM (X), dev branch is pulled when pushing from any branch
+- Test jenkins SCM (X),
+- Test jenkins SCM
 
 ### [v1.0.1] - 20/03/2026
 - Remove redis
