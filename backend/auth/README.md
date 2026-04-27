@@ -34,7 +34,7 @@
 - Test jenkins SCM (X), mismatch file name
 - Test jenkins SCM (X), dev branch is pulled when pushing from any branch
 - Test jenkins SCM (X),
-- Test jenkins SCM
+- Test jenkins SCM (X), Service name was wrong
 
 ### [v1.0.1] - 20/03/2026
 - Remove redis
