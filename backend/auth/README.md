@@ -29,7 +29,8 @@
 ---
 
 ### [v1.0.2] - 27/04/2026
-- Test jenkins
+- Test jenkins (OK)
+- Test jenkins SCM
 
 ### [v1.0.1] - 20/03/2026
 - Remove redis
