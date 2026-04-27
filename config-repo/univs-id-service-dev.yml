@@ -1,0 +1,124 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 0
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+spring:
+  # ===============================
+  # Kafka
+  # ===============================
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  # ===============================
+  # Feign client
+  # ===============================
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: basic
+
+  # ===============================
+  # Database
+  # ===============================
+  datasource:
+    driverClassName: org.mariadb.jdbc.Driver
+    url: url
+    username: username
+    password: password
+
+  # ===============================
+  # Database version Management
+  # ===============================
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # ===============================
+  # pagination
+  # ===============================
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
+        default-page-size: 10
+
+  # ===============================
+  # File size limit
+  # ===============================
+  servlet:
+    multipart:
+      max-file-size: 4GB
+      max-request-size: 4GB
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      base-path: /univs-id/actuator
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# I18n (Internationalization)
+# ===============================
+message:
+  redis:
+    host: host
+    port: port
+    password: password
+
+# ===============================
+# Docs
+# ===============================
+springdoc:
+  api-docs:
+    path: /univs-id/v3/api-docs
+
+# ===============================
+# Common URL
+# ===============================
+gateway:
+  url: ${gateway.url, http://localhost:8080}
+
+# ===============================
+# File upload option
+# ===============================
+file:
+  enable:
+    upload: true
+  api-endpoint:
+    get: ${file.api-endpoint.get, /api/v1/file}

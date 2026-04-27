@@ -1,0 +1,153 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 8080
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+  # ===============================
+  # SSL
+  # ===============================
+  ssl:
+    enabled: true
+    key-store-password: keystorepassword
+    key-store: keystore
+    key-store-type: keystoretype
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - https://gate-beta.univs.ai:7750
+              - https://stag.univs.ai:28080
+              - http://localhost:3000
+              - http://localhost:8080
+            allow-credentials: true
+            allowedHeaders:
+              - Authorization
+              - Content-Type
+              - X-Api-Key
+              - Accept-Language
+              - Accept-TimeZone
+            allowedMethods:
+              - POST
+              - GET
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+      routes:
+        - id: GATE-AUTH
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/auth/**
+        - id: GATE-PROJECT
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/projects/**
+        - id: GATE-USER
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/users/**
+        - id: GATE-API-KEY
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/api-keys/**
+        - id: GATE-COMPANY
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/company/**
+        - id: GATE-MATCH
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/match/**
+        - id: GATE-DEMO
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/demo/**
+        - id: GATE-SDK
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/sdk/**
+        - id: GATE-DASHBOARD
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/dashboard/**
+        - id: Face
+          uri: lb://face-service
+          predicates:
+            - Path=/api/v1/face/**, /api/v2/face/**
+        - id: FXP-PREPROCESS
+          uri: lb://fxp-preprocess-service
+          predicates:
+            - Path=/fxp-preprocess-service/**
+          filters:
+            - RewritePath=/fxp-preprocess-service/(?<segment>.*), /$\{segment}
+        - id: GATE-DOCS-ACTUATOR
+          uri: lb://gate-service
+          predicates:
+            - Path=/gate/v3/api-docs, /gate/actuator/**
+        - id: KYC-MESSAGES
+          uri: lb://gate-service
+          predicates:
+            - Path=/api/v1/messages/**
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      # true: 안전하게 종료
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Gateway Logging
+# ===============================
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: OFF
+    org.springframework.http.server.reactive: INFO
+
+# ===============================
+# Docs
+# ===============================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - url: /gate/v3/api-docs
+        name: Gate Service

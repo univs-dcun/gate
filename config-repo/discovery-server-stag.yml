@@ -1,0 +1,19 @@
+server:
+  port: 8761
+
+# ===============================
+# Eureka Server
+# ===============================
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

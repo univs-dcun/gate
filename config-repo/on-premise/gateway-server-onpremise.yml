@@ -1,0 +1,74 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - http://localhost:8080
+                allow-credentials: true
+                allowedHeaders:
+                  - Content-Type
+                  - Accept-Language
+                  - Accept-TimeZone
+                  - Upgrade
+                  - Connection
+                allowedMethods:
+                  - POST
+                  - GET
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                  - HEAD
+          routes:
+            - id: FACE-PROXY
+              uri: lb://face-service
+              predicates:
+                - Path=/api/v1/face/**, /api/v2/face/**
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      access: unrestricted
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Gateway Logging
+# ===============================
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: OFF
+    org.springframework.http.server.reactive: INFO

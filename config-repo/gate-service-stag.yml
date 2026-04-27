@@ -1,0 +1,169 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 0
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+spring:
+  # ===============================
+  # Feign client
+  # ===============================
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: basic
+
+  # ===============================
+  # Database
+  # ===============================
+  datasource:
+    driverClassName: org.mariadb.jdbc.Driver
+    url: url
+    username: username
+    password: password
+
+  # ===============================
+  # Database version Management
+  # ===============================
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # ===============================
+  # pagination
+  # ===============================
+  data:
+    web:
+      pageable:
+        one-indexed-parameters: true
+        default-page-size: 10
+
+  # ===============================
+  # File size limit
+  # ===============================
+  servlet:
+    multipart:
+      max-file-size: 4GB
+      max-request-size: 4GB
+
+  # ===============================
+  # Mail template
+  # ===============================
+  thymeleaf:
+    prefix: classpath:/templates/mail/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    check-template-location: true
+    cache: false
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      base-path: /gate/actuator
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Docs
+# ===============================
+springdoc:
+  api-docs:
+    path: /gate/v3/api-docs
+
+# ===============================
+# Gateway URL
+# ===============================
+gateway:
+  url: ${gateway.url, http://localhost:8080}
+
+# ===============================
+# Gateway Demo URL
+# ===============================
+gate:
+  demo:
+    url: https://gate-beta.univs.ai:7750/m/test
+
+# ===============================
+# File upload option
+# ===============================
+file:
+  enable:
+    upload: true
+  api-endpoint:
+    get: ${file.api-endpoint.get, /api/v1/file}
+  root-path: filepath
+  secret-key: secretkey
+  algorithm:
+    way: way
+    mod: mod
+
+# ===============================
+# JWT
+# ===============================
+jwt:
+  secret: ${JWT_SECRET:357638792F423F4428472B4B6250655368566D597133743677397A2443264629}
+  create-user-token-expiry: 300000
+  access-token-expiry: 900000
+  refresh-token-expiry: 604800000
+
+# ===============================
+# Project Free Plan
+# ===============================
+project:
+  free-plan:
+    expiry-days: 31
+  limit:
+    user-registration: 1000
+    verify: 1000
+    identify: 1000
+    liveness: 1000
+
+# ===============================
+# API KEY
+# ===============================
+api-key:
+  prefix: gate_
+  length: 31
+  expiry-days: 3600
+
+# ===============================
+# Mail Sender Account
+# ===============================
+google:
+  oauth2:
+    email: ${google.oauth2.email, email}
+    client-id: ${google.oauth2.client-id, client-id}
+    client-secret: ${google.oauth2.client-secret, client-secret}
+    refresh-token: ${google.oauth2.refresh-token, refresh-token}
+    access-token-url: ${google.oauth2.access-token-url, access-token-url}

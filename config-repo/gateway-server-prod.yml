@@ -1,0 +1,338 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 8080
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+  # ===============================
+  # SSL
+  # ===============================
+  ssl:
+    enabled: true
+    key-store-password: keystorepassword
+    key-store: keystore
+    key-store-type: keystoretype
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - https://id.univs.ai
+              - https://obd.univs.ai
+              - https://id-mgmt.univs.ai
+              - https://univs-mgmt.univs.ai
+              - https://sign.univs.ai
+              - https://id.univs.ai:8080
+            allow-credentials: true
+            allowedHeaders: '*'
+            allowedMethods:
+              - POST
+              - GET
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            exposedHeaders:
+              - Authorization
+      routes:
+        ######### Authentication
+        - id: APPLICATION
+          uri: lb://application-service
+          predicates:
+            - Path=/api/v1/application/**
+            - Method= GET, PUT
+          filters:
+            - AuthenticationFilter
+        - id: COMP-V2
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/api/v2/comp/**
+            - Method=PUT,POST
+          filters:
+            - AuthenticationFilter
+        - id: COMP-FIND-V2-AUTH
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/api/v2/comp
+            - Method=GET
+          filters:
+            - AuthenticationFilter
+        - id: COMP-V3
+          uri: lb://comp-service-v2
+          predicates:
+            - Path= /api/v3/comp
+          filters:
+            - AuthenticationFilter
+        - id: COMP-APPLICATION-PROCESS
+          uri: lb://comp-service
+          predicates:
+            - Path=/api/v1/comp/application
+            - Method=GET, PUT
+          filters:
+            - AuthenticationFilter
+        - id: COMP-APPLICATION-PROCESS
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/api/v2/comp/application
+            - Method=GET, PUT
+          filters:
+            - AuthenticationFilter
+        - id: KEY-V2
+          uri: lb://key-service-v2
+          predicates:
+            - Path=/api/v2/service-keys/**, /api/v2/services/**, /api/v2/application/**
+          filters:
+            - AuthenticationFilter
+        - id: KEY-V2-SERVICE
+          uri: lb://key-service-v2
+          predicates:
+            - Path= /api/v2/services/**
+            - Method=POST, PUT
+          filters:
+            - AuthenticationFilter
+        - id: MESSAGE
+          uri: lb://message-service
+          predicates:
+            - Path=/api/v1/message/**
+          filters:
+            - AuthenticationFilter
+        - id: DEMO-APPLICATION-PROCESS
+          uri: lb://demo-service
+          predicates:
+            - Path=/api/v1/demo/application
+            - Method=PUT
+          filters:
+            - AuthenticationFilter
+        - id: DEMO-SERVICE
+          uri: lb://demo-service
+          predicates:
+            - Path=/api/v1/demo/faces/**
+          filters:
+            - AuthenticationFilter
+        ######### Authentication & Validation Key
+        - id: DEVICE
+          uri: lb://device-service
+          predicates:
+            - Path=/api/v1/devices/**, /api/v2/devices/**
+          filters:
+            - AuthenticationFilter
+            - ValidationKeyFilter
+        - id: USER
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**, /api/v2/users/**, /api/v3/users/**
+          filters:
+            - AuthenticationFilter
+            - ValidationKeyFilter
+        - id: UNIVS-ID
+          uri: lb://univs-id-service
+          predicates:
+            - Path=/api/v1/id/**, /api/v2/id/**, /api/v3/id/**
+          filters:
+            - AuthenticationFilter
+            - ValidationKeyFilter
+        - id: POINT
+          uri: lb://point-service
+          predicates:
+            - Path=/api/v1/point/**
+          filters:
+            - AuthenticationFilter
+            - ValidationKeyFilter
+        - id: COMMERCE
+          uri: lb://commerce-service
+          predicates:
+            - Path=/api/v1/commerce/**
+          filters:
+            - AuthenticationFilter
+            - ValidationKeyFilter
+        - id: ATTENDANCE
+          uri: lb://attendance-service
+          predicates:
+            - Path=/api/v1/attendance/**
+          filters:
+            - AuthenticationFilter
+            - ValidationKeyFilter
+        ######### No Authentication
+        - id: COMP-PASSWORD-CHANGE-RESET
+          uri: lb://comp-service
+          predicates:
+            - Path=/api/v1/comp/password/**
+        - id: COMP-PASSWORD-CHANGE-RESET-V2
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/api/v2/comp/password/**,/api/v2/comp/search, /api/v2/comp/test/mail/**,/api/v2/comp/application/verify/**
+        - id: COMP-APPLICATION
+          uri: lb://comp-service
+          predicates:
+            - Path=/api/v1/comp/application
+            - Method=POST
+        - id: COMP-APPLICATION-V2
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/api/v2/comp/application
+            - Method=POST
+        - id: COMP-FIND-V2
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/api/v2/comp/**
+            - Method=GET
+        - id: COMP-APPLICATION-VERIFY
+          uri: lb://comp-service
+          predicates:
+            - Path=/api/v1/comp/application/verify/**
+        - id: KEY-V2-SERVICE
+          uri: lb://key-service-v2
+          predicates:
+            - Path= /api/v2/services/**
+            - Method=GET
+        - id: KEY-V2-CREATE-APPLICATION
+          uri: lb://key-service-v2
+          predicates:
+            - Path= /api/v2/application/**
+            - Method=POST
+        - id: AUTH
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+        - id: FILE
+          uri: lb://file-server
+          predicates:
+            - Path=/api/v1/file/**
+        - id: Mail
+          uri: lb://mail-server
+          predicates:
+            - Path=/api/v1/mail/**
+        - id: NOTIFICATION-SOCKET
+          uri: lb://notification-socket-service
+          predicates:
+            - Path=/ws/notification/**
+        - id: FACE
+          uri: lb://face-service
+          predicates:
+            - Path=/api/v1/face/**, /api/v2/face/**
+        - id: FACE-MATCHER-ONE-ONE-MATCH
+          uri: lb://face-matcher-server
+          predicates:
+            - Path=/api/v1/match/verify/**
+        - id: CREATE_APPLICATION
+          uri: lb://application-service
+          predicates:
+            - Path=/api/v1/application
+            - Method= POST
+        - id: DEMO
+          uri: lb://demo-service
+          predicates:
+            - Path=/api/v1/demo/login/** , /api/v1/demo/application
+            - Method=GET, POST
+        - id: FXP-COMMUNICATION-SERVICE
+          uri: lb://fxp-communication-service
+          predicates:
+            - Path=/comm/**
+          filters:
+            - RewritePath=/comm/(?<segment>.*), /$\{segment}
+        - id: FXP-PREPROCESS
+          uri: lb://fxp-preprocess-service
+          predicates:
+            - Path=/fxp-preprocess-service/**
+          filters:
+            - RewritePath=/fxp-preprocess-service/(?<segment>.*), /$\{segment}
+        ######### Actuator
+        - id: COMP-V2-ACTUATOR
+          uri: lb://comp-service-v2
+          predicates:
+            - Path=/comp/actuator/**
+        - id: KEY-V2-ACTUATOR
+          uri: lb://key-service-v2
+          predicates:
+            - Path=/key/actuator/**
+        - id: DEVICE-ACTUATOR
+          uri: lb://device-service
+          predicates:
+            - Path=/device/actuator/**
+        - id: USER-ACTUATOR
+          uri: lb://user-service
+          predicates:
+            - Path=/user/actuator/**
+        - id: AUTH-ACTUATOR
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/actuator/**
+        - id: UNIVS-ID-ACTUATOR
+          uri: lb://univs-id-service
+          predicates:
+            - Path=/univs-id/actuator/**
+        - id: POINT-ACTUATOR
+          uri: lb://point-service
+          predicates:
+            - Path=/point/actuator/**
+        - id: COMMERCE-ACTUATOR
+          uri: lb://commerce-service
+          predicates:
+            - Path=/commerce/actuator/**
+        - id: ATTENDANCE-ACTUATOR
+          uri: lb://attendance-service
+          predicates:
+            - Path=/attendance/actuator/**
+        - id: FXP-COMMUNICATION-SERVICE-ACTUATOR
+          uri: lb://fxp-communication-service
+          predicates:
+            - Path=/comm/actuator/**
+            - Method=GET,POST
+          filters:
+            - RewritePath=/comm/(?<segment>.*), /$\{segment}
+        - id: FACE-ACTUATOR
+          uri: lb://face-service
+          predicates:
+            - Path=/face/actuator/**
+        - id: MESSAGE-ACTUATOR
+          uri: lb://message-service
+          predicates:
+            - Path=/message/actuator/**
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      # true: 안전하게 종료
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        # 해당 라이브러리가 제공하는 API 종류 (기본적으로 health 제공)
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Gateway Logging
+# ===============================
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.netflix.eureka: DEBUG

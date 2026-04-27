@@ -1,0 +1,109 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 0
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+spring:
+  # ===============================
+  # Kafka
+  # ===============================
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: user-batch-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+  # ===============================
+  # Feign client
+  # ===============================
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: basic
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    hostname: notification-socket-service
+    preferIpAddress: false
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      base-path: /notification-socket/actuator
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Socket connection info
+# ===============================
+websocket:
+  config:
+    connect:
+      url: /ws/notification
+    broker:
+      pub-destination: /ws/app
+      sub-destination: /ws/notification/topic
+
+# ===============================
+# Socket logging
+# ===============================
+logging:
+  level:
+    # Spring의 WebSocket 전반에 대한 로그 (연결, 핸드셰이크 등)
+    org.springframework.web.socket: TRACE
+    # STOMP 등 메시징 프로토콜 처리 관련 로그 (메시지 구독, 발행, 브로커 등)
+    org.springframework.messaging: TRACE
+    # (선택) 내장된 Tomcat을 사용하는 경우, 더 낮은 수준의 WebSocket 통신 로그
+    org.apache.tomcat.websocket: DEBUG
+
+# ===============================
+# Kafka topic
+# groupId : <'service name'>-consumer[-'environment']
+# topic   : serviceName.method.env
+# ===============================
+app:
+  kafka:
+    noti:
+      common.group-id: dev-notification-group
+      topics:
+        comp.updated: comp.updated.dev
+        application:
+          created: application.created.dev
+          updated: application.updated.dev
+        service-key:
+          created: service-key.created.dev
+          updated: service-key.updated.dev
+          deleted: service-key.deleted.dev
+      batch:
+        topics: dev-notification-batch
+        group-id: dev-notification-batch-group
+      device:
+        topics: dev-notification-device
+        group-id: dev-notification-device-group

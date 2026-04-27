@@ -1,0 +1,177 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 8080
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+  # ===============================
+  # SSL
+  # ===============================
+  ssl:
+    enabled: true
+    key-store-password: keystorepassword
+    key-store: keystore
+    key-store-type: keystoretype
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - https://develop.univs.ai:7778
+                  - https://develop.univs.ai:7779
+                  - http://develop.univs.ai:7779
+                  - http://localhost:7779
+                  - https://develop.univs.ai:7650
+                  - https://develop.univs.ai:18090
+                  - http://192.168.0.19:5173
+                  - http://localhost:5173
+                allow-credentials: true
+                allowedHeaders:
+                  - Authorization
+                  - Content-Type
+                  - X-Api-Key
+                  - Accept-Language
+                  - Accept-TimeZone
+                  - Upgrade
+                  - Connection
+                allowedMethods:
+                  - POST
+                  - GET
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                  - HEAD
+          routes:
+            - id: AUTH-REFRESH-TOKEN-CHANGE-PASSWORD
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/token/refresh, /api/v1/auth/password/change
+            - id: AUTH
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**
+            - id: GATE-PROJECT
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/projects/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-API-KEY
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/api-keys/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-COMPANY
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/company/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-USER
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/users/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-MATCH
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/match/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-DEMO
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/demo/**
+            - id: GATE-SDK-QR
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/sdk/user/qr, /api/v1/sdk/verify/qr/**, /api/v1/sdk/identify/qr, /api/v1/sdk/liveness/qr
+              filters:
+                - AuthenticationFilter
+            - id: GATE-SDK
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/sdk/**
+            - id: GATE-DASHBOARD
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/dashboard/**
+              filters:
+                - AuthenticationFilter
+            - id: KYC-MESSAGES
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/messages/**
+            - id: NOTIFY-WEB-SOCKET
+              uri: lb:ws://notify-service
+              predicates:
+                - Path=/ws/**
+            - id: GATE-DOCS-ACTUATOR
+              uri: lb://gate-service
+              predicates:
+                - Path=/gate/v3/api-docs, /gate/actuator/**
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      access: unrestricted
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Gateway Logging
+# ===============================
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: OFF
+    org.springframework.http.server.reactive: INFO
+
+# ===============================
+# Docs
+# ===============================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - url: /gate/v3/api-docs
+        name: Gate Service

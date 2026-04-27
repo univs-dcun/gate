@@ -1,0 +1,89 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 0
+  # ===============================
+  # Grafana metric
+  # ===============================
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+spring:
+  # ===============================
+  # Database
+  # ===============================
+  datasource:
+    driverClassName: org.mariadb.jdbc.Driver
+    url: url
+    username: username
+    password: password
+
+  # ===============================
+  # Mail template
+  # ===============================
+  thymeleaf:
+    prefix: classpath:/templates/mail/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    check-template-location: true
+    cache: false
+
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      enabled: true
+  endpoints:
+    web:
+      base-path: /auth/actuator
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Docs
+# ===============================
+springdoc:
+  api-docs:
+    path: /auth/v3/api-docs
+
+# ===============================
+# Json web Token
+# ===============================
+jwt:
+  secret: secret-key
+  create-user-token-expiry: create-user-token-expiry
+  access-token-expiry: access-token-expiry
+  refresh-token-expiry: refresh-token-expiry
+
+# ===============================
+# Mail (Google OAuth2 SMTP)
+# ===============================
+mail:
+  enabled: true
+
+google:
+  oauth2:
+    email: email
+    client-id: client-id
+    client-secret: client-secret
+    refresh-token: refresh-token
+    access-token-url: access-token-url
