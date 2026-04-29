@@ -5,6 +5,7 @@ import ai.univs.gate.facade.demo.application.dto.DemoRedisPayload;
 import ai.univs.gate.facade.demo.application.service.DemoRedisPublisher;
 import ai.univs.gate.facade.demo.application.usecase.CreateUserByApiKeyUseCase;
 import ai.univs.gate.facade.demo.application.usecase.GetDemoProjectConfigUseCase;
+import ai.univs.gate.facade.demo.application.usecase.GetUsersByApiKeyUseCase;
 import ai.univs.gate.modules.match.api.dto.IdentifyResponseDTO;
 import ai.univs.gate.modules.match.api.dto.LivenessResponseDTO;
 import ai.univs.gate.modules.match.api.dto.VerifyByFaceIdResponseDTO;
@@ -15,6 +16,8 @@ import ai.univs.gate.modules.match.application.usecase.VerifyByFaceIdUseCase;
 import ai.univs.gate.modules.match.application.usecase.VerifyByImageUseCase;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
 import ai.univs.gate.modules.user.api.dto.UserResponseDTO;
+import ai.univs.gate.modules.user.api.dto.UsersResponseDTO;
+import ai.univs.gate.shared.web.dto.CustomPage;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
 import ai.univs.gate.shared.web.dto.ResponseApi;
@@ -41,6 +44,7 @@ import org.springframework.web.bind.annotation.*;
 public class DemoController {
 
     private final CreateUserByApiKeyUseCase createUserByApiKeyUseCase;
+    private final GetUsersByApiKeyUseCase getUsersByApiKeyUseCase;
     private final VerifyByFaceIdUseCase verifyByFaceIdUseCase;
     private final VerifyByImageUseCase verifyByImageUseCase;
     private final IdentifyUseCase identifyUseCase;
@@ -144,6 +148,28 @@ public class DemoController {
         var result = identifyUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyResponseDTO.from(result, failureReason, timezone);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "API Key 기반 사용자 목록 조회")
+    @SecurityRequirements({})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
+    })
+    @GetMapping("/users")
+    public ResponseEntity<ResponseApi<UsersResponseDTO>> getUsersByApiKey(
+            HttpServletRequest httpServletRequest,
+            @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
+    ) {
+        String timezone = httpServletRequest.getHeader("Accept-TimeZone");
+        var input = request.toInput(timezone);
+        var result = getUsersByApiKeyUseCase.execute(input);
+
+        var usersResponse = result.users().stream()
+                .map(userResult -> UserResponseDTO.from(userResult, timezone))
+                .toList();
+        var response = new UsersResponseDTO(usersResponse, CustomPage.from(result.page()));
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
