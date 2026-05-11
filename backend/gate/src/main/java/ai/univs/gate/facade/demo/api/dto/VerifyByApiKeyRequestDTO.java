@@ -21,7 +21,7 @@ public record VerifyByApiKeyRequestDTO(
         @Length(max = 100, message = "INVALID_FACE_ID_LENGTH")
         String faceId,
 
-        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile matchingFaceImage,
 

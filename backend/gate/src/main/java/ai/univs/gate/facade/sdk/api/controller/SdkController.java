@@ -22,13 +22,15 @@ import ai.univs.gate.support.message.MessageService;
 import ai.univs.gate.support.webhook.WebhookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -121,6 +123,7 @@ public class SdkController {
     }
 
     @Operation(summary = "코드 기반 사용자 등록")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateUserByTokenRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -130,7 +133,7 @@ public class SdkController {
     @PostMapping(value = "/user/token", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<UserResponseDTO>> createUserByToken(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid CreateUserByTokenRequestDTO request
+            @ModelAttribute @Valid CreateUserByTokenRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         String token = sdkQrCodeService.getToken(request.code());
@@ -167,6 +170,7 @@ public class SdkController {
     }
 
     @Operation(summary = "코드 기반 사용자 확인")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByTokenRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -176,7 +180,7 @@ public class SdkController {
     @PostMapping(value = "/verify/token", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByFaceIdResponseDTO>> verifyByToken(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid VerifyByTokenRequestDTO request
+            @ModelAttribute @Valid VerifyByTokenRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
 
@@ -207,6 +211,7 @@ public class SdkController {
     }
 
     @Operation(summary = "코드 기반 사용자 매칭")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = IdentifyByTokenRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -216,7 +221,7 @@ public class SdkController {
     @PostMapping(value = "/identify/token", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identifyByToken(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid IdentifyByTokenRequestDTO request
+            @ModelAttribute @Valid IdentifyByTokenRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
 
@@ -247,6 +252,7 @@ public class SdkController {
     }
 
     @Operation(summary = "코드 기반 라이브니스 체크")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = LivenessByTokenRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -255,7 +261,7 @@ public class SdkController {
     })
     @PostMapping(value = "/liveness/token", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<LivenessResponseDTO>> LivenessByToken(
-            @ParameterObject @ModelAttribute @Valid LivenessByTokenRequestDTO request
+            @ModelAttribute @Valid LivenessByTokenRequestDTO request
     ) {
         var result = sdkLivenessUseCase.execute(
                 request.code(),

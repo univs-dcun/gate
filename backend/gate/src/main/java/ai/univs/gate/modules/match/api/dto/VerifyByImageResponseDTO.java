@@ -3,8 +3,6 @@ package ai.univs.gate.modules.match.api.dto;
 import ai.univs.gate.modules.match.application.result.VerifyByImageResult;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -40,15 +38,11 @@ public record VerifyByImageResponseDTO(
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
 
-        @JsonIgnore
-        @Hidden
-        @Schema(description = SwaggerDescriptions.TARGET_MATCHING_FACE_IMAGE_PATH)
-        String targetMatchingFaceImagePath,
-
-        @JsonIgnore
-        @Hidden
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE_PATH)
         String matchingFaceImagePath,
+
+        @Schema(description = SwaggerDescriptions.TARGET_MATCHING_FACE_IMAGE_PATH)
+        String targetMatchingFaceImagePath,
 
         @Schema(description = SwaggerDescriptions.MATCHING_FAILURE_TYPE)
         String failureType,
@@ -74,8 +68,8 @@ public record VerifyByImageResponseDTO(
                 result.faceId(),
                 result.userId(),
                 result.similarity(),
-                result.targetMatchingFaceImagePath(),
                 result.matchingFaceImagePath(),
+                result.targetMatchingFaceImagePath(),
                 result.failureType(),
                 failureReason,
                 result.transactionUuid());

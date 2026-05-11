@@ -16,7 +16,7 @@ public record DemoIdentifyRequestDTO(
         @Length(max = 36, message = "INVALID_API_KEY_LENGTH")
         String apiKey,
 
-        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile matchingFaceImage,
 

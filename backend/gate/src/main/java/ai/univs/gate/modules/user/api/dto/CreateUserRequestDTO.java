@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 public record CreateUserRequestDTO(
-        @Schema(description = SwaggerDescriptions.FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile faceImage,
 

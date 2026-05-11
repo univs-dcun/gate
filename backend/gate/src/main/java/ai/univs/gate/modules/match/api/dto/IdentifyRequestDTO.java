@@ -10,7 +10,7 @@ import org.hibernate.validator.constraints.Length;
 import org.springframework.web.multipart.MultipartFile;
 
 public record IdentifyRequestDTO(
-        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile matchingFaceImage,
 
