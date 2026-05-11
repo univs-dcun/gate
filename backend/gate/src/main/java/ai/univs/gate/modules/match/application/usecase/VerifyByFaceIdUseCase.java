@@ -27,6 +27,7 @@ import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import ai.univs.gate.support.user.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class VerifyByFaceIdUseCase {
@@ -65,13 +67,13 @@ public class VerifyByFaceIdUseCase {
         // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        // 사용 가능 여부 확인 (limit 또는 Flex 크레딧)
-        billingClient.validate("verify",
-                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessVerifyingEnabled()) {
-            billingClient.validate("liveness",
-                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
+        // [BILLING-DISABLED] 사용 가능 여부 확인 (limit 또는 Flex 크레딧) — 원상복귀 시 주석 해제
+//        billingClient.validate("verify",
+//                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+//        if (findProjectSettings.getLivenessVerifyingEnabled()) {
+//            billingClient.validate("liveness",
+//                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+//        }
 
         boolean consentEnabled = Boolean.TRUE.equals(findProjectSettings.getConsentEnabled());
 
@@ -129,12 +131,18 @@ public class VerifyByFaceIdUseCase {
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        // 확인 성공 — 빌링 차감 후 이력 저장
-        billingClient.deduct("verify",
-                new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessVerifyingEnabled()) {
-            billingClient.deduct("liveness",
+        // [BILLING-DISABLED] 확인 성공 — 사용량 차감 (크레딧 소진 시에도 서비스 차단하지 않음)
+        // [BILLING-DISABLED] 원상복귀 시: try-catch 제거 후 billingClient.deduct 호출만 남길 것
+        try {
+            billingClient.deduct("verify",
                     new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            if (findProjectSettings.getLivenessVerifyingEnabled()) {
+                billingClient.deduct("liveness",
+                        new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            }
+        } catch (Exception e) {
+            log.warn("[BILLING-DISABLED] verify 사용량 차감 실패 (무시) projectId={}, error={}",
+                    project.getId(), e.getMessage());
         }
 
         matchHistory.success(user, data.getSimilarity());
