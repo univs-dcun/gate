@@ -116,10 +116,6 @@ spring:
                 - Path=/api/v1/dashboard/**
               filters:
                 - AuthenticationFilter
-            - id: GATE-FILE
-              uri: lb://gate-service
-              predicates:
-                - Path=/api/v1/file
             - id: KYC-MESSAGES
               uri: lb://gate-service
               predicates:
