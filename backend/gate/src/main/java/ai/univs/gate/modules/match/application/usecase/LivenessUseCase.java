@@ -20,6 +20,7 @@ import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class LivenessUseCase {
@@ -58,9 +60,9 @@ public class LivenessUseCase {
         // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        // 사용 가능 여부 확인 (limit 또는 Flex 크레딧)
-        billingClient.validate("liveness",
-                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+        // [BILLING-DISABLED] 사용 가능 여부 확인 (limit 또는 Flex 크레딧) — 원상복귀 시 주석 해제
+//        billingClient.validate("liveness",
+//                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
 
         // 파일 저장
         var imagePath = fileService.upload(input.matchingFaceImage());
@@ -90,9 +92,15 @@ public class LivenessUseCase {
         if (!data.isSuccess()) {
             matchHistory.fail(livenessScore, data.getPrdioctionDesc().toUpperCase());
         } else {
-            // 라이브니스 성공 — 빌링 차감 후 이력 저장
-            billingClient.deduct("liveness",
-                    new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            // [BILLING-DISABLED] 라이브니스 성공 — 사용량 차감 (크레딧 소진 시에도 서비스 차단하지 않음)
+            // [BILLING-DISABLED] 원상복귀 시: try-catch 제거 후 billingClient.deduct 호출만 남길 것
+            try {
+                billingClient.deduct("liveness",
+                        new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            } catch (Exception e) {
+                log.warn("[BILLING-DISABLED] liveness 사용량 차감 실패 (무시) projectId={}, error={}",
+                        project.getId(), e.getMessage());
+            }
             matchHistory.success(livenessScore);
         }
 

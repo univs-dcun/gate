@@ -22,6 +22,7 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -66,13 +68,13 @@ public class UserService {
         // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(callerType, findProjectSettings);
 
-        // DB 저장 공간 한도 확인
-        billingClient.validateDbStorage(
-                new BillingOperationFeignRequestDTO(project.getId(), accountId));
-        if (findProjectSettings.getLivenessRecordingEnabled()) {
-            billingClient.validate("liveness",
-                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
+        // [BILLING-DISABLED] DB 저장 공간 한도 확인 — 원상복귀 시 주석 해제
+//        billingClient.validateDbStorage(
+//                new BillingOperationFeignRequestDTO(project.getId(), accountId));
+//        if (findProjectSettings.getLivenessRecordingEnabled()) {
+//            billingClient.validate("liveness",
+//                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+//        }
 
         // 파일 저장
         String imagePath = fileService.upload(faceImage);
@@ -108,12 +110,20 @@ public class UserService {
                 .build();
         userRepository.save(user);
 
-        // 등록 성공 후 dbUsedCount 증가, 이력 저장
+        // 등록 성공 후 dbUsedCount 증가 (카운팅 유지)
         billingClient.incrementDbUsed(
                 new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+
+        // [BILLING-DISABLED] 라이브니스 사용량 차감 (크레딧 소진 시에도 서비스 차단하지 않음)
+        // [BILLING-DISABLED] 원상복귀 시: try-catch 제거 후 billingClient.deduct 호출만 남길 것
         if (findProjectSettings.getLivenessRecordingEnabled()) {
-            billingClient.deduct("liveness",
-                    new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            try {
+                billingClient.deduct("liveness",
+                        new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            } catch (Exception e) {
+                log.warn("[BILLING-DISABLED] user 등록 liveness 사용량 차감 실패 (무시) projectId={}, error={}",
+                        project.getId(), e.getMessage());
+            }
         }
         matchHistory.success(user, BigDecimal.ZERO);
 

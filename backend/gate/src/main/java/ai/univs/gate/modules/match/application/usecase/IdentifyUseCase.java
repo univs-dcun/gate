@@ -67,13 +67,13 @@ public class IdentifyUseCase {
         // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        // 사용 가능 여부 확인 (limit 또는 Flex 크레딧)
-        billingClient.validate("identify",
-                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessIdentifyingEnabled()) {
-            billingClient.validate("liveness",
-                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
+        // [BILLING-DISABLED] 사용 가능 여부 확인 (limit 또는 Flex 크레딧) — 원상복귀 시 주석 해제
+//        billingClient.validate("identify",
+//                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+//        if (findProjectSettings.getLivenessIdentifyingEnabled()) {
+//            billingClient.validate("liveness",
+//                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
+//        }
 
         boolean consentEnabled = Boolean.TRUE.equals(findProjectSettings.getConsentEnabled());
 
@@ -131,12 +131,18 @@ public class IdentifyUseCase {
 
         matchHistory.success(user, data.getSimilarity());
 
-        // 매칭 성공 — 빌링 차감 후 이력 저장
-        billingClient.deduct("identify",
-                new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessIdentifyingEnabled()) {
-            billingClient.deduct("liveness",
+        // [BILLING-DISABLED] 매칭 성공 — 사용량 차감 (크레딧 소진 시에도 서비스 차단하지 않음)
+        // [BILLING-DISABLED] 원상복귀 시: try-catch 제거 후 billingClient.deduct 호출만 남길 것
+        try {
+            billingClient.deduct("identify",
                     new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            if (findProjectSettings.getLivenessIdentifyingEnabled()) {
+                billingClient.deduct("liveness",
+                        new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
+            }
+        } catch (Exception e) {
+            log.warn("[BILLING-DISABLED] identify 사용량 차감 실패 (무시) projectId={}, error={}",
+                    project.getId(), e.getMessage());
         }
 
         return success(input.callerType(), matchHistory, consentEnabled);
