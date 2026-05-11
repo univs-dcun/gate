@@ -1,0 +1,249 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVICE_NAME           = 'auth-service'
+        SERVICE_NAME_KO        = "유니버스 인증 서비스"
+        SERVICE_ENV_VAR_NAME   = 'AUTH_SERVICE_VERSION'
+        REPOSITORY             = "/univs-gate/${SERVICE_NAME}"
+
+        // ✅ 변경: Bitbucket → GitHub URL
+        GITHUB_REPO_URL        = 'https://github.com/univs-dcun/gate'
+
+        // ✅ 추가: 모노레포에서 이 서비스의 경로
+        SERVICE_PATH           = 'backend/auth'
+
+        DOCKER_REGISTRY_URL    = 'dockhub.univs.ai:9870'
+        SLACK_CHANNEL          = "#devops"
+        SLACK_SUCCESS_COLOR    = "#2C953C"
+        SLACK_FAIL_COLOR       = "#FF3232"
+    }
+
+    stages {
+        stage('Check Branch and Detect Environment') {
+            steps {
+                script {
+                    // ✅ 변경: GitHub webhook 파라미터 기준으로 브랜치 확인
+                    // PR 이벤트: BRANCH_NAME (base.ref)
+                    // Push 이벤트: REF (refs/heads/dev 형태)
+                    def branch = env.BRANCH_NAME?.trim()
+                        ?: env.REF?.replace('refs/heads/', '')?.trim()
+
+                    env.BRANCH_NAME = branch
+                    echo "Current branch: ${branch}"
+
+                    if (branch != 'dev' && branch != 'staging' && branch != 'master') {
+                        echo "🔹 배포 대상 브랜치 아님. 건너뜀."
+                        currentBuild.result = 'SUCCESS'
+                        env.SKIP_BUILD = 'true'
+                        return
+                    } else {
+                        env.SKIP_BUILD = 'false'
+                    }
+
+                    // 브랜치별 서버 설정 (기존과 동일)
+                    if (branch == 'dev') {
+                        env.DEPLOY_ENV    = '개발 서버'
+                        env.TARGET_SERVER = '192.168.0.135'
+                        env.TARGET_USER   = 'univs'
+                        env.WORKING_DIR   = '/home/univs/platform/docker/config'
+                    } else if (branch == 'staging') {
+                        env.DEPLOY_ENV    = '스테이징 서버'
+                        env.TARGET_SERVER = '192.168.0.136'
+                        env.TARGET_USER   = 'univs'
+                        env.WORKING_DIR   = '/home/univs/platform/stag/config'
+                    } else if (branch == 'master') {
+                        env.DEPLOY_ENV    = '운영 서버'
+                        env.TARGET_SERVER = '192.168.79.8'
+                        env.TARGET_USER   = 'psh'
+                        env.WORKING_DIR   = '/home/psh/platform/prod/config'
+                    }
+                }
+            }
+        }
+
+        // ✅ 추가: 모노레포에서 이 서비스 변경 여부 확인
+        stage('Detect Service Changes') {
+            when {
+                expression { return env.SKIP_BUILD == 'false' }
+            }
+            steps {
+                script {
+                    // GitHub에서 전체 repo clone
+                    git branch: "${env.BRANCH_NAME}",
+                        credentialsId: 'github-credentials',   // ✅ Jenkins credential ID 변경
+                        url: "${GITHUB_REPO_URL}"
+
+                    // 변경된 파일 목록에서 이 서비스 경로 포함 여부 확인
+                    def changedFiles = sh(
+                        script: "git diff --name-only HEAD~1 HEAD",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "변경된 파일 목록:\n${changedFiles}"
+
+                    // ✅ 이 서비스 경로(backend/service-auth)가 변경됐는지 확인
+                    if (!changedFiles.contains(SERVICE_PATH)) {
+                        echo "🔹 ${SERVICE_NAME} 변경 없음. 배포 건너뜀."
+                        currentBuild.result = 'SUCCESS'
+                        env.SKIP_BUILD = 'true'
+                        return
+                    }
+
+                    echo "✅ ${SERVICE_NAME} 변경 감지. 배포 진행."
+                }
+            }
+            post {
+                failure {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_FAIL_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 변경 감지 실패")
+                }
+            }
+        }
+
+        stage('Extract Git Info') {
+            when {
+                expression { return env.SKIP_BUILD == 'false' }
+            }
+            steps {
+                script {
+                    // ✅ 기존 로직 동일 유지
+                    COMMIT_HASH = sh(
+                        script: "git log --no-merges -1 --pretty=format:'%h'",
+                        returnStdout: true
+                    ).trim()
+
+                    COMMIT_DATE = sh(
+                        script: "git log --no-merges -1 --pretty=format:'%cd' --date=format:'%Y%m%d'",
+                        returnStdout: true
+                    ).trim()
+
+                    IMAGE_TAG = "${COMMIT_DATE}-${COMMIT_HASH}"
+                    env.IMAGE_TAG = IMAGE_TAG
+                    echo "Docker Image Tag: ${IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage('Build and Push docker image') {
+            when {
+                expression { return env.SKIP_BUILD == 'false' && env.BRANCH_NAME == 'dev' }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockhub-credentials',
+                    usernameVariable: 'DOCKER_HUB_USER',
+                    passwordVariable: 'DOCKER_HUB_PASS'
+                )]) {
+                    script {
+                        // ✅ 모노레포에서 해당 서비스 디렉토리로 이동 후 빌드
+                        sh """
+                            cd ${SERVICE_PATH}
+                            chmod +x ./gradlew
+                            ./gradlew clean build
+                        """
+
+                        echo "✅ Docker image build 시작"
+                        sh """
+                            cd ${SERVICE_PATH}
+                            docker build -t ${DOCKER_REGISTRY_URL}${REPOSITORY}:${IMAGE_TAG} .
+                        """
+
+                        echo "🔐 Docker Registry 로그인"
+                        sh "echo ${DOCKER_HUB_PASS} | docker login ${DOCKER_REGISTRY_URL} -u ${DOCKER_HUB_USER} --password-stdin"
+
+                        echo "🚀 Docker image push"
+                        sh "docker push ${DOCKER_REGISTRY_URL}${REPOSITORY}:${IMAGE_TAG}"
+                    }
+                }
+            }
+            post {
+                success {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_SUCCESS_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 도커 이미지 생성 및 푸쉬 성공 (${env.IMAGE_TAG})")
+                }
+                failure {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_FAIL_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 도커 이미지 생성 및 푸쉬 실패")
+                }
+            }
+        }
+
+        // Verify Image Exists, Deploy 스테이지는 기존과 동일
+        stage('Verify Image Exists') {
+            when {
+                expression { return env.SKIP_BUILD == 'false' && env.BRANCH_NAME != 'dev' }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockhub-credentials',
+                    usernameVariable: 'DOCKER_HUB_USER',
+                    passwordVariable: 'DOCKER_HUB_PASS'
+                )]) {
+                    script {
+                        echo "🔍 프로모션할 이미지 확인: ${DOCKER_REGISTRY_URL}${REPOSITORY}:${IMAGE_TAG}"
+                        sh "echo ${DOCKER_HUB_PASS} | docker login ${DOCKER_REGISTRY_URL} -u ${DOCKER_HUB_USER} --password-stdin"
+
+                        def imageExists = sh(
+                            script: """
+                                docker manifest inspect ${DOCKER_REGISTRY_URL}${REPOSITORY}:${IMAGE_TAG} \
+                                > /dev/null 2>&1 && echo 'exists' || echo 'not_found'
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        if (imageExists != 'exists') {
+                            error("❌ Dev 빌드 이미지를 찾을 수 없습니다: ${IMAGE_TAG}")
+                        }
+
+                        echo "✅ 이미지 확인 완료: ${IMAGE_TAG}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                expression { return env.SKIP_BUILD == 'false' }
+            }
+            steps {
+                // ✅ 기존 Deploy 스테이지 완전 동일 유지
+                sshagent(credentials: ['ssh-credentials']) {
+                    script {
+                        def remoteScript = """
+                            cd ${WORKING_DIR} && \
+                            sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}/' .env && \
+                            echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}" && \
+                            docker compose stop ${SERVICE_NAME} || true && \
+                            docker compose rm -f ${SERVICE_NAME} || true && \
+                            for i in {1..10}; do
+                                if [ -z "\\\$(docker ps -a -q -f name=${SERVICE_NAME})" ]; then
+                                    echo "✅ 컨테이너 종료 완료"
+                                    break
+                                fi
+                                echo "⏳ 대기 중... \$i"
+                                sleep 1
+                            done && \
+                            docker compose pull ${SERVICE_NAME} && \
+                            docker compose up -d ${SERVICE_NAME}
+                        """
+
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -p 22 ${TARGET_USER}@${TARGET_SERVER} '${remoteScript}'
+                        """
+                    }
+                }
+            }
+            post {
+                success {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_SUCCESS_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 배포 성공 (${env.IMAGE_TAG})")
+                }
+                failure {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_FAIL_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 배포 실패")
+                }
+            }
+        }
+    }
+}
