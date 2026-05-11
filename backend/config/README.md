@@ -35,10 +35,10 @@ spring:
     config:
       server:
         git:
-          uri: https://univs-psh01@bitbucket.org/univs-ai/config-repo.git
-          default-label: main
-          username: ${GIT_USERNAME}
-          password: ${GIT_PASSWORD}
+          uri: Git URL
+          default-label: Git Branch
+          username: Username
+          password: Password
         native:
           search-locations: file:///config-repo
 ```

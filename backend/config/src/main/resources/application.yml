@@ -7,8 +7,9 @@ spring:
     config:
       server:
         git:
-          uri: https://univs-psh01@bitbucket.org/univs-ai/config-repo.git
-          default-label: main
+          uri: https://github.com/univs-dcun/gate.git
+          default-label: master
+          search-paths: config-repo
           username: ${GIT_USERNAME}
           password: ${GIT_PASSWORD}
         native:
