@@ -14,6 +14,9 @@ import ai.univs.gate.support.message.MessageService;
 import ai.univs.gate.support.webhook.WebhookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,6 +46,7 @@ public class matchController {
     private final WebhookService webhookService;
 
     @Operation(summary = "매칭")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = IdentifyRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key"),
@@ -52,7 +56,7 @@ public class matchController {
     })
     @PostMapping(value = "/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identify(
-            @ParameterObject @ModelAttribute @Valid IdentifyRequestDTO request
+            @ModelAttribute @Valid IdentifyRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toIdentifyInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
@@ -63,6 +67,7 @@ public class matchController {
     }
 
     @Operation(summary = "확인 (faceId 기반)")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByFaceIdRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key"),
@@ -72,7 +77,7 @@ public class matchController {
     })
     @PostMapping(value = "/verify/id", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByFaceIdResponseDTO>> verifyById(
-            @ParameterObject @ModelAttribute @Valid VerifyByFaceIdRequestDTO request
+            @ModelAttribute @Valid VerifyByFaceIdRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toVerifyByFaceIdInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
@@ -83,6 +88,7 @@ public class matchController {
     }
 
     @Operation(summary = "확인 (image 기반)")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByImageRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key"),
@@ -92,7 +98,7 @@ public class matchController {
     })
     @PostMapping(value = "/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByImageResponseDTO>> verifyByImage(
-            @ParameterObject @ModelAttribute @Valid VerifyByImageRequestDTO request
+            @ModelAttribute @Valid VerifyByImageRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toVerifyByImageInput(ctx.getAccountIdAsLong(), ctx.getTimezone());
@@ -103,6 +109,7 @@ public class matchController {
     }
 
     @Operation(summary = "라이브니스")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = LivenessRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key"),
@@ -112,7 +119,7 @@ public class matchController {
     })
     @PostMapping(value = "/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<LivenessResponseDTO>> liveness(
-            @ParameterObject @ModelAttribute @Valid LivenessRequestDTO request
+            @ModelAttribute @Valid LivenessRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toLivenessInput(ctx.getAccountIdAsLong(), ctx.getTimezone());

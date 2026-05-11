@@ -14,7 +14,7 @@ public record UpdateUserRequestDTO(
         @Max(value = Long.MAX_VALUE, message = "INVALID_USER_ID_VALUE")
         Long userId,
 
-        @Schema(description = SwaggerDescriptions.FACE_IMAGE)
+        @Schema(description = SwaggerDescriptions.FACE_IMAGE, type = "string", format = "binary")
         MultipartFile faceImage,
 
         @Schema(description = SwaggerDescriptions.FACE_ID)

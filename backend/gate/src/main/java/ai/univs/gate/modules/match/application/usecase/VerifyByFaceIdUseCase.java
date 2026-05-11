@@ -73,8 +73,10 @@ public class VerifyByFaceIdUseCase {
                     new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
         }
 
-        // 파일 저장
-        var imagePath = fileService.upload(input.matchingFaceImage());
+        boolean consentEnabled = Boolean.TRUE.equals(findProjectSettings.getConsentEnabled());
+
+        // 개인정보 동의 시에만 이미지 저장
+        var imagePath = consentEnabled ? fileService.upload(input.matchingFaceImage()) : "";
 
         // 1:1 확인 전 요청 이력 저장
         MatchHistory matchHistory = MatchHistory.builder()
@@ -97,7 +99,7 @@ public class VerifyByFaceIdUseCase {
             // 사용자 조회가 안되는 경우
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         // 확인 (faceId:이미지)
@@ -118,13 +120,13 @@ public class VerifyByFaceIdUseCase {
 
             // 라이브니스 실패 또는 불특정 오류
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         // 확인 실패 정보 저장
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.MISMATCH.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         // 확인 성공 — 빌링 차감 후 이력 저장
@@ -136,12 +138,12 @@ public class VerifyByFaceIdUseCase {
         }
 
         matchHistory.success(user, data.getSimilarity());
-        return success(input.callerType(), matchHistory);
+        return success(input.callerType(), matchHistory, consentEnabled);
     }
 
-    private VerifyByFaceIdResult fail(CallerType callerType, MatchHistory matchHistory) {
+    private VerifyByFaceIdResult fail(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        VerifyByFaceIdResult failResult = VerifyByFaceIdResult.failResult(matchHistory, prefixImagePath);
+        VerifyByFaceIdResult failResult = VerifyByFaceIdResult.failResult(matchHistory, prefixImagePath, consentEnabled);
 
         // 실패 웹훅 || 알림 전송
         useCaseNotifyService.notify(
@@ -153,9 +155,9 @@ public class VerifyByFaceIdUseCase {
         return failResult;
     }
 
-    private VerifyByFaceIdResult success(CallerType callerType, MatchHistory matchHistory) {
+    private VerifyByFaceIdResult success(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        VerifyByFaceIdResult successResult = VerifyByFaceIdResult.successResult(matchHistory, prefixImagePath);
+        VerifyByFaceIdResult successResult = VerifyByFaceIdResult.successResult(matchHistory, prefixImagePath, consentEnabled);
 
         // 성공 웹훅 || 알림 전송
         useCaseNotifyService.notify(

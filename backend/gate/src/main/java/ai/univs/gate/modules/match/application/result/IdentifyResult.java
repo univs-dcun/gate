@@ -24,7 +24,7 @@ public record IdentifyResult(
         String transactionUuid
 ) {
 
-    public static IdentifyResult failResult(MatchHistory matchHistory, String prefixImagePath) {
+    public static IdentifyResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new IdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -37,14 +37,14 @@ public record IdentifyResult(
                 "",
                 matchHistory.getSimilarity(),
                 "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid());
     }
 
-    public static IdentifyResult successResult(MatchHistory matchHistory, String prefixImagePath) {
+    public static IdentifyResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new IdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -56,10 +56,10 @@ public record IdentifyResult(
                 matchHistory.getUserId(),
                 matchHistory.getUserDescription(),
                 matchHistory.getSimilarity(),
-                StringUtils.hasText(matchHistory.getFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()
                         : "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 "",

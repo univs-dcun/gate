@@ -15,7 +15,7 @@ public record CreateUserByTokenRequestDTO(
         @Length(min = 36, max = 36, message = "INVALID_CREATE_USER_CODE_LENGTH")
         String code,
 
-        @Schema(description = SwaggerDescriptions.FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile faceImage,
 

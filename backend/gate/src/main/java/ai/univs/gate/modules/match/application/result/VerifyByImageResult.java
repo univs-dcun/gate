@@ -23,7 +23,7 @@ public record VerifyByImageResult(
         String transactionUuid
 ) {
 
-    public static VerifyByImageResult failResult(MatchHistory matchHistory, String prefixImagePath) {
+    public static VerifyByImageResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new VerifyByImageResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -34,17 +34,17 @@ public record VerifyByImageResult(
                 "",
                 null,
                 matchHistory.getSimilarity(),
-                StringUtils.hasText(matchHistory.getFaceImagePath())
-                        ? prefixImagePath + matchHistory.getFaceImagePath() :
-                        "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
-                        ? prefixImagePath + matchHistory.getMatchFaceImagePath() :
-                        "",
+                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
+                        ? prefixImagePath + matchHistory.getFaceImagePath()
+                        : "",
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                        ? prefixImagePath + matchHistory.getMatchFaceImagePath()
+                        : "",
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid());
     }
 
-    public static VerifyByImageResult successResult(MatchHistory matchHistory, String prefixImagePath) {
+    public static VerifyByImageResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new VerifyByImageResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -55,12 +55,12 @@ public record VerifyByImageResult(
                 matchHistory.getFaceId(),
                 matchHistory.getUserId(),
                 matchHistory.getSimilarity(),
-                StringUtils.hasText(matchHistory.getFaceImagePath())
-                        ? prefixImagePath + matchHistory.getFaceImagePath() :
-                        "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
-                        ? prefixImagePath + matchHistory.getMatchFaceImagePath() :
-                        "",
+                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
+                        ? prefixImagePath + matchHistory.getFaceImagePath()
+                        : "",
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                        ? prefixImagePath + matchHistory.getMatchFaceImagePath()
+                        : "",
                 "",
                 matchHistory.getTransactionUuid());
     }

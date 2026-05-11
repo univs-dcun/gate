@@ -3,8 +3,6 @@ package ai.univs.gate.modules.match.api.dto;
 import ai.univs.gate.modules.match.application.result.IdentifyResult;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -43,13 +41,9 @@ public record IdentifyResponseDTO(
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
 
-        @JsonIgnore
-        @Hidden
         @Schema(description = SwaggerDescriptions.FACE_IMAGE_PATH)
         String faceImagePath,
 
-        @JsonIgnore
-        @Hidden
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE_PATH)
         String matchingFaceImagePath,
 
