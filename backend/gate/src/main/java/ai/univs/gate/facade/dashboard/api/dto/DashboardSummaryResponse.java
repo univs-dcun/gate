@@ -17,15 +17,21 @@ public record DashboardSummaryResponse(
 
     public record UsageSummary(
             @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_TOTAL_COUNT)
-            long totalCount
+            long totalCount,
+            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_ALLOCATED)
+            long allocated,
+            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_REMAINING)
+            long remaining,
+            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_PERCENT)
+            int usagePercent
     ) {}
 
     public static DashboardSummaryResponse from(DashboardSummaryResult result) {
         return new DashboardSummaryResponse(
-                new UsageSummary(result.registrationCount()),
-                new UsageSummary(result.verifyCount()),
-                new UsageSummary(result.identifyCount()),
-                new UsageSummary(result.livenessCount())
+                new UsageSummary(result.registrationCount(), 0, 0, 0),
+                new UsageSummary(result.verifyCount(),       0, 0, 0),
+                new UsageSummary(result.identifyCount(),     0, 0, 0),
+                new UsageSummary(result.livenessCount(),     0, 0, 0)
         );
     }
 }
