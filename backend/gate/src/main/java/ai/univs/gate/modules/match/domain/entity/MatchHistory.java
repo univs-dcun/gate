@@ -60,6 +60,9 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "user_description")
     private String userDescription;
 
+    @Column(name = "username", length = 255)
+    private String username;
+
     @Column(name = "similarity", precision = 5, scale = 2)
     private BigDecimal similarity;
 
@@ -84,6 +87,7 @@ public class MatchHistory extends BaseEntity {
         this.userId = user.getId();
         this.faceId = user.getFaceId();
         this.userDescription = user.getDescription();
+        this.username = user.getUsername();
         this.faceImagePath = user.getFaceImagePath();
         this.similarity = toPercent(similarity);
     }

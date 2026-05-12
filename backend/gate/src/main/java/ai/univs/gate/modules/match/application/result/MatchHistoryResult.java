@@ -17,6 +17,7 @@ public record MatchHistoryResult(
         String faceId,
         Long userId,
         String userDescription,
+        String username,
         BigDecimal similarity,
         String faceImagePath,
         String matchingFaceImagePath,
@@ -35,6 +36,7 @@ public record MatchHistoryResult(
                 matchHistory.getFaceId(),
                 matchHistory.getUserId(),
                 matchHistory.getUserDescription(),
+                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
                 StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()

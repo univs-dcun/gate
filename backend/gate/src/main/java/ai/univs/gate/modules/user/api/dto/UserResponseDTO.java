@@ -17,6 +17,9 @@ public record UserResponseDTO(
         @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
         String userDescription,
 
+        @Schema(description = "사용자 이름")
+        String username,
+
         @Schema(description = SwaggerDescriptions.FACE_ID)
         String faceId,
 
@@ -39,6 +42,7 @@ public record UserResponseDTO(
         return new UserResponseDTO(
                 result.userId(),
                 result.description(),
+                result.username(),
                 result.faceId(),
                 result.faceImagePath(),
                 result.checkLiveness(),
