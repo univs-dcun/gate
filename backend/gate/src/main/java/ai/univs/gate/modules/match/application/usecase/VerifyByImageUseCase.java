@@ -53,6 +53,8 @@ public class VerifyByImageUseCase {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
+        boolean consentEnabled = findProjectSettings.getConsentEnabled();
+
         var targetImagePath = fileService.upload(input.targetMatchingFaceImage());
         var imagePath = fileService.upload(input.matchingFaceImage());
 
@@ -83,22 +85,22 @@ public class VerifyByImageUseCase {
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.MISMATCH.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         matchHistory.success(data.getSimilarity());
 
-        return success(input.callerType(), matchHistory);
+        return success(input.callerType(), matchHistory, consentEnabled);
     }
 
-    private VerifyByImageResult fail(CallerType callerType, MatchHistory matchHistory) {
+    private VerifyByImageResult fail(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        VerifyByImageResult failResult = VerifyByImageResult.failResult(matchHistory, prefixImagePath);
+        VerifyByImageResult failResult = VerifyByImageResult.failResult(matchHistory, prefixImagePath, consentEnabled);
 
         useCaseNotifyService.notify(
                 callerType,
@@ -109,9 +111,9 @@ public class VerifyByImageUseCase {
         return failResult;
     }
 
-    private VerifyByImageResult success(CallerType callerType, MatchHistory matchHistory) {
+    private VerifyByImageResult success(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        VerifyByImageResult successResult = VerifyByImageResult.successResult(matchHistory, prefixImagePath);
+        VerifyByImageResult successResult = VerifyByImageResult.successResult(matchHistory, prefixImagePath, consentEnabled);
 
         useCaseNotifyService.notify(
                 callerType,

@@ -82,6 +82,8 @@ public class IdentifyUseCase {
                 findProjectSettings.getLivenessIdentifyingEnabled(),
                 findProjectSettings.getLivenessIdentifyingEnabled());
 
+        boolean consentEnabled = findProjectSettings.getConsentEnabled();
+
         MatchFeignResponseDTO data;
         try {
             data = faceService.identify(identifyRequest);
@@ -89,12 +91,12 @@ public class IdentifyUseCase {
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.NOT_MATCH.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         User user;
@@ -103,17 +105,17 @@ public class IdentifyUseCase {
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         matchHistory.success(user, data.getSimilarity());
 
-        return success(input.callerType(), matchHistory);
+        return success(input.callerType(), matchHistory, consentEnabled);
     }
 
-    private IdentifyResult fail(CallerType callerType, MatchHistory matchHistory) {
+    private IdentifyResult fail(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        IdentifyResult failResult = IdentifyResult.failResult(matchHistory, prefixImagePath);
+        IdentifyResult failResult = IdentifyResult.failResult(matchHistory, prefixImagePath, consentEnabled);
 
         useCaseNotifyService.notify(
                 callerType,
@@ -124,9 +126,9 @@ public class IdentifyUseCase {
         return failResult;
     }
 
-    private IdentifyResult success(CallerType callerType, MatchHistory matchHistory) {
+    private IdentifyResult success(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        IdentifyResult successResult = IdentifyResult.successResult(matchHistory, prefixImagePath);
+        IdentifyResult successResult = IdentifyResult.successResult(matchHistory, prefixImagePath, consentEnabled);
 
         useCaseNotifyService.notify(
                 callerType,
