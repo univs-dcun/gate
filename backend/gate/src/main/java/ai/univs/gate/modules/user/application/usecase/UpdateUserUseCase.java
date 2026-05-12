@@ -66,7 +66,7 @@ public class UpdateUserUseCase {
             faceService.updateFace(updateUserRequest);
         }
 
-        user.updateUserInfo(input.faceId(), input.description());
+        user.updateUserInfo(input.faceId(), input.description(), input.username());
 
         return UserResult.from(user, fileService.getFileServerPath());
     }

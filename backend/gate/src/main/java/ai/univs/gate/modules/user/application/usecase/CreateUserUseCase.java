@@ -25,6 +25,7 @@ public class CreateUserUseCase {
                 input.apiKey(),
                 input.faceImage(),
                 input.description(),
+                input.username(),
                 input.transactionUuid());
 
         return UserResult.from(result.user(), result.livenessChecked(), fileService.getFileServerPath());

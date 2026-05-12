@@ -19,6 +19,10 @@ public record CreateUserRequestDTO(
         @Length(max = 1000, message = "INVALID_DESCRIPTION_LENGTH")
         String userDescription,
 
+        @Schema(description = "사용자 이름")
+        @Length(max = 255, message = "INVALID_USERNAME_LENGTH")
+        String username,
+
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
         @Length(max = 36, message = "INVALID_TRANSACTION_UUID_LENGTH")
         String transactionUuid
@@ -30,6 +34,7 @@ public record CreateUserRequestDTO(
                 apiKey,
                 faceImage,
                 userDescription,
+                username,
                 StringUtils.hasText(transactionUuid) ? transactionUuid : UUID.randomUUID().toString());
     }
 }

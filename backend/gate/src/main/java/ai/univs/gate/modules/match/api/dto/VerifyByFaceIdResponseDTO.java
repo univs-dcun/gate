@@ -38,6 +38,9 @@ public record VerifyByFaceIdResponseDTO(
         @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
         String userDescription,
 
+        @Schema(description = "사용자 이름")
+        String username,
+
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
 
@@ -71,6 +74,7 @@ public record VerifyByFaceIdResponseDTO(
                 result.faceId(),
                 result.userId(),
                 result.userDescription(),
+                result.username(),
                 result.similarity(),
                 result.matchingFaceId(),
                 result.faceImagePath(),

@@ -48,6 +48,7 @@ public class CreateUserByTokenUseCase {
                 apiKey,
                 input.faceImage(),
                 input.userDescription(),
+                input.username(),
                 input.transactionUuid());
         return UserResult.from(result.user(), result.livenessChecked(), fileService.getFileServerPath());
     }

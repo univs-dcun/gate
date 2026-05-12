@@ -7,6 +7,7 @@ public record CreateUserByApiKeyInput(
         String apiKey,
         MultipartFile faceImage,
         String userDescription,
+        String username,
         String transactionUuid
 ) {
 }

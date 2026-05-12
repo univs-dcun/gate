@@ -17,6 +17,7 @@ public record IdentifyResult(
         String faceId,
         Long userId,
         String userDescription,
+        String username,
         BigDecimal similarity,
         String faceImagePath,
         String matchingFaceImagePath,
@@ -35,6 +36,7 @@ public record IdentifyResult(
                 "",
                 null,
                 "",
+                null,
                 matchHistory.getSimilarity(),
                 "",
                 consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
@@ -55,6 +57,7 @@ public record IdentifyResult(
                 matchHistory.getFaceId(),
                 matchHistory.getUserId(),
                 matchHistory.getUserDescription(),
+                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
                 consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()

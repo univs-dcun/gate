@@ -6,6 +6,7 @@ public record CreateUserByTokenInput(
         String code,
         MultipartFile faceImage,
         String userDescription,
+        String username,
         String transactionUuid
 ) {
 }

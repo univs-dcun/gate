@@ -55,6 +55,7 @@ public class UserService {
                                               String apiKey,
                                               MultipartFile faceImage,
                                               String description,
+                                              String username,
                                               String transactionUuid
     ) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
@@ -105,6 +106,7 @@ public class UserService {
                 .faceId(faceId)
                 .faceImagePath(imagePath)
                 .description(description)
+                .username(username)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
                 .build();

@@ -17,6 +17,7 @@ public record VerifyByFaceIdResult(
         String faceId,
         Long userId,
         String userDescription,
+        String username,
         BigDecimal similarity,
         String matchingFaceId,
         String faceImagePath,
@@ -36,6 +37,7 @@ public record VerifyByFaceIdResult(
                 "",
                 null,
                 "",
+                null,
                 matchHistory.getSimilarity(),
                 matchHistory.getMatchFaceId(),
                 "",
@@ -57,6 +59,7 @@ public record VerifyByFaceIdResult(
                 history.getFaceId(),
                 history.getUserId(),
                 history.getUserDescription(),
+                history.getUsername(),
                 history.getSimilarity(),
                 history.getMatchFaceId(),
                 consentEnabled && StringUtils.hasText(history.getFaceImagePath())

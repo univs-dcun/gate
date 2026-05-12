@@ -11,6 +11,7 @@ public record UpdateUserInput(
         MultipartFile faceImage,
         String faceId,
         String description,
+        String username,
         String reason,
         String transactionUuid
 ) {
