@@ -85,8 +85,6 @@ public class ProjectDSLRepository {
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        // billing 필드(planType, planStartedAt, planExpiredAt, userRegistration*, verify/identify/livenessLimit/Allocated)는
-        // GetProjectsUseCase에서 BillingService Feign 배치 호출로 채워진다.
         List<ProjectSummaryResult> content = rows.stream()
                 .map(t -> new ProjectSummaryResult(
                         t.get(project.id),
@@ -96,14 +94,9 @@ public class ProjectDSLRepository {
                         t.get(project.projectType),
                         t.get(project.projectModuleType),
                         t.get(project.packageKey),
-                        null, null, null,           // planType, planStartedAt, planExpiredAt
-                        null, null,                 // userRegistrationAllocated, userRegistrationLimit
                         t.get(userCount),
-                        null, null,                 // verifyLimit, verifyAllocated
                         t.get(verifyCount),
-                        null, null,                 // identifyLimit, identifyAllocated
                         t.get(identifyCount),
-                        null, null,                 // livenessLimit, livenessAllocated
                         t.get(livenessCount),
                         t.get(project.createdAt),
                         t.get(project.updatedAt),
