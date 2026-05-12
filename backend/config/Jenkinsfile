@@ -74,30 +74,16 @@ pipeline {
                         credentialsId: 'github-credentials',   // ✅ Jenkins credential ID 변경
                         url: "${GITHUB_REPO_URL}"
 
-                    // 브랜치별 비교 기준 설정
-                    def baseRef
-                    if (env.BRANCH_NAME == 'staging') {
-                        baseRef = 'origin/dev'
-                    } else if (env.BRANCH_NAME == 'master') {
-                        baseRef = 'origin/staging'
-                    } else {
-                        baseRef = 'HEAD~1'
-                    }
-
-                    // merge-base 기준으로 변경 파일 정확히 감지
+                    // 변경된 파일 목록에서 이 서비스 경로 포함 여부 확인
                     def changedFiles = sh(
-                        script: "git diff --name-only \$(git merge-base HEAD ${baseRef}) HEAD",
+                        script: "git diff --name-only HEAD~1 HEAD",
                         returnStdout: true
                     ).trim()
 
                     echo "변경된 파일 목록:\n${changedFiles}"
 
-                    // SERVICE_PATH에 해당하는 파일만 정확히 필터링
-                    def relevantChanges = changedFiles.split('\n').findAll { file ->
-                        file.contains(SERVICE_PATH)
-                    }
-
-                    if (relevantChanges.isEmpty()) {
+                    // ✅ 이 서비스 경로(backend/service-auth)가 변경됐는지 확인
+                    if (!changedFiles.contains(SERVICE_PATH)) {
                         echo "🔹 ${SERVICE_NAME} 변경 없음. 배포 건너뜀."
                         currentBuild.result = 'SUCCESS'
                         env.SKIP_BUILD = 'true'

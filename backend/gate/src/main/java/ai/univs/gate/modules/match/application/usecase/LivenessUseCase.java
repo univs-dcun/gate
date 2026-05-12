@@ -11,16 +11,12 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.billing.client.BillingClient;
-import ai.univs.gate.support.billing.client.dto.BillingDeductFeignRequestDTO;
-import ai.univs.gate.support.billing.client.dto.BillingOperationFeignRequestDTO;
 import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +26,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class LivenessUseCase {
@@ -40,7 +35,6 @@ public class LivenessUseCase {
     private final ProjectService projectService;
     private final FileService fileService;
     private final FaceService faceService;
-    private final BillingClient billingClient;
     private final ProjectSettingsService projectSettingsService;
     private final UseCaseNotifyService useCaseNotifyService;
 
@@ -52,22 +46,14 @@ public class LivenessUseCase {
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
 
-        // 프로젝트 모듈 타입 'FACE' 확인
         projectService.validateFaceModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
-        // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        // [BILLING-DISABLED] 사용 가능 여부 확인 (limit 또는 Flex 크레딧) — 원상복귀 시 주석 해제
-//        billingClient.validate("liveness",
-//                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-
-        // 파일 저장
         var imagePath = fileService.upload(input.matchingFaceImage());
 
-        // 라이브니스 전 단순 이력 저장
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.LIVENESS)
@@ -79,7 +65,6 @@ public class LivenessUseCase {
                 .build();
         matchHistoryRepository.save(matchHistory);
 
-        // 라이브니스
         var livenessRequest = new LivenessFeignRequestDTO(
                 input.matchingFaceImage(),
                 input.transactionUuid(),
@@ -92,21 +77,11 @@ public class LivenessUseCase {
         if (!data.isSuccess()) {
             matchHistory.fail(livenessScore, data.getPrdioctionDesc().toUpperCase());
         } else {
-            // [BILLING-DISABLED] 라이브니스 성공 — 사용량 차감 (크레딧 소진 시에도 서비스 차단하지 않음)
-            // [BILLING-DISABLED] 원상복귀 시: try-catch 제거 후 billingClient.deduct 호출만 남길 것
-            try {
-                billingClient.deduct("liveness",
-                        new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
-            } catch (Exception e) {
-                log.warn("[BILLING-DISABLED] liveness 사용량 차감 실패 (무시) projectId={}, error={}",
-                        project.getId(), e.getMessage());
-            }
             matchHistory.success(livenessScore);
         }
 
         var result = LivenessResult.from(data, input.transactionUuid());
 
-        // 실패 웹훅 || 알림 전송
         useCaseNotifyService.notify(
                 input.callerType(),
                 MatchType.LIVENESS.name(),

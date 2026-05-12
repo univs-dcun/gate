@@ -17,29 +17,15 @@ public record DashboardSummaryResponse(
 
     public record UsageSummary(
             @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_TOTAL_COUNT)
-            long totalCount,
-            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_ALLOCATED)
-            long allocated,
-            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_REMAINING)
-            long remaining,
-            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_PERCENT)
-            int usagePercent
+            long totalCount
     ) {}
 
     public static DashboardSummaryResponse from(DashboardSummaryResult result) {
         return new DashboardSummaryResponse(
-                toUsageSummary(result.registrationCount(), result.registrationAllocated(), result.registrationLimit()),
-                toUsageSummary(result.verifyCount(),       result.verifyAllocated(),       result.verifyLimit()),
-                toUsageSummary(result.identifyCount(),     result.identifyAllocated(),     result.identifyLimit()),
-                toUsageSummary(result.livenessCount(),     result.livenessAllocated(),     result.livenessLimit())
+                new UsageSummary(result.registrationCount()),
+                new UsageSummary(result.verifyCount()),
+                new UsageSummary(result.identifyCount()),
+                new UsageSummary(result.livenessCount())
         );
-    }
-
-    private static UsageSummary toUsageSummary(long count, long allocated, long remaining) {
-        int percent = allocated == 0
-                ? 0
-                : (int) Math.min(100L, (allocated - remaining) * 100L / allocated);
-
-        return new UsageSummary(count, allocated, remaining, percent);
     }
 }

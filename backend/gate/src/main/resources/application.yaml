@@ -19,12 +19,6 @@ spring:
       enabled: false
     discovery:
       enabled: false
-    openfeign:
-      client:
-        config:
-          payment-service:
-            url: http://localhost:8081
-
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
     url: jdbc:mariadb://192.168.0.135:3306/gate

@@ -55,25 +55,13 @@ public class SwaggerDescriptions {
     public static final String LIVENESS_RECORDING_ENABLED = "사용자 등록시 라이브니스 적용 여부";
     public static final String LIVENESS_IDENTIFYING_ENABLED = "사용자 매칭시 라이브니스 적용 여부";
     public static final String LIVENESS_VERIFYING_ENABLED = "사용자 확인시 라이브니스 적용 여부";
-    public static final String PROJECT_PLAN_TYPE = "프로젝트 플랜 타입 [FREE | ENTERPRISE]";
-    public static final String PLAN_STARTED_AT = "프로젝트 플랜 시작일";
-    public static final String PROJECT_PLAN_EXPIRY = "프로젝트 플랜 만료 일자";
-    public static final String PLAN_REMAINING_DAYS = "프로젝트 플랜 남은 일수";
-    public static final String USER_REGISTRATION_LIMIT = "유저 등록 요청 제한 수";
     public static final String COUNT_USER_REGISTRATION = "유저 등록 요청 수";
-    public static final String VERIFY_LIMIT = "1:1 확인 요청 제한 수";
     public static final String COUNT_VERIFY = "1:1 확인 요청 수";
-    public static final String IDENTIFY_LIMIT = "1:N 매칭 요청 제한 수";
     public static final String COUNT_IDENTIFY = "1:N 매칭 요청 수";
-    public static final String LIVENESS_LIMIT = "라이브니스 요청 제한 수";
     public static final String COUNT_LIVENESS = "라이브니스 요청 수";
     public static final String PROJECT_CONFIG_CODE = "프로젝트 설정 조회 코드";
     public static final String DEMO_ENABLED = "데모 활성화 여부";
     public static final String SDK_ENABLED = "SDK 활성화 여부";
-    public static final String VERIFY_ALLOCATED = "1:1 확인 할당(사용 가능) 횟수";
-    public static final String USER_REGISTRATION_ALLOCATED = "사용자 등록 총 한도 (플랜 기본 + Storage Expansion 합산)";
-    public static final String IDENTIFY_ALLOCATED = "1:N 매칭 할당(사용 가능) 횟수";
-    public static final String LIVENESS_ALLOCATED = "라이브니스 할당(사용 가능) 횟수";
 
     /* Auth 요청/응답 DTO */
     public static final String JWT = "JWT 토큰";

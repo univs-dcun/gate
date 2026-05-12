@@ -10,8 +10,6 @@ import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.modules.project.domain.repository.ProjectRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
 import ai.univs.gate.support.api_key.ApiKeyGenerator;
-import ai.univs.gate.support.billing.client.BillingClient;
-import ai.univs.gate.support.billing.client.dto.ProjectInitFeignRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +30,6 @@ public class CreateProjectUseCase {
     private final ApiKeyRepository apiKeyRepository;
     private final ProjectSettingsRepository projectSettingsRepository;
     private final ApiKeyGenerator apiKeyGenerator;
-    private final BillingClient billingClient;
 
     @Value("${api-key.expiry-days}")
     private int apiKeyExpiryDays;
@@ -40,9 +37,6 @@ public class CreateProjectUseCase {
     @Transactional
     public ProjectResult execute(CreateProjectInput input) {
         log.info("Creating project for userId: {}", input.accountId());
-
-        // FREE 플랜 프로젝트 최대 10개 제한 (billing 정책 검증)
-        billingClient.validateFreePlanLimit(input.accountId());
 
         // 프로젝트 생성
         Project project = Project.builder()
@@ -85,11 +79,6 @@ public class CreateProjectUseCase {
                 .build();
         projectSettingsRepository.save(projectSettings);
         log.info("Project settings initialized: projectId={}", projectSettings.getId());
-
-        // 빌링 초기화 (Subscription, CreditBalance, FeatureLimit)
-        billingClient.initializeProjectBilling(
-                savedProject.getId(),
-                new ProjectInitFeignRequestDTO(input.accountId()));
 
         return ProjectResult.from(savedProject, savedApiKey.getApiKey());
     }

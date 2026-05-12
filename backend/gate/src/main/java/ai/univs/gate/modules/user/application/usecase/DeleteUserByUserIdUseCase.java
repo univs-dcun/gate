@@ -10,8 +10,6 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.billing.client.BillingClient;
-import ai.univs.gate.support.billing.client.dto.BillingOperationFeignRequestDTO;
 import ai.univs.gate.support.face.FaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +24,6 @@ public class DeleteUserByUserIdUseCase {
     private final UserRepository userRepository;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
-    private final BillingClient billingClient;
 
     @Transactional
     public void execute(DeleteUserInput input) {
@@ -51,9 +48,5 @@ public class DeleteUserByUserIdUseCase {
         faceService.deleteFace(deleteUserRequest);
 
         user.delete();
-
-        // 삭제 성공 후 dbUsedCount 감소
-        billingClient.decrementDbUsed(
-                new BillingOperationFeignRequestDTO(project.getId(), input.accountId()));
     }
 }
