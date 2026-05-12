@@ -35,6 +35,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 페이징: { content, page, size, totalElements }
 - 에러 코드: docs/api-conventions.md 참고
 
+## 브랜치 규칙
+- **모든 브랜치는 `dev` 브랜치 기반으로 생성한다** (`git checkout dev && git checkout -b {브랜치명}`)
+- 브랜치 네이밍: docs/branch-naming-conventions.md 참고
+- PR 대상 브랜치: `dev`
+
 ## 코딩 규칙
 - 패키지 구조: controller > usecase (+ service) > repository
 - DTO는 record 사용, OpenFeign 에 사용되는 DTO는 class 사용

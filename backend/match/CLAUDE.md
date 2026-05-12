@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Face Matcher Server is a Spring Boot application that manages facial feature descriptors and provides 1:1 and 1:N face matching capabilities. It acts as a backend service for face recognition, accessed through a face-service intermediary.
 
+## 브랜치 규칙
+- **모든 브랜치는 `dev` 브랜치 기반으로 생성한다** (`git checkout dev && git checkout -b {브랜치명}`)
+- 브랜치 네이밍: 루트 docs/branch-naming-conventions.md 참고
+- PR 대상 브랜치: `dev`
+
 ## Build and Test Commands
 
 ```bash
