@@ -59,6 +59,8 @@ public class VerifyByFaceIdUseCase {
 
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
+        boolean consentEnabled = findProjectSettings.getConsentEnabled();
+
         var imagePath = fileService.upload(input.matchingFaceImage());
 
         MatchHistory matchHistory = MatchHistory.builder()
@@ -79,7 +81,7 @@ public class VerifyByFaceIdUseCase {
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         var verifyRequest = new VerifyByFaceIdFeignRequestDTO(
@@ -98,21 +100,21 @@ public class VerifyByFaceIdUseCase {
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.MISMATCH.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         matchHistory.success(user, data.getSimilarity());
-        return success(input.callerType(), matchHistory);
+        return success(input.callerType(), matchHistory, consentEnabled);
     }
 
-    private VerifyByFaceIdResult fail(CallerType callerType, MatchHistory matchHistory) {
+    private VerifyByFaceIdResult fail(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        VerifyByFaceIdResult failResult = VerifyByFaceIdResult.failResult(matchHistory, prefixImagePath);
+        VerifyByFaceIdResult failResult = VerifyByFaceIdResult.failResult(matchHistory, prefixImagePath, consentEnabled);
 
         useCaseNotifyService.notify(
                 callerType,
@@ -123,9 +125,9 @@ public class VerifyByFaceIdUseCase {
         return failResult;
     }
 
-    private VerifyByFaceIdResult success(CallerType callerType, MatchHistory matchHistory) {
+    private VerifyByFaceIdResult success(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        VerifyByFaceIdResult successResult = VerifyByFaceIdResult.successResult(matchHistory, prefixImagePath);
+        VerifyByFaceIdResult successResult = VerifyByFaceIdResult.successResult(matchHistory, prefixImagePath, consentEnabled);
 
         useCaseNotifyService.notify(
                 callerType,
