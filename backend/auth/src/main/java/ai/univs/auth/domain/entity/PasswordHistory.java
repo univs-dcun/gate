@@ -33,6 +33,6 @@ public class PasswordHistory {
 
     private String ipAddress;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String userAgent;
 }
