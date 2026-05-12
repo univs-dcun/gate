@@ -12,15 +12,6 @@ server:
 
 spring:
   # ===============================
-  # Database
-  # ===============================
-  datasource:
-    driverClassName: org.mariadb.jdbc.Driver
-    url: url
-    username: username
-    password: password
-
-  # ===============================
   # Mail template
   # ===============================
   thymeleaf:
