@@ -107,7 +107,7 @@ gateway:
 # ===============================
 gate:
   demo:
-    url: https://develop.univs.ai:7650/m/test
+    url: ${gate.demo.url, https://develop.univs.ai:7650/m/test}
 
 # ===============================
 # File upload option
