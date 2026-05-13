@@ -1,6 +1,6 @@
 spring:
   # ===============================
-  # Activation Oracle or Postgresql
+  # Activation Oracle
   # ===============================
   config:
     activate:
@@ -14,6 +14,12 @@ spring:
     url: url
     username: username
     password: password
+
+  # ===============================
+  # Database version Management
+  # ===============================
+  flyway:
+    locations: classpath:db/migration/oracle
 
   # ===============================
   # Spring Data Jpa
