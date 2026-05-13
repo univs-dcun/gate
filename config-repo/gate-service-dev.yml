@@ -24,20 +24,10 @@ spring:
             loggerLevel: basic
 
   # ===============================
-  # Database
-  # ===============================
-  datasource:
-    driverClassName: org.mariadb.jdbc.Driver
-    url: url
-    username: username
-    password: password
-
-  # ===============================
   # Database version Management
   # ===============================
   flyway:
     enabled: false
-    locations: classpath:db/migration
     baseline-on-migrate: true
 
   data:
