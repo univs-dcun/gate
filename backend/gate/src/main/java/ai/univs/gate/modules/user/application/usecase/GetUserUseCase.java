@@ -2,6 +2,7 @@ package ai.univs.gate.modules.user.application.usecase;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.project.domain.entity.Project;
+import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.user.application.input.GetUserInput;
 import ai.univs.gate.modules.user.application.result.UserResult;
 import ai.univs.gate.modules.user.domain.entity.User;
@@ -10,6 +11,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,7 @@ public class GetUserUseCase {
     private final UserRepository userRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
+    private final ProjectSettingsService projectSettingsService;
 
     @Transactional(readOnly = true)
     public UserResult execute(GetUserInput input) {
@@ -39,6 +42,7 @@ public class GetUserUseCase {
             throw new CustomGateException(ErrorType.INVALID_USER);
         }
 
-        return UserResult.from(user, fileService.getFileServerPath());
+        ProjectSettings projectSettings = projectSettingsService.findByProject(project);
+        return UserResult.from(user, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

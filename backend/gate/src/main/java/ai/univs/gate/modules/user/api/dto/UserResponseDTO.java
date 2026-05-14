@@ -2,8 +2,6 @@ package ai.univs.gate.modules.user.api.dto;
 
 import ai.univs.gate.modules.user.application.result.UserResult;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -23,8 +21,6 @@ public record UserResponseDTO(
         @Schema(description = SwaggerDescriptions.FACE_ID)
         String faceId,
 
-        @JsonIgnore
-        @Hidden
         @Schema(description = SwaggerDescriptions.FACE_IMAGE_PATH)
         String faceImagePath,
 

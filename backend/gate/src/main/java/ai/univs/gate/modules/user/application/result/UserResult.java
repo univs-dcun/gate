@@ -17,27 +17,31 @@ public record UserResult(
         Boolean checkLiveness
 ) {
 
-    public static UserResult from(User user, String imagePrefix) {
+    public static UserResult from(User user, String imagePrefix, boolean consentEnabled) {
         return new UserResult(
                 user.getId(),
                 user.getProject().getId(),
                 user.getFaceId(),
                 user.getDescription(),
                 user.getUsername(),
-                StringUtils.hasText(user.getFaceImagePath()) ? imagePrefix + user.getFaceImagePath() : "",
+                consentEnabled && StringUtils.hasText(user.getFaceImagePath())
+                        ? imagePrefix + user.getFaceImagePath()
+                        : "",
                 user.getCreatedAt(),
                 user.getTransactionUuid(),
                 null);
     }
 
-    public static UserResult from(User user, boolean livenessChecked, String imagePrefix) {
+    public static UserResult from(User user, boolean livenessChecked, String imagePrefix, boolean consentEnabled) {
         return new UserResult(
                 user.getId(),
                 user.getProject().getId(),
                 user.getFaceId(),
                 user.getDescription(),
                 user.getUsername(),
-                StringUtils.hasText(user.getFaceImagePath()) ? imagePrefix + user.getFaceImagePath() : "",
+                consentEnabled && StringUtils.hasText(user.getFaceImagePath())
+                        ? imagePrefix + user.getFaceImagePath()
+                        : "",
                 user.getCreatedAt(),
                 user.getTransactionUuid(),
                 livenessChecked);
