@@ -35,10 +35,83 @@ spring:
                   - OPTIONS
                   - HEAD
           routes:
+            ######### Auth
+            - id: AUTH
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**
+
+            ######### Gate
+            - id: GATE-COMPANY
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/company/**
+            - id: GATE-PROJECTS
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/projects/**
+            - id: GATE-USERS
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/users/**
+            - id: GATE-DASHBOARD
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/dashboard/**
+            - id: GATE-SDK
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/sdk/**
+            - id: GATE-DEMO
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/demo/**
+            - id: GATE-FILE
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/file/**
+            - id: GATE-MESSAGES
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/messages/**
+
+            ######### Match (biometric - specific path first)
+            - id: MATCH-SERVER
+              uri: lb://match-server
+              predicates:
+                - Path=/api/v1/match/verify/**
+            - id: GATE-MATCH
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/match/**
+
+            ######### Face
             - id: FACE-PROXY
               uri: lb://face-service
               predicates:
                 - Path=/api/v1/face/**, /api/v2/face/**
+
+            ######### FXP Preprocess
+            - id: FXP-PREPROCESS
+              uri: lb://fxp-preprocess-service
+              predicates:
+                - Path=/fxp-preprocess-service/**
+              filters:
+                - RewritePath=/fxp-preprocess-service/(?<segment>.*), /$\{segment}
+
+            ######### Actuator
+            - id: AUTH-ACTUATOR
+              uri: lb://auth-service
+              predicates:
+                - Path=/auth/actuator/**
+            - id: GATE-ACTUATOR
+              uri: lb://gate-service
+              predicates:
+                - Path=/gate/actuator/**
+            - id: MATCHER-ACTUATOR
+              uri: lb://match-server
+              predicates:
+                - Path=/matcher/actuator/**
 
 # ===============================
 # Eureka client
