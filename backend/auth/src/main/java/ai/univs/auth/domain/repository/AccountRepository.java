@@ -13,4 +13,6 @@ public interface AccountRepository {
     Optional<Account> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    boolean existsAny();
 }
