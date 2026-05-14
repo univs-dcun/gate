@@ -25,7 +25,7 @@ public record MatchHistoryResult(
         String transactionUuid
 ) {
 
-    public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath) {
+    public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new MatchHistoryResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -38,10 +38,10 @@ public record MatchHistoryResult(
                 matchHistory.getUserDescription(),
                 matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
-                StringUtils.hasText(matchHistory.getFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()
                         : "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),

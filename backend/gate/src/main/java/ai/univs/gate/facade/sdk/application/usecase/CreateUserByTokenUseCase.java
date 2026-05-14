@@ -50,6 +50,6 @@ public class CreateUserByTokenUseCase {
                 input.userDescription(),
                 input.username(),
                 input.transactionUuid());
-        return UserResult.from(result.user(), result.livenessChecked(), fileService.getFileServerPath());
+        return UserResult.from(result.user(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
     }
 }

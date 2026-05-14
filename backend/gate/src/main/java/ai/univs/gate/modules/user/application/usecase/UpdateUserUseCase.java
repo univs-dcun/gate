@@ -45,14 +45,14 @@ public class UpdateUserUseCase {
             throw new CustomGateException(ErrorType.INVALID_USER);
         }
 
+        ProjectSettings projectSettings = projectSettingsRepository.findByProject(project)
+                .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
+
         if (input.hasImage()) {
             input.validationFileExtension();
 
             String faceImagePath = fileService.upload(input.faceImage());
             user.updateFaceImagePath(faceImagePath);
-
-            ProjectSettings projectSettings = projectSettingsRepository.findByProject(project)
-                    .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
 
             var updateUserRequest = new UpdateFeignRequestDTO(
                     project.getBranchName(),
@@ -68,6 +68,6 @@ public class UpdateUserUseCase {
 
         user.updateUserInfo(input.faceId(), input.description(), input.username());
 
-        return UserResult.from(user, fileService.getFileServerPath());
+        return UserResult.from(user, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

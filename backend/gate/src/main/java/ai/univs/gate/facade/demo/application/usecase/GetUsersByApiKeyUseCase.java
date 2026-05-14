@@ -46,8 +46,9 @@ public class GetUsersByApiKeyUseCase {
             return new GetUsersResult(Collections.emptyList(), CustomPageResult.of(Page.empty(), totalCount));
         }
 
+        boolean consentEnabled = projectSettings.getConsentEnabled();
         List<UserResult> contents = users.stream()
-                .map(user -> UserResult.from(user, fileService.getFileServerPath()))
+                .map(user -> UserResult.from(user, fileService.getFileServerPath(), consentEnabled))
                 .toList();
 
         CustomPageResult page = CustomPageResult.from(
