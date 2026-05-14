@@ -1,0 +1,165 @@
+# If the code you are adding is new and does not belong to any existing section below,
+# please add it at the bottom of this file.
+
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - http://localhost:8080
+                allow-credentials: true
+                allowedHeaders:
+                  - Authorization
+                  - Content-Type
+                  - X-Api-Key
+                  - Accept-Language
+                  - Accept-TimeZone
+                  - Upgrade
+                  - Connection
+                allowedMethods:
+                  - POST
+                  - GET
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                  - HEAD
+          routes:
+            ######### Auth
+            - id: AUTH
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**
+
+            ######### Gate
+            - id: GATE-COMPANY
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/company/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-PROJECTS
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/projects/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-USERS
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/users/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-DASHBOARD
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/dashboard/**
+              filters:
+                - AuthenticationFilter
+            - id: GATE-SDK-QR
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/sdk/user/qr, /api/v1/sdk/verify/qr/**, /api/v1/sdk/identify/qr, /api/v1/sdk/liveness/qr
+              filters:
+                - AuthenticationFilter
+            - id: GATE-SDK
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/sdk/**
+            - id: GATE-DEMO
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/demo/**
+            - id: GATE-FILE
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/file/**
+            - id: GATE-MESSAGES
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/messages/**
+
+            ######### Match (biometric - specific path first)
+            - id: MATCH-SERVER
+              uri: lb://match-server
+              predicates:
+                - Path=/api/v1/match/verify/**
+            - id: GATE-MATCH
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/match/**
+              filters:
+                - AuthenticationFilter
+
+            ######### Face
+            - id: FACE-PROXY
+              uri: lb://face-service
+              predicates:
+                - Path=/api/v1/face/**, /api/v2/face/**
+
+            ######### FXP Preprocess
+            - id: FXP-PREPROCESS
+              uri: lb://fxp-preprocess-service
+              predicates:
+                - Path=/fxp-preprocess-service/**
+              filters:
+                - RewritePath=/fxp-preprocess-service/(?<segment>.*), /$\{segment}
+
+            ######### Actuator
+            - id: AUTH-ACTUATOR
+              uri: lb://auth-service
+              predicates:
+                - Path=/auth/actuator/**
+            - id: GATE-ACTUATOR
+              uri: lb://gate-service
+              predicates:
+                - Path=/gate/actuator/**
+            - id: MATCHER-ACTUATOR
+              uri: lb://match-server
+              predicates:
+                - Path=/matcher/actuator/**
+
+# ===============================
+# Eureka client
+# ===============================
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    preferIpAddress: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+# ===============================
+# Management
+# ===============================
+management:
+  endpoint:
+    shutdown:
+      access: unrestricted
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, info, prometheus
+
+# ===============================
+# Gateway Logging
+# ===============================
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: OFF
+    org.springframework.http.server.reactive: INFO
