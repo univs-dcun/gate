@@ -6,6 +6,7 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardSummaryResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
 import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardDailyStatsUseCase;
+import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardDemoQrUseCase;
 import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardRatiosUseCase;
 import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardSummaryUseCase;
 import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardTrendUseCase;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -34,19 +36,22 @@ public class DashboardController {
     private final GetDashboardTrendUseCase      getDashboardTrendUseCase;
     private final GetDashboardDailyStatsUseCase getDashboardDailyStatsUseCase;
     private final GetDashboardRatiosUseCase     getDashboardRatiosUseCase;
+    private final GetDashboardDemoQrUseCase     getDashboardDemoQrUseCase;
 
     @Operation(
             summary = "대시보드 요약 조회",
-            description = "등록·1:1 확인·1:N 매칭·라이브니스의 누적 건수, 한도, 사용률을 반환합니다."
+            description = "선택한 기간의 등록·1:1 확인·1:N 매칭·라이브니스 건수를 반환합니다. period 미입력 시 MONTH 기본값으로 동작합니다."
     )
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
     })
     @GetMapping("/summary")
-    public ResponseEntity<ResponseApi<DashboardSummaryResponse>> getSummary() {
+    public ResponseEntity<ResponseApi<DashboardSummaryResponse>> getSummary(
+            @ParameterObject @ModelAttribute DashboardPeriodRequest request
+    ) {
         UserContext ctx = UserContext.get();
-        DashboardSummaryResult result = getDashboardSummaryUseCase.execute(ctx.getApiKey());
+        DashboardSummaryResult result = getDashboardSummaryUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
         var response = DashboardSummaryResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -72,18 +77,36 @@ public class DashboardController {
 
     @Operation(
             summary = "비율 통계 조회",
-            description = "등록/삭제, 1:1 확인 성공/실패, 1:N 매칭 성공/실패, 라이브니스 리얼/페이크 비율을 반환합니다."
+            description = "선택한 기간의 등록/삭제, 1:1 확인 성공/실패, 1:N 매칭 성공/실패, 라이브니스 리얼/페이크 비율을 반환합니다. period 미입력 시 MONTH 기본값으로 동작합니다."
     )
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
     })
     @GetMapping("/ratios")
-    public ResponseEntity<ResponseApi<DashboardRatiosResponse>> getRatios() {
+    public ResponseEntity<ResponseApi<DashboardRatiosResponse>> getRatios(
+            @ParameterObject @ModelAttribute DashboardPeriodRequest request
+    ) {
         UserContext ctx = UserContext.get();
-        DashboardRatiosResult result = getDashboardRatiosUseCase.execute(ctx.getApiKey());
+        DashboardRatiosResult result = getDashboardRatiosUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
         var response = DashboardRatiosResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(
+            summary = "데모 실행 QR 조회",
+            description = "대시보드 데모 실행용 QR 코드 이미지(PNG)를 반환합니다."
+    )
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key")
+    })
+    @GetMapping(value = "/demo-qr", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getDemoQr() {
+        byte[] qrImage = getDashboardDemoQrUseCase.execute();
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .body(qrImage);
     }
 
     @Operation(
