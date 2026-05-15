@@ -32,10 +32,15 @@ public class GetDashboardSummaryUseCase {
         LocalDateTime from = DashboardStatsService.periodFrom(period);
         return new DashboardSummaryResult(
                 dashboardStatsService.countRegistrations(projectId, from),
+                dashboardStatsService.countTotalRegistrations(projectId),
                 dashboardStatsService.countVerifyById(projectId, from),
+                dashboardStatsService.countTotalVerifyById(projectId),
                 dashboardStatsService.countVerifyByImage(projectId, from),
+                dashboardStatsService.countTotalVerifyByImage(projectId),
                 dashboardStatsService.countIdentify(projectId, from),
-                dashboardStatsService.countLiveness(projectId, from)
+                dashboardStatsService.countTotalIdentify(projectId),
+                dashboardStatsService.countLiveness(projectId, from),
+                dashboardStatsService.countTotalLiveness(projectId)
         );
     }
 }

@@ -1,10 +1,15 @@
 package ai.univs.gate.facade.dashboard.application.result;
 
 public record DashboardSummaryResult(
-        long registrationCount,
-        long verifyByIdCount,
-        long verifyByImageCount,
-        long identifyCount,
-        long livenessCount
+        long registrationPeriodCount,
+        long registrationTotalCount,
+        long verifyByIdPeriodCount,
+        long verifyByIdTotalCount,
+        long verifyByImagePeriodCount,
+        long verifyByImageTotalCount,
+        long identifyPeriodCount,
+        long identifyTotalCount,
+        long livenessPeriodCount,
+        long livenessTotalCount
 ) {
 }

@@ -34,7 +34,7 @@ public class DashboardStatsService {
         this.queryFactory = new JPAQueryFactory(em);
     }
 
-    // ── 단순 건수 집계 ──────────────────────────────────────────────────────────────
+    // ── 단순 건수 집계 (기간 필터) ─────────────────────────────────────────────────
 
     public long countRegistrations(Long projectId, LocalDateTime from) {
         Long count = queryFactory
@@ -87,6 +87,54 @@ public class DashboardStatsService {
                 .where(mh.project.id.eq(projectId),
                        mh.matchType.eq(MatchType.LIVENESS),
                        mh.createdAt.goe(from))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
+    }
+
+    // ── 단순 건수 집계 (전체 누적) ─────────────────────────────────────────────────
+
+    public long countTotalRegistrations(Long projectId) {
+        Long count = queryFactory
+                .select(user.count())
+                .from(user)
+                .where(user.project.id.eq(projectId), user.isDeleted.eq(false))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
+    }
+
+    public long countTotalVerifyById(Long projectId) {
+        Long count = queryFactory
+                .select(mh.count())
+                .from(mh)
+                .where(mh.project.id.eq(projectId),
+                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
+    }
+
+    public long countTotalVerifyByImage(Long projectId) {
+        Long count = queryFactory
+                .select(mh.count())
+                .from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.VERIFY_IMAGE))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
+    }
+
+    public long countTotalIdentify(Long projectId) {
+        Long count = queryFactory
+                .select(mh.count())
+                .from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.IDENTIFY))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
+    }
+
+    public long countTotalLiveness(Long projectId) {
+        Long count = queryFactory
+                .select(mh.count())
+                .from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.LIVENESS))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
