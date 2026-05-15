@@ -57,6 +57,8 @@ gateway:
 gate:
   demo:
     url: https://gate.univs.ai/demo
+  dashboard:
+    qr-url: https://gate.univs.ai/demo
 
 # Docs
 springdoc:

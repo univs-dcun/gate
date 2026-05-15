@@ -7,8 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record DashboardSummaryResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_REGISTRATION)
         UsageSummary registration,
-        @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_VERIFY)
-        UsageSummary verify,
+        @Schema(description = "1:1 촬영 인증 건수 (/verify/id)")
+        UsageSummary verifyById,
+        @Schema(description = "1:1 사진 인증 건수 (/verify/image)")
+        UsageSummary verifyByImage,
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_IDENTIFY)
         UsageSummary identify,
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_LIVENESS)
@@ -28,10 +30,11 @@ public record DashboardSummaryResponse(
 
     public static DashboardSummaryResponse from(DashboardSummaryResult result) {
         return new DashboardSummaryResponse(
-                new UsageSummary(result.registrationCount(), 0, 0, 0),
-                new UsageSummary(result.verifyCount(),       0, 0, 0),
-                new UsageSummary(result.identifyCount(),     0, 0, 0),
-                new UsageSummary(result.livenessCount(),     0, 0, 0)
+                new UsageSummary(result.registrationCount(),  0, 0, 0),
+                new UsageSummary(result.verifyByIdCount(),    0, 0, 0),
+                new UsageSummary(result.verifyByImageCount(), 0, 0, 0),
+                new UsageSummary(result.identifyCount(),      0, 0, 0),
+                new UsageSummary(result.livenessCount(),      0, 0, 0)
         );
     }
 }
