@@ -27,8 +27,10 @@ public record ProjectResponseDTO(
         String packageKey,
         @Schema(description = SwaggerDescriptions.COUNT_USER_REGISTRATION)
         Long countUserRegistration,
-        @Schema(description = SwaggerDescriptions.COUNT_VERIFY)
-        Long countVerify,
+        @Schema(description = SwaggerDescriptions.COUNT_VERIFY_BY_ID)
+        Long countVerifyById,
+        @Schema(description = SwaggerDescriptions.COUNT_VERIFY_BY_IMAGE)
+        Long countVerifyByImage,
         @Schema(description = SwaggerDescriptions.COUNT_IDENTIFY)
         Long countIdentify,
         @Schema(description = SwaggerDescriptions.COUNT_LIVENESS)
@@ -52,7 +54,8 @@ public record ProjectResponseDTO(
                 result.projectModuleType(),
                 result.packageKey(),
                 result.countUserRegistration(),
-                result.countVerify(),
+                result.countVerifyById(),
+                result.countVerifyByImage(),
                 result.countIdentify(),
                 result.countLiveness(),
                 result.status(),
@@ -69,7 +72,7 @@ public record ProjectResponseDTO(
                 result.projectType(),
                 result.projectModuleType(),
                 result.packageKey(),
-                null, null, null, null,
+                null, null, null, null, null,
                 result.status(),
                 result.apiKey(),
                 fromUtc(result.createdAt(), timezone),
