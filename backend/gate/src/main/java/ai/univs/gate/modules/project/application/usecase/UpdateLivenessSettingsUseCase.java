@@ -33,7 +33,8 @@ public class UpdateLivenessSettingsUseCase {
         settings.updateLivenessSettings(
                 input.livenessRecordingEnabled(),
                 input.livenessIdentifyingEnabled(),
-                input.livenessVerifyingEnabled());
+                input.livenessVerifyingByIdEnabled(),
+                input.livenessVerifyingByImageEnabled());
 
         log.info("Liveness settings updated: projectId={}", input.projectId());
 

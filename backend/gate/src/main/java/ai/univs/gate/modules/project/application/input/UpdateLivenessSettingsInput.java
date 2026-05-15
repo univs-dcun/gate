@@ -4,6 +4,7 @@ public record UpdateLivenessSettingsInput(
         Long projectId,
         boolean livenessRecordingEnabled,
         boolean livenessIdentifyingEnabled,
-        boolean livenessVerifyingEnabled
+        boolean livenessVerifyingByIdEnabled,
+        boolean livenessVerifyingByImageEnabled
 ) {
 }
