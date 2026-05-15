@@ -7,8 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record DashboardRatiosResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_REGISTRATION)
         RatioSummary registration,
-        @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_VERIFY)
-        RatioSummary verify,
+        @Schema(description = "1:1 촬영 인증 성공/실패 비율 (/verify/id + 레거시)")
+        RatioSummary verifyById,
+        @Schema(description = "1:1 사진 인증 성공/실패 비율 (/verify/image)")
+        RatioSummary verifyByImage,
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_IDENTIFY)
         RatioSummary identify,
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_LIVENESS)
@@ -29,7 +31,8 @@ public record DashboardRatiosResponse(
     public static DashboardRatiosResponse from(DashboardRatiosResult result) {
         return new DashboardRatiosResponse(
                 toRatioSummary(result.registration()),
-                toRatioSummary(result.verify()),
+                toRatioSummary(result.verifyById()),
+                toRatioSummary(result.verifyByImage()),
                 toRatioSummary(result.identify()),
                 toRatioSummary(result.liveness()));
     }
@@ -40,7 +43,6 @@ public record DashboardRatiosResponse(
             return new RatioSummary(0, 0, 0, 0);
         }
         int primaryPercent = (int) Math.round(item.primaryCount() * 100.0 / total);
-
         return new RatioSummary(
                 primaryPercent,
                 100 - primaryPercent,

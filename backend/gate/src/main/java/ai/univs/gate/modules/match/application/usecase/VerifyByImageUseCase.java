@@ -60,7 +60,7 @@ public class VerifyByImageUseCase {
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
-                .matchType(MatchType.VERIFY)
+                .matchType(MatchType.VERIFY_IMAGE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
                 .checkLiveness(findProjectSettings.getLivenessVerifyingEnabled())
                 .success(false)
@@ -104,7 +104,7 @@ public class VerifyByImageUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.VERIFY.name(),
+                MatchType.VERIFY_IMAGE.name(),
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 failResult);
@@ -117,7 +117,7 @@ public class VerifyByImageUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.VERIFY.name(),
+                MatchType.VERIFY_IMAGE.name(),
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 successResult);

@@ -65,7 +65,7 @@ public class VerifyByFaceIdUseCase {
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
-                .matchType(MatchType.VERIFY)
+                .matchType(MatchType.VERIFY_ID)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
                 .checkLiveness(findProjectSettings.getLivenessVerifyingEnabled())
                 .success(false)
@@ -118,7 +118,7 @@ public class VerifyByFaceIdUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.VERIFY.name(),
+                MatchType.VERIFY_ID.name(),
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 failResult);
@@ -131,7 +131,7 @@ public class VerifyByFaceIdUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.VERIFY.name(),
+                MatchType.VERIFY_ID.name(),
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 successResult);
