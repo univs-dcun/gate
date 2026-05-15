@@ -54,7 +54,8 @@ public class SwaggerDescriptions {
     public static final String CONSENT_AGREED_AT = "프로젝트 개인 정보 수집 동의 일자";
     public static final String LIVENESS_RECORDING_ENABLED = "사용자 등록시 라이브니스 적용 여부";
     public static final String LIVENESS_IDENTIFYING_ENABLED = "사용자 매칭시 라이브니스 적용 여부";
-    public static final String LIVENESS_VERIFYING_ENABLED = "사용자 확인시 라이브니스 적용 여부";
+    public static final String LIVENESS_VERIFYING_BY_ID_ENABLED    = "1:1 촬영 인증(/verify/id)시 라이브니스 적용 여부";
+    public static final String LIVENESS_VERIFYING_BY_IMAGE_ENABLED = "1:1 사진 인증(/verify/image)시 라이브니스 적용 여부";
     public static final String COUNT_USER_REGISTRATION = "유저 등록 요청 수";
     public static final String COUNT_VERIFY = "1:1 확인 요청 수";
     public static final String COUNT_IDENTIFY = "1:N 매칭 요청 수";

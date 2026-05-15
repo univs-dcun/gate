@@ -91,7 +91,8 @@ public class ProjectSettingsController {
                 projectId,
                 request.livenessRecordingEnabled(),
                 request.livenessIdentifyingEnabled(),
-                request.livenessVerifyingEnabled());
+                request.livenessVerifyingByIdEnabled(),
+                request.livenessVerifyingByImageEnabled());
 
         var result = updateLivenessSettingsUseCase.execute(input);
         var response = ProjectSettingsResponseDTO.from(result);

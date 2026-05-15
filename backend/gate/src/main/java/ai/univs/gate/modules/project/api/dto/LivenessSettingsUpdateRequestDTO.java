@@ -10,7 +10,10 @@ public record LivenessSettingsUpdateRequestDTO(
         @Schema(description = SwaggerDescriptions.LIVENESS_IDENTIFYING_ENABLED)
         boolean livenessIdentifyingEnabled,
 
-        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_ENABLED)
-        boolean livenessVerifyingEnabled
+        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_BY_ID_ENABLED)
+        boolean livenessVerifyingByIdEnabled,
+
+        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_BY_IMAGE_ENABLED)
+        boolean livenessVerifyingByImageEnabled
 ) {
 }

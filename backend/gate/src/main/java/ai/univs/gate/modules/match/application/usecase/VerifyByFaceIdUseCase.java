@@ -67,7 +67,7 @@ public class VerifyByFaceIdUseCase {
                 .project(project)
                 .matchType(MatchType.VERIFY_ID)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessVerifyingEnabled())
+                .checkLiveness(findProjectSettings.getLivenessVerifyingByIdEnabled())
                 .success(false)
                 .matchFaceId(input.faceId())
                 .matchFaceImagePath(imagePath)
@@ -90,8 +90,8 @@ public class VerifyByFaceIdUseCase {
                 input.matchingFaceImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),
-                findProjectSettings.getLivenessVerifyingEnabled(),
-                findProjectSettings.getLivenessVerifyingEnabled());
+                findProjectSettings.getLivenessVerifyingByIdEnabled(),
+                findProjectSettings.getLivenessVerifyingByIdEnabled());
 
         MatchFeignResponseDTO data;
         try {

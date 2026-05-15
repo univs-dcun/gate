@@ -21,7 +21,8 @@ public record ProjectSettingsResult(
         Boolean sdkEnabled,
         Boolean livenessRecordingEnabled,
         Boolean livenessIdentifyingEnabled,
-        Boolean livenessVerifyingEnabled
+        Boolean livenessVerifyingByIdEnabled,
+        Boolean livenessVerifyingByImageEnabled
 ) {
 
     public static ProjectSettingsResult from(ProjectSettings settings, String timezone) {
@@ -38,6 +39,7 @@ public record ProjectSettingsResult(
                 settings.getSdkEnabled(),
                 settings.getLivenessRecordingEnabled(),
                 settings.getLivenessIdentifyingEnabled(),
-                settings.getLivenessVerifyingEnabled());
+                settings.getLivenessVerifyingByIdEnabled(),
+                settings.getLivenessVerifyingByImageEnabled());
     }
 }

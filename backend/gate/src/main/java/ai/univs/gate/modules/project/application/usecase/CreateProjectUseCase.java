@@ -75,7 +75,8 @@ public class CreateProjectUseCase {
                 .consentEnabled(false)
                 .livenessRecordingEnabled(false)
                 .livenessIdentifyingEnabled(true)
-                .livenessVerifyingEnabled(true)
+                .livenessVerifyingByIdEnabled(true)
+                .livenessVerifyingByImageEnabled(true)
                 .build();
         projectSettingsRepository.save(projectSettings);
         log.info("Project settings initialized: projectId={}", projectSettings.getId());

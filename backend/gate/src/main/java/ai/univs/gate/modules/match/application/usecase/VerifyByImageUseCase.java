@@ -53,6 +53,8 @@ public class VerifyByImageUseCase {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
+        projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
+
         boolean consentEnabled = findProjectSettings.getConsentEnabled();
 
         var targetImagePath = fileService.upload(input.targetMatchingFaceImage());
@@ -62,7 +64,7 @@ public class VerifyByImageUseCase {
                 .project(project)
                 .matchType(MatchType.VERIFY_IMAGE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessVerifyingEnabled())
+                .checkLiveness(findProjectSettings.getLivenessVerifyingByImageEnabled())
                 .success(false)
                 .faceImagePath(targetImagePath)
                 .matchFaceImagePath(imagePath)
@@ -75,8 +77,8 @@ public class VerifyByImageUseCase {
                 input.targetMatchingFaceImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),
-                findProjectSettings.getLivenessVerifyingEnabled(),
-                findProjectSettings.getLivenessVerifyingEnabled());
+                findProjectSettings.getLivenessVerifyingByImageEnabled(),
+                findProjectSettings.getLivenessVerifyingByImageEnabled());
 
         MatchFeignResponseDTO data;
         try {
