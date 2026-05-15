@@ -255,8 +255,8 @@ public class DashboardStatsService {
 
     private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth) {
         StringTemplate label = byMonth
-                ? Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m')",    user.createdAt)
-                : Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", user.createdAt);
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    user.createdAt)
+                : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", user.createdAt);
 
         return queryFactory
                 .select(label, user.count())
@@ -277,8 +277,8 @@ public class DashboardStatsService {
             Long projectId, LocalDateTime from, boolean byMonth, MatchType type
     ) {
         StringTemplate label = byMonth
-                ? Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m')",    mh.createdAt)
-                : Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", mh.createdAt);
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
+                : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
         return queryFactory
                 .select(label, mh.count())
@@ -297,8 +297,8 @@ public class DashboardStatsService {
 
     private Map<String, Long> queryVerifyByIdByDate(Long projectId, LocalDateTime from, boolean byMonth) {
         StringTemplate label = byMonth
-                ? Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m')",    mh.createdAt)
-                : Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", mh.createdAt);
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
+                : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
         return queryFactory
                 .select(label, mh.count())
@@ -319,7 +319,7 @@ public class DashboardStatsService {
 
     private Map<LocalDate, Long> queryAllRegistrationByDate(Long projectId) {
         StringTemplate dateStr =
-                Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", user.createdAt);
+                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", user.createdAt);
 
         return queryFactory
                 .select(dateStr, user.count())
@@ -336,7 +336,7 @@ public class DashboardStatsService {
 
     private Map<LocalDate, Long> queryAllMatchByDate(Long projectId, MatchType type) {
         StringTemplate dateStr =
-                Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", mh.createdAt);
+                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
         return queryFactory
                 .select(dateStr, mh.count())
@@ -353,7 +353,7 @@ public class DashboardStatsService {
 
     private Map<LocalDate, Long> queryAllVerifyByIdByDate(Long projectId) {
         StringTemplate dateStr =
-                Expressions.stringTemplate("DATE_FORMAT({0}, '%Y-%m-%d')", mh.createdAt);
+                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
         return queryFactory
                 .select(dateStr, mh.count())
