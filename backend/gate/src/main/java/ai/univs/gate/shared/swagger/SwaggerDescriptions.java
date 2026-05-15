@@ -57,7 +57,8 @@ public class SwaggerDescriptions {
     public static final String LIVENESS_VERIFYING_BY_ID_ENABLED    = "1:1 촬영 인증(/verify/id)시 라이브니스 적용 여부";
     public static final String LIVENESS_VERIFYING_BY_IMAGE_ENABLED = "1:1 사진 인증(/verify/image)시 라이브니스 적용 여부";
     public static final String COUNT_USER_REGISTRATION = "유저 등록 요청 수";
-    public static final String COUNT_VERIFY = "1:1 확인 요청 수";
+    public static final String COUNT_VERIFY_BY_ID    = "1:1 촬영 인증(/verify/id) 요청 수";
+    public static final String COUNT_VERIFY_BY_IMAGE = "1:1 사진 인증(/verify/image) 요청 수";
     public static final String COUNT_IDENTIFY = "1:N 매칭 요청 수";
     public static final String COUNT_LIVENESS = "라이브니스 요청 수";
     public static final String PROJECT_CONFIG_CODE = "프로젝트 설정 조회 코드";
