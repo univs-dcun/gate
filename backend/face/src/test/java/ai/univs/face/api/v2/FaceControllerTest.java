@@ -207,7 +207,7 @@ class FaceControllerTest {
                             .file(validJpgFile))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.Descriptor").value("descriptor-abc-xyz"));
+                    .andExpect(jsonPath("$.data.descriptor").value("descriptor-abc-xyz"));
         }
 
         @Test
