@@ -49,4 +49,14 @@ public class FaceService {
         return faceMatchClient.liveness(feignRequest)
                 .getData();
     }
+
+    public ExtractFeignResponseDTO extract(ExtractFeignRequestDTO feignRequest) {
+        return faceMatchClient.extract(feignRequest)
+                .getData();
+    }
+
+    public VerifyByDescriptorFeignResponseDTO verifyDescriptor(VerifyByDescriptorFeignRequestDTO feignRequest) {
+        return faceMatchClient.verifyDescriptor(feignRequest)
+                .getData();
+    }
 }
