@@ -56,7 +56,7 @@ public class UpdateUserUseCase {
 
             var updateUserRequest = new UpdateFeignRequestDTO(
                     project.getBranchName(),
-                    input.faceId(),
+                    user.getFaceId(),
                     input.faceImage(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId()),
@@ -66,7 +66,7 @@ public class UpdateUserUseCase {
             faceService.updateFace(updateUserRequest);
         }
 
-        user.updateUserInfo(input.faceId(), input.description(), input.username());
+        user.updateUserInfo(input.description(), input.username());
 
         return UserResult.from(user, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
