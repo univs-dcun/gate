@@ -1,0 +1,32 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import "tailwindcss";
+
+@theme inline {
+  /* 폰트 */
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* 디자인 토큰 — 피그마 추출 */
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-blue:        #006fff;
+  --color-blue-bg:     #eff9ff;
+  --color-error:       #d83232;
+  --color-surface:     #f7f9fb;
+}
+
+* {
+  box-sizing: border-box;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-neutral-700);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

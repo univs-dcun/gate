@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - UNIVS_API_BASE_URL=https://develop.univs.ai:18090
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - SSL_CERT_PATH=/etc/ssl/univs/univs.crt
+      - SSL_KEY_PATH=/etc/ssl/univs/univs.key
+    volumes:
+      - /etc/ssl/univs:/etc/ssl/univs:ro
+    restart: unless-stopped
