@@ -102,6 +102,9 @@ public class SwaggerDescriptions {
     public static final String CHECK_LIVENESS = "라이브니스 적용 여부";
     public static final String MATCHING_SUCCESS = "매칭 성공 여부";
     public static final String SIMILARITY = "매칭 유사도";
+    public static final String DESCRIPTOR = "얼굴 특징점";
+    public static final String TARGET_DESCRIPTOR = "매칭 대상 얼굴 특징점";
+    public static final String CLIENT_ID = "클라이언트 식별자";
     public static final String MATCHING_FACE_IMAGE = "매칭 이미지";
     public static final String MATCHING_FACE_IMAGE_PATH = "매칭 이미지 파일 경로";
     public static final String MATCHING_FAILURE_TYPE = "매칭 실패 타입";

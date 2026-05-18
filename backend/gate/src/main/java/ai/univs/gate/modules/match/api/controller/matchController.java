@@ -41,6 +41,8 @@ public class matchController {
     private final GetMatchHistoriesUseCase getMatchHistoriesUseCase;
     private final GetMatchHistoryByTransactionUuidUseCase getMatchHistoryByTransactionUuidUseCase;
     private final LivenessUseCase livenessUseCase;
+    private final ExtractUseCase extractUseCase;
+    private final VerifyByDescriptorUseCase verifyByDescriptorUseCase;
     private final MessageService messageService;
     private final ApiKeyService apiKeyService;
     private final WebhookService webhookService;
@@ -157,6 +159,45 @@ public class matchController {
 
         var page = CustomPage.from(pagedMatchingHistories.page());
         var response = new MatchingHistoriesResponseDTO(contents, page);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "특징점 추출")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = ExtractRequestDTO.class)))
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key"),
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<ExtractResponseDTO>> extract(
+            @ModelAttribute @Valid ExtractRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = request.toExtractInput(ctx.getApiKey(), ctx.getAccountIdAsLong());
+        var result = extractUseCase.execute(input);
+        var response = ExtractResponseDTO.from(result);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "특징점 기반 1:1 매칭")
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key"),
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/verify/descriptor")
+    public ResponseEntity<ResponseApi<VerifyByDescriptorResponseDTO>> verifyByDescriptor(
+            @org.springframework.web.bind.annotation.RequestBody @Valid VerifyByDescriptorRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = request.toVerifyByDescriptorInput(ctx.getApiKey(), ctx.getAccountIdAsLong());
+        var result = verifyByDescriptorUseCase.execute(input);
+        var response = VerifyByDescriptorResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
