@@ -4,6 +4,26 @@
 
 ---
 
+## v2.0.1 (2026-05-18)
+
+### Backend — gate-service
+
+#### 버그 수정
+- 사용자 수정 API(`PUT /api/v1/users`)에서 `faceId` 클라이언트 직접 수정 불가 처리
+  - `UpdateUserRequestDTO`에서 `faceId` 필드 제거
+  - `UpdateFeignRequestDTO` 생성 시 `input.faceId()` → `user.getFaceId()` 로 교체
+  - `User.updateUserInfo()`에서 `faceId` 파라미터 제거
+
+### on-premise 적용 가이드
+
+#### 변경된 서비스 이미지
+- gate-service 재빌드 및 이미지 업데이트 필요
+
+#### DB 마이그레이션
+- 없음
+
+---
+
 ## v2.0.0 (2026-05-18)
 
 ### Backend — gate-service
