@@ -17,10 +17,6 @@ public record UpdateUserRequestDTO(
         @Schema(description = SwaggerDescriptions.FACE_IMAGE, type = "string", format = "binary")
         MultipartFile faceImage,
 
-        @Schema(description = SwaggerDescriptions.FACE_ID)
-        @Length(max = 255, message = "INVALID_FACE_ID_LENGTH")
-        String faceId,
-
         @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
         @Length(max = 1000, message = "INVALID_USER_DESCRIPTION_LENGTH")
         String description,
@@ -40,7 +36,6 @@ public record UpdateUserRequestDTO(
                 apiKey,
                 userId,
                 faceImage,
-                faceId,
                 description,
                 username,
                 "",

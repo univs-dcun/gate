@@ -9,7 +9,6 @@ public record UpdateUserInput(
         String apiKey,
         Long userId,
         MultipartFile faceImage,
-        String faceId,
         String description,
         String username,
         String reason,
