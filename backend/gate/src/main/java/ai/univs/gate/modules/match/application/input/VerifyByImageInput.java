@@ -7,7 +7,7 @@ public record VerifyByImageInput(
         CallerType callerType,
         Long accountId,
         String apiKey,
-        MultipartFile targetMatchingFaceImage,
+        MultipartFile documentImage,
         MultipartFile matchingFaceImage,
         String transactionUuid
 ) {
