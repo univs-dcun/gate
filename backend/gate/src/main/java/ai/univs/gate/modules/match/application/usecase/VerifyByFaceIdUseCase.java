@@ -83,6 +83,7 @@ public class VerifyByFaceIdUseCase {
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
+        matchHistory.updateUser(user);
 
         var verifyRequest = new VerifyByFaceIdFeignRequestDTO(
                 project.getBranchName(),
@@ -108,7 +109,7 @@ public class VerifyByFaceIdUseCase {
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        matchHistory.success(user, data.getSimilarity());
+        matchHistory.successById(data.getSimilarity());
         return success(input.callerType(), matchHistory, consentEnabled);
     }
 

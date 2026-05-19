@@ -82,13 +82,22 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "transaction_uuid", nullable = false, length = 36)
     private String transactionUuid;
 
-    public void success(User user, BigDecimal similarity) {
-        this.success = true;
+    public void updateUser(User user) {
         this.userId = user.getId();
         this.faceId = user.getFaceId();
         this.userDescription = user.getDescription();
         this.username = user.getUsername();
         this.faceImagePath = user.getFaceImagePath();
+    }
+
+    public void success(User user, BigDecimal similarity) {
+        this.success = true;
+        updateUser(user);
+        this.similarity = toPercent(similarity);
+    }
+
+    public void successById(BigDecimal similarity) {
+        this.success = true;
         this.similarity = toPercent(similarity);
     }
 

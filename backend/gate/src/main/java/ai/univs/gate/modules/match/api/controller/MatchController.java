@@ -33,7 +33,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/match")
-public class matchController {
+public class MatchController {
 
     private final IdentifyUseCase identifyUseCase;
     private final VerifyByFaceIdUseCase verifyByFaceIdUseCase;
