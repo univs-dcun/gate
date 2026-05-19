@@ -18,7 +18,7 @@ public record VerifyByImageAndApiKeyRequestDTO(
 
         @Schema(description = SwaggerDescriptions.TARGET_MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
-        MultipartFile targetMatchingFaceImage,
+        MultipartFile documentImage,
 
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
@@ -34,7 +34,7 @@ public record VerifyByImageAndApiKeyRequestDTO(
                     CallerType.DEMO,
                     0L,
                     apiKey,
-                    targetMatchingFaceImage,
+                    documentImage,
                     matchingFaceImage,
                     TransactionUtil.useOrCreate(transactionUuid));
         }

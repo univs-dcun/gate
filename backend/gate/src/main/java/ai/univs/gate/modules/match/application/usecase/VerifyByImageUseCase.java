@@ -57,7 +57,7 @@ public class VerifyByImageUseCase {
 
         boolean consentEnabled = findProjectSettings.getConsentEnabled();
 
-        var targetImagePath = fileService.upload(input.targetMatchingFaceImage());
+        var targetImagePath = fileService.upload(input.documentImage());
         var imagePath = fileService.upload(input.matchingFaceImage());
 
         MatchHistory matchHistory = MatchHistory.builder()
@@ -74,7 +74,7 @@ public class VerifyByImageUseCase {
 
         var verifyRequest = new VerifyByImageFeignRequestDTO(
                 input.matchingFaceImage(),
-                input.targetMatchingFaceImage(),
+                input.documentImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),
                 findProjectSettings.getLivenessVerifyingByImageEnabled(),
