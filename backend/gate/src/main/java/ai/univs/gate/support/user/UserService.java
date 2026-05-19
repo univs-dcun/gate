@@ -81,7 +81,13 @@ public class UserService {
                 String.valueOf(accountId),
                 findProjectSettings.getLivenessRecordingEnabled(),
                 findProjectSettings.getLivenessRecordingEnabled());
-        String faceId = faceService.createFace(createUserRequest);
+        String faceId;
+        try {
+            faceId = faceService.createFace(createUserRequest);
+        } catch (CustomFeignException e) {
+            matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        }
 
         User user = User.builder()
                 .project(project)
