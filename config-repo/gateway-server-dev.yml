@@ -34,6 +34,7 @@ spring:
                 allowedOriginPatterns:
                   - https://*.univsgate.com
                   - https://*.univs.ai
+                  - https://*.univs.ai:*
                 allowedOrigins:
                   - http://localhost:5173
                   - http://localhost:7779
