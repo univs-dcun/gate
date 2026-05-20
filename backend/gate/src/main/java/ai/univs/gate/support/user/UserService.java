@@ -67,7 +67,7 @@ public class UserService {
                 .project(project)
                 .matchType(MatchType.REGISTER)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessRecordingEnabled())
+                .checkLiveness(findProjectSettings.getLivenessRegisterEnabled())
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(transactionUuid)
@@ -79,8 +79,8 @@ public class UserService {
                 faceImage,
                 transactionUuid,
                 String.valueOf(accountId),
-                findProjectSettings.getLivenessRecordingEnabled(),
-                findProjectSettings.getLivenessRecordingEnabled());
+                findProjectSettings.getLivenessRegisterEnabled(),
+                findProjectSettings.getLivenessRegisterEnabled());
         String faceId;
         try {
             faceId = faceService.createFace(createUserRequest);
@@ -102,7 +102,7 @@ public class UserService {
 
         matchHistory.success(user, BigDecimal.ZERO);
 
-        return new CreateUserServiceResult(user, findProjectSettings.getLivenessRecordingEnabled());
+        return new CreateUserServiceResult(user, findProjectSettings.getLivenessRegisterEnabled());
     }
 
     public User getUserByFaceIdAndProjectId(String faceId, Long projectId) {
