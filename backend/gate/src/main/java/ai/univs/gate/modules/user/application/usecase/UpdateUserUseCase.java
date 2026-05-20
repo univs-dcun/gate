@@ -60,9 +60,9 @@ public class UpdateUserUseCase {
                     input.faceImage(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId()),
-                    projectSettings.getLivenessRecordingEnabled(),
+                    projectSettings.getLivenessRegisterEnabled(),
                     // Multi Face
-                    projectSettings.getLivenessRecordingEnabled());
+                    projectSettings.getLivenessRegisterEnabled());
             faceService.updateFace(updateUserRequest);
         }
 
