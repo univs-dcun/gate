@@ -52,7 +52,7 @@ public class SwaggerDescriptions {
     public static final String PROJECT_SETTINGS_ID = "프로젝트 설정 식별 번호";
     public static final String CONSENT_ENABLED = "프로젝트 개인 정보 수집 동의 여부";
     public static final String CONSENT_AGREED_AT = "프로젝트 개인 정보 수집 동의 일자";
-    public static final String LIVENESS_RECORDING_ENABLED = "사용자 등록시 라이브니스 적용 여부";
+    public static final String LIVENESS_REGISTER_ENABLED = "사용자 등록시 라이브니스 적용 여부";
     public static final String LIVENESS_IDENTIFYING_ENABLED = "사용자 매칭시 라이브니스 적용 여부";
     public static final String LIVENESS_VERIFYING_BY_ID_ENABLED    = "1:1 촬영 인증(/verify/id)시 라이브니스 적용 여부";
     public static final String LIVENESS_VERIFYING_BY_IMAGE_ENABLED = "1:1 사진 인증(/verify/image)시 라이브니스 적용 여부";

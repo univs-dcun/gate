@@ -73,7 +73,7 @@ public class CreateProjectUseCase {
                 .demoEnabled(true)
                 .sdkEnabled(true)
                 .consentEnabled(false)
-                .livenessRecordingEnabled(false)
+                .livenessRegisterEnabled(false)
                 .livenessIdentifyingEnabled(true)
                 .livenessVerifyingByIdEnabled(true)
                 .livenessVerifyingByImageEnabled(true)

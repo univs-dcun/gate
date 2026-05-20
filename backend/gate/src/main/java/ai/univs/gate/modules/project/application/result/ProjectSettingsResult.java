@@ -19,7 +19,7 @@ public record ProjectSettingsResult(
         LocalDateTime consentAgreedAt,
         Boolean demoEnabled,
         Boolean sdkEnabled,
-        Boolean livenessRecordingEnabled,
+        Boolean livenessRegisterEnabled,
         Boolean livenessIdentifyingEnabled,
         Boolean livenessVerifyingByIdEnabled,
         Boolean livenessVerifyingByImageEnabled
@@ -37,7 +37,7 @@ public record ProjectSettingsResult(
                 fromUtc(settings.getConsentAgreedAt(), timezone),
                 settings.getDemoEnabled(),
                 settings.getSdkEnabled(),
-                settings.getLivenessRecordingEnabled(),
+                settings.getLivenessRegisterEnabled(),
                 settings.getLivenessIdentifyingEnabled(),
                 settings.getLivenessVerifyingByIdEnabled(),
                 settings.getLivenessVerifyingByImageEnabled());
