@@ -14,7 +14,8 @@ public class GetDashboardDemoQrUseCase {
     @Value("${gate.dashboard.qr-url}")
     private String dashboardQrUrl;
 
-    public byte[] execute() {
-        return qrCodeService.generateForUrl(dashboardQrUrl);
+    public byte[] execute(String apiKey) {
+        String url = dashboardQrUrl + "?apiKey=" + apiKey;
+        return qrCodeService.generateForUrl(url);
     }
 }

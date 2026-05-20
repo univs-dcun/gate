@@ -105,7 +105,8 @@ public class DashboardController {
     })
     @GetMapping(value = "/demo-qr", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getDemoQr() {
-        byte[] qrImage = getDashboardDemoQrUseCase.execute();
+        UserContext ctx = UserContext.get();
+        byte[] qrImage = getDashboardDemoQrUseCase.execute(ctx.getApiKey());
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)
                 .body(qrImage);
