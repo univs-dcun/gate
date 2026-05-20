@@ -89,7 +89,7 @@ public class ProjectSettingsController {
     ) {
         var input = new UpdateLivenessSettingsInput(
                 projectId,
-                request.livenessRecordingEnabled(),
+                request.livenessRegisterEnabled(),
                 request.livenessIdentifyingEnabled(),
                 request.livenessVerifyingByIdEnabled(),
                 request.livenessVerifyingByImageEnabled());

@@ -31,7 +31,7 @@ public class UpdateLivenessSettingsUseCase {
                 .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
 
         settings.updateLivenessSettings(
-                input.livenessRecordingEnabled(),
+                input.livenessRegisterEnabled(),
                 input.livenessIdentifyingEnabled(),
                 input.livenessVerifyingByIdEnabled(),
                 input.livenessVerifyingByImageEnabled());
