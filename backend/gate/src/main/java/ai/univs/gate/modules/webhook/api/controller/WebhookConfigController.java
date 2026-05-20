@@ -9,10 +9,12 @@ import ai.univs.gate.modules.webhook.application.usecase.UpsertWebhookConfigUseC
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.web.dto.ResponseApi;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Hidden
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/projects/{projectId}/webhook")
