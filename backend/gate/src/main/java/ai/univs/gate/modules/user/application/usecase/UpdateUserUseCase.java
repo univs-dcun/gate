@@ -51,7 +51,7 @@ public class UpdateUserUseCase {
         if (input.hasImage()) {
             input.validationFileExtension();
 
-            String faceImagePath = fileService.upload(input.faceImage());
+            String faceImagePath = fileService.uploadIfConsent(input.faceImage(), projectSettings.getConsentEnabled());
             user.updateFaceImagePath(faceImagePath);
 
             var updateUserRequest = new UpdateFeignRequestDTO(
