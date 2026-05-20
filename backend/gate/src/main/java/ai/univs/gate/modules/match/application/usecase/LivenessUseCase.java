@@ -52,7 +52,7 @@ public class LivenessUseCase {
 
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        var imagePath = fileService.upload(input.matchingFaceImage());
+        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), findProjectSettings.getConsentEnabled());
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)

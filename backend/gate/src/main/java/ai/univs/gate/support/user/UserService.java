@@ -61,7 +61,7 @@ public class UserService {
 
         projectSettingsService.checkAvailabilityModules(callerType, findProjectSettings);
 
-        String imagePath = fileService.upload(faceImage);
+        String imagePath = fileService.uploadIfConsent(faceImage, findProjectSettings.getConsentEnabled());
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)

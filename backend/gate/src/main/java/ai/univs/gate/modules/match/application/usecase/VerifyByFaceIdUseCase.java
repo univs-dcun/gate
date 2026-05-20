@@ -61,7 +61,7 @@ public class VerifyByFaceIdUseCase {
 
         boolean consentEnabled = findProjectSettings.getConsentEnabled();
 
-        var imagePath = fileService.upload(input.matchingFaceImage());
+        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), consentEnabled);
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
