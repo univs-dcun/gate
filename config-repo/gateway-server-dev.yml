@@ -33,6 +33,7 @@ spring:
               '[/**]':
                 allowedOriginPatterns:
                   - https://*.univsgate.com
+                  - https://*.univsgate.com:*
                   - https://*.univs.ai
                   - https://*.univs.ai:*
                 allowedOrigins:
