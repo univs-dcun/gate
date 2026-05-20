@@ -3,9 +3,6 @@ package ai.univs.gate.shared.web;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.file.FileService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "파일")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/file")
@@ -23,13 +19,8 @@ public class FileController {
 
     private final FileService fileService;
 
-    @Operation(
-            summary = "이미지 파일 조회",
-            description = "filePath 예시: /face/20260415/c465ec7e-43dd-4a01-b997-a01b63fe8063.jpg"
-    )
     @GetMapping
     public ResponseEntity<byte[]> getFile(
-            @Parameter(description = "파일 경로 (예: /face/20260415/{uuid}.jpg)")
             @RequestParam String filePath
     ) {
         validateFilePath(filePath);
