@@ -97,7 +97,7 @@ public class SwaggerDescriptions {
     /* Match 요청/응답 DTO */
     public static final String MATCHING_HISTORY_ID = "매칭 이력 식별 번호";
     public static final String MATCHING_TYPE = "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]";
-    public static final String MATCHING_HISTORY_TYPE = "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS | ALL]";
+    public static final String MATCHING_HISTORY_TYPE = "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | LIVENESS | ALL]";
     public static final String MATCHING_TIME = "매칭 시간";
     public static final String CHECK_LIVENESS = "라이브니스 적용 여부";
     public static final String MATCHING_SUCCESS = "매칭 성공 여부";

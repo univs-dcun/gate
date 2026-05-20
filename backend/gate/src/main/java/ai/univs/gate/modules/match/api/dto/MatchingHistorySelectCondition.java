@@ -18,7 +18,7 @@ public record MatchingHistorySelectCondition(
         String matchingKeyword,
 
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_TYPE, defaultValue = "ALL")
-        @Pattern(regexp = "^(REGISTER|VERIFY|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
+        @Pattern(regexp = "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
         String matchType,
 
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_RESULT_TYPE, defaultValue = "SUCCESS")
