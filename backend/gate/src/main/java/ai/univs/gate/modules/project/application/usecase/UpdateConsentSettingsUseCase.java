@@ -1,8 +1,10 @@
 package ai.univs.gate.modules.project.application.usecase;
 
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
+import ai.univs.gate.modules.project.domain.entity.ConsentLog;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.repository.ConsentLogRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.exception.CustomGateException;
@@ -20,9 +22,10 @@ public class UpdateConsentSettingsUseCase {
 
     private final ProjectService projectService;
     private final ProjectSettingsRepository projectSettingsRepository;
+    private final ConsentLogRepository consentLogRepository;
 
     @Transactional
-    public ProjectSettingsResult execute(Long projectId, boolean consentEnabled) {
+    public ProjectSettingsResult execute(Long projectId, boolean consentEnabled, String ipAddress) {
         UserContext userContext = UserContext.get();
 
         Project project = projectService.validateOwnership(projectId, userContext.getAccountIdAsLong());
@@ -31,9 +34,16 @@ public class UpdateConsentSettingsUseCase {
 
         settings.updateConsentSettings(consentEnabled);
 
-        log.info("Consent settings updated: projectId={}, enabled={}",
-                projectId,
-                consentEnabled);
+        consentLogRepository.save(ConsentLog.builder()
+                .project(project)
+                .endUserIdentifier(userContext.getAccountIdAsLong())
+                .consentType("PRIVACY")
+                .agreed(consentEnabled)
+                .ipAddress(ipAddress)
+                .agreedAt(consentEnabled ? settings.getConsentAgreedAt() : null)
+                .build());
+
+        log.info("Consent settings updated: projectId={}, enabled={}", projectId, consentEnabled);
 
         return ProjectSettingsResult.from(settings, userContext.getTimezone());
     }
