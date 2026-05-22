@@ -57,7 +57,10 @@ public record IdentifyResponseDTO(
         String failureReason,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
+        Boolean consentSnapshot
 ) {
 
         public static IdentifyResponseDTO from(IdentifyResult result,
@@ -80,6 +83,7 @@ public record IdentifyResponseDTO(
                         result.matchingFaceImagePath(),
                         result.failureType(),
                         failureReason,
-                        result.transactionUuid());
+                        result.transactionUuid(),
+                        result.consentSnapshot());
         }
 }

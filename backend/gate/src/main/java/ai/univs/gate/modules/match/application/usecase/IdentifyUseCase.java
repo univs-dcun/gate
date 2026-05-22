@@ -61,7 +61,9 @@ public class IdentifyUseCase {
 
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), findProjectSettings.getConsentEnabled());
+        boolean consentEnabled = findProjectSettings.getConsentEnabled();
+
+        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), consentEnabled);
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
@@ -71,6 +73,7 @@ public class IdentifyUseCase {
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
+                .consentSnapshot(consentEnabled)
                 .build();
         matchHistoryRepository.save(matchHistory);
 
@@ -81,8 +84,6 @@ public class IdentifyUseCase {
                 input.accountId().toString(),
                 findProjectSettings.getLivenessIdentifyingEnabled(),
                 findProjectSettings.getLivenessIdentifyingEnabled());
-
-        boolean consentEnabled = findProjectSettings.getConsentEnabled();
 
         MatchFeignResponseDTO data;
         try {

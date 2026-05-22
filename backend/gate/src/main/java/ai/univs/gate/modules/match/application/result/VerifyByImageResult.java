@@ -20,7 +20,8 @@ public record VerifyByImageResult(
         String matchingFaceImagePath,
         String targetMatchingFaceImagePath,
         String failureType,
-        String transactionUuid
+        String transactionUuid,
+        Boolean consentSnapshot
 ) {
 
     public static VerifyByImageResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
@@ -41,7 +42,8 @@ public record VerifyByImageResult(
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 
     public static VerifyByImageResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
@@ -62,6 +64,7 @@ public record VerifyByImageResult(
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 "",
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 }
