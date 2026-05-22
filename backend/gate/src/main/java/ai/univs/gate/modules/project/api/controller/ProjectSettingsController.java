@@ -20,8 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Tag(name = "프로젝트 설정")
 @RestController
 @RequiredArgsConstructor
@@ -87,12 +85,13 @@ public class ProjectSettingsController {
             @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @GetMapping("/consent/logs")
-    public ResponseEntity<ResponseApi<List<ConsentLogResponseDTO>>> getConsentLogs(
+    public ResponseEntity<ResponseApi<ConsentLogListResponseDTO>> getConsentLogs(
             @Parameter(description = SwaggerDescriptions.PROJECT_ID)
             @PathVariable Long projectId
     ) {
         var results = getConsentLogsUseCase.execute(projectId);
-        var response = results.stream().map(ConsentLogResponseDTO::from).toList();
+        var response = ConsentLogListResponseDTO.of(
+                results.stream().map(ConsentLogResponseDTO::from).toList());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
