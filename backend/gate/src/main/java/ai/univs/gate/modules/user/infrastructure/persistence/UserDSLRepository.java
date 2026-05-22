@@ -33,10 +33,14 @@ public class UserDSLRepository {
         List<OrderSpecifier<?>> orderSpecifiers = buildOrderSpecifiers();
         BooleanBuilder booleanBuilder = buildConditionBuilder(query, projectId);
 
+        Pageable pageable = CustomPageable.of(query.page(), query.pageSize());
+
         List<User> fetch = queryFactory
                 .selectFrom(user)
                 .where(booleanBuilder)
                 .orderBy(orderSpecifiers.toArray(new OrderSpecifier[0]))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
 
         Long total = queryFactory
@@ -44,8 +48,6 @@ public class UserDSLRepository {
                 .from(user)
                 .where(booleanBuilder)
                 .fetchOne();
-
-        Pageable pageable = CustomPageable.of(query.page(), query.pageSize());
 
         return new PageImpl<>(fetch, pageable, total);
     }
