@@ -52,7 +52,9 @@ public class LivenessUseCase {
 
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), findProjectSettings.getConsentEnabled());
+        boolean consentEnabled = findProjectSettings.getConsentEnabled();
+
+        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), consentEnabled);
 
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
@@ -62,7 +64,7 @@ public class LivenessUseCase {
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
-                .consentSnapshot(findProjectSettings.getConsentEnabled())
+                .consentSnapshot(consentEnabled)
                 .build();
         matchHistoryRepository.save(matchHistory);
 
@@ -81,7 +83,7 @@ public class LivenessUseCase {
             matchHistory.success(livenessScore);
         }
 
-        var result = LivenessResult.from(data, input.transactionUuid());
+        var result = LivenessResult.from(data, input.transactionUuid(), findProjectSettings.getConsentEnabled());
 
         useCaseNotifyService.notify(
                 input.callerType(),

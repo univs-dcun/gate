@@ -22,7 +22,8 @@ public record MatchHistoryResult(
         String faceImagePath,
         String matchingFaceImagePath,
         String failureType,
-        String transactionUuid
+        String transactionUuid,
+        Boolean consentSnapshot
 ) {
 
     public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
@@ -45,6 +46,7 @@ public record MatchHistoryResult(
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 }

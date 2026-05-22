@@ -51,7 +51,10 @@ public record VerifyByImageResponseDTO(
         String failureReason,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
+        Boolean consentSnapshot
 ) {
 
     public static VerifyByImageResponseDTO from(VerifyByImageResult result,
@@ -72,6 +75,7 @@ public record VerifyByImageResponseDTO(
                 result.targetMatchingFaceImagePath(),
                 result.failureType(),
                 failureReason,
-                result.transactionUuid());
+                result.transactionUuid(),
+                result.consentSnapshot());
     }
 }

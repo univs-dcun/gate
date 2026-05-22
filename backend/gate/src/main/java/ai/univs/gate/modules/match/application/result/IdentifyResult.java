@@ -22,7 +22,8 @@ public record IdentifyResult(
         String faceImagePath,
         String matchingFaceImagePath,
         String failureType,
-        String transactionUuid
+        String transactionUuid,
+        Boolean consentSnapshot
 ) {
 
     public static IdentifyResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
@@ -43,7 +44,8 @@ public record IdentifyResult(
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 
     public static IdentifyResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
@@ -66,6 +68,7 @@ public record IdentifyResult(
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 "",
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 }

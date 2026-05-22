@@ -60,7 +60,10 @@ public record VerifyByFaceIdResponseDTO(
         String failureReason,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
+        Boolean consentSnapshot
 ) {
 
     public static VerifyByFaceIdResponseDTO from(VerifyByFaceIdResult result, String failureReason, String timezone) {
@@ -81,6 +84,7 @@ public record VerifyByFaceIdResponseDTO(
                 result.matchingFaceImagePath(),
                 result.failureType(),
                 failureReason,
-                result.transactionUuid());
+                result.transactionUuid(),
+                result.consentSnapshot());
     }
 }
