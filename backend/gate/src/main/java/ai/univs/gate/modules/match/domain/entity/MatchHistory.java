@@ -82,6 +82,9 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "transaction_uuid", nullable = false, length = 36)
     private String transactionUuid;
 
+    @Column(name = "consent_snapshot")
+    private Boolean consentSnapshot;
+
     public void updateUser(User user) {
         this.userId = user.getId();
         this.faceId = user.getFaceId();

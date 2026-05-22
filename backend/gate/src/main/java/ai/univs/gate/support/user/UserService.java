@@ -71,6 +71,7 @@ public class UserService {
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(transactionUuid)
+                .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
         matchHistoryRepository.save(matchHistory);
 
