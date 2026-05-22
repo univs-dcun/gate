@@ -69,6 +69,7 @@ public class VerifyByImageUseCase {
                 .faceImagePath(targetImagePath)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
+                .consentSnapshot(consentEnabled)
                 .build();
         matchHistoryRepository.save(matchHistory);
 

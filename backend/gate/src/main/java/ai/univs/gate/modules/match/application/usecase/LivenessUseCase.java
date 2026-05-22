@@ -62,6 +62,7 @@ public class LivenessUseCase {
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
+                .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
         matchHistoryRepository.save(matchHistory);
 

@@ -72,6 +72,7 @@ public class VerifyByFaceIdUseCase {
                 .matchFaceId(input.faceId())
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
+                .consentSnapshot(consentEnabled)
                 .build();
         matchHistoryRepository.save(matchHistory);
 
