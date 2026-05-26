@@ -154,9 +154,11 @@ public class DashboardStatsService {
     // ── 사용량 추이 ─────────────────────────────────────────────────────────────────
 
     public DashboardTrendResult getTrend(Long projectId, TrendPeriod period) {
+        boolean byHour  = period == TrendPeriod.TODAY;
         boolean byMonth = period == TrendPeriod.YEAR;
 
         LocalDateTime from = switch (period) {
+            case TODAY -> LocalDate.now(ZoneOffset.UTC).atStartOfDay();
             case WEEK  -> LocalDate.now(ZoneOffset.UTC).minusDays(6).atStartOfDay();
             case MONTH -> LocalDate.now(ZoneOffset.UTC).minusDays(29).atStartOfDay();
             case YEAR  -> LocalDate.now(ZoneOffset.UTC).minusMonths(11).withDayOfMonth(1).atStartOfDay();
@@ -164,11 +166,11 @@ public class DashboardStatsService {
 
         List<String> labels = generateLabels(period);
 
-        Map<String, Long> regMap      = queryRegistrationByDate(projectId, from, byMonth);
-        Map<String, Long> verByIdMap  = queryVerifyByIdByDate(projectId, from, byMonth);
-        Map<String, Long> verByImgMap = queryMatchByDate(projectId, from, byMonth, MatchType.VERIFY_IMAGE);
-        Map<String, Long> idnMap      = queryMatchByDate(projectId, from, byMonth, MatchType.IDENTIFY);
-        Map<String, Long> livMap      = queryMatchByDate(projectId, from, byMonth, MatchType.LIVENESS);
+        Map<String, Long> regMap      = queryRegistrationByDate(projectId, from, byMonth, byHour);
+        Map<String, Long> verByIdMap  = queryVerifyByIdByDate(projectId, from, byMonth, byHour);
+        Map<String, Long> verByImgMap = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.VERIFY_IMAGE);
+        Map<String, Long> idnMap      = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.IDENTIFY);
+        Map<String, Long> livMap      = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.LIVENESS);
 
         return new DashboardTrendResult(
                 period,
@@ -224,6 +226,7 @@ public class DashboardStatsService {
 
     public static LocalDateTime periodFrom(TrendPeriod period) {
         return switch (period) {
+            case TODAY -> LocalDate.now(ZoneOffset.UTC).atStartOfDay();
             case WEEK  -> LocalDate.now(ZoneOffset.UTC).minusDays(6).atStartOfDay();
             case MONTH -> LocalDate.now(ZoneOffset.UTC).minusDays(29).atStartOfDay();
             case YEAR  -> LocalDate.now(ZoneOffset.UTC).minusMonths(11).withDayOfMonth(1).atStartOfDay();
@@ -301,10 +304,12 @@ public class DashboardStatsService {
 
     // ── private 헬퍼: 추이용 (기간 필터 + 문자열 날짜 키) ───────────────────────────
 
-    private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth) {
-        StringTemplate label = byMonth
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    user.createdAt)
-                : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", user.createdAt);
+    private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour) {
+        StringTemplate label = byHour
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        user.createdAt)
+                : byMonth
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    user.createdAt)
+                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", user.createdAt);
 
         return queryFactory
                 .select(label, user.count())
@@ -322,11 +327,13 @@ public class DashboardStatsService {
     }
 
     private Map<String, Long> queryMatchByDate(
-            Long projectId, LocalDateTime from, boolean byMonth, MatchType type
+            Long projectId, LocalDateTime from, boolean byMonth, boolean byHour, MatchType type
     ) {
-        StringTemplate label = byMonth
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
-                : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
+        StringTemplate label = byHour
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        mh.createdAt)
+                : byMonth
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
+                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
         return queryFactory
                 .select(label, mh.count())
@@ -343,10 +350,12 @@ public class DashboardStatsService {
                 ));
     }
 
-    private Map<String, Long> queryVerifyByIdByDate(Long projectId, LocalDateTime from, boolean byMonth) {
-        StringTemplate label = byMonth
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
-                : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
+    private Map<String, Long> queryVerifyByIdByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour) {
+        StringTemplate label = byHour
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        mh.createdAt)
+                : byMonth
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
+                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
         return queryFactory
                 .select(label, mh.count())
@@ -422,6 +431,13 @@ public class DashboardStatsService {
     private List<String> generateLabels(TrendPeriod period) {
         LocalDate today = LocalDate.now(ZoneOffset.UTC);
         return switch (period) {
+            case TODAY -> {
+                List<String> labels = new ArrayList<>();
+                for (int h = 0; h < 24; h++) {
+                    labels.add(String.format("%02d", h));
+                }
+                yield labels;
+            }
             case WEEK -> {
                 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
                 yield today.minusDays(6).datesUntil(today.plusDays(1))
