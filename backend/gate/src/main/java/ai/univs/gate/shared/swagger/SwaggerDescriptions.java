@@ -142,8 +142,8 @@ public class SwaggerDescriptions {
     public static final String DASHBOARD_USAGE_PERCENT = "사용률 (0~100%)";
     public static final String DASHBOARD_USAGE_REMAINING = "잔여 건수";
     public static final String DASHBOARD_USAGE_ALLOCATED = "총 한도 (플랜 배분량 또는 Storage 용량)";
-    public static final String DASHBOARD_TREND_PERIOD = "조회 기간 [WEEK: 최근 7일 | MONTH: 최근 30일 | YEAR: 최근 12개월]";
-    public static final String DASHBOARD_TREND_LABELS = "WEEK/MONTH: \"yyyy-MM-dd\"  YEAR: \"yyyy-MM\"";
+    public static final String DASHBOARD_TREND_PERIOD = "조회 기간 [TODAY: 오늘 하루 | WEEK: 최근 7일 | MONTH: 최근 30일 | YEAR: 최근 12개월]";
+    public static final String DASHBOARD_TREND_LABELS = "TODAY: \"HH\" (00~23)  WEEK/MONTH: \"yyyy-MM-dd\"  YEAR: \"yyyy-MM\"";
     public static final String DASHBOARD_TREND_REGISTRATION = "등록 지표(년/월/일)";
     public static final String DASHBOARD_TREND_VERIFY = "1:1 확인 지표(년/월/일)";
     public static final String DASHBOARD_TREND_IDENTIFY = "1:N 매칭 지표(년/월/일)";
