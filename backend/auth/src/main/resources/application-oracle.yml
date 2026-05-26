@@ -7,6 +7,8 @@ spring:
     url: jdbc:oracle:thin:@192.168.79.9:1521:ORCL
     username: univs
     password: univs0411
+  flyway:
+    locations: classpath:db/migration/oracle
   jpa:
     show-sql: false
     properties:

@@ -7,6 +7,8 @@ spring:
     url: jdbc:postgresql://192.168.0.135:5432/auth
     username: postgres
     password: univs0411!
+  flyway:
+    locations: classpath:db/migration/postgresql
   jpa:
     show-sql: false
     properties:
