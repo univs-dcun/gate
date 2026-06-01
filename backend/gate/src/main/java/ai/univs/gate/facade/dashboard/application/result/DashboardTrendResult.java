@@ -6,9 +6,10 @@ import java.util.List;
 
 public record DashboardTrendResult(
         TrendPeriod period,
-        List<String> labels, // WEEK/MONTH: "yyyy-MM-dd"  YEAR: "yyyy-MM"
+        List<String> labels, // TODAY: "HH" (00~23)  WEEK/MONTH: "yyyy-MM-dd"  YEAR: "yyyy-MM"
         List<Long> registration,
-        List<Long> verify,
+        List<Long> verifyById,
+        List<Long> verifyByImage,
         List<Long> identify,
         List<Long> liveness
 ) {

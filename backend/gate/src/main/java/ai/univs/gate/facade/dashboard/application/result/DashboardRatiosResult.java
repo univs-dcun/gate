@@ -2,7 +2,8 @@ package ai.univs.gate.facade.dashboard.application.result;
 
 public record DashboardRatiosResult(
         RatioItem registration,
-        RatioItem verify,
+        RatioItem verifyById,
+        RatioItem verifyByImage,
         RatioItem identify,
         RatioItem liveness
 ) {

@@ -62,7 +62,8 @@ dependencies {
 
     /* DB */
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    runtimeOnly 'org.postgresql:postgresql'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
 
     // QueryDsl (Support version of spring boot 3.x)
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'

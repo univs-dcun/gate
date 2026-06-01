@@ -13,7 +13,7 @@ public record LivenessByTokenRequestDTO(
         @Length(min = 36, max = 36, message = "INVALID_LIVENESS_CODE_LENGTH")
         String code,
 
-        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile matchingFaceImage,
 

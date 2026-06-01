@@ -29,12 +29,14 @@ public record ProjectSettingsResponseDTO(
         Boolean demoEnabled,
         @Schema(description = SwaggerDescriptions.SDK_ENABLED)
         Boolean sdkEnabled,
-        @Schema(description = SwaggerDescriptions.LIVENESS_RECORDING_ENABLED)
-        Boolean livenessRecordingEnabled,
+        @Schema(description = SwaggerDescriptions.LIVENESS_REGISTER_ENABLED)
+        Boolean livenessRegisterEnabled,
         @Schema(description = SwaggerDescriptions.LIVENESS_IDENTIFYING_ENABLED)
         Boolean livenessIdentifyingEnabled,
-        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_ENABLED)
-        Boolean livenessVerifyingEnabled
+        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_BY_ID_ENABLED)
+        Boolean livenessVerifyingByIdEnabled,
+        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_BY_IMAGE_ENABLED)
+        Boolean livenessVerifyingByImageEnabled
 ) {
 
     public static ProjectSettingsResponseDTO from(ProjectSettingsResult result) {
@@ -49,8 +51,9 @@ public record ProjectSettingsResponseDTO(
                 result.consentAgreedAt(),
                 result.demoEnabled(),
                 result.sdkEnabled(),
-                result.livenessRecordingEnabled(),
+                result.livenessRegisterEnabled(),
                 result.livenessIdentifyingEnabled(),
-                result.livenessVerifyingEnabled());
+                result.livenessVerifyingByIdEnabled(),
+                result.livenessVerifyingByImageEnabled());
     }
 }

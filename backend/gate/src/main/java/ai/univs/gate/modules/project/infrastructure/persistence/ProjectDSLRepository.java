@@ -46,10 +46,15 @@ public class ProjectDSLRepository {
                 .from(user)
                 .where(user.project.id.eq(project.id).and(user.isDeleted.isFalse()));
 
-        var verifyCount = JPAExpressions.select(matchHistory.count())
+        var verifyByIdCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
                 .where(matchHistory.project.id.eq(project.id)
-                        .and(matchHistory.matchType.eq(MatchType.VERIFY)));
+                        .and(matchHistory.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY)));
+
+        var verifyByImageCount = JPAExpressions.select(matchHistory.count())
+                .from(matchHistory)
+                .where(matchHistory.project.id.eq(project.id)
+                        .and(matchHistory.matchType.eq(MatchType.VERIFY_IMAGE)));
 
         var identifyCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
@@ -71,7 +76,8 @@ public class ProjectDSLRepository {
                         project.projectModuleType,
                         project.packageKey,
                         userCount,
-                        verifyCount,
+                        verifyByIdCount,
+                        verifyByImageCount,
                         identifyCount,
                         livenessCount,
                         project.createdAt,
@@ -85,8 +91,6 @@ public class ProjectDSLRepository {
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        // billing 필드(planType, planStartedAt, planExpiredAt, userRegistration*, verify/identify/livenessLimit/Allocated)는
-        // GetProjectsUseCase에서 BillingService Feign 배치 호출로 채워진다.
         List<ProjectSummaryResult> content = rows.stream()
                 .map(t -> new ProjectSummaryResult(
                         t.get(project.id),
@@ -96,14 +100,10 @@ public class ProjectDSLRepository {
                         t.get(project.projectType),
                         t.get(project.projectModuleType),
                         t.get(project.packageKey),
-                        null, null, null,           // planType, planStartedAt, planExpiredAt
-                        null, null,                 // userRegistrationAllocated, userRegistrationLimit
                         t.get(userCount),
-                        null, null,                 // verifyLimit, verifyAllocated
-                        t.get(verifyCount),
-                        null, null,                 // identifyLimit, identifyAllocated
+                        t.get(verifyByIdCount),
+                        t.get(verifyByImageCount),
                         t.get(identifyCount),
-                        null, null,                 // livenessLimit, livenessAllocated
                         t.get(livenessCount),
                         t.get(project.createdAt),
                         t.get(project.updatedAt),

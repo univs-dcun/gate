@@ -9,10 +9,11 @@ public record LivenessResult(
         String prdioctionDesc,
         String quality,
         String threshold,
-        String transactionUuid
+        String transactionUuid,
+        Boolean consentSnapshot
 ) {
 
-    public static LivenessResult from(LivenessFeignResponseDTO data, String transactionUuid) {
+    public static LivenessResult from(LivenessFeignResponseDTO data, String transactionUuid, Boolean consentSnapshot) {
         return new LivenessResult(
                 data.isSuccess(),
                 data.getProbability(),
@@ -20,6 +21,7 @@ public record LivenessResult(
                 data.getPrdioctionDesc(),
                 data.getQuality(),
                 data.getThreshold(),
-                transactionUuid);
+                transactionUuid,
+                consentSnapshot);
     }
 }

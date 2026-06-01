@@ -19,17 +19,6 @@ spring:
       enabled: false
     discovery:
       enabled: false
-    openfeign:
-      client:
-        config:
-          payment-service:
-            url: http://localhost:8081
-
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.0.135:3306/gate
-    username: root
-    password: univs0411!
 
   data:
     redis:
@@ -68,6 +57,8 @@ gateway:
 gate:
   demo:
     url: https://gate.univs.ai/demo
+  dashboard:
+    qr-url: https://gate.univs.ai/demo
 
 # Docs
 springdoc:

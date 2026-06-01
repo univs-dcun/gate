@@ -52,28 +52,18 @@ public class SwaggerDescriptions {
     public static final String PROJECT_SETTINGS_ID = "프로젝트 설정 식별 번호";
     public static final String CONSENT_ENABLED = "프로젝트 개인 정보 수집 동의 여부";
     public static final String CONSENT_AGREED_AT = "프로젝트 개인 정보 수집 동의 일자";
-    public static final String LIVENESS_RECORDING_ENABLED = "사용자 등록시 라이브니스 적용 여부";
+    public static final String LIVENESS_REGISTER_ENABLED = "사용자 등록시 라이브니스 적용 여부";
     public static final String LIVENESS_IDENTIFYING_ENABLED = "사용자 매칭시 라이브니스 적용 여부";
-    public static final String LIVENESS_VERIFYING_ENABLED = "사용자 확인시 라이브니스 적용 여부";
-    public static final String PROJECT_PLAN_TYPE = "프로젝트 플랜 타입 [FREE | ENTERPRISE]";
-    public static final String PLAN_STARTED_AT = "프로젝트 플랜 시작일";
-    public static final String PROJECT_PLAN_EXPIRY = "프로젝트 플랜 만료 일자";
-    public static final String PLAN_REMAINING_DAYS = "프로젝트 플랜 남은 일수";
-    public static final String USER_REGISTRATION_LIMIT = "유저 등록 요청 제한 수";
+    public static final String LIVENESS_VERIFYING_BY_ID_ENABLED    = "1:1 촬영 인증(/verify/id)시 라이브니스 적용 여부";
+    public static final String LIVENESS_VERIFYING_BY_IMAGE_ENABLED = "1:1 사진 인증(/verify/image)시 라이브니스 적용 여부";
     public static final String COUNT_USER_REGISTRATION = "유저 등록 요청 수";
-    public static final String VERIFY_LIMIT = "1:1 확인 요청 제한 수";
-    public static final String COUNT_VERIFY = "1:1 확인 요청 수";
-    public static final String IDENTIFY_LIMIT = "1:N 매칭 요청 제한 수";
+    public static final String COUNT_VERIFY_BY_ID    = "1:1 촬영 인증(/verify/id) 요청 수";
+    public static final String COUNT_VERIFY_BY_IMAGE = "1:1 사진 인증(/verify/image) 요청 수";
     public static final String COUNT_IDENTIFY = "1:N 매칭 요청 수";
-    public static final String LIVENESS_LIMIT = "라이브니스 요청 제한 수";
     public static final String COUNT_LIVENESS = "라이브니스 요청 수";
     public static final String PROJECT_CONFIG_CODE = "프로젝트 설정 조회 코드";
     public static final String DEMO_ENABLED = "데모 활성화 여부";
     public static final String SDK_ENABLED = "SDK 활성화 여부";
-    public static final String VERIFY_ALLOCATED = "1:1 확인 할당(사용 가능) 횟수";
-    public static final String USER_REGISTRATION_ALLOCATED = "사용자 등록 총 한도 (플랜 기본 + Storage Expansion 합산)";
-    public static final String IDENTIFY_ALLOCATED = "1:N 매칭 할당(사용 가능) 횟수";
-    public static final String LIVENESS_ALLOCATED = "라이브니스 할당(사용 가능) 횟수";
 
     /* Auth 요청/응답 DTO */
     public static final String JWT = "JWT 토큰";
@@ -107,11 +97,14 @@ public class SwaggerDescriptions {
     /* Match 요청/응답 DTO */
     public static final String MATCHING_HISTORY_ID = "매칭 이력 식별 번호";
     public static final String MATCHING_TYPE = "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]";
-    public static final String MATCHING_HISTORY_TYPE = "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS | ALL]";
+    public static final String MATCHING_HISTORY_TYPE = "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | LIVENESS | ALL]";
     public static final String MATCHING_TIME = "매칭 시간";
     public static final String CHECK_LIVENESS = "라이브니스 적용 여부";
     public static final String MATCHING_SUCCESS = "매칭 성공 여부";
     public static final String SIMILARITY = "매칭 유사도";
+    public static final String DESCRIPTOR = "얼굴 특징점";
+    public static final String TARGET_DESCRIPTOR = "매칭 대상 얼굴 특징점";
+    public static final String CLIENT_ID = "클라이언트 식별자";
     public static final String MATCHING_FACE_IMAGE = "매칭 이미지";
     public static final String MATCHING_FACE_IMAGE_PATH = "매칭 이미지 파일 경로";
     public static final String MATCHING_FAILURE_TYPE = "매칭 실패 타입";
@@ -149,8 +142,8 @@ public class SwaggerDescriptions {
     public static final String DASHBOARD_USAGE_PERCENT = "사용률 (0~100%)";
     public static final String DASHBOARD_USAGE_REMAINING = "잔여 건수";
     public static final String DASHBOARD_USAGE_ALLOCATED = "총 한도 (플랜 배분량 또는 Storage 용량)";
-    public static final String DASHBOARD_TREND_PERIOD = "조회 기간 [WEEK: 최근 7일 | MONTH: 최근 30일 | YEAR: 최근 12개월]";
-    public static final String DASHBOARD_TREND_LABELS = "WEEK/MONTH: \"yyyy-MM-dd\"  YEAR: \"yyyy-MM\"";
+    public static final String DASHBOARD_TREND_PERIOD = "조회 기간 [TODAY: 오늘 하루 | WEEK: 최근 7일 | MONTH: 최근 30일 | YEAR: 최근 12개월]";
+    public static final String DASHBOARD_TREND_LABELS = "TODAY: \"HH\" (00~23)  WEEK/MONTH: \"yyyy-MM-dd\"  YEAR: \"yyyy-MM\"";
     public static final String DASHBOARD_TREND_REGISTRATION = "등록 지표(년/월/일)";
     public static final String DASHBOARD_TREND_VERIFY = "1:1 확인 지표(년/월/일)";
     public static final String DASHBOARD_TREND_IDENTIFY = "1:N 매칭 지표(년/월/일)";

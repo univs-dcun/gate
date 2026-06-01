@@ -34,6 +34,11 @@ public class FileService {
         return fileUtil.save(file);
     }
 
+    public String uploadIfConsent(MultipartFile file, boolean consentEnabled) {
+        if (!consentEnabled) return null;
+        return upload(file);
+    }
+
     public byte[] down(String filePath) {
         validationFilePath(filePath);
         return fileUtil.getFile(filePath);

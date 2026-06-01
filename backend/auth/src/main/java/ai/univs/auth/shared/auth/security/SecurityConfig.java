@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(matcher.matcher("/api/v1/auth/token/refresh")).permitAll()
                         .requestMatchers(matcher.matcher("/api/v1/auth/token/validate")).permitAll()
                         .requestMatchers(matcher.matcher("/api/v1/auth/password/reset/**")).permitAll()
+                        .requestMatchers(matcher.matcher("/api/v1/auth/admin/init")).permitAll()
                         // Infra
                         .requestMatchers(matcher.matcher("/actuator/**")).permitAll()
                         .requestMatchers(matcher.matcher("/swagger-ui/**")).permitAll()

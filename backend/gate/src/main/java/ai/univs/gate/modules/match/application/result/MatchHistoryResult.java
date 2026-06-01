@@ -17,14 +17,16 @@ public record MatchHistoryResult(
         String faceId,
         Long userId,
         String userDescription,
+        String username,
         BigDecimal similarity,
         String faceImagePath,
         String matchingFaceImagePath,
         String failureType,
-        String transactionUuid
+        String transactionUuid,
+        Boolean consentSnapshot
 ) {
 
-    public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath) {
+    public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new MatchHistoryResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -35,14 +37,16 @@ public record MatchHistoryResult(
                 matchHistory.getFaceId(),
                 matchHistory.getUserId(),
                 matchHistory.getUserDescription(),
+                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
-                StringUtils.hasText(matchHistory.getFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()
                         : "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 }

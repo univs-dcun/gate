@@ -41,7 +41,7 @@ public class RefreshToken {
     @Column(length = 45)
     private String ipAddress;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String userAgent;
 
     public boolean isExpired() {

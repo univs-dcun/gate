@@ -14,16 +14,16 @@ public record UpdateUserRequestDTO(
         @Max(value = Long.MAX_VALUE, message = "INVALID_USER_ID_VALUE")
         Long userId,
 
-        @Schema(description = SwaggerDescriptions.FACE_IMAGE)
+        @Schema(description = SwaggerDescriptions.FACE_IMAGE, type = "string", format = "binary")
         MultipartFile faceImage,
-
-        @Schema(description = SwaggerDescriptions.FACE_ID)
-        @Length(max = 255, message = "INVALID_FACE_ID_LENGTH")
-        String faceId,
 
         @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
         @Length(max = 1000, message = "INVALID_USER_DESCRIPTION_LENGTH")
         String description,
+
+        @Schema(description = "사용자 이름")
+        @Length(max = 255, message = "INVALID_USERNAME_LENGTH")
+        String username,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
         @Length(max = 36, message = "INVALID_TRANSACTION_UUID_LENGTH")
@@ -36,8 +36,8 @@ public record UpdateUserRequestDTO(
                 apiKey,
                 userId,
                 faceImage,
-                faceId,
                 description,
+                username,
                 "",
                 transactionUuid);
     }

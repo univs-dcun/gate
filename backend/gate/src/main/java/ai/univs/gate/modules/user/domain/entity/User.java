@@ -28,6 +28,9 @@ public class User extends BaseEntity {
     private String faceImagePath;
     private String description;
 
+    @Column(length = 255)
+    private String username;
+
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
 
@@ -37,9 +40,9 @@ public class User extends BaseEntity {
         this.faceImagePath = faceImagePath;
     }
 
-    public void updateUserInfo(String faceId, String description) {
-        if (StringUtils.hasText(faceId)) this.faceId = faceId;
+    public void updateUserInfo(String description, String username) {
         if (StringUtils.hasText(description)) this.description = description;
+        if (StringUtils.hasText(username)) this.username = username;
     }
 
     public void delete() {

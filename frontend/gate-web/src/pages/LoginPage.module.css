@@ -1,0 +1,358 @@
+.page {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background-color: var(--color-surface-base);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoText {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.langButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-xs);
+  transition: background-color 0.15s;
+}
+
+.langButton:hover {
+  background-color: var(--color-surface-layer);
+}
+
+.langText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: -0.02em;
+}
+
+/* ── Main ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 220px 0px 0px;
+  width: 100%;
+}
+
+/* ── Card ── */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px;
+  gap: 40px;
+
+  width: 480px;
+  max-width: 480px;
+
+  background: #FFFFFF;
+  box-shadow: 0px 0px 100px #DDECFF;
+  border-radius: 28px;
+}
+
+/* ── Title block ── */
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 408px;
+  align-self: stretch;
+}
+
+.title {
+  width: 408px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 140%;
+  text-align: center;
+  letter-spacing: -0.025em;
+  color: #1E293B;
+  margin: 0;
+}
+
+.subtitle {
+  width: 408px;
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 140%;
+  text-align: center;
+  letter-spacing: -0.025em;
+  color: #475569;
+  margin: 0;
+  align-self: stretch;
+}
+
+/* ── Input Fields ── */
+.inputFields {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  width: 408px;
+  align-self: stretch;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 408px;
+  align-self: stretch;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+  width: 408px;
+  align-self: stretch;
+}
+
+.label {
+  width: 408px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 140%;
+  letter-spacing: -0.025em;
+  color: #757B80;
+  align-self: stretch;
+}
+
+/* ── Input ── */
+.inputWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px;
+  gap: 4px;
+  width: 408px;
+  height: 48px;
+  background: #FFFFFF;
+  border: 1px solid #E8EEF2;
+  border-radius: 8px;
+  box-sizing: border-box;
+  align-self: stretch;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.inputWrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 111, 255, 0.1);
+}
+
+.inputIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.input {
+  flex: 1;
+  height: 24px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 140%;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+.input::placeholder {
+  color: #94A3B8;
+}
+
+.visibilityButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* ── Options + Button block ── */
+.bottomBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 52px;
+  width: 408px;
+  align-self: stretch;
+}
+
+.options {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 408px;
+  height: 20px;
+  align-self: stretch;
+}
+
+.checkboxLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 140%;
+  letter-spacing: -0.025em;
+  color: #1E293B;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.forgotButton {
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 140%;
+  letter-spacing: -0.025em;
+  color: #475569;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: right;
+  transition: color 0.15s;
+}
+
+.forgotButton:hover {
+  color: var(--color-primary);
+}
+
+/* ── Login Button ── */
+.loginButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 16px;
+  gap: 8px;
+  width: 408px;
+  height: 48px;
+  background: #E8EEF2;
+  border: 1px solid #E8EEF2;
+  border-radius: 8px;
+  box-sizing: border-box;
+  align-self: stretch;
+  cursor: not-allowed;
+
+  font-family: var(--font-family);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  text-align: center;
+  letter-spacing: -0.025em;
+  color: #A4ADB2;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.loginButtonActive {
+  background-color: var(--btn-primary-bg);
+  border-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  cursor: pointer;
+}
+
+.loginButtonActive:hover {
+  background-color: #0062e6;
+  border-color: #0062e6;
+}
+
+.loginButtonActive:active {
+  background-color: #0056cc;
+}
+
+/* ── Signup link ── */
+.signupText {
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 140%;
+  text-align: center;
+  letter-spacing: -0.025em;
+  color: #1E293B;
+  margin: 0;
+  align-self: stretch;
+  width: 408px;
+}
+
+.signupLink {
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 140%;
+  letter-spacing: -0.025em;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+
+.signupLink:hover {
+  opacity: 0.8;
+}

@@ -21,7 +21,7 @@ public class SdkQrCode {
     @Id
     private String code;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false)
     private String token;
 
     @Enumerated(EnumType.STRING)

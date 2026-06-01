@@ -46,7 +46,8 @@ public enum ErrorType {
     REQUIRED_EMAIL("AUTH-125", HttpStatus.BAD_REQUEST),
     INVALID_EMAIL_FORMAT("AUTH-126", HttpStatus.BAD_REQUEST),
     INVALID_PASSWORD_LENGTH("AUTH-127", HttpStatus.BAD_REQUEST),
-    REQUIRED_PASSWORD("AUTH-128", HttpStatus.BAD_REQUEST);
+    REQUIRED_PASSWORD("AUTH-128", HttpStatus.BAD_REQUEST),
+    ADMIN_ALREADY_INITIALIZED("AUTH-129", HttpStatus.CONFLICT);
 
     private final String code;
     private final HttpStatus status;

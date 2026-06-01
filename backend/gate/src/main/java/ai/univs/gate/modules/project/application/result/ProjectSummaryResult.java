@@ -1,6 +1,5 @@
 package ai.univs.gate.modules.project.application.result;
 
-import ai.univs.gate.shared.billing.PlanType;
 import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
@@ -15,20 +14,10 @@ public record ProjectSummaryResult(
         ProjectType projectType,
         ProjectModuleType projectModuleType,
         String packageKey,
-        PlanType planType,
-        LocalDateTime planStartedAt,
-        LocalDateTime planExpiredAt,
-        Long userRegistrationAllocated,
-        Long userRegistrationLimit,
         Long countUserRegistration,
-        Long verifyLimit,
-        Long verifyAllocated,
-        Long countVerify,
-        Long identifyLimit,
-        Long identifyAllocated,
+        Long countVerifyById,
+        Long countVerifyByImage,
         Long countIdentify,
-        Long livenessLimit,
-        Long livenessAllocated,
         Long countLiveness,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,

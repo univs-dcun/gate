@@ -37,14 +37,17 @@ public class ProjectSettings extends BaseTimeEntity {
     @Column(name = "sdk_enabled", nullable = false)
     private Boolean sdkEnabled;
 
-    @Column(name = "liveness_recording_enabled", nullable = false)
-    private Boolean livenessRecordingEnabled;
+    @Column(name = "liveness_register_enabled", nullable = false)
+    private Boolean livenessRegisterEnabled;
 
     @Column(name = "liveness_identifying_enabled", nullable = false)
     private Boolean livenessIdentifyingEnabled;
 
-    @Column(name = "liveness_verifying_enabled", nullable = false)
-    private Boolean livenessVerifyingEnabled;
+    @Column(name = "liveness_verifying_by_id_enabled", nullable = false)
+    private Boolean livenessVerifyingByIdEnabled;
+
+    @Column(name = "liveness_verifying_by_image_enabled", nullable = false)
+    private Boolean livenessVerifyingByImageEnabled;
 
     public void updateConsentSettings(Boolean enabled) {
         this.consentEnabled = enabled;
@@ -54,12 +57,14 @@ public class ProjectSettings extends BaseTimeEntity {
     }
 
     public void updateLivenessSettings(Boolean recording,
-                                       Boolean matching,
-                                       Boolean verification
+                                       Boolean identifying,
+                                       Boolean verifyingById,
+                                       Boolean verifyingByImage
     ) {
-        if (recording != null) this.livenessRecordingEnabled = recording;
-        if (matching != null) this.livenessIdentifyingEnabled = matching;
-        if (verification != null) this.livenessVerifyingEnabled = verification;
+        if (recording != null)      this.livenessRegisterEnabled        = recording;
+        if (identifying != null)    this.livenessIdentifyingEnabled     = identifying;
+        if (verifyingById != null)  this.livenessVerifyingByIdEnabled   = verifyingById;
+        if (verifyingByImage != null) this.livenessVerifyingByImageEnabled = verifyingByImage;
     }
 
     public void updateDemoSettings(Boolean demoEnabled) {

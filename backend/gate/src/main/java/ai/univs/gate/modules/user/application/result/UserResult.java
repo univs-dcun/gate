@@ -10,31 +10,38 @@ public record UserResult(
         Long projectId,
         String faceId,
         String description,
+        String username,
         String faceImagePath,
         LocalDateTime createdAt,
         String transactionUuid,
         Boolean checkLiveness
 ) {
 
-    public static UserResult from(User user, String imagePrefix) {
+    public static UserResult from(User user, String imagePrefix, boolean consentEnabled) {
         return new UserResult(
                 user.getId(),
                 user.getProject().getId(),
                 user.getFaceId(),
                 user.getDescription(),
-                StringUtils.hasText(user.getFaceImagePath()) ? imagePrefix + user.getFaceImagePath() : "",
+                user.getUsername(),
+                consentEnabled && StringUtils.hasText(user.getFaceImagePath())
+                        ? imagePrefix + user.getFaceImagePath()
+                        : "",
                 user.getCreatedAt(),
                 user.getTransactionUuid(),
                 null);
     }
 
-    public static UserResult from(User user, boolean livenessChecked, String imagePrefix) {
+    public static UserResult from(User user, boolean livenessChecked, String imagePrefix, boolean consentEnabled) {
         return new UserResult(
                 user.getId(),
                 user.getProject().getId(),
                 user.getFaceId(),
                 user.getDescription(),
-                StringUtils.hasText(user.getFaceImagePath()) ? imagePrefix + user.getFaceImagePath() : "",
+                user.getUsername(),
+                consentEnabled && StringUtils.hasText(user.getFaceImagePath())
+                        ? imagePrefix + user.getFaceImagePath()
+                        : "",
                 user.getCreatedAt(),
                 user.getTransactionUuid(),
                 livenessChecked);

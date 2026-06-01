@@ -13,9 +13,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "프로젝트 설정")
@@ -26,6 +28,7 @@ public class ProjectSettingsController {
 
     private final GetProjectSettingsUseCase getProjectSettingsUseCase;
     private final UpdateConsentSettingsUseCase updateConsentSettingsUseCase;
+    private final GetConsentLogsUseCase getConsentLogsUseCase;
     private final UpdateLivenessSettingsUseCase updateLivenessSettingsUseCase;
     private final UpdateDemoSettingsUseCase updateDemoSettingsUseCase;
     private final UpdateSdkSettingsUseCase updateSdkSettingsUseCase;
@@ -62,12 +65,33 @@ public class ProjectSettingsController {
     })
     @PutMapping("/consent")
     public ResponseEntity<ResponseApi<ProjectSettingsResponseDTO>> updateConsentSettings(
+            HttpServletRequest httpServletRequest,
             @Parameter(description = SwaggerDescriptions.PROJECT_ID)
             @PathVariable Long projectId,
             @Valid @RequestBody ConsentSettingsUpdateRequestDTO request
     ) {
-        var result = updateConsentSettingsUseCase.execute(projectId, request.consentEnabled());
+        String ipAddress = resolveClientIp(httpServletRequest);
+        var result = updateConsentSettingsUseCase.execute(projectId, request.consentEnabled(), ipAddress);
         var response = ProjectSettingsResponseDTO.from(result);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "개인정보 동의 변경 이력 조회", description = "프로젝트의 개인정보 동의 변경 이력을 최신순으로 반환합니다")
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
+    })
+    @GetMapping("/consent/logs")
+    public ResponseEntity<ResponseApi<ConsentLogListResponseDTO>> getConsentLogs(
+            @Parameter(description = SwaggerDescriptions.PROJECT_ID)
+            @PathVariable Long projectId
+    ) {
+        var results = getConsentLogsUseCase.execute(projectId);
+        var response = ConsentLogListResponseDTO.of(
+                results.stream().map(ConsentLogResponseDTO::from).toList());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
@@ -89,9 +113,10 @@ public class ProjectSettingsController {
     ) {
         var input = new UpdateLivenessSettingsInput(
                 projectId,
-                request.livenessRecordingEnabled(),
+                request.livenessRegisterEnabled(),
                 request.livenessIdentifyingEnabled(),
-                request.livenessVerifyingEnabled());
+                request.livenessVerifyingByIdEnabled(),
+                request.livenessVerifyingByImageEnabled());
 
         var result = updateLivenessSettingsUseCase.execute(input);
         var response = ProjectSettingsResponseDTO.from(result);
@@ -138,5 +163,13 @@ public class ProjectSettingsController {
         var result = updateSdkSettingsUseCase.execute(projectId, request.sdkEnabled());
         var response = ProjectSettingsResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (StringUtils.hasText(forwarded)) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

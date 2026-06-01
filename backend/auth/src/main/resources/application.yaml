@@ -20,12 +20,6 @@ spring:
     discovery:
       enabled: false
 
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.0.135:3306/auth
-    username: root
-    password: univs0411!
-
   jpa:
     open-in-view: false
     show-sql: true

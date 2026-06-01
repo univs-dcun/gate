@@ -14,9 +14,6 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.billing.client.BillingClient;
-import ai.univs.gate.support.billing.client.dto.BillingDeductFeignRequestDTO;
-import ai.univs.gate.support.billing.client.dto.BillingOperationFeignRequestDTO;
 import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectService;
@@ -42,7 +39,6 @@ public class UserService {
     private final FileService fileService;
     private final FaceService faceService;
     private final ProjectSettingsService projectSettingsService;
-    private final BillingClient billingClient;
 
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
@@ -53,39 +49,29 @@ public class UserService {
                                               String apiKey,
                                               MultipartFile faceImage,
                                               String description,
+                                              String username,
                                               String transactionUuid
     ) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();
 
-        // 프로젝트 모듈 타입 'FACE' 확인
         projectService.validateFaceModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
-        // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(callerType, findProjectSettings);
 
-        // DB 저장 공간 한도 확인
-        billingClient.validateDbStorage(
-                new BillingOperationFeignRequestDTO(project.getId(), accountId));
-        if (findProjectSettings.getLivenessRecordingEnabled()) {
-            billingClient.validate("liveness",
-                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
+        String imagePath = fileService.uploadIfConsent(faceImage, findProjectSettings.getConsentEnabled());
 
-        // 파일 저장
-        String imagePath = fileService.upload(faceImage);
-
-        // 사용자 등록 전 단순 이력 저장
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.REGISTER)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessRecordingEnabled())
+                .checkLiveness(findProjectSettings.getLivenessRegisterEnabled())
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(transactionUuid)
+                .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
         matchHistoryRepository.save(matchHistory);
 
@@ -94,30 +80,30 @@ public class UserService {
                 faceImage,
                 transactionUuid,
                 String.valueOf(accountId),
-                findProjectSettings.getLivenessRecordingEnabled(), // Liveness
-                findProjectSettings.getLivenessRecordingEnabled()); // Multi Face
-        String faceId = faceService.createFace(createUserRequest);
+                findProjectSettings.getLivenessRegisterEnabled(),
+                findProjectSettings.getLivenessRegisterEnabled());
+        String faceId;
+        try {
+            faceId = faceService.createFace(createUserRequest);
+        } catch (CustomFeignException e) {
+            matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        }
 
         User user = User.builder()
                 .project(project)
                 .faceId(faceId)
                 .faceImagePath(imagePath)
                 .description(description)
+                .username(username)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
                 .build();
         userRepository.save(user);
 
-        // 등록 성공 후 dbUsedCount 증가, 이력 저장
-        billingClient.incrementDbUsed(
-                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessRecordingEnabled()) {
-            billingClient.deduct("liveness",
-                    new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
         matchHistory.success(user, BigDecimal.ZERO);
 
-        return new CreateUserServiceResult(user, findProjectSettings.getLivenessRecordingEnabled());
+        return new CreateUserServiceResult(user, findProjectSettings.getLivenessRegisterEnabled());
     }
 
     public User getUserByFaceIdAndProjectId(String faceId, Long projectId) {

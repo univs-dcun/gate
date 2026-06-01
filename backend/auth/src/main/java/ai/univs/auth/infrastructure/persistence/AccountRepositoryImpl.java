@@ -32,4 +32,9 @@ public class AccountRepositoryImpl implements AccountRepository {
     public boolean existsByEmail(String email) {
         return accountJpaRepository.existsByEmail(email);
     }
+
+    @Override
+    public boolean existsAny() {
+        return accountJpaRepository.count() > 0;
+    }
 }

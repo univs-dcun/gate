@@ -2,8 +2,9 @@ package ai.univs.gate.modules.project.application.input;
 
 public record UpdateLivenessSettingsInput(
         Long projectId,
-        boolean livenessRecordingEnabled,
+        boolean livenessRegisterEnabled,
         boolean livenessIdentifyingEnabled,
-        boolean livenessVerifyingEnabled
+        boolean livenessVerifyingByIdEnabled,
+        boolean livenessVerifyingByImageEnabled
 ) {
 }

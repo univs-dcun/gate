@@ -13,8 +13,10 @@ public record DashboardTrendResponse(
         List<String> labels, // WEEK/MONTH: "yyyy-MM-dd"  YEAR: "yyyy-MM"
         @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_REGISTRATION, defaultValue = "WEEK")
         List<Long> registration,
-        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_VERIFY, defaultValue = "WEEK")
-        List<Long> verify,
+        @Schema(description = "1:1 촬영 인증 추이 (/verify/id + 레거시)")
+        List<Long> verifyById,
+        @Schema(description = "1:1 사진 인증 추이 (/verify/image)")
+        List<Long> verifyByImage,
         @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_IDENTIFY, defaultValue = "WEEK")
         List<Long> identify,
         @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_LIVENESS, defaultValue = "WEEK")
@@ -26,7 +28,8 @@ public record DashboardTrendResponse(
                 result.period().name(),
                 result.labels(),
                 result.registration(),
-                result.verify(),
+                result.verifyById(),
+                result.verifyByImage(),
                 result.identify(),
                 result.liveness());
     }

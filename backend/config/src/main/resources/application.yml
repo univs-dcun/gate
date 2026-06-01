@@ -30,3 +30,10 @@ server:
   tomcat:
     mbeanregistry:
       enabled: true
+
+# ===============================
+# Logging
+# ===============================
+logging:
+  level:
+    org.springframework.cloud.config.server: DEBUG

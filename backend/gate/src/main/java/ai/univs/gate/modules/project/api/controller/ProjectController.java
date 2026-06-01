@@ -42,8 +42,6 @@ public class ProjectController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.PROJECT_ALREADY_EXISTS, status = 400),
-            @SwaggerError(errorType = ErrorType.FREE_PLAN_PROJECT_LIMIT_EXCEEDED, status = 400),
-            @SwaggerError(errorType = ErrorType.PLAN_NOT_FOUND, status = 400),
     })
     @PostMapping
     public ResponseEntity<ResponseApi<ProjectResponseDTO>> createProject(

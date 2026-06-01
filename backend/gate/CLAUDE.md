@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 UnivsGate is a Spring Boot 3.5 microservice (Java 21) providing e-KYC gateway functionality: account authentication, project/API key management, company management, user management, and face matching (identify/verify/liveness). It runs as a Eureka client behind a Spring Cloud Config Server and uses MariaDB with JPA/QueryDSL. External face AI services are called via Feign clients.
 
+## 브랜치 규칙
+- **모든 브랜치는 `dev` 브랜치 기반으로 생성한다** (`git checkout dev && git checkout -b {브랜치명}`)
+- 브랜치 네이밍: 루트 docs/branch-naming-conventions.md 참고
+- PR 대상 브랜치: `dev`
+
 ## Build & Run Commands
 
 ```bash

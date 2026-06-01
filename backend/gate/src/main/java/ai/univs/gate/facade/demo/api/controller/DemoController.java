@@ -5,6 +5,7 @@ import ai.univs.gate.facade.demo.application.dto.DemoRedisPayload;
 import ai.univs.gate.facade.demo.application.service.DemoRedisPublisher;
 import ai.univs.gate.facade.demo.application.usecase.CreateUserByApiKeyUseCase;
 import ai.univs.gate.facade.demo.application.usecase.GetDemoProjectConfigUseCase;
+import ai.univs.gate.facade.demo.application.usecase.GetUsersByApiKeyUseCase;
 import ai.univs.gate.modules.match.api.dto.IdentifyResponseDTO;
 import ai.univs.gate.modules.match.api.dto.LivenessResponseDTO;
 import ai.univs.gate.modules.match.api.dto.VerifyByFaceIdResponseDTO;
@@ -15,6 +16,8 @@ import ai.univs.gate.modules.match.application.usecase.VerifyByFaceIdUseCase;
 import ai.univs.gate.modules.match.application.usecase.VerifyByImageUseCase;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
 import ai.univs.gate.modules.user.api.dto.UserResponseDTO;
+import ai.univs.gate.modules.user.api.dto.UsersResponseDTO;
+import ai.univs.gate.shared.web.dto.CustomPage;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
 import ai.univs.gate.shared.web.dto.ResponseApi;
@@ -23,6 +26,8 @@ import ai.univs.gate.support.message.MessageService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +46,7 @@ import org.springframework.web.bind.annotation.*;
 public class DemoController {
 
     private final CreateUserByApiKeyUseCase createUserByApiKeyUseCase;
+    private final GetUsersByApiKeyUseCase getUsersByApiKeyUseCase;
     private final VerifyByFaceIdUseCase verifyByFaceIdUseCase;
     private final VerifyByImageUseCase verifyByImageUseCase;
     private final IdentifyUseCase identifyUseCase;
@@ -73,6 +79,7 @@ public class DemoController {
     }
 
     @Operation(summary = "API Key 기반 사용자 등록")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateUserByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -80,7 +87,7 @@ public class DemoController {
     @PostMapping(value = "/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<UserResponseDTO>> createUserByApiKey(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid CreateUserByApiKeyRequestDTO request
+            @ModelAttribute @Valid CreateUserByApiKeyRequestDTO request
     ) throws JsonProcessingException {
         var input = request.toCreateUserByApiKeyInput();
         var result = createUserByApiKeyUseCase.execute(input);
@@ -94,6 +101,7 @@ public class DemoController {
     }
 
     @Operation(summary = "API Key, faceId 기반 사용자 확인")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -101,7 +109,7 @@ public class DemoController {
     @PostMapping(value = "/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByFaceIdResponseDTO>> verifyByApiKey(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid VerifyByApiKeyRequestDTO request
+            @ModelAttribute @Valid VerifyByApiKeyRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toVerifyByApiKeyInput();
@@ -112,6 +120,7 @@ public class DemoController {
     }
 
     @Operation(summary = "API Key, image 기반 사용자 확인")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByImageAndApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -119,7 +128,7 @@ public class DemoController {
     @PostMapping(value = "/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByImageResponseDTO>> verifyByImageAndApiKey(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid VerifyByImageAndApiKeyRequestDTO request
+            @ModelAttribute @Valid VerifyByImageAndApiKeyRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toVerifyByImageInput();
@@ -130,6 +139,7 @@ public class DemoController {
     }
 
     @Operation(summary = "API Key 기반 사용자 매칭")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = DemoIdentifyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
@@ -137,7 +147,7 @@ public class DemoController {
     @PostMapping(value = "/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identifyByApiKey(
             HttpServletRequest httpServletRequest,
-            @ParameterObject @ModelAttribute @Valid DemoIdentifyRequestDTO request
+            @ModelAttribute @Valid DemoIdentifyRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toIdentifyInput();
@@ -147,14 +157,37 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
+    @Operation(summary = "API Key 기반 사용자 목록 조회")
+    @SecurityRequirements({})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
+    })
+    @GetMapping("/users")
+    public ResponseEntity<ResponseApi<UsersResponseDTO>> getUsersByApiKey(
+            HttpServletRequest httpServletRequest,
+            @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
+    ) {
+        String timezone = httpServletRequest.getHeader("Accept-TimeZone");
+        var input = request.toInput(timezone);
+        var result = getUsersByApiKeyUseCase.execute(input);
+
+        var usersResponse = result.users().stream()
+                .map(userResult -> UserResponseDTO.from(userResult, timezone))
+                .toList();
+        var response = new UsersResponseDTO(usersResponse, CustomPage.from(result.page()));
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
     @Operation(summary = "API Key 기반 라이브니스 체크")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = LivenessByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
     @PostMapping(value = "/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<LivenessResponseDTO>> LivenessByApiKey(
-            @ParameterObject @ModelAttribute @Valid LivenessByApiKeyRequestDTO request
+            @ModelAttribute @Valid LivenessByApiKeyRequestDTO request
     ) {
         var input = request.toLivenessInput();
         var result = livenessUseCase.execute(input);

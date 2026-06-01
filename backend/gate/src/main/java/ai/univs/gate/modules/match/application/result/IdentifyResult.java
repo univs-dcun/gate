@@ -17,14 +17,16 @@ public record IdentifyResult(
         String faceId,
         Long userId,
         String userDescription,
+        String username,
         BigDecimal similarity,
         String faceImagePath,
         String matchingFaceImagePath,
         String failureType,
-        String transactionUuid
+        String transactionUuid,
+        Boolean consentSnapshot
 ) {
 
-    public static IdentifyResult failResult(MatchHistory matchHistory, String prefixImagePath) {
+    public static IdentifyResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new IdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -35,16 +37,18 @@ public record IdentifyResult(
                 "",
                 null,
                 "",
+                null,
                 matchHistory.getSimilarity(),
                 "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 matchHistory.getFailureType(),
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 
-    public static IdentifyResult successResult(MatchHistory matchHistory, String prefixImagePath) {
+    public static IdentifyResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new IdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -55,14 +59,16 @@ public record IdentifyResult(
                 matchHistory.getFaceId(),
                 matchHistory.getUserId(),
                 matchHistory.getUserDescription(),
+                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
-                StringUtils.hasText(matchHistory.getFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()
                         : "",
-                StringUtils.hasText(matchHistory.getMatchFaceImagePath())
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
                         ? prefixImagePath + matchHistory.getMatchFaceImagePath()
                         : "",
                 "",
-                matchHistory.getTransactionUuid());
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
     }
 }

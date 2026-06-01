@@ -17,9 +17,6 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.shared.web.enums.LivenessErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.billing.client.BillingClient;
-import ai.univs.gate.support.billing.client.dto.BillingDeductFeignRequestDTO;
-import ai.univs.gate.support.billing.client.dto.BillingOperationFeignRequestDTO;
 import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
@@ -48,7 +45,6 @@ public class IdentifyUseCase {
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final FaceService faceService;
-    private final BillingClient billingClient;
     private final UseCaseNotifyService useCaseNotifyService;
 
     @Transactional(
@@ -59,26 +55,16 @@ public class IdentifyUseCase {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = findApiKey.getProject();
 
-        // 프로젝트 모듈 타입 'FACE' 확인
         projectService.validateFaceModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
-        // SDK or Demo 요청인 경우 활성화 체크
         projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
-        // 사용 가능 여부 확인 (limit 또는 Flex 크레딧)
-        billingClient.validate("identify",
-                new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessIdentifyingEnabled()) {
-            billingClient.validate("liveness",
-                    new BillingOperationFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
+        boolean consentEnabled = findProjectSettings.getConsentEnabled();
 
-        // 파일 저장
-        var imagePath = fileService.upload(input.matchingFaceImage());
+        var imagePath = fileService.uploadIfConsent(input.matchingFaceImage(), consentEnabled);
 
-        // 매칭 전 요청 이력 저장
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.IDENTIFY)
@@ -87,17 +73,17 @@ public class IdentifyUseCase {
                 .success(false)
                 .matchFaceImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
+                .consentSnapshot(consentEnabled)
                 .build();
         matchHistoryRepository.save(matchHistory);
 
-        // 1:N 매칭
         var identifyRequest = new IdentifyFeignRequestDTO(
                 project.getBranchName(),
                 input.matchingFaceImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),
-                findProjectSettings.getLivenessIdentifyingEnabled(), // Liveness
-                findProjectSettings.getLivenessIdentifyingEnabled()); // Multi Face
+                findProjectSettings.getLivenessIdentifyingEnabled(),
+                findProjectSettings.getLivenessIdentifyingEnabled());
 
         MatchFeignResponseDTO data;
         try {
@@ -105,46 +91,33 @@ public class IdentifyUseCase {
         } catch (CustomFeignException e) {
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
-            // 라이브니스 실패 또는 불특정 오류
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        // 매칭 실패 정보 저장
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.NOT_MATCH.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        // 사용자 조회
         User user;
         try {
             user = userService.getUserByFaceIdAndProjectId(data.getFaceId(), project.getId());
         } catch (CustomGateException e) {
-            // 사용자 조회가 안되는 경우
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
-            return fail(input.callerType(), matchHistory);
+            return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         matchHistory.success(user, data.getSimilarity());
 
-        // 매칭 성공 — 빌링 차감 후 이력 저장
-        billingClient.deduct("identify",
-                new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
-        if (findProjectSettings.getLivenessIdentifyingEnabled()) {
-            billingClient.deduct("liveness",
-                    new BillingDeductFeignRequestDTO(project.getId(), project.getAccountId()));
-        }
-
-        return success(input.callerType(), matchHistory);
+        return success(input.callerType(), matchHistory, consentEnabled);
     }
 
-    private IdentifyResult fail(CallerType callerType, MatchHistory matchHistory) {
+    private IdentifyResult fail(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        IdentifyResult failResult = IdentifyResult.failResult(matchHistory, prefixImagePath);
+        IdentifyResult failResult = IdentifyResult.failResult(matchHistory, prefixImagePath, consentEnabled);
 
-        // 실패 웹훅 || 알림 전송
         useCaseNotifyService.notify(
                 callerType,
                 MatchType.IDENTIFY.name(),
@@ -154,11 +127,10 @@ public class IdentifyUseCase {
         return failResult;
     }
 
-    private IdentifyResult success(CallerType callerType, MatchHistory matchHistory) {
+    private IdentifyResult success(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
         String prefixImagePath = fileService.getFileServerPath();
-        IdentifyResult successResult = IdentifyResult.successResult(matchHistory, prefixImagePath);
+        IdentifyResult successResult = IdentifyResult.successResult(matchHistory, prefixImagePath, consentEnabled);
 
-        // 성공 웹훅 || 알림 전송
         useCaseNotifyService.notify(
                 callerType,
                 MatchType.IDENTIFY.name(),

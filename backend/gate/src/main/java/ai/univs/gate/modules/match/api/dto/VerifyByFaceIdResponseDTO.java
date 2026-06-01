@@ -3,8 +3,6 @@ package ai.univs.gate.modules.match.api.dto;
 import ai.univs.gate.modules.match.application.result.VerifyByFaceIdResult;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -40,14 +38,18 @@ public record VerifyByFaceIdResponseDTO(
         @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
         String userDescription,
 
+        @Schema(description = "사용자 이름")
+        String username,
+
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
 
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_ID)
         String matchingFaceId,
 
-        @JsonIgnore
-        @Hidden
+        @Schema(description = SwaggerDescriptions.FACE_IMAGE_PATH)
+        String faceImagePath,
+
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE_PATH)
         String matchingFaceImagePath,
 
@@ -58,7 +60,10 @@ public record VerifyByFaceIdResponseDTO(
         String failureReason,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
+        Boolean consentSnapshot
 ) {
 
     public static VerifyByFaceIdResponseDTO from(VerifyByFaceIdResult result, String failureReason, String timezone) {
@@ -72,11 +77,14 @@ public record VerifyByFaceIdResponseDTO(
                 result.faceId(),
                 result.userId(),
                 result.userDescription(),
+                result.username(),
                 result.similarity(),
                 result.matchingFaceId(),
+                result.faceImagePath(),
                 result.matchingFaceImagePath(),
                 result.failureType(),
                 failureReason,
-                result.transactionUuid());
+                result.transactionUuid(),
+                result.consentSnapshot());
     }
 }

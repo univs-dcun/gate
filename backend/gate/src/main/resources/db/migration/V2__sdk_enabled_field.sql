@@ -1,1 +1,0 @@
-ALTER TABLE gate.project_settings ADD sdk_enabled BOOL NOT NULL COMMENT 'SDK 활성화 여부';

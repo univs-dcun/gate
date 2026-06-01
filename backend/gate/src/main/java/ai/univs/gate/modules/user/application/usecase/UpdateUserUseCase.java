@@ -45,29 +45,29 @@ public class UpdateUserUseCase {
             throw new CustomGateException(ErrorType.INVALID_USER);
         }
 
+        ProjectSettings projectSettings = projectSettingsRepository.findByProject(project)
+                .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
+
         if (input.hasImage()) {
             input.validationFileExtension();
 
-            String faceImagePath = fileService.upload(input.faceImage());
+            String faceImagePath = fileService.uploadIfConsent(input.faceImage(), projectSettings.getConsentEnabled());
             user.updateFaceImagePath(faceImagePath);
-
-            ProjectSettings projectSettings = projectSettingsRepository.findByProject(project)
-                    .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
 
             var updateUserRequest = new UpdateFeignRequestDTO(
                     project.getBranchName(),
-                    input.faceId(),
+                    user.getFaceId(),
                     input.faceImage(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId()),
-                    projectSettings.getLivenessRecordingEnabled(),
+                    projectSettings.getLivenessRegisterEnabled(),
                     // Multi Face
-                    projectSettings.getLivenessRecordingEnabled());
+                    projectSettings.getLivenessRegisterEnabled());
             faceService.updateFace(updateUserRequest);
         }
 
-        user.updateUserInfo(input.faceId(), input.description());
+        user.updateUserInfo(input.description(), input.username());
 
-        return UserResult.from(user, fileService.getFileServerPath());
+        return UserResult.from(user, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

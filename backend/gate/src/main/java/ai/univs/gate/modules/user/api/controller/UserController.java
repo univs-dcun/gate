@@ -16,6 +16,9 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.webhook.WebhookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,6 +47,7 @@ public class UserController {
     private final WebhookService webhookService;
 
     @Operation(summary = "사용자 등록")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateUserRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
@@ -53,7 +57,7 @@ public class UserController {
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<UserResponseDTO>> createUser(
-            @ParameterObject @ModelAttribute @Valid CreateUserRequestDTO request
+            @ModelAttribute @Valid CreateUserRequestDTO request
     ) {
         UserContext userContext = UserContext.get();
         var input = request.toCreateUserInput(userContext.getAccountIdAsLong(), userContext.getApiKey());
@@ -68,6 +72,7 @@ public class UserController {
     }
 
     @Operation(summary = "사용자 수정")
+    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = UpdateUserRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
@@ -78,7 +83,7 @@ public class UserController {
     })
     @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<UserResponseDTO>> update(
-            @ParameterObject @ModelAttribute @Valid UpdateUserRequestDTO request
+            @ModelAttribute @Valid UpdateUserRequestDTO request
     ) {
         UserContext userContext = UserContext.get();
         var input = request.toUpdateUserInput(userContext.getAccountIdAsLong(), userContext.getApiKey());

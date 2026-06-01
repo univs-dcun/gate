@@ -19,9 +19,10 @@ public record ProjectSettingsResult(
         LocalDateTime consentAgreedAt,
         Boolean demoEnabled,
         Boolean sdkEnabled,
-        Boolean livenessRecordingEnabled,
+        Boolean livenessRegisterEnabled,
         Boolean livenessIdentifyingEnabled,
-        Boolean livenessVerifyingEnabled
+        Boolean livenessVerifyingByIdEnabled,
+        Boolean livenessVerifyingByImageEnabled
 ) {
 
     public static ProjectSettingsResult from(ProjectSettings settings, String timezone) {
@@ -36,8 +37,9 @@ public record ProjectSettingsResult(
                 fromUtc(settings.getConsentAgreedAt(), timezone),
                 settings.getDemoEnabled(),
                 settings.getSdkEnabled(),
-                settings.getLivenessRecordingEnabled(),
+                settings.getLivenessRegisterEnabled(),
                 settings.getLivenessIdentifyingEnabled(),
-                settings.getLivenessVerifyingEnabled());
+                settings.getLivenessVerifyingByIdEnabled(),
+                settings.getLivenessVerifyingByImageEnabled());
     }
 }

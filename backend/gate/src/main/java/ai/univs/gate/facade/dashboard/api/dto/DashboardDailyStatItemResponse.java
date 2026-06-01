@@ -9,8 +9,10 @@ public record DashboardDailyStatItemResponse(
         String date,
         @Schema(description = SwaggerDescriptions.COUNT_USER_REGISTRATION)
         long registration,
-        @Schema(description = SwaggerDescriptions.COUNT_VERIFY)
-        long verify,
+        @Schema(description = "1:1 촬영 인증 건수 (/verify/id + 레거시)")
+        long verifyById,
+        @Schema(description = "1:1 사진 인증 건수 (/verify/image)")
+        long verifyByImage,
         @Schema(description = SwaggerDescriptions.COUNT_IDENTIFY)
         long identify,
         @Schema(description = SwaggerDescriptions.COUNT_LIVENESS)
@@ -21,7 +23,8 @@ public record DashboardDailyStatItemResponse(
         return new DashboardDailyStatItemResponse(
                 item.date(),
                 item.registration(),
-                item.verify(),
+                item.verifyById(),
+                item.verifyByImage(),
                 item.identify(),
                 item.liveness()
         );

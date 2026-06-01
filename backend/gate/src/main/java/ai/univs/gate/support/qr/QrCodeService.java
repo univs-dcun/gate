@@ -61,6 +61,31 @@ public class QrCodeService {
         }
     }
 
+    public byte[] generateForUrl(String url) {
+        try {
+            int width = 300;
+            int height = 300;
+
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            BitMatrix bitMatrix = qrCodeWriter.encode(url, BarcodeFormat.QR_CODE, width, height);
+
+            BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    bufferedImage.setRGB(x, y, bitMatrix.get(x, y) ? 0x000000 : 0xFFFFFF);
+                }
+            }
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(bufferedImage, "PNG", outputStream);
+            return outputStream.toByteArray();
+
+        } catch (WriterException | IOException e) {
+            log.error("Fail to create QR: {}", e.getMessage(), e);
+            throw new CustomGateException(ErrorType.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public String buildUrl(String domain, String code) {
         return String.format("%s?token=%s", GATE_DEMO_URL + "/" + domain, code);
     }

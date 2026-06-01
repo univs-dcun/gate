@@ -12,6 +12,8 @@ spring:
 #    password: univs0411
 #   개발 PC
     password: univs0411!
+  flyway:
+    locations: classpath:db/migration/postgresql
   jpa:
     show-sql: false
     properties:
