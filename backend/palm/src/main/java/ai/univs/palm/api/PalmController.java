@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "팜 매칭 프록시 서버")
+@Tag(name = "팜 매칭 프록시 서버", description = "SmartFace Palm Module 연동 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/palm")
@@ -69,7 +69,7 @@ public class PalmController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "라이브니스")
+    @Operation(summary = "라이브니스 검사")
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_PALM_IMAGE, status = 400),
@@ -85,7 +85,7 @@ public class PalmController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "1:N 사용자 얼굴 매칭 결과 반환")
+    @Operation(summary = "1:N 사용자 팜 매칭 결과 반환")
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_PALM_IMAGE, status = 400),
