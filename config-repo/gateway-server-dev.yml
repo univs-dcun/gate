@@ -31,15 +31,16 @@ spring:
             add-to-simple-url-handler-mapping: true
             cors-configurations:
               '[/**]':
+                allowedOriginPatterns:
+                  - https://*.univsgate.com
+                  - https://*.univsgate.com:*
+                  - https://*.univs.ai
+                  - https://*.univs.ai:*
                 allowedOrigins:
-                  - https://develop.univs.ai:7778
-                  - https://develop.univs.ai:7779
-                  - http://develop.univs.ai:7779
-                  - http://localhost:7779
-                  - https://develop.univs.ai:7650
-                  - https://develop.univs.ai:18090
-                  - http://192.168.0.19:5173
                   - http://localhost:5173
+                  - http://localhost:7779
+                  - http://localhost:8080
+                  - http://localhost:3000
                 allow-credentials: true
                 allowedHeaders:
                   - Authorization
@@ -116,6 +117,10 @@ spring:
                 - Path=/api/v1/dashboard/**
               filters:
                 - AuthenticationFilter
+            - id: GATE-FILE
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/file
             - id: KYC-MESSAGES
               uri: lb://gate-service
               predicates:

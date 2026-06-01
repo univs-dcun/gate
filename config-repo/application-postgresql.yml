@@ -1,19 +1,25 @@
 spring:
   # ===============================
-  # Activation Oracle or Postgresql
+  # Activation Postgresql
   # ===============================
   config:
     activate:
-      on-profile: oracle
+      on-profile: postgresql
 
   # ===============================
   # Database
   # ===============================
   datasource:
-    driverClassName: oracle.jdbc.OracleDriver
+    driverClassName: org.postgresql.Driver
     url: url
     username: username
     password: password
+
+  # ===============================
+  # Database version Management
+  # ===============================
+  flyway:
+    locations: classpath:db/migration/postgresql
 
   # ===============================
   # Spring Data Jpa
@@ -21,4 +27,4 @@ spring:
   jpa:
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.OracleDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect

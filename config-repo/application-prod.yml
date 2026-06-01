@@ -1,0 +1,8 @@
+springdoc:
+  # ===============================
+  # Docs (prod 환경에서 전체 비활성화)
+  # ===============================
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
