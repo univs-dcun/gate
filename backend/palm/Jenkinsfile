@@ -215,8 +215,8 @@ pipeline {
                             cd ${WORKING_DIR} && \
                             sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}/' .env && \
                             echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}" && \
-                            docker compose stop ${SERVICE_NAME} || true && \
-                            docker compose rm -f ${SERVICE_NAME} || true && \
+                            docker compose -p gate stop ${SERVICE_NAME} || true && \
+                            docker compose -p gate rm -f ${SERVICE_NAME} || true && \
                             for i in {1..10}; do
                                 if [ -z "\\\$(docker ps -a -q -f name=${SERVICE_NAME})" ]; then
                                     echo "✅ 컨테이너 종료 완료"
@@ -225,7 +225,7 @@ pipeline {
                                 echo "⏳ 대기 중... \$i"
                                 sleep 1
                             done && \
-                            docker compose pull ${SERVICE_NAME} && \
+                            docker compose -p gate pull ${SERVICE_NAME} && \
                             docker compose -p gate up -d ${SERVICE_NAME}
                         """
 
