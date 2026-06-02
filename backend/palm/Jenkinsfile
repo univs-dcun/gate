@@ -226,7 +226,7 @@ pipeline {
                                 sleep 1
                             done && \
                             docker compose pull ${SERVICE_NAME} && \
-                            docker compose up -d ${SERVICE_NAME}
+                            docker compose -p gate up -d ${SERVICE_NAME}
                         """
 
                         sh """
