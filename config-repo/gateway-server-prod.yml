@@ -21,6 +21,7 @@ spring:
               '[/**]':
                 allowedOriginPatterns:
                   - https://univsgate.com
+                  - https://www.univsgate.com
                   - https://api.univsgate.com
                   - https://demo.univsgate.com
                 allow-credentials: true
