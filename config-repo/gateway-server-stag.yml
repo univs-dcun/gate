@@ -8,7 +8,7 @@ server:
   # ===============================
   tomcat:
     mbeanregistry:
-      enabled: true
+      access: unrestricted
   # ===============================
   # SSL
   # ===============================
@@ -123,8 +123,8 @@ eureka:
 management:
   endpoint:
     shutdown:
-      # true: 안전하게 종료
-      enabled: true
+      # unrestricted: 안전하게 종료 허용 (Spring Boot 3.4+, enabled: true 대체)
+      access: unrestricted
   endpoints:
     web:
       exposure:

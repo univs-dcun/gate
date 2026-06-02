@@ -8,7 +8,7 @@ server:
   # ===============================
   tomcat:
     mbeanregistry:
-      enabled: true
+      access: unrestricted
 
 spring:
   # ===============================
@@ -50,7 +50,7 @@ eureka:
 management:
   endpoint:
     shutdown:
-      enabled: true
+      access: unrestricted
   endpoints:
     web:
       base-path: /face/actuator
