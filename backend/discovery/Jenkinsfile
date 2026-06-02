@@ -56,7 +56,7 @@ pipeline {
                         env.DEPLOY_ENV    = '운영 서버'
                         env.TARGET_SERVER = '192.168.79.8'
                         env.TARGET_USER   = 'psh'
-                        env.WORKING_DIR   = '/home/psh/platform/prod/config'
+                        env.WORKING_DIR   = '/home/psh/gate/docker'
                     }
                 }
             }
