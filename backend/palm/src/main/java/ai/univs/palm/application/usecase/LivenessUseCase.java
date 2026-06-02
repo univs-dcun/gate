@@ -58,6 +58,7 @@ public class LivenessUseCase {
 
         try {
             // PalmFeign - liveness 호출
+            log.info("[Liveness] 요청 시작 - transactionUuid={}, clientId={}", input.transactionUuid(), input.clientId());
             LivenessFeignResponseDTO response = palmFeign.liveness(request);
             LivenessFeignResponseDTO.LivenessSpoofCheckDTO spoofCheck = response.getLivenessSpoofCheck();
 
@@ -77,6 +78,7 @@ public class LivenessUseCase {
             // 라이브니스 요청 이력 갱신 (passed 여부에 따라 result 기록)
             palmHistory.successLiveness(spoofCheck.isPassed(), input.clientId());
 
+            log.info("[Liveness] 결과 - passed={}, score={}", spoofCheck.isPassed(), spoofCheck.getScore());
             return new LivenessResult(spoofCheck.isPassed(), spoofCheck.getScore(), THRESHOLD, null);
 
         } catch (CustomFeignException e) {
