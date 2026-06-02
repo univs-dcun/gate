@@ -1,5 +1,7 @@
 server.port: 8888
 
+# chore: 자동배포 파이프라인 테스트
+
 spring:
   application:
     name: config-server
