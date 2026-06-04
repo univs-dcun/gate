@@ -21,21 +21,14 @@ public class ProjectSettingsService {
     }
 
     public void checkAvailabilityModules(CallerType callerType, ProjectSettings projectSettings) {
-        switch (callerType) {
-            case DEMO -> validateDemoEnabled(projectSettings);
-            case SDK -> validateSdkEnabled(projectSettings);
+        if (callerType == CallerType.DEMO) {
+            validateDemoEnabled(projectSettings);
         }
     }
 
     public void validateDemoEnabled(ProjectSettings settings) {
         if (!settings.getDemoEnabled()) {
             throw new CustomGateException(ErrorType.DEMO_DISABLED);
-        }
-    }
-
-    public void validateSdkEnabled(ProjectSettings settings) {
-        if (!settings.getSdkEnabled()) {
-            throw new CustomGateException(ErrorType.SDK_DISABLED);
         }
     }
 }

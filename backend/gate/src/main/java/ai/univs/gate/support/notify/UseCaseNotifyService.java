@@ -33,7 +33,7 @@ public class UseCaseNotifyService {
                     log.error("failure notify: event={}", event, e);
                 }
             }
-            case SDK, API -> webhookService.send(projectId, callerType.name(), event, result);
+            case API -> webhookService.send(projectId, callerType.name(), event, result);
         }
         return result;
     }
