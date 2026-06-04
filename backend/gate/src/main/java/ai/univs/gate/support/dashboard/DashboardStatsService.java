@@ -7,7 +7,7 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
-import ai.univs.gate.modules.user.domain.entity.QUser;
+import ai.univs.gate.modules.face_media.domain.entity.QFaceMedia;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringTemplate;
@@ -28,7 +28,7 @@ public class DashboardStatsService {
     private final JPAQueryFactory queryFactory;
 
     private final QMatchHistory mh = QMatchHistory.matchHistory;
-    private final QUser user = QUser.user;
+    private final QFaceMedia faceMedia = QFaceMedia.faceMedia;
 
     public DashboardStatsService(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
@@ -38,11 +38,11 @@ public class DashboardStatsService {
 
     public long countRegistrations(Long projectId, LocalDateTime from) {
         Long count = queryFactory
-                .select(user.count())
-                .from(user)
-                .where(user.project.id.eq(projectId),
-                       user.isDeleted.eq(false),
-                       user.createdAt.goe(from))
+                .select(faceMedia.count())
+                .from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId),
+                       faceMedia.isDeleted.eq(false),
+                       faceMedia.createdAt.goe(from))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
@@ -95,9 +95,9 @@ public class DashboardStatsService {
 
     public long countTotalRegistrations(Long projectId) {
         Long count = queryFactory
-                .select(user.count())
-                .from(user)
-                .where(user.project.id.eq(projectId), user.isDeleted.eq(false))
+                .select(faceMedia.count())
+                .from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
@@ -237,18 +237,18 @@ public class DashboardStatsService {
 
     private DashboardRatiosResult.RatioItem queryRegistrationRatio(Long projectId, LocalDateTime from) {
         Long active = queryFactory
-                .select(user.count())
-                .from(user)
-                .where(user.project.id.eq(projectId),
-                       user.isDeleted.eq(false),
-                       user.createdAt.goe(from))
+                .select(faceMedia.count())
+                .from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId),
+                       faceMedia.isDeleted.eq(false),
+                       faceMedia.createdAt.goe(from))
                 .fetchOne();
 
         Long total = queryFactory
-                .select(user.count())
-                .from(user)
-                .where(user.project.id.eq(projectId),
-                       user.createdAt.goe(from))
+                .select(faceMedia.count())
+                .from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId),
+                       faceMedia.createdAt.goe(from))
                 .fetchOne();
 
         long activeCount = Optional.ofNullable(active).orElse(0L);
@@ -306,23 +306,23 @@ public class DashboardStatsService {
 
     private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour) {
         StringTemplate label = byHour
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        user.createdAt)
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        faceMedia.createdAt)
                 : byMonth
-                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    user.createdAt)
-                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", user.createdAt);
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    faceMedia.createdAt)
+                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceMedia.createdAt);
 
         return queryFactory
-                .select(label, user.count())
-                .from(user)
-                .where(user.project.id.eq(projectId),
-                       user.isDeleted.eq(false),
-                       user.createdAt.goe(from))
+                .select(label, faceMedia.count())
+                .from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId),
+                       faceMedia.isDeleted.eq(false),
+                       faceMedia.createdAt.goe(from))
                 .groupBy(label)
                 .fetch()
                 .stream()
                 .collect(Collectors.toMap(
                         t -> t.get(label),
-                        t -> Optional.ofNullable(t.get(user.count())).orElse(0L)
+                        t -> Optional.ofNullable(t.get(faceMedia.count())).orElse(0L)
                 ));
     }
 
@@ -376,18 +376,18 @@ public class DashboardStatsService {
 
     private Map<LocalDate, Long> queryAllRegistrationByDate(Long projectId) {
         StringTemplate dateStr =
-                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", user.createdAt);
+                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceMedia.createdAt);
 
         return queryFactory
-                .select(dateStr, user.count())
-                .from(user)
-                .where(user.project.id.eq(projectId), user.isDeleted.eq(false))
+                .select(dateStr, faceMedia.count())
+                .from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false))
                 .groupBy(dateStr)
                 .fetch()
                 .stream()
                 .collect(Collectors.toMap(
                         t -> LocalDate.parse(t.get(dateStr)),
-                        t -> Optional.ofNullable(t.get(user.count())).orElse(0L)
+                        t -> Optional.ofNullable(t.get(faceMedia.count())).orElse(0L)
                 ));
     }
 

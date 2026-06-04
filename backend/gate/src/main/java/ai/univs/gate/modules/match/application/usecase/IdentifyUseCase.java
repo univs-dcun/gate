@@ -10,7 +10,8 @@ import ai.univs.gate.modules.match.infrastructure.client.dto.IdentifyFeignReques
 import ai.univs.gate.modules.match.infrastructure.client.dto.MatchFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.modules.user.domain.entity.User;
+import ai.univs.gate.modules.face_media.domain.entity.FaceMedia;
+import ai.univs.gate.modules.face_media.domain.enums.MediaType;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -18,11 +19,11 @@ import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.shared.web.enums.LivenessErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.face.FaceService;
+import ai.univs.gate.support.face_media.FaceMediaService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
-import ai.univs.gate.support.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -41,7 +42,7 @@ public class IdentifyUseCase {
     private final MatchHistoryRepository matchHistoryRepository;
     private final ProjectSettingsService projectSettingsService;
     private final ProjectService projectService;
-    private final UserService userService;
+    private final FaceMediaService faceMediaService;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final FaceService faceService;
@@ -68,6 +69,7 @@ public class IdentifyUseCase {
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.IDENTIFY)
+                .mediaType(MediaType.FACE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
                 .checkLiveness(findProjectSettings.getLivenessIdentifyingEnabled())
                 .success(false)
@@ -100,16 +102,16 @@ public class IdentifyUseCase {
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        User user;
+        FaceMedia faceMedia;
         try {
-            user = userService.getUserByFaceIdAndProjectId(data.getFaceId(), project.getId());
+            faceMedia = faceMediaService.getFaceMediaByFaceIdAndProjectId(data.getFaceId(), project.getId());
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        matchHistory.success(user, data.getSimilarity());
+        matchHistory.success(faceMedia, data.getSimilarity());
 
         return success(input.callerType(), matchHistory, consentEnabled);
     }

@@ -7,7 +7,7 @@ import ai.univs.gate.modules.match.api.dto.IdentifyResponseDTO;
 import ai.univs.gate.modules.match.api.dto.LivenessResponseDTO;
 import ai.univs.gate.modules.match.api.dto.VerifyByFaceIdResponseDTO;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
-import ai.univs.gate.modules.user.api.dto.UserResponseDTO;
+import ai.univs.gate.modules.face_media.api.dto.FaceMediaResponseDTO;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.jwt.JwtTokenProvider;
@@ -84,7 +84,7 @@ public class SdkController {
     }
 
     @PostMapping(value = "/user/token", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<UserResponseDTO>> createUserByToken(
+    public ResponseEntity<ResponseApi<FaceMediaResponseDTO>> createUserByToken(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid CreateUserByTokenRequestDTO request
     ) {
@@ -95,7 +95,7 @@ public class SdkController {
 
         var input = request.toCreateUserByTokenInput();
         var result = createUserByTokenUseCase.execute(input);
-        var response = UserResponseDTO.from(result, timezone);
+        var response = FaceMediaResponseDTO.from(result, timezone);
         var responseApi = ResponseApi.ok(response);
 
         webhookService.send(projectId, "sdk", "user.register", responseApi);

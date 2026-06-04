@@ -3,6 +3,7 @@ package ai.univs.gate.modules.match.application.usecase;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.match.application.input.VerifyByImageInput;
 import ai.univs.gate.modules.match.application.result.VerifyByImageResult;
+import ai.univs.gate.modules.face_media.domain.enums.MediaType;
 import ai.univs.gate.modules.match.domain.entity.MatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.match.domain.repository.MatchHistoryRepository;
@@ -63,6 +64,7 @@ public class VerifyByImageUseCase {
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.VERIFY_IMAGE)
+                .mediaType(MediaType.FACE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
                 .checkLiveness(findProjectSettings.getLivenessVerifyingByImageEnabled())
                 .success(false)

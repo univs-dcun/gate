@@ -1,8 +1,6 @@
 package ai.univs.gate.facade.demo.application.input;
 
-import ai.univs.gate.modules.user.application.input.UserQuery;
-import ai.univs.gate.shared.utils.CustomPageable;
-import org.springframework.util.StringUtils;
+import ai.univs.gate.modules.face_media.application.input.FaceMediaQuery;
 
 public record GetUsersByApiKeyInput(
         String apiKey,
@@ -15,8 +13,8 @@ public record GetUsersByApiKeyInput(
         String timezone
 ) {
 
-    public UserQuery toUserQuery() {
-        return new UserQuery(
+    public FaceMediaQuery toFaceMediaQuery() {
+        return new FaceMediaQuery(
                 null,
                 apiKey,
                 userKeyword,
@@ -26,7 +24,7 @@ public record GetUsersByApiKeyInput(
                 startDate,
                 endDate,
                 "DESC",
-                "userId"
+                "faceMediaId"
         );
     }
 }

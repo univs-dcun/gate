@@ -10,7 +10,8 @@ import ai.univs.gate.modules.match.infrastructure.client.dto.MatchFeignResponseD
 import ai.univs.gate.modules.match.infrastructure.client.dto.VerifyByFaceIdFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.modules.user.domain.entity.User;
+import ai.univs.gate.modules.face_media.domain.entity.FaceMedia;
+import ai.univs.gate.modules.face_media.domain.enums.MediaType;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -18,11 +19,11 @@ import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.shared.web.enums.LivenessErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.face.FaceService;
+import ai.univs.gate.support.face_media.FaceMediaService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
-import ai.univs.gate.support.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -42,7 +43,7 @@ public class VerifyByFaceIdUseCase {
     private final ProjectSettingsService projectSettingsService;
     private final ProjectService projectService;
     private final FaceService faceService;
-    private final UserService userService;
+    private final FaceMediaService faceMediaService;
     private final UseCaseNotifyService useCaseNotifyService;
 
     @Transactional(
@@ -66,6 +67,7 @@ public class VerifyByFaceIdUseCase {
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.VERIFY_ID)
+                .mediaType(MediaType.FACE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
                 .checkLiveness(findProjectSettings.getLivenessVerifyingByIdEnabled())
                 .success(false)
@@ -76,19 +78,19 @@ public class VerifyByFaceIdUseCase {
                 .build();
         matchHistoryRepository.save(matchHistory);
 
-        User user;
+        FaceMedia faceMedia;
         try {
-            user = userService.getUserByFaceIdAndProjectId(input.faceId(), project.getId());
+            faceMedia = faceMediaService.getFaceMediaByFaceIdAndProjectId(input.faceId(), project.getId());
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
-        matchHistory.updateUser(user);
+        matchHistory.updateFaceMedia(faceMedia);
 
         var verifyRequest = new VerifyByFaceIdFeignRequestDTO(
                 project.getBranchName(),
-                user.getFaceId(),
+                faceMedia.getFaceId(),
                 input.matchingFaceImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),

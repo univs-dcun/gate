@@ -1,7 +1,6 @@
-package ai.univs.gate.facade.demo.application.usecase;
+package ai.univs.gate.modules.face_media.application.usecase;
 
-import ai.univs.gate.facade.demo.application.input.CreateUserByApiKeyInput;
-import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.modules.face_media.application.input.CreateFaceMediaInput;
 import ai.univs.gate.modules.face_media.application.result.FaceMediaResult;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -16,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class CreateUserByApiKeyUseCase {
+public class CreateFaceMediaUseCase {
 
     private final FaceMediaService faceMediaService;
     private final FileService fileService;
@@ -24,22 +23,18 @@ public class CreateUserByApiKeyUseCase {
     private final ProjectSettingsService projectSettingsService;
 
     @Transactional
-    public FaceMediaResult execute(CreateUserByApiKeyInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
-
-        ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
-
-        // 데모 활성화 여부 체크
-        projectSettingsService.validateDemoEnabled(findProjectSettings);
-
+    public FaceMediaResult execute(CreateFaceMediaInput input) {
         CreateFaceMediaServiceResult result = faceMediaService.createFaceMedia(
-                CallerType.DEMO,
+                CallerType.API,
                 input.accountId(),
                 input.apiKey(),
                 input.faceImage(),
-                input.userDescription(),
+                input.description(),
                 input.username(),
                 input.transactionUuid());
-        return FaceMediaResult.from(result.faceMedia(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
+
+        ProjectSettings projectSettings = projectSettingsService.findByProject(
+                apiKeyService.findByApiKey(input.apiKey()).getProject());
+        return FaceMediaResult.from(result.faceMedia(), result.livenessChecked(), fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

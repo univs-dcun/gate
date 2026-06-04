@@ -15,8 +15,8 @@ import ai.univs.gate.modules.match.application.usecase.LivenessUseCase;
 import ai.univs.gate.modules.match.application.usecase.VerifyByFaceIdUseCase;
 import ai.univs.gate.modules.match.application.usecase.VerifyByImageUseCase;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
-import ai.univs.gate.modules.user.api.dto.UserResponseDTO;
-import ai.univs.gate.modules.user.api.dto.UsersResponseDTO;
+import ai.univs.gate.modules.face_media.api.dto.FaceMediaResponseDTO;
+import ai.univs.gate.modules.face_media.api.dto.FaceMediasResponseDTO;
 import ai.univs.gate.shared.web.dto.CustomPage;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
@@ -85,13 +85,13 @@ public class DemoController {
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
     @PostMapping(value = "/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<UserResponseDTO>> createUserByApiKey(
+    public ResponseEntity<ResponseApi<FaceMediaResponseDTO>> createUserByApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid CreateUserByApiKeyRequestDTO request
     ) throws JsonProcessingException {
         var input = request.toCreateUserByApiKeyInput();
         var result = createUserByApiKeyUseCase.execute(input);
-        var response = UserResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
+        var response = FaceMediaResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
         var responseApi = ResponseApi.ok(response);
 
         var payload = new DemoRedisPayload<>("REGISTER", result.transactionUuid(), responseApi);
@@ -164,7 +164,7 @@ public class DemoController {
             @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
     @GetMapping("/users")
-    public ResponseEntity<ResponseApi<UsersResponseDTO>> getUsersByApiKey(
+    public ResponseEntity<ResponseApi<FaceMediasResponseDTO>> getUsersByApiKey(
             HttpServletRequest httpServletRequest,
             @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
     ) {
@@ -172,10 +172,10 @@ public class DemoController {
         var input = request.toInput(timezone);
         var result = getUsersByApiKeyUseCase.execute(input);
 
-        var usersResponse = result.users().stream()
-                .map(userResult -> UserResponseDTO.from(userResult, timezone))
+        var faceMediaResponses = result.faceMedias().stream()
+                .map(fm -> FaceMediaResponseDTO.from(fm, timezone))
                 .toList();
-        var response = new UsersResponseDTO(usersResponse, CustomPage.from(result.page()));
+        var response = new FaceMediasResponseDTO(faceMediaResponses, CustomPage.from(result.page()));
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 

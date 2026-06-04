@@ -1,0 +1,48 @@
+package ai.univs.gate.modules.face_media.api.dto;
+
+import ai.univs.gate.modules.face_media.application.result.FaceMediaResult;
+import ai.univs.gate.shared.swagger.SwaggerDescriptions;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDateTime;
+
+import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
+
+public record FaceMediaResponseDTO(
+        @Schema(description = SwaggerDescriptions.USER_ID)
+        Long userId,
+
+        @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
+        String userDescription,
+
+        @Schema(description = "사용자 이름")
+        String username,
+
+        @Schema(description = SwaggerDescriptions.FACE_ID)
+        String faceId,
+
+        @Schema(description = SwaggerDescriptions.FACE_IMAGE_PATH)
+        String faceImagePath,
+
+        @Schema(description = SwaggerDescriptions.CHECK_LIVENESS)
+        Boolean checkLiveness,
+
+        @Schema(description = SwaggerDescriptions.CREATED_AT)
+        LocalDateTime createdAt,
+
+        @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
+        String transactionUuid
+) {
+
+    public static FaceMediaResponseDTO from(FaceMediaResult result, String timezone) {
+        return new FaceMediaResponseDTO(
+                result.faceMediaId(),
+                result.description(),
+                result.username(),
+                result.faceId(),
+                result.faceImagePath(),
+                result.checkLiveness(),
+                fromUtc(result.createdAt(), timezone),
+                result.transactionUuid());
+    }
+}

@@ -1,6 +1,5 @@
-package ai.univs.gate.facade.demo.application.usecase;
+package ai.univs.gate.modules.face_media.application.usecase;
 
-import ai.univs.gate.facade.demo.application.input.GetUsersByApiKeyInput;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_media.application.input.FaceMediaQuery;
 import ai.univs.gate.modules.face_media.application.result.FaceMediaResult;
@@ -9,6 +8,7 @@ import ai.univs.gate.modules.face_media.domain.entity.FaceMedia;
 import ai.univs.gate.modules.face_media.domain.repository.FaceMediaRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
@@ -23,7 +23,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class GetUsersByApiKeyUseCase {
+public class GetFaceMediasUseCase {
 
     private final FaceMediaRepository faceMediaRepository;
     private final ApiKeyService apiKeyService;
@@ -31,14 +31,11 @@ public class GetUsersByApiKeyUseCase {
     private final ProjectSettingsService projectSettingsService;
 
     @Transactional(readOnly = true)
-    public GetFaceMediasResult execute(GetUsersByApiKeyInput input) {
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+    public GetFaceMediasResult execute(FaceMediaQuery query) {
+        UserContext userContext = UserContext.get();
+
+        ApiKey apiKey = apiKeyService.findByApiKey(userContext.getApiKey());
         Project project = apiKey.getProject();
-
-        ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-        projectSettingsService.validateDemoEnabled(projectSettings);
-
-        FaceMediaQuery query = input.toFaceMediaQuery();
         long totalCount = faceMediaRepository.countByProjectIdAndIsDeletedFalse(project.getId());
         Page<FaceMedia> faceMedias = faceMediaRepository.findAllByQuery(query, project.getId());
 
@@ -46,11 +43,11 @@ public class GetUsersByApiKeyUseCase {
             return new GetFaceMediasResult(Collections.emptyList(), CustomPageResult.of(Page.empty(), totalCount));
         }
 
+        ProjectSettings projectSettings = projectSettingsService.findByProject(project);
         boolean consentEnabled = projectSettings.getConsentEnabled();
         List<FaceMediaResult> contents = faceMedias.stream()
                 .map(fm -> FaceMediaResult.from(fm, fileService.getFileServerPath(), consentEnabled))
                 .toList();
-
         CustomPageResult page = CustomPageResult.from(
                 faceMedias.getPageable(),
                 faceMedias.getTotalElements(),
