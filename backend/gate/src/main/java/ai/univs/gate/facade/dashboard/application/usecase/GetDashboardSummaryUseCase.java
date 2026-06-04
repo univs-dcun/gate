@@ -40,7 +40,13 @@ public class GetDashboardSummaryUseCase {
                 dashboardStatsService.countIdentify(projectId, from),
                 dashboardStatsService.countTotalIdentify(projectId),
                 dashboardStatsService.countLiveness(projectId, from),
-                dashboardStatsService.countTotalLiveness(projectId)
+                dashboardStatsService.countTotalLiveness(projectId),
+                dashboardStatsService.countPalmRegistrations(projectId, from),
+                dashboardStatsService.countTotalPalmRegistrations(projectId),
+                dashboardStatsService.countPalmIdentify(projectId, from),
+                dashboardStatsService.countTotalPalmIdentify(projectId),
+                dashboardStatsService.countPalmLiveness(projectId, from),
+                dashboardStatsService.countTotalPalmLiveness(projectId)
         );
     }
 }

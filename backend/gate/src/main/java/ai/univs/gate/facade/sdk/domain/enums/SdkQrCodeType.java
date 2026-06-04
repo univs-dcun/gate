@@ -6,5 +6,6 @@ public enum SdkQrCodeType {
     VERIFY,
     IDENTIFY,
     LIVENESS,
+    CREATE_PALM_MEDIA,
     ;
 }

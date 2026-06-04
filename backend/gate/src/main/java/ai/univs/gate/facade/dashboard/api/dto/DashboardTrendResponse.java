@@ -20,7 +20,13 @@ public record DashboardTrendResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_IDENTIFY, defaultValue = "WEEK")
         List<Long> identify,
         @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_LIVENESS, defaultValue = "WEEK")
-        List<Long> liveness
+        List<Long> liveness,
+        @Schema(description = "팜 등록 추이")
+        List<Long> palmRegistration,
+        @Schema(description = "팜 1:N 매칭 추이")
+        List<Long> palmIdentify,
+        @Schema(description = "팜 라이브니스 추이")
+        List<Long> palmLiveness
 ) {
 
     public static DashboardTrendResponse from(DashboardTrendResult result) {
@@ -31,6 +37,9 @@ public record DashboardTrendResponse(
                 result.verifyById(),
                 result.verifyByImage(),
                 result.identify(),
-                result.liveness());
+                result.liveness(),
+                result.palmRegistration(),
+                result.palmIdentify(),
+                result.palmLiveness());
     }
 }

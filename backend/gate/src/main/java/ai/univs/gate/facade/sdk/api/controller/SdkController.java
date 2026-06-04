@@ -8,6 +8,7 @@ import ai.univs.gate.modules.match.api.dto.LivenessResponseDTO;
 import ai.univs.gate.modules.match.api.dto.VerifyByFaceIdResponseDTO;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
 import ai.univs.gate.modules.face_media.api.dto.FaceMediaResponseDTO;
+import ai.univs.gate.modules.palm_media.api.dto.PalmMediaResponseDTO;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.jwt.JwtTokenProvider;
@@ -43,6 +44,8 @@ public class SdkController {
     private final GetVerifyQrCodeUseCase getVerifyQrCodeUseCase;
     private final GetIdentifyQrCodeUseCase getIdentifyQrCodeUseCase;
     private final GetLivenessQrCodeUseCase getLivenessQrCodeUserCase;
+    private final GetCreatePalmMediaQrCodeUseCase getCreatePalmMediaQrCodeUseCase;
+    private final CreatePalmMediaByTokenUseCase createPalmMediaByTokenUseCase;
     private final JwtTokenProvider jwtTokenProvider;
     private final SdkQrCodeService sdkQrCodeService;
     private final MessageService messageService;
@@ -175,5 +178,33 @@ public class SdkController {
         String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @GetMapping(value = "/palm-media/qr")
+    public ResponseEntity<ResponseApi<QrCodeResponseDTO>> getCreatePalmMediaQrCode() {
+        UserContext ctx = UserContext.get();
+        var result = getCreatePalmMediaQrCodeUseCase.execute(ctx.getAccountIdAsLong(), ctx.getApiKey());
+        var response = new QrCodeResponseDTO(result.base64QrCode(), result.link());
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @PostMapping(value = "/palm-media/token", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<PalmMediaResponseDTO>> createPalmMediaByToken(
+            HttpServletRequest httpServletRequest,
+            @ModelAttribute @Valid CreatePalmMediaByTokenRequestDTO request
+    ) {
+        String timezone = httpServletRequest.getHeader("Accept-TimeZone");
+        String token = sdkQrCodeService.getToken(request.code());
+        String apiKey = jwtTokenProvider.getApiKeyFromToken(token);
+        Long projectId = apiKeyService.findByApiKey(apiKey).getProject().getId();
+
+        var input = request.toInput();
+        var result = createPalmMediaByTokenUseCase.execute(input);
+        var response = PalmMediaResponseDTO.from(result, timezone);
+        var responseApi = ResponseApi.ok(response);
+
+        webhookService.send(projectId, "sdk", "palm.register", responseApi);
+        sdkQrCodeService.consumeCode(request.code());
+        return ResponseEntity.ok(responseApi);
     }
 }

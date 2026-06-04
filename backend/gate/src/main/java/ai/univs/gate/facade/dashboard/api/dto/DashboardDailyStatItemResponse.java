@@ -16,7 +16,13 @@ public record DashboardDailyStatItemResponse(
         @Schema(description = SwaggerDescriptions.COUNT_IDENTIFY)
         long identify,
         @Schema(description = SwaggerDescriptions.COUNT_LIVENESS)
-        long liveness
+        long liveness,
+        @Schema(description = "팜 등록 건수")
+        long palmRegistration,
+        @Schema(description = "팜 1:N 매칭 건수")
+        long palmIdentify,
+        @Schema(description = "팜 라이브니스 건수")
+        long palmLiveness
 ) {
 
     public static DashboardDailyStatItemResponse from(DashboardDailyStatItemResult item) {
@@ -26,7 +32,10 @@ public record DashboardDailyStatItemResponse(
                 item.verifyById(),
                 item.verifyByImage(),
                 item.identify(),
-                item.liveness()
+                item.liveness(),
+                item.palmRegistration(),
+                item.palmIdentify(),
+                item.palmLiveness()
         );
     }
 }

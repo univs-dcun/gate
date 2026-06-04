@@ -10,6 +10,12 @@ public record DashboardSummaryResult(
         long identifyPeriodCount,
         long identifyTotalCount,
         long livenessPeriodCount,
-        long livenessTotalCount
+        long livenessTotalCount,
+        long palmRegistrationPeriodCount,
+        long palmRegistrationTotalCount,
+        long palmIdentifyPeriodCount,
+        long palmIdentifyTotalCount,
+        long palmLivenessPeriodCount,
+        long palmLivenessTotalCount
 ) {
 }

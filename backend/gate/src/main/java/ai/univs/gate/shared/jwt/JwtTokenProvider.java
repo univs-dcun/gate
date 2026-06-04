@@ -57,6 +57,23 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    // Palm 등록 Token 생성
+    public String createQrCodeTokenForCreatingPalmMedia(String accountId, String apiKey) {
+        String jti = UUID.randomUUID().toString();
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + createUserTokenExpiry);
+
+        return Jwts.builder()
+                .setId(jti)
+                .setSubject(accountId)
+                .claim("apiKey", apiKey)
+                .claim("type", "palm_registration")
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSignKey())
+                .compact();
+    }
+
     // Identify Token 생성
     public String createQrCodeTokenForIdentify(String accountId, String apiKey) {
         String jti = UUID.randomUUID().toString();
