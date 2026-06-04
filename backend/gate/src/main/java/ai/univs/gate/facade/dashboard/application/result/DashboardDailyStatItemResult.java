@@ -6,9 +6,6 @@ public record DashboardDailyStatItemResult(
         long verifyById,
         long verifyByImage,
         long identify,
-        long liveness,
-        long palmRegistration,
-        long palmIdentify,
-        long palmLiveness
+        long liveness
 ) {
 }

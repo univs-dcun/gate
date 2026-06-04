@@ -14,13 +14,7 @@ public record DashboardRatiosResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_IDENTIFY)
         RatioSummary identify,
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_LIVENESS)
-        RatioSummary liveness,
-        @Schema(description = "팜 등록 성공/실패 비율")
-        RatioSummary palmRegistration,
-        @Schema(description = "팜 1:N 매칭 성공/실패 비율")
-        RatioSummary palmIdentify,
-        @Schema(description = "팜 라이브니스 성공/실패 비율")
-        RatioSummary palmLiveness
+        RatioSummary liveness
 ) {
 
     public record RatioSummary(
@@ -40,10 +34,7 @@ public record DashboardRatiosResponse(
                 toRatioSummary(result.verifyById()),
                 toRatioSummary(result.verifyByImage()),
                 toRatioSummary(result.identify()),
-                toRatioSummary(result.liveness()),
-                toRatioSummary(result.palmRegistration()),
-                toRatioSummary(result.palmIdentify()),
-                toRatioSummary(result.palmLiveness()));
+                toRatioSummary(result.liveness()));
     }
 
     private static RatioSummary toRatioSummary(DashboardRatiosResult.RatioItem item) {

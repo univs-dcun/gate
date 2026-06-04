@@ -14,13 +14,7 @@ public record DashboardSummaryResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_IDENTIFY)
         UsageSummary identify,
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_LIVENESS)
-        UsageSummary liveness,
-        @Schema(description = "팜 등록 건수")
-        UsageSummary palmRegistration,
-        @Schema(description = "팜 1:N 매칭 건수")
-        UsageSummary palmIdentify,
-        @Schema(description = "팜 라이브니스 건수")
-        UsageSummary palmLiveness
+        UsageSummary liveness
 ) {
 
     public record UsageSummary(
@@ -32,14 +26,11 @@ public record DashboardSummaryResponse(
 
     public static DashboardSummaryResponse from(DashboardSummaryResult result) {
         return new DashboardSummaryResponse(
-                new UsageSummary(result.registrationPeriodCount(),     result.registrationTotalCount()),
-                new UsageSummary(result.verifyByIdPeriodCount(),       result.verifyByIdTotalCount()),
-                new UsageSummary(result.verifyByImagePeriodCount(),    result.verifyByImageTotalCount()),
-                new UsageSummary(result.identifyPeriodCount(),         result.identifyTotalCount()),
-                new UsageSummary(result.livenessPeriodCount(),         result.livenessTotalCount()),
-                new UsageSummary(result.palmRegistrationPeriodCount(), result.palmRegistrationTotalCount()),
-                new UsageSummary(result.palmIdentifyPeriodCount(),     result.palmIdentifyTotalCount()),
-                new UsageSummary(result.palmLivenessPeriodCount(),     result.palmLivenessTotalCount())
+                new UsageSummary(result.registrationPeriodCount(),  result.registrationTotalCount()),
+                new UsageSummary(result.verifyByIdPeriodCount(),    result.verifyByIdTotalCount()),
+                new UsageSummary(result.verifyByImagePeriodCount(), result.verifyByImageTotalCount()),
+                new UsageSummary(result.identifyPeriodCount(),      result.identifyTotalCount()),
+                new UsageSummary(result.livenessPeriodCount(),      result.livenessTotalCount())
         );
     }
 }

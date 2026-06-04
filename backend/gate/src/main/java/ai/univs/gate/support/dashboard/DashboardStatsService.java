@@ -4,6 +4,7 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatItemR
 import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatsResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
+import ai.univs.gate.facade.dashboard.domain.enums.DashboardMediaType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
@@ -38,191 +39,116 @@ public class DashboardStatsService {
 
     // ── 단순 건수 집계 (기간 필터) ─────────────────────────────────────────────────
 
-    public long countRegistrations(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(faceMedia.count())
-                .from(faceMedia)
-                .where(faceMedia.project.id.eq(projectId),
-                       faceMedia.isDeleted.eq(false),
-                       faceMedia.createdAt.goe(from))
+    public long countRegistrations(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) {
+            Long count = queryFactory.select(palmMedia.count()).from(palmMedia)
+                    .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false), palmMedia.createdAt.goe(from))
+                    .fetchOne();
+            return Optional.ofNullable(count).orElse(0L);
+        }
+        Long count = queryFactory.select(faceMedia.count()).from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false), faceMedia.createdAt.goe(from))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countVerifyById(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY),
-                       mh.createdAt.goe(from))
+    public long countVerifyById(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) return 0L;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY), mh.createdAt.goe(from))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countVerifyByImage(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(MatchType.VERIFY_IMAGE),
-                       mh.createdAt.goe(from))
+    public long countVerifyByImage(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) return 0L;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.VERIFY_IMAGE), mh.createdAt.goe(from))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countIdentify(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(MatchType.IDENTIFY),
-                       mh.createdAt.goe(from))
+    public long countIdentify(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        MatchType type = mediaType == DashboardMediaType.PALM ? MatchType.PALM_IDENTIFY : MatchType.IDENTIFY;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type), mh.createdAt.goe(from))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countLiveness(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(MatchType.LIVENESS),
-                       mh.createdAt.goe(from))
+    public long countLiveness(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        MatchType type = mediaType == DashboardMediaType.PALM ? MatchType.PALM_LIVENESS : MatchType.LIVENESS;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type), mh.createdAt.goe(from))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
     // ── 단순 건수 집계 (전체 누적) ─────────────────────────────────────────────────
 
-    public long countTotalRegistrations(Long projectId) {
-        Long count = queryFactory
-                .select(faceMedia.count())
-                .from(faceMedia)
+    public long countTotalRegistrations(Long projectId, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) {
+            Long count = queryFactory.select(palmMedia.count()).from(palmMedia)
+                    .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false))
+                    .fetchOne();
+            return Optional.ofNullable(count).orElse(0L);
+        }
+        Long count = queryFactory.select(faceMedia.count()).from(faceMedia)
                 .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countTotalVerifyById(Long projectId) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY))
+    public long countTotalVerifyById(Long projectId, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) return 0L;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countTotalVerifyByImage(Long projectId) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
+    public long countTotalVerifyByImage(Long projectId, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) return 0L;
+        Long count = queryFactory.select(mh.count()).from(mh)
                 .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.VERIFY_IMAGE))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countTotalIdentify(Long projectId) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.IDENTIFY))
+    public long countTotalIdentify(Long projectId, DashboardMediaType mediaType) {
+        MatchType type = mediaType == DashboardMediaType.PALM ? MatchType.PALM_IDENTIFY : MatchType.IDENTIFY;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
-    public long countTotalLiveness(Long projectId) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.LIVENESS))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
-    }
-
-    // ── 팜 단순 건수 집계 (기간 필터) ──────────────────────────────────────────────────
-
-    public long countPalmRegistrations(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(palmMedia.count())
-                .from(palmMedia)
-                .where(palmMedia.project.id.eq(projectId),
-                       palmMedia.isDeleted.eq(false),
-                       palmMedia.createdAt.goe(from))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
-    }
-
-    public long countPalmIdentify(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(MatchType.PALM_IDENTIFY),
-                       mh.createdAt.goe(from))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
-    }
-
-    public long countPalmLiveness(Long projectId, LocalDateTime from) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(MatchType.PALM_LIVENESS),
-                       mh.createdAt.goe(from))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
-    }
-
-    // ── 팜 단순 건수 집계 (전체 누적) ──────────────────────────────────────────────────
-
-    public long countTotalPalmRegistrations(Long projectId) {
-        Long count = queryFactory
-                .select(palmMedia.count())
-                .from(palmMedia)
-                .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
-    }
-
-    public long countTotalPalmIdentify(Long projectId) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.PALM_IDENTIFY))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
-    }
-
-    public long countTotalPalmLiveness(Long projectId) {
-        Long count = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId), mh.matchType.eq(MatchType.PALM_LIVENESS))
+    public long countTotalLiveness(Long projectId, DashboardMediaType mediaType) {
+        MatchType type = mediaType == DashboardMediaType.PALM ? MatchType.PALM_LIVENESS : MatchType.LIVENESS;
+        Long count = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type))
                 .fetchOne();
         return Optional.ofNullable(count).orElse(0L);
     }
 
     // ── 비율 통계 ────────────────────────────────────────────────────────────────────
 
-    public DashboardRatiosResult getRatios(Long projectId, LocalDateTime from) {
+    public DashboardRatiosResult getRatios(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        MatchType identifyType = mediaType == DashboardMediaType.PALM ? MatchType.PALM_IDENTIFY : MatchType.IDENTIFY;
+        MatchType livenessType = mediaType == DashboardMediaType.PALM ? MatchType.PALM_LIVENESS : MatchType.LIVENESS;
+
         return new DashboardRatiosResult(
-                queryRegistrationRatio(projectId, from),
-                queryVerifyByIdRatio(projectId, from),
-                queryMatchRatio(projectId, from, MatchType.VERIFY_IMAGE),
-                queryMatchRatio(projectId, from, MatchType.IDENTIFY),
-                queryMatchRatio(projectId, from, MatchType.LIVENESS),
-                queryPalmRegistrationRatio(projectId, from),
-                queryMatchRatio(projectId, from, MatchType.PALM_IDENTIFY),
-                queryMatchRatio(projectId, from, MatchType.PALM_LIVENESS)
+                queryRegistrationRatio(projectId, from, mediaType),
+                mediaType == DashboardMediaType.PALM ? new DashboardRatiosResult.RatioItem(0, 0) : queryVerifyByIdRatio(projectId, from),
+                mediaType == DashboardMediaType.PALM ? new DashboardRatiosResult.RatioItem(0, 0) : queryMatchRatio(projectId, from, MatchType.VERIFY_IMAGE),
+                queryMatchRatio(projectId, from, identifyType),
+                queryMatchRatio(projectId, from, livenessType)
         );
     }
 
     // ── 사용량 추이 ─────────────────────────────────────────────────────────────────
 
-    public DashboardTrendResult getTrend(Long projectId, TrendPeriod period) {
+    public DashboardTrendResult getTrend(Long projectId, TrendPeriod period, DashboardMediaType mediaType) {
         boolean byHour  = period == TrendPeriod.TODAY;
         boolean byMonth = period == TrendPeriod.YEAR;
 
@@ -233,16 +159,16 @@ public class DashboardStatsService {
             case YEAR  -> LocalDate.now(ZoneOffset.UTC).minusMonths(11).withDayOfMonth(1).atStartOfDay();
         };
 
+        MatchType identifyType = mediaType == DashboardMediaType.PALM ? MatchType.PALM_IDENTIFY : MatchType.IDENTIFY;
+        MatchType livenessType = mediaType == DashboardMediaType.PALM ? MatchType.PALM_LIVENESS : MatchType.LIVENESS;
+
         List<String> labels = generateLabels(period);
 
-        Map<String, Long> regMap       = queryRegistrationByDate(projectId, from, byMonth, byHour);
-        Map<String, Long> verByIdMap   = queryVerifyByIdByDate(projectId, from, byMonth, byHour);
-        Map<String, Long> verByImgMap  = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.VERIFY_IMAGE);
-        Map<String, Long> idnMap       = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.IDENTIFY);
-        Map<String, Long> livMap       = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.LIVENESS);
-        Map<String, Long> palmRegMap   = queryPalmRegistrationByDate(projectId, from, byMonth, byHour);
-        Map<String, Long> palmIdnMap   = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.PALM_IDENTIFY);
-        Map<String, Long> palmLivMap   = queryMatchByDate(projectId, from, byMonth, byHour, MatchType.PALM_LIVENESS);
+        Map<String, Long> regMap      = queryRegistrationByDate(projectId, from, byMonth, byHour, mediaType);
+        Map<String, Long> verByIdMap  = mediaType == DashboardMediaType.PALM ? Map.of() : queryVerifyByIdByDate(projectId, from, byMonth, byHour);
+        Map<String, Long> verByImgMap = mediaType == DashboardMediaType.PALM ? Map.of() : queryMatchByDate(projectId, from, byMonth, byHour, MatchType.VERIFY_IMAGE);
+        Map<String, Long> idnMap      = queryMatchByDate(projectId, from, byMonth, byHour, identifyType);
+        Map<String, Long> livMap      = queryMatchByDate(projectId, from, byMonth, byHour, livenessType);
 
         return new DashboardTrendResult(
                 period,
@@ -251,24 +177,21 @@ public class DashboardStatsService {
                 labels.stream().map(l -> verByIdMap.getOrDefault(l, 0L)).toList(),
                 labels.stream().map(l -> verByImgMap.getOrDefault(l, 0L)).toList(),
                 labels.stream().map(l -> idnMap.getOrDefault(l, 0L)).toList(),
-                labels.stream().map(l -> livMap.getOrDefault(l, 0L)).toList(),
-                labels.stream().map(l -> palmRegMap.getOrDefault(l, 0L)).toList(),
-                labels.stream().map(l -> palmIdnMap.getOrDefault(l, 0L)).toList(),
-                labels.stream().map(l -> palmLivMap.getOrDefault(l, 0L)).toList()
+                labels.stream().map(l -> livMap.getOrDefault(l, 0L)).toList()
         );
     }
 
     // ── 일일 데이터 통계 ────────────────────────────────────────────────────────────
 
-    public DashboardDailyStatsResult getDailyStats(Long projectId, int page, int pageSize) {
-        Map<LocalDate, Long> regMap      = queryAllRegistrationByDate(projectId);
-        Map<LocalDate, Long> verByIdMap  = queryAllVerifyByIdByDate(projectId);
-        Map<LocalDate, Long> verByImgMap = queryAllMatchByDate(projectId, MatchType.VERIFY_IMAGE);
-        Map<LocalDate, Long> idnMap      = queryAllMatchByDate(projectId, MatchType.IDENTIFY);
-        Map<LocalDate, Long> livMap      = queryAllMatchByDate(projectId, MatchType.LIVENESS);
-        Map<LocalDate, Long> palmRegMap  = queryAllPalmRegistrationByDate(projectId);
-        Map<LocalDate, Long> palmIdnMap  = queryAllMatchByDate(projectId, MatchType.PALM_IDENTIFY);
-        Map<LocalDate, Long> palmLivMap  = queryAllMatchByDate(projectId, MatchType.PALM_LIVENESS);
+    public DashboardDailyStatsResult getDailyStats(Long projectId, int page, int pageSize, DashboardMediaType mediaType) {
+        MatchType identifyType = mediaType == DashboardMediaType.PALM ? MatchType.PALM_IDENTIFY : MatchType.IDENTIFY;
+        MatchType livenessType = mediaType == DashboardMediaType.PALM ? MatchType.PALM_LIVENESS : MatchType.LIVENESS;
+
+        Map<LocalDate, Long> regMap      = queryAllRegistrationByDate(projectId, mediaType);
+        Map<LocalDate, Long> verByIdMap  = mediaType == DashboardMediaType.PALM ? Map.of() : queryAllVerifyByIdByDate(projectId);
+        Map<LocalDate, Long> verByImgMap = mediaType == DashboardMediaType.PALM ? Map.of() : queryAllMatchByDate(projectId, MatchType.VERIFY_IMAGE);
+        Map<LocalDate, Long> idnMap      = queryAllMatchByDate(projectId, identifyType);
+        Map<LocalDate, Long> livMap      = queryAllMatchByDate(projectId, livenessType);
 
         // 전체 날짜 합집합 — 최신순 정렬
         Set<LocalDate> allDates = new TreeSet<>(Comparator.reverseOrder());
@@ -277,9 +200,6 @@ public class DashboardStatsService {
         allDates.addAll(verByImgMap.keySet());
         allDates.addAll(idnMap.keySet());
         allDates.addAll(livMap.keySet());
-        allDates.addAll(palmRegMap.keySet());
-        allDates.addAll(palmIdnMap.keySet());
-        allDates.addAll(palmLivMap.keySet());
 
         long totalElements = allDates.size();
         int  totalPages    = totalElements == 0 ? 1 : (int) Math.ceil((double) totalElements / pageSize);
@@ -295,10 +215,7 @@ public class DashboardStatsService {
                         verByIdMap.getOrDefault(d, 0L),
                         verByImgMap.getOrDefault(d, 0L),
                         idnMap.getOrDefault(d, 0L),
-                        livMap.getOrDefault(d, 0L),
-                        palmRegMap.getOrDefault(d, 0L),
-                        palmIdnMap.getOrDefault(d, 0L),
-                        palmLivMap.getOrDefault(d, 0L)
+                        livMap.getOrDefault(d, 0L)
                 ))
                 .toList();
 
@@ -319,89 +236,49 @@ public class DashboardStatsService {
 
     // ── private 헬퍼: 비율 집계 ─────────────────────────────────────────────────────
 
-    private DashboardRatiosResult.RatioItem queryRegistrationRatio(Long projectId, LocalDateTime from) {
-        Long active = queryFactory
-                .select(faceMedia.count())
-                .from(faceMedia)
-                .where(faceMedia.project.id.eq(projectId),
-                       faceMedia.isDeleted.eq(false),
-                       faceMedia.createdAt.goe(from))
+    private DashboardRatiosResult.RatioItem queryRegistrationRatio(Long projectId, LocalDateTime from, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) {
+            Long active = queryFactory.select(palmMedia.count()).from(palmMedia)
+                    .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false), palmMedia.createdAt.goe(from))
+                    .fetchOne();
+            Long total = queryFactory.select(palmMedia.count()).from(palmMedia)
+                    .where(palmMedia.project.id.eq(projectId), palmMedia.createdAt.goe(from))
+                    .fetchOne();
+            long activeCount = Optional.ofNullable(active).orElse(0L);
+            long totalCount  = Optional.ofNullable(total).orElse(0L);
+            return new DashboardRatiosResult.RatioItem(activeCount, totalCount - activeCount);
+        }
+
+        Long active = queryFactory.select(faceMedia.count()).from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false), faceMedia.createdAt.goe(from))
                 .fetchOne();
-
-        Long total = queryFactory
-                .select(faceMedia.count())
-                .from(faceMedia)
-                .where(faceMedia.project.id.eq(projectId),
-                       faceMedia.createdAt.goe(from))
+        Long total = queryFactory.select(faceMedia.count()).from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId), faceMedia.createdAt.goe(from))
                 .fetchOne();
-
-        long activeCount = Optional.ofNullable(active).orElse(0L);
-        long totalCount  = Optional.ofNullable(total).orElse(0L);
-        return new DashboardRatiosResult.RatioItem(activeCount, totalCount - activeCount);
-    }
-
-    private DashboardRatiosResult.RatioItem queryPalmRegistrationRatio(Long projectId, LocalDateTime from) {
-        Long active = queryFactory
-                .select(palmMedia.count())
-                .from(palmMedia)
-                .where(palmMedia.project.id.eq(projectId),
-                       palmMedia.isDeleted.eq(false),
-                       palmMedia.createdAt.goe(from))
-                .fetchOne();
-
-        Long total = queryFactory
-                .select(palmMedia.count())
-                .from(palmMedia)
-                .where(palmMedia.project.id.eq(projectId),
-                       palmMedia.createdAt.goe(from))
-                .fetchOne();
-
         long activeCount = Optional.ofNullable(active).orElse(0L);
         long totalCount  = Optional.ofNullable(total).orElse(0L);
         return new DashboardRatiosResult.RatioItem(activeCount, totalCount - activeCount);
     }
 
     private DashboardRatiosResult.RatioItem queryVerifyByIdRatio(Long projectId, LocalDateTime from) {
-        Long success = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY),
-                       mh.success.eq(true),
-                       mh.createdAt.goe(from))
+        Long success = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY), mh.success.eq(true), mh.createdAt.goe(from))
                 .fetchOne();
-
-        Long total = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY),
-                       mh.createdAt.goe(from))
+        Long total = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY), mh.createdAt.goe(from))
                 .fetchOne();
-
         long successCount = Optional.ofNullable(success).orElse(0L);
         long totalCount   = Optional.ofNullable(total).orElse(0L);
         return new DashboardRatiosResult.RatioItem(successCount, totalCount - successCount);
     }
 
     private DashboardRatiosResult.RatioItem queryMatchRatio(Long projectId, LocalDateTime from, MatchType type) {
-        Long success = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(type),
-                       mh.success.eq(true),
-                       mh.createdAt.goe(from))
+        Long success = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type), mh.success.eq(true), mh.createdAt.goe(from))
                 .fetchOne();
-
-        Long total = queryFactory
-                .select(mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(type),
-                       mh.createdAt.goe(from))
+        Long total = queryFactory.select(mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type), mh.createdAt.goe(from))
                 .fetchOne();
-
         long successCount = Optional.ofNullable(success).orElse(0L);
         long totalCount   = Optional.ofNullable(total).orElse(0L);
         return new DashboardRatiosResult.RatioItem(successCount, totalCount - successCount);
@@ -409,48 +286,28 @@ public class DashboardStatsService {
 
     // ── private 헬퍼: 추이용 (기간 필터 + 문자열 날짜 키) ───────────────────────────
 
-    private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour) {
+    private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) {
+            StringTemplate label = byHour
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        palmMedia.createdAt)
+                    : byMonth
+                        ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    palmMedia.createdAt)
+                        : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", palmMedia.createdAt);
+            return queryFactory.select(label, palmMedia.count()).from(palmMedia)
+                    .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false), palmMedia.createdAt.goe(from))
+                    .groupBy(label).fetch().stream()
+                    .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(palmMedia.count())).orElse(0L)));
+        }
+
         StringTemplate label = byHour
                 ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        faceMedia.createdAt)
                 : byMonth
                     ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    faceMedia.createdAt)
                     : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceMedia.createdAt);
-
-        return queryFactory
-                .select(label, faceMedia.count())
-                .from(faceMedia)
-                .where(faceMedia.project.id.eq(projectId),
-                       faceMedia.isDeleted.eq(false),
-                       faceMedia.createdAt.goe(from))
-                .groupBy(label)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> t.get(label),
-                        t -> Optional.ofNullable(t.get(faceMedia.count())).orElse(0L)
-                ));
-    }
-
-    private Map<String, Long> queryPalmRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour) {
-        StringTemplate label = byHour
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        palmMedia.createdAt)
-                : byMonth
-                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    palmMedia.createdAt)
-                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", palmMedia.createdAt);
-
-        return queryFactory
-                .select(label, palmMedia.count())
-                .from(palmMedia)
-                .where(palmMedia.project.id.eq(projectId),
-                       palmMedia.isDeleted.eq(false),
-                       palmMedia.createdAt.goe(from))
-                .groupBy(label)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> t.get(label),
-                        t -> Optional.ofNullable(t.get(palmMedia.count())).orElse(0L)
-                ));
+        return queryFactory.select(label, faceMedia.count()).from(faceMedia)
+                .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false), faceMedia.createdAt.goe(from))
+                .groupBy(label).fetch().stream()
+                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(faceMedia.count())).orElse(0L)));
     }
 
     private Map<String, Long> queryMatchByDate(
@@ -462,19 +319,10 @@ public class DashboardStatsService {
                     ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
                     : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
-        return queryFactory
-                .select(label, mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.eq(type),
-                       mh.createdAt.goe(from))
-                .groupBy(label)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> t.get(label),
-                        t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)
-                ));
+        return queryFactory.select(label, mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.eq(type), mh.createdAt.goe(from))
+                .groupBy(label).fetch().stream()
+                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)));
     }
 
     private Map<String, Long> queryVerifyByIdByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour) {
@@ -484,90 +332,46 @@ public class DashboardStatsService {
                     ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    mh.createdAt)
                     : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
-        return queryFactory
-                .select(label, mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY),
-                       mh.createdAt.goe(from))
-                .groupBy(label)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> t.get(label),
-                        t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)
-                ));
+        return queryFactory.select(label, mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY), mh.createdAt.goe(from))
+                .groupBy(label).fetch().stream()
+                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)));
     }
 
     // ── private 헬퍼: 일일통계용 (전체 기간, LocalDate 키) ──────────────────────────
 
-    private Map<LocalDate, Long> queryAllRegistrationByDate(Long projectId) {
-        StringTemplate dateStr =
-                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceMedia.createdAt);
+    private Map<LocalDate, Long> queryAllRegistrationByDate(Long projectId, DashboardMediaType mediaType) {
+        if (mediaType == DashboardMediaType.PALM) {
+            StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", palmMedia.createdAt);
+            return queryFactory.select(dateStr, palmMedia.count()).from(palmMedia)
+                    .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false))
+                    .groupBy(dateStr).fetch().stream()
+                    .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(palmMedia.count())).orElse(0L)));
+        }
 
-        return queryFactory
-                .select(dateStr, faceMedia.count())
-                .from(faceMedia)
+        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceMedia.createdAt);
+        return queryFactory.select(dateStr, faceMedia.count()).from(faceMedia)
                 .where(faceMedia.project.id.eq(projectId), faceMedia.isDeleted.eq(false))
-                .groupBy(dateStr)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> LocalDate.parse(t.get(dateStr)),
-                        t -> Optional.ofNullable(t.get(faceMedia.count())).orElse(0L)
-                ));
-    }
-
-    private Map<LocalDate, Long> queryAllPalmRegistrationByDate(Long projectId) {
-        StringTemplate dateStr =
-                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", palmMedia.createdAt);
-
-        return queryFactory
-                .select(dateStr, palmMedia.count())
-                .from(palmMedia)
-                .where(palmMedia.project.id.eq(projectId), palmMedia.isDeleted.eq(false))
-                .groupBy(dateStr)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> LocalDate.parse(t.get(dateStr)),
-                        t -> Optional.ofNullable(t.get(palmMedia.count())).orElse(0L)
-                ));
+                .groupBy(dateStr).fetch().stream()
+                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(faceMedia.count())).orElse(0L)));
     }
 
     private Map<LocalDate, Long> queryAllMatchByDate(Long projectId, MatchType type) {
-        StringTemplate dateStr =
-                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
+        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
-        return queryFactory
-                .select(dateStr, mh.count())
-                .from(mh)
+        return queryFactory.select(dateStr, mh.count()).from(mh)
                 .where(mh.project.id.eq(projectId), mh.matchType.eq(type))
-                .groupBy(dateStr)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> LocalDate.parse(t.get(dateStr)),
-                        t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)
-                ));
+                .groupBy(dateStr).fetch().stream()
+                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)));
     }
 
     private Map<LocalDate, Long> queryAllVerifyByIdByDate(Long projectId) {
-        StringTemplate dateStr =
-                Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
+        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", mh.createdAt);
 
-        return queryFactory
-                .select(dateStr, mh.count())
-                .from(mh)
-                .where(mh.project.id.eq(projectId),
-                       mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY))
-                .groupBy(dateStr)
-                .fetch()
-                .stream()
-                .collect(Collectors.toMap(
-                        t -> LocalDate.parse(t.get(dateStr)),
-                        t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)
-                ));
+        return queryFactory.select(dateStr, mh.count()).from(mh)
+                .where(mh.project.id.eq(projectId), mh.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY))
+                .groupBy(dateStr).fetch().stream()
+                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(mh.count())).orElse(0L)));
     }
 
     // ── private 헬퍼: 추이 label 생성 ───────────────────────────────────────────────

@@ -53,7 +53,7 @@ public class DashboardController {
             @ParameterObject @ModelAttribute DashboardPeriodRequest request
     ) {
         UserContext ctx = UserContext.get();
-        DashboardSummaryResult result = getDashboardSummaryUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
+        DashboardSummaryResult result = getDashboardSummaryUseCase.execute(ctx.getApiKey(), request.effectivePeriod(), request.effectiveMediaType());
         var response = DashboardSummaryResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -72,7 +72,7 @@ public class DashboardController {
             @ParameterObject @ModelAttribute DashboardTrendRequest request
     ) {
         UserContext ctx = UserContext.get();
-        DashboardTrendResult result = getDashboardTrendUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
+        DashboardTrendResult result = getDashboardTrendUseCase.execute(ctx.getApiKey(), request.effectivePeriod(), request.effectiveMediaType());
         var response = DashboardTrendResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -90,7 +90,7 @@ public class DashboardController {
             @ParameterObject @ModelAttribute DashboardPeriodRequest request
     ) {
         UserContext ctx = UserContext.get();
-        DashboardRatiosResult result = getDashboardRatiosUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
+        DashboardRatiosResult result = getDashboardRatiosUseCase.execute(ctx.getApiKey(), request.effectivePeriod(), request.effectiveMediaType());
         var response = DashboardRatiosResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -128,7 +128,8 @@ public class DashboardController {
         DashboardDailyStatsResult result = getDashboardDailyStatsUseCase.execute(
                 ctx.getApiKey(),
                 request.effectivePage(),
-                request.effectivePageSize());
+                request.effectivePageSize(),
+                request.effectiveMediaType());
         var response = DashboardDailyStatsResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }

@@ -11,9 +11,6 @@ public record DashboardTrendResult(
         List<Long> verifyById,
         List<Long> verifyByImage,
         List<Long> identify,
-        List<Long> liveness,
-        List<Long> palmRegistration,
-        List<Long> palmIdentify,
-        List<Long> palmLiveness
+        List<Long> liveness
 ) {
 }

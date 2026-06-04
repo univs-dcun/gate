@@ -1,6 +1,7 @@
 package ai.univs.gate.facade.dashboard.application.usecase;
 
 import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatsResult;
+import ai.univs.gate.facade.dashboard.domain.enums.DashboardMediaType;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
@@ -16,9 +17,9 @@ public class GetDashboardDailyStatsUseCase {
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
-    public DashboardDailyStatsResult execute(String apiKey, int page, int pageSize) {
+    public DashboardDailyStatsResult execute(String apiKey, int page, int pageSize, DashboardMediaType mediaType) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         long projectId = findApiKey.getProject().getId();
-        return dashboardStatsService.getDailyStats(projectId, page, pageSize);
+        return dashboardStatsService.getDailyStats(projectId, page, pageSize, mediaType);
     }
 }

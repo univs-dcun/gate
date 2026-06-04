@@ -5,10 +5,7 @@ public record DashboardRatiosResult(
         RatioItem verifyById,
         RatioItem verifyByImage,
         RatioItem identify,
-        RatioItem liveness,
-        RatioItem palmRegistration,
-        RatioItem palmIdentify,
-        RatioItem palmLiveness
+        RatioItem liveness
 ) {
 
     public record RatioItem(long primaryCount, long secondaryCount) {}
