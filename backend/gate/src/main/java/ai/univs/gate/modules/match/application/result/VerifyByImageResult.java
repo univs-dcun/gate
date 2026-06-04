@@ -15,7 +15,7 @@ public record VerifyByImageResult(
         Boolean checkLiveness,
         Boolean success,
         String faceId,
-        Long userId,
+        Long mediaId,
         BigDecimal similarity,
         String matchingFaceImagePath,
         String targetMatchingFaceImagePath,

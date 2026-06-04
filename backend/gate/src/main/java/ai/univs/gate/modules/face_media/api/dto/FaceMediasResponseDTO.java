@@ -5,7 +5,7 @@ import ai.univs.gate.shared.web.dto.CustomPage;
 import java.util.List;
 
 public record FaceMediasResponseDTO(
-        List<FaceMediaResponseDTO> users,
+        List<FaceMediaResponseDTO> faceMedias,
         CustomPage page
 ) {
 }

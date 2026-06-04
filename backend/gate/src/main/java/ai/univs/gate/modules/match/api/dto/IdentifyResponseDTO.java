@@ -32,11 +32,11 @@ public record IdentifyResponseDTO(
         @Schema(description = SwaggerDescriptions.FACE_ID)
         String faceId,
 
-        @Schema(description = SwaggerDescriptions.USER_ID)
-        Long userId,
+        @Schema(description = "미디어 식별 번호")
+        Long mediaId,
 
-        @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
-        String userDescription,
+        @Schema(description = "미디어 설명")
+        String description,
 
         @Schema(description = "사용자 이름")
         String username,
@@ -75,8 +75,8 @@ public record IdentifyResponseDTO(
                         result.checkLiveness(),
                         result.success(),
                         result.faceId(),
-                        result.userId(),
-                        result.userDescription(),
+                        result.mediaId(),
+                        result.description(),
                         result.username(),
                         result.similarity(),
                         result.faceImagePath(),

@@ -37,7 +37,7 @@ public class CreateUserByApiKeyUseCase {
                 input.accountId(),
                 input.apiKey(),
                 input.faceImage(),
-                input.userDescription(),
+                input.description(),
                 input.username(),
                 input.transactionUuid());
         return FaceMediaResult.from(result.faceMedia(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());

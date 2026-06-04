@@ -19,9 +19,9 @@ public record CreateUserByApiKeyRequestDTO(
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile faceImage,
 
-        @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
+        @Schema(description = "페이스 미디어 설명")
         @Length(max = 1000, message = "INVALID_USER_DESCRIPTION_LENGTH")
-        String userDescription,
+        String description,
 
         @Schema(description = "사용자 이름")
         @Length(max = 255, message = "INVALID_USERNAME_LENGTH")
@@ -37,7 +37,7 @@ public record CreateUserByApiKeyRequestDTO(
                         0L,
                         apiKey,
                         faceImage,
-                        userDescription,
+                        description,
                         username,
                         TransactionUtil.useOrCreate(transactionUuid));
         }

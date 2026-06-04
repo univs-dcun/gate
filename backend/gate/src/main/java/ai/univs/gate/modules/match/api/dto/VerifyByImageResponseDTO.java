@@ -32,8 +32,8 @@ public record VerifyByImageResponseDTO(
         @Schema(description = SwaggerDescriptions.FACE_ID)
         String faceId,
 
-        @Schema(description = SwaggerDescriptions.USER_ID)
-        Long userId,
+        @Schema(description = "미디어 식별 번호")
+        Long mediaId,
 
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
@@ -69,7 +69,7 @@ public record VerifyByImageResponseDTO(
                 result.checkLiveness(),
                 result.success(),
                 result.faceId(),
-                result.userId(),
+                result.mediaId(),
                 result.similarity(),
                 result.matchingFaceImagePath(),
                 result.targetMatchingFaceImagePath(),

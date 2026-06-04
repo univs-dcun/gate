@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 
 public record FaceMediaResponseDTO(
-        @Schema(description = SwaggerDescriptions.USER_ID)
-        Long userId,
+        @Schema(description = "페이스 미디어 식별 번호")
+        Long faceMediaId,
 
-        @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
-        String userDescription,
+        @Schema(description = "페이스 미디어 설명")
+        String description,
 
         @Schema(description = "사용자 이름")
         String username,

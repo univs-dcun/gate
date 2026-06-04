@@ -3,21 +3,14 @@ package ai.univs.gate.modules.face_media.api.dto;
 import ai.univs.gate.modules.face_media.application.input.UpdateFaceMediaInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.web.multipart.MultipartFile;
 
 public record UpdateFaceMediaRequestDTO(
-        @Schema(description = SwaggerDescriptions.USER_ID, requiredMode = Schema.RequiredMode.REQUIRED)
-        @Min(value = Long.MIN_VALUE, message = "INVALID_USER_ID_VALUE")
-        @Max(value = Long.MAX_VALUE, message = "INVALID_USER_ID_VALUE")
-        Long userId,
-
         @Schema(description = SwaggerDescriptions.FACE_IMAGE, type = "string", format = "binary")
         MultipartFile faceImage,
 
-        @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
+        @Schema(description = "페이스 미디어 설명")
         @Length(max = 1000, message = "INVALID_USER_DESCRIPTION_LENGTH")
         String description,
 
@@ -30,11 +23,11 @@ public record UpdateFaceMediaRequestDTO(
         String transactionUuid
 ) {
 
-    public UpdateFaceMediaInput toInput(Long accountId, String apiKey) {
+    public UpdateFaceMediaInput toInput(Long accountId, String apiKey, Long faceMediaId) {
         return new UpdateFaceMediaInput(
                 accountId,
                 apiKey,
-                userId,
+                faceMediaId,
                 faceImage,
                 description,
                 username,
