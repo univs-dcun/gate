@@ -2,6 +2,7 @@ package ai.univs.gate.modules.match.domain.entity;
 
 import ai.univs.gate.modules.face_media.domain.entity.FaceMedia;
 import ai.univs.gate.modules.face_media.domain.enums.MediaType;
+import ai.univs.gate.modules.palm_media.domain.entity.PalmMedia;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
@@ -56,8 +57,8 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "media_type", nullable = false, length = 10)
     private MediaType mediaType;
 
-    @Column(name = "face_media_id")
-    private Long faceMediaId;
+    @Column(name = "media_id")
+    private Long mediaId;
 
     @Column(name = "face_id")
     private String faceId;
@@ -91,16 +92,30 @@ public class MatchHistory extends BaseEntity {
     private Boolean consentSnapshot;
 
     public void updateFaceMedia(FaceMedia faceMedia) {
-        this.faceMediaId = faceMedia.getId();
+        this.mediaId = faceMedia.getId();
         this.faceId = faceMedia.getFaceId();
         this.userDescription = faceMedia.getDescription();
         this.username = faceMedia.getUsername();
         this.faceImagePath = faceMedia.getFaceImagePath();
     }
 
+    public void updatePalmMedia(PalmMedia palmMedia) {
+        this.mediaId = palmMedia.getId();
+        this.faceId = palmMedia.getPalmId();
+        this.userDescription = palmMedia.getDescription();
+        this.username = palmMedia.getUsername();
+        this.faceImagePath = palmMedia.getPalmImagePath();
+    }
+
     public void success(FaceMedia faceMedia, BigDecimal similarity) {
         this.success = true;
         updateFaceMedia(faceMedia);
+        this.similarity = toPercent(similarity);
+    }
+
+    public void success(PalmMedia palmMedia, BigDecimal similarity) {
+        this.success = true;
+        updatePalmMedia(palmMedia);
         this.similarity = toPercent(similarity);
     }
 
@@ -112,7 +127,7 @@ public class MatchHistory extends BaseEntity {
     // 1:1 (이미지:이미지) 매칭은 성공해도 사용자 정보를 포함하지 않습니다.
     public void success(BigDecimal similarity) {
         this.success = true;
-        this.faceMediaId = null;
+        this.mediaId = null;
         this.faceId = "";
         this.userDescription = "";
         this.similarity = toPercent(similarity);

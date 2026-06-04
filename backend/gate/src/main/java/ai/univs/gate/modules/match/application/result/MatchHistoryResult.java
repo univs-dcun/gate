@@ -35,7 +35,7 @@ public record MatchHistoryResult(
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
                 matchHistory.getFaceId(),
-                matchHistory.getFaceMediaId(),
+                matchHistory.getMediaId(),
                 matchHistory.getUserDescription(),
                 matchHistory.getUsername(),
                 matchHistory.getSimilarity(),

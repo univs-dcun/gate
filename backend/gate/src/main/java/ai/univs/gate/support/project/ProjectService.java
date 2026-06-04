@@ -34,6 +34,12 @@ public class ProjectService {
         }
     }
 
+    public void validatePalmModuleType(Project project) {
+        if (project.getProjectModuleType() != ProjectModuleType.PALM) {
+            throw new CustomGateException(ErrorType.UNSUPPORTED_MODULE_TYPE);
+        }
+    }
+
     private void validateOwnership(Project project, Long userId) {
         if (!project.getAccountId().equals(userId)) {
             throw new CustomGateException(ErrorType.NOT_OWNERSHIP);

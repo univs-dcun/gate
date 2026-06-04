@@ -55,7 +55,7 @@ public record VerifyByImageResult(
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
                 matchHistory.getFaceId(),
-                matchHistory.getFaceMediaId(),
+                matchHistory.getMediaId(),
                 matchHistory.getSimilarity(),
                 consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
                         ? prefixImagePath + matchHistory.getFaceImagePath()

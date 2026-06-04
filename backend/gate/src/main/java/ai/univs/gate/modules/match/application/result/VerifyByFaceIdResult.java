@@ -59,7 +59,7 @@ public record VerifyByFaceIdResult(
                 history.getCheckLiveness(),
                 history.getSuccess(),
                 history.getFaceId(),
-                history.getFaceMediaId(),
+                history.getMediaId(),
                 history.getUserDescription(),
                 history.getUsername(),
                 history.getSimilarity(),
