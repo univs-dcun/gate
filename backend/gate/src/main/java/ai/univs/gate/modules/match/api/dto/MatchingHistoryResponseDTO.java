@@ -1,5 +1,6 @@
 package ai.univs.gate.modules.match.api.dto;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.application.result.MatchHistoryResult;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
@@ -17,6 +18,9 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
 
+        @Schema(description = SwaggerDescriptions.FEATURE_TYPE)
+        FeatureType featureType,
+
         @Schema(description = SwaggerDescriptions.MATCHING_TYPE)
         MatchType matchType,
 
@@ -31,6 +35,9 @@ public record MatchingHistoryResponseDTO(
 
         @Schema(description = SwaggerDescriptions.FEATURE_AI_ID)
         String featureId,
+
+        @Schema(description = SwaggerDescriptions.MATCHED_FEATURE_ID)
+        String matchedFeatureId,
 
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
@@ -57,7 +64,10 @@ public record MatchingHistoryResponseDTO(
         String transactionUuid,
 
         @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
-        Boolean consentSnapshot
+        Boolean consentSnapshot,
+
+        @Schema(description = SwaggerDescriptions.CREATED_AT)
+        LocalDateTime createdAt
 ) {
 
     public static MatchingHistoryResponseDTO from(MatchHistoryResult result,
@@ -67,11 +77,13 @@ public record MatchingHistoryResponseDTO(
         return new MatchingHistoryResponseDTO(
                 result.matchingHistoryId(),
                 result.projectId(),
+                result.featureType(),
                 result.matchType(),
                 fromUtc(result.matchingTime(), timezone),
                 result.checkLiveness(),
                 result.success(),
                 result.featureId(),
+                result.matchedFeatureId(),
                 result.description(),
                 result.username(),
                 result.similarity(),
@@ -80,6 +92,7 @@ public record MatchingHistoryResponseDTO(
                 result.failureType(),
                 failureReason,
                 result.transactionUuid(),
-                result.consentSnapshot());
+                result.consentSnapshot(),
+                fromUtc(result.createdAt(), timezone));
     }
 }
