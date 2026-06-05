@@ -9,7 +9,7 @@ public interface FaceFeatureJpaRepository extends JpaRepository<FaceFeature, Lon
 
     Optional<FaceFeature> findByIdAndIsDeleted(Long id, boolean isDeleted);
 
-    Optional<FaceFeature> findByFaceIdAndProjectIdAndIsDeleted(String faceId, Long projectId, boolean isDeleted);
+    Optional<FaceFeature> findByFeatureIdAndProjectIdAndIsDeleted(String featureId, Long projectId, boolean isDeleted);
 
     long countByProjectIdAndIsDeleted(Long projectId, boolean isDeleted);
 }

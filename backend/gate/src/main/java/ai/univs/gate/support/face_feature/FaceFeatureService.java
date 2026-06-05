@@ -109,7 +109,7 @@ public class FaceFeatureService {
     }
 
     public FaceFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {
-        return faceFeatureRepository.findByFaceIdAndProjectIdAndIsDeletedFalse(featureId, projectId)
+        return faceFeatureRepository.findByFeatureIdAndProjectIdAndIsDeletedFalse(featureId, projectId)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
     }
 }

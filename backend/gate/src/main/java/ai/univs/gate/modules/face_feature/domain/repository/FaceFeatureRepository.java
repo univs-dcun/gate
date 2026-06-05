@@ -12,7 +12,7 @@ public interface FaceFeatureRepository {
 
     Optional<FaceFeature> findByIdAndIsDeletedFalse(Long faceFeatureId);
 
-    Optional<FaceFeature> findByFaceIdAndProjectIdAndIsDeletedFalse(String faceId, Long projectId);
+    Optional<FaceFeature> findByFeatureIdAndProjectIdAndIsDeletedFalse(String featureId, Long projectId);
 
     Page<FaceFeature> findAllByQuery(FaceFeatureQuery query, Long projectId);
 

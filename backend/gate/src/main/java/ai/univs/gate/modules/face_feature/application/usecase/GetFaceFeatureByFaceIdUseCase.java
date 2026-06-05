@@ -29,7 +29,7 @@ public class GetFaceFeatureByFaceIdUseCase {
     public FaceFeatureResult execute(GetFaceFeatureByFeatureIdInput input) {
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
-        FaceFeature faceFeature = faceFeatureRepository.findByFaceIdAndProjectIdAndIsDeletedFalse(input.featureId(), project.getId())
+        FaceFeature faceFeature = faceFeatureRepository.findByFeatureIdAndProjectIdAndIsDeletedFalse(input.featureId(), project.getId())
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
