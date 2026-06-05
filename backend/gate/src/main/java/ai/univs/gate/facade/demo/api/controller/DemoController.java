@@ -33,6 +33,7 @@ import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.message.MessageService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -47,7 +48,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "게이트 데모")
+@Tag(name = "e-KYC 데모")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/api/v1/demo")
@@ -70,7 +71,7 @@ public class DemoController {
     private final ObjectMapper objectMapper;
 
     @Operation(
-            summary = "API Key 기반 프로젝트 설정 조회",
+            summary = "프로젝트 설정 조회",
             description = "API Key 기반으로 프로젝트 이름 및 라이브니스 설정을 조회합니다."
     )
     @SecurityRequirements({
@@ -91,13 +92,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key 기반 사용자 등록")
+    @Operation(summary = "특징점 얼굴 등록")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateFaceFeatureByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> createUserByApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid CreateFaceFeatureByApiKeyRequestDTO request
@@ -113,13 +114,13 @@ public class DemoController {
         return ResponseEntity.ok(responseApi);
     }
 
-    @Operation(summary = "API Key, featureId 기반 사용자 확인")
+    @Operation(summary = "featureId 기반 특징점 얼굴 확인")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/face/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByFaceIdResponseDTO>> verifyByApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid VerifyByApiKeyRequestDTO request
@@ -132,13 +133,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key, image 기반 사용자 확인")
+    @Operation(summary = "image 기반 특징점 얼굴 확인")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByImageAndApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/face/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByImageResponseDTO>> verifyByImageAndApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid VerifyByImageAndApiKeyRequestDTO request
@@ -151,13 +152,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key 기반 사용자 매칭")
+    @Operation(summary = "특징점 얼굴 1:N 매칭")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = DemoIdentifyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/face/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identifyByApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid DemoIdentifyRequestDTO request
@@ -170,13 +171,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key 기반 사용자 목록 조회")
+    @Operation(summary = "특징점 얼굴 목록 조회")
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
-    @GetMapping("/users")
+    @GetMapping("/feature/faces")
     public ResponseEntity<ResponseApi<FaceFeaturesResponseDTO>> getUsersByApiKey(
             HttpServletRequest httpServletRequest,
             @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
@@ -192,13 +193,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key 기반 라이브니스 체크")
+    @Operation(summary = "특징점 얼굴 라이브니스 체크")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = LivenessByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/face/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<LivenessResponseDTO>> LivenessByApiKey(
             @ModelAttribute @Valid LivenessByApiKeyRequestDTO request
     ) {
@@ -211,13 +212,13 @@ public class DemoController {
 
     // ── Palm Demo ──────────────────────────────────────────────────────────────
 
-    @Operation(summary = "API Key 기반 팜 등록")
+    @Operation(summary = "특징점 팜 등록")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreatePalmFeatureByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/palm/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/palm", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> createPalmByApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid CreatePalmFeatureByApiKeyRequestDTO request
@@ -233,13 +234,14 @@ public class DemoController {
         return ResponseEntity.ok(responseApi);
     }
 
-    @Operation(summary = "API Key 기반 팜 목록 조회")
+    @Hidden
+    @Operation(summary = "특징점 팜 목록 조회")
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
-    @GetMapping("/palm/users")
+    @GetMapping("/feature/palms")
     public ResponseEntity<ResponseApi<PalmFeaturesResponseDTO>> getPalmsByApiKey(
             HttpServletRequest httpServletRequest,
             @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
@@ -255,13 +257,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key 기반 팜 1:N 매칭")
+    @Operation(summary = "특징점 팜 1:N 매칭")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = DemoPalmIdentifyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/palm/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/palm/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmIdentifyResponseDTO>> palmIdentifyByApiKey(
             HttpServletRequest httpServletRequest,
             @ModelAttribute @Valid DemoPalmIdentifyRequestDTO request
@@ -274,13 +276,13 @@ public class DemoController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "API Key 기반 팜 라이브니스")
+    @Operation(summary = "특징점 팜 라이브니스")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = DemoPalmLivenessRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
-    @PostMapping(value = "/palm/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/feature/palm/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmLivenessResponseDTO>> palmLivenessByApiKey(
             @ModelAttribute @Valid DemoPalmLivenessRequestDTO request
     ) {
