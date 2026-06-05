@@ -1,8 +1,8 @@
-# API 변경 가이드 — `refactor/backend/gate/separate-face-palm-auth-media`
+# API 변경 가이드 — dev 브랜치 기준
 
 > **대상 독자**: 프론트엔드 엔지니어  
-> **기준 브랜치**: `dev` → `refactor/backend/gate/separate-face-palm-auth-media`  
-> **작성일**: 2026-06-05  
+> **기준**: `dev` 브랜치 (2026-06-05 기준)  
+> **최종 업데이트**: 2026-06-05  
 >
 > 이 문서를 Claude Code에 컨텍스트로 제공하면 변경된 API에 맞춰 코드를 수정하는 데 도움이 됩니다.
 
@@ -14,7 +14,7 @@
 |---|---|
 | 삭제된 API 그룹 | `/api/v1/users`, `/api/v1/sdk/*`, `/api/v1/match` (e-KYC 엔드포인트) |
 | 신규 API 그룹 | `/api/v1/feature` (Face+Palm 통합), `/api/v1/feature/face/*`, `/api/v1/feature/face/match/*`, `/api/v1/feature/palm/*`, `/api/v1/match/palm/*` |
-| 변경된 API | `/api/v1/dashboard/*` (파라미터 추가), `/api/v1/demo/*` (필드명 변경), `/api/v1/match` (이력 조회만 유지) |
+| 변경된 API | `/api/v1/dashboard/*` (파라미터 추가), `/api/v1/demo/*` (경로·필드 변경), `/api/v1/match` (이력 조회 응답 필드 추가) |
 | 주요 필드명 변경 | `faceImage` → `featureImage`, `matchingFaceImage` → `matchingFeatureImage`, `faceId` → `featureId`, `userId`·`userDescription` 삭제 |
 
 ---
@@ -23,7 +23,7 @@
 
 ### 1-1. 사용자(User) 모듈 전체 삭제
 
-`/api/v1/users` 경로가 완전히 제거됐습니다. 아래 엔드포인트는 더 이상 존재하지 않습니다.
+`/api/v1/users` 경로가 완전히 제거됐습니다.
 
 | 삭제된 엔드포인트 | 대체 엔드포인트 |
 |---|---|
@@ -58,7 +58,7 @@
 
 ## 2. 신규 API
 
-### 2-1. 얼굴 특징점 관리 — `GET /api/v1/feature/face`
+### 2-1. 얼굴 특징점 관리 — `/api/v1/feature/face`
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
@@ -187,20 +187,20 @@ transactionUuid String   요청 키
 
 ---
 
-### 2-5. Palm 데모 API — `/api/v1/demo/palm` (신규)
+### 2-5. Palm 데모 API — `/api/v1/demo/feature/palm` (신규)
 
 Face 데모와 동일한 구조로 Palm 전용 데모 엔드포인트가 추가됐습니다.
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
-| `POST` | `/api/v1/demo/palm/user` | API Key 기반 팜 등록 |
-| `GET` | `/api/v1/demo/palm/users` | API Key 기반 팜 목록 조회 |
-| `POST` | `/api/v1/demo/palm/identify` | API Key 기반 팜 1:N 매칭 |
-| `POST` | `/api/v1/demo/palm/liveness` | API Key 기반 팜 라이브니스 |
+| `POST` | `/api/v1/demo/feature/palm` | API Key 기반 팜 등록 |
+| `GET` | `/api/v1/demo/feature/palms` | API Key 기반 팜 목록 조회 |
+| `POST` | `/api/v1/demo/feature/palm/identify` | API Key 기반 팜 1:N 매칭 |
+| `POST` | `/api/v1/demo/feature/palm/liveness` | API Key 기반 팜 라이브니스 |
 
 > 모든 엔드포인트는 인증 없이 호출 가능하며, 프로젝트의 **데모 활성화** 설정이 필요합니다.
 
-#### `POST /api/v1/demo/palm/user` — 팜 등록
+#### `POST /api/v1/demo/feature/palm` — 팜 등록
 
 **Request** (`multipart/form-data`)
 
@@ -227,9 +227,9 @@ transactionUuid String   요청 키
 }
 ```
 
-#### `GET /api/v1/demo/palm/users` — 팜 목록 조회
+#### `GET /api/v1/demo/feature/palms` — 팜 목록 조회
 
-**Query Parameters** (Face `/demo/users`와 동일)
+**Query Parameters**
 
 ```
 apiKey          String   API Key (필수)
@@ -250,7 +250,7 @@ endDate         String   종료일 (yyyy-MM-dd)
 }
 ```
 
-#### `POST /api/v1/demo/palm/identify` — 팜 1:N 매칭
+#### `POST /api/v1/demo/feature/palm/identify` — 팜 1:N 매칭
 
 **Request** (`multipart/form-data`)
 
@@ -277,7 +277,7 @@ transactionUuid String   요청 키
 }
 ```
 
-#### `POST /api/v1/demo/palm/liveness` — 팜 라이브니스
+#### `POST /api/v1/demo/feature/palm/liveness` — 팜 라이브니스
 
 **Request** (`multipart/form-data`)
 
@@ -350,13 +350,11 @@ endDate         String        종료일 (yyyy-MM-dd)
 | `GET /api/v1/dashboard/ratios` | `featureType` 추가 (FACE\|PALM, 기본값 FACE) |
 | `GET /api/v1/dashboard/daily` | `featureType` 추가 (FACE\|PALM, 기본값 FACE) |
 
-**기존 코드** (변경 전):
 ```
+// 변경 전
 GET /api/v1/dashboard/summary?period=MONTH
-```
 
-**변경 후**:
-```
+// 변경 후
 GET /api/v1/dashboard/summary?period=MONTH&featureType=FACE
 GET /api/v1/dashboard/summary?period=MONTH&featureType=PALM
 ```
@@ -365,9 +363,11 @@ GET /api/v1/dashboard/summary?period=MONTH&featureType=PALM
 
 ---
 
-### 3-2. 매칭 이력 조회 — 응답 필드명 변경
+### 3-2. 매칭 이력 조회 — 응답 필드 변경·추가
 
 `GET /api/v1/match`, `GET /api/v1/match/{transactionUuid}`
+
+**필드명 변경**
 
 | 기존 필드명 | 변경 후 |
 |---|---|
@@ -377,32 +377,56 @@ GET /api/v1/dashboard/summary?period=MONTH&featureType=PALM
 | `faceImagePath` | `featureImagePath` |
 | `matchingFaceImagePath` | `matchingFeatureImagePath` |
 
-**변경 전 응답 (일부)**:
-```json
-{
-  "faceId": "abc-face-id",
-  "userId": 123,
-  "userDescription": "홍길동",
-  "faceImagePath": "/images/face.jpg",
-  "matchingFaceImagePath": "/images/matching.jpg"
-}
-```
+**신규 추가 필드**
 
-**변경 후 응답**:
+| 필드명 | 타입 | 설명 |
+|---|---|---|
+| `featureType` | `FACE \| PALM` | 얼굴/팜 매칭 구분 |
+| `matchedFeatureId` | String | 매칭 대상 특징점 아이디 (verify/id 호출 시 입력한 faceId 값) |
+| `createdAt` | LocalDateTime | 이력 레코드 생성 일자 |
+
+**변경 후 응답 전체 구조**
+
 ```json
 {
+  "matchingHistoryId": 1,
+  "projectId": 1,
+  "featureType": "FACE",
+  "matchType": "IDENTIFY",
+  "matchingTime": "2026-06-05T00:00:00",
+  "checkLiveness": false,
+  "success": true,
   "featureId": "abc-face-id",
+  "matchedFeatureId": "target-face-id",
   "description": "홍길동",
-  "featureImagePath": "/images/face.jpg",
-  "matchingFeatureImagePath": "/images/matching.jpg"
+  "username": "hong",
+  "similarity": 95.23,
+  "featureImagePath": "/images/feature.jpg",
+  "matchingFeatureImagePath": "/images/matching.jpg",
+  "failureType": null,
+  "failureReason": null,
+  "transactionUuid": "uuid",
+  "consentSnapshot": true,
+  "createdAt": "2026-06-05T00:00:00"
 }
 ```
 
 ---
 
-### 3-3. 데모 — 필드명 변경
+### 3-3. 데모 — 경로 및 필드 변경
 
-#### `POST /api/v1/demo/user` (사용자 등록)
+#### Face 데모 엔드포인트 경로 변경
+
+| 기존 경로 | 변경 후 경로 |
+|---|---|
+| `POST /api/v1/demo/user` | `POST /api/v1/demo/feature/face` |
+| `POST /api/v1/demo/verify` | `POST /api/v1/demo/feature/face/verify` |
+| `POST /api/v1/demo/verify/image` | `POST /api/v1/demo/feature/face/verify/image` |
+| `POST /api/v1/demo/identify` | `POST /api/v1/demo/feature/face/identify` |
+| `GET /api/v1/demo/users` | `GET /api/v1/demo/feature/faces` |
+| `POST /api/v1/demo/liveness` | `POST /api/v1/demo/feature/face/liveness` |
+
+#### `POST /api/v1/demo/feature/face` — 얼굴 등록 (구 `/demo/user`)
 
 **Request 필드 변경** (`multipart/form-data`):
 
@@ -431,49 +455,26 @@ GET /api/v1/dashboard/summary?period=MONTH&featureType=PALM
 }
 ```
 
-#### `POST /api/v1/demo/verify` (faceId 기반 확인)
-
-**Request 필드 변경**:
-
-| 기존 | 변경 후 |
-|---|---|
-| `matchingFaceImage` | `matchingFeatureImage` |
-
-#### `POST /api/v1/demo/verify/image`
-
-| 기존 | 변경 후 |
-|---|---|
-| `matchingFaceImage` | `matchingFeatureImage` |
-
-#### `POST /api/v1/demo/identify`
-
-| 기존 | 변경 후 |
-|---|---|
-| `matchingFaceImage` | `matchingFeatureImage` |
-
-#### `POST /api/v1/demo/liveness`
-
-| 기존 | 변경 후 |
-|---|---|
-| `matchingFaceImage` | `matchingFeatureImage` |
-
-#### `GET /api/v1/demo/users` (사용자 목록)
+#### `GET /api/v1/demo/feature/faces` — 얼굴 목록 (구 `GET /demo/users`)
 
 **Response**: `UsersResponseDTO` → `FaceFeaturesResponseDTO`로 변경
 
 ```json
 // 기존
-{
-  "users": [ { "userId": 1, ... } ],
-  "page": { ... }
-}
+{ "users": [ { "userId": 1, ... } ], "page": { ... } }
 
 // 변경 후
-{
-  "faceFeatures": [ { "faceFeatureId": 1, ... } ],
-  "page": { ... }
-}
+{ "faceFeatures": [ { "faceFeatureId": 1, ... } ], "page": { ... } }
 ```
+
+#### 기타 Face 데모 Request 필드 변경
+
+| 엔드포인트 | 기존 | 변경 후 |
+|---|---|---|
+| `POST .../face/verify` | `matchingFaceImage` | `matchingFeatureImage` |
+| `POST .../face/verify/image` | `matchingFaceImage` | `matchingFeatureImage` |
+| `POST .../face/identify` | `matchingFaceImage` | `matchingFeatureImage` |
+| `POST .../face/liveness` | `matchingFaceImage` | `matchingFeatureImage` |
 
 ---
 
@@ -485,21 +486,29 @@ GET /api/v1/dashboard/summary?period=MONTH&featureType=PALM
 
 | 기존 필드명 | 새 필드명 | 영향 받는 엔드포인트 |
 |---|---|---|
-| `faceImage` | `featureImage` | `POST /demo/user`, `POST /feature/face`, `PUT /feature/face/*` |
-| `matchingFaceImage` | `matchingFeatureImage` | `POST /demo/verify`, `POST /demo/verify/image`, `POST /demo/identify`, `POST /demo/liveness`, `POST /feature/face/match/*` |
-| `userDescription` | `description` | `POST /demo/user` |
+| `faceImage` | `featureImage` | `POST /demo/feature/face`, `POST /feature/face`, `PUT /feature/face/*` |
+| `matchingFaceImage` | `matchingFeatureImage` | `POST /demo/feature/face/verify`, `/verify/image`, `/identify`, `/liveness`, `POST /feature/face/match/*` |
+| `userDescription` | `description` | `POST /demo/feature/face` |
 
-### Response 필드
+### Response 필드 변경
 
 | 기존 필드명 | 새 필드명 | 영향 받는 엔드포인트 |
 |---|---|---|
-| `userId` | `faceFeatureId` | `/demo/user`, `/demo/users` |
-| `faceId` | `featureId` | `/match`, `/match/*`, `/demo/user` |
+| `userId` | `faceFeatureId` | `/demo/feature/face`, `/demo/feature/faces` |
+| `faceId` | `featureId` | `/match`, `/match/*`, `/demo/feature/face` |
 | `userId` (match history) | ❌ 제거 | `/match`, `/match/*` |
-| `userDescription` | `description` | `/match`, `/match/*`, `/demo/user` |
+| `userDescription` | `description` | `/match`, `/match/*`, `/demo/feature/face` |
 | `faceImagePath` | `featureImagePath` | `/match`, `/match/*` |
 | `matchingFaceImagePath` | `matchingFeatureImagePath` | `/match`, `/match/*` |
-| `users` (배열) | `faceFeatures` (배열) | `GET /demo/users` |
+| `users` (배열) | `faceFeatures` (배열) | `GET /demo/feature/faces` |
+
+### Response 신규 추가 필드
+
+| 필드명 | 타입 | 영향 받는 엔드포인트 |
+|---|---|---|
+| `featureType` | `FACE \| PALM` | `GET /match`, `GET /match/{uuid}` |
+| `matchedFeatureId` | String | `GET /match`, `GET /match/{uuid}` |
+| `createdAt` | LocalDateTime | `GET /match`, `GET /match/{uuid}` |
 
 ### Query 파라미터
 
@@ -518,7 +527,7 @@ GET /api/v1/dashboard/summary?period=MONTH&featureType=PALM
 cat docs/api-migration-guide.md
 
 # 예시 프롬프트:
-"위 마이그레이션 가이드를 기반으로 현재 코드에서 /api/v1/match/identify 호출하는 부분을 
-/api/v1/feature/face/match/identify 로 변경하고, matchingFaceImage 필드명을 
+"위 마이그레이션 가이드를 기반으로 현재 코드에서 /api/v1/match/identify 호출하는 부분을
+/api/v1/feature/face/match/identify 로 변경하고, matchingFaceImage 필드명을
 matchingFeatureImage 로 수정해줘"
 ```
