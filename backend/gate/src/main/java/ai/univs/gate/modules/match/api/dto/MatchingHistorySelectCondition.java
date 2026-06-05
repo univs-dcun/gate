@@ -21,6 +21,10 @@ public record MatchingHistorySelectCondition(
         @Pattern(regexp = "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
         String matchType,
 
+        @Schema(description = SwaggerDescriptions.FEATURE_TYPE_ALL, defaultValue = "ALL")
+        @Pattern(regexp = "^(FACE|PALM|ALL)$", message = "INVALID_FEATURE_TYPE_CONDITION")
+        String featureType,
+
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_RESULT_TYPE, defaultValue = "SUCCESS")
         @Pattern(regexp = "^(SUCCESS|FAILURE|ALL)$", message = "INVALID_MATCHING_RESULT_SEARCH_CONDITION")
         String matchResultType,
@@ -54,6 +58,7 @@ public record MatchingHistorySelectCondition(
                         apiKey,
                         matchingKeyword,
                         StringUtils.hasText(matchType) ? matchType : "ALL",
+                        StringUtils.hasText(featureType) ? featureType : "ALL",
                         StringUtils.hasText(matchResultType) ? matchResultType : "SUCCESS",
                         page != null ? page : 1,
                         pageSize != null ? pageSize : 10,
