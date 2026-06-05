@@ -173,6 +173,7 @@ public class SwaggerDescriptions {
 
     /* Match History 추가 */
     public static final String MATCHING_HISTORY_LIST = "매칭 이력 목록";
+    public static final String MATCHED_FEATURE_ID = "매칭 대상 특징점 아이디";
 
     /* Project 추가 */
     public static final String PROJECT_LIST = "프로젝트 목록";
