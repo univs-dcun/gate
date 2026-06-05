@@ -7,6 +7,7 @@ public record MatchHistoryQuery(
         String apiKey,
         String matchingHistoryKeyword,
         String matchType,
+        String featureType,
         String matchResultType,
         Integer page,
         Integer pageSize,
