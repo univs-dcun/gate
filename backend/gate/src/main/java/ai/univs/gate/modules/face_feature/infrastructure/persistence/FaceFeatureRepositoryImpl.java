@@ -27,8 +27,8 @@ public class FaceFeatureRepositoryImpl implements FaceFeatureRepository {
     }
 
     @Override
-    public Optional<FaceFeature> findByFaceIdAndProjectIdAndIsDeletedFalse(String faceId, Long projectId) {
-        return faceFeatureJpaRepository.findByFaceIdAndProjectIdAndIsDeleted(faceId, projectId, false);
+    public Optional<FaceFeature> findByFeatureIdAndProjectIdAndIsDeletedFalse(String faceId, Long projectId) {
+        return faceFeatureJpaRepository.findByFeatureIdAndProjectIdAndIsDeleted(faceId, projectId, false);
     }
 
     @Override

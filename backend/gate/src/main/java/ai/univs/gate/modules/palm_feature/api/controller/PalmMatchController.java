@@ -25,7 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "팜 e-KYC")
+@Tag(name = "특징점 팜 매칭")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/match/palm")
