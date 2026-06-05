@@ -187,7 +187,121 @@ transactionUuid String   요청 키
 
 ---
 
-### 2-5. Face + Palm 통합 특징점 목록 — `GET /api/v1/feature`
+### 2-5. Palm 데모 API — `/api/v1/demo/palm` (신규)
+
+Face 데모와 동일한 구조로 Palm 전용 데모 엔드포인트가 추가됐습니다.
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| `POST` | `/api/v1/demo/palm/user` | API Key 기반 팜 등록 |
+| `GET` | `/api/v1/demo/palm/users` | API Key 기반 팜 목록 조회 |
+| `POST` | `/api/v1/demo/palm/identify` | API Key 기반 팜 1:N 매칭 |
+| `POST` | `/api/v1/demo/palm/liveness` | API Key 기반 팜 라이브니스 |
+
+> 모든 엔드포인트는 인증 없이 호출 가능하며, 프로젝트의 **데모 활성화** 설정이 필요합니다.
+
+#### `POST /api/v1/demo/palm/user` — 팜 등록
+
+**Request** (`multipart/form-data`)
+
+```
+apiKey          String   API Key (필수)
+featureImage    File     팜 이미지 (필수)
+description     String   설명
+username        String   사용자 이름
+transactionUuid String   요청 키
+```
+
+**Response** (`PalmFeatureResponseDTO`)
+
+```json
+{
+  "palmFeatureId": 1,
+  "description": "홍길동",
+  "username": "hong",
+  "featureId": "palm-ai-service-id",
+  "featureImagePath": "/path/to/palm.jpg",
+  "checkLiveness": false,
+  "createdAt": "2026-06-05T00:00:00",
+  "transactionUuid": "uuid-string"
+}
+```
+
+#### `GET /api/v1/demo/palm/users` — 팜 목록 조회
+
+**Query Parameters** (Face `/demo/users`와 동일)
+
+```
+apiKey          String   API Key (필수)
+userKeyword     String   검색 키워드
+page            Integer  페이지 (기본값: 1)
+pageSize        Integer  페이지 크기 (기본값: 10)
+isDeleted       Boolean  삭제 여부
+startDate       String   시작일 (yyyy-MM-dd)
+endDate         String   종료일 (yyyy-MM-dd)
+```
+
+**Response** (`PalmFeaturesResponseDTO`)
+
+```json
+{
+  "palmFeatures": [ { "palmFeatureId": 1, ... } ],
+  "page": { ... }
+}
+```
+
+#### `POST /api/v1/demo/palm/identify` — 팜 1:N 매칭
+
+**Request** (`multipart/form-data`)
+
+```
+apiKey          String   API Key (필수)
+featureImage    File     팜 이미지 (필수)
+transactionUuid String   요청 키
+```
+
+**Response** (`PalmIdentifyResponseDTO`)
+
+```json
+{
+  "matchingHistoryId": 1,
+  "palmFeatureId": 1,
+  "featureId": "palm-ai-id",
+  "success": true,
+  "similarity": 95.23,
+  "threshold": "0.8",
+  "failureType": null,
+  "failureReason": null,
+  "matchingTime": "2026-06-05T00:00:00",
+  "transactionUuid": "uuid"
+}
+```
+
+#### `POST /api/v1/demo/palm/liveness` — 팜 라이브니스
+
+**Request** (`multipart/form-data`)
+
+```
+apiKey          String   API Key (필수)
+featureImage    File     팜 이미지 (필수)
+transactionUuid String   요청 키
+```
+
+**Response** (`PalmLivenessResponseDTO`)
+
+```json
+{
+  "success": true,
+  "score": 0.97,
+  "threshold": 0.8,
+  "failureReason": null,
+  "transactionUuid": "uuid"
+}
+```
+
+---
+
+### 2-6. Face + Palm 통합 특징점 목록 — `GET /api/v1/feature`
 
 Face와 Palm을 한 번에 조회하는 통합 엔드포인트입니다.
 
