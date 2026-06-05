@@ -14,13 +14,12 @@ public record MatchHistoryResult(
         LocalDateTime matchingTime,
         Boolean checkLiveness,
         Boolean success,
-        String faceId,
-        Long userId,
-        String userDescription,
+        String featureId,
+        String description,
         String username,
         BigDecimal similarity,
-        String faceImagePath,
-        String matchingFaceImagePath,
+        String featureImagePath,
+        String matchingFeatureImagePath,
         String failureType,
         String transactionUuid,
         Boolean consentSnapshot
@@ -34,16 +33,15 @@ public record MatchHistoryResult(
                 matchHistory.getMatchTime(),
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
-                matchHistory.getFaceId(),
-                matchHistory.getUserId(),
+                matchHistory.getFeatureId(),
                 matchHistory.getUserDescription(),
                 matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
-                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
-                        ? prefixImagePath + matchHistory.getFaceImagePath()
+                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
+                        ? prefixImagePath + matchHistory.getFeatureImagePath()
                         : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
-                        ? prefixImagePath + matchHistory.getMatchFaceImagePath()
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
+                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
                         : "",
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),

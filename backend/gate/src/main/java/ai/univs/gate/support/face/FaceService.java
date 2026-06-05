@@ -1,11 +1,8 @@
 package ai.univs.gate.support.face;
 
-import ai.univs.gate.modules.match.infrastructure.client.FaceMatchClient;
-import ai.univs.gate.modules.match.infrastructure.client.dto.*;
-import ai.univs.gate.modules.user.infrastructure.client.FaceUserClient;
-import ai.univs.gate.modules.user.infrastructure.client.dto.CreateFeignRequestDTO;
-import ai.univs.gate.modules.user.infrastructure.client.dto.DeleteFeignRequestDTO;
-import ai.univs.gate.modules.user.infrastructure.client.dto.UpdateFeignRequestDTO;
+import ai.univs.gate.modules.face_feature.infrastructure.client.FaceFeatureClient;
+import ai.univs.gate.modules.face_feature.infrastructure.client.dto.*;
+import ai.univs.gate.modules.face_feature.infrastructure.client.FaceMatchClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +10,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FaceService {
 
-    private final FaceUserClient faceUserClient;
+    private final FaceFeatureClient faceUserClient;
     private final FaceMatchClient faceMatchClient;
 
     public String createFace(CreateFeignRequestDTO request) {

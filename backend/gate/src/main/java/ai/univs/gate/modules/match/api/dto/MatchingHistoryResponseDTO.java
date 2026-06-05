@@ -29,26 +29,23 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_SUCCESS)
         Boolean success,
 
-        @Schema(description = SwaggerDescriptions.FACE_ID)
-        String faceId,
+        @Schema(description = SwaggerDescriptions.FEATURE_AI_ID)
+        String featureId,
 
-        @Schema(description = SwaggerDescriptions.USER_ID)
-        Long userId,
+        @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
+        String description,
 
-        @Schema(description = SwaggerDescriptions.USER_DESCRIPTION)
-        String userDescription,
-
-        @Schema(description = "사용자 이름")
+        @Schema(description = SwaggerDescriptions.USERNAME)
         String username,
 
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
 
-        @Schema(description = SwaggerDescriptions.FACE_IMAGE_PATH)
-        String faceImagePath,
+        @Schema(description = SwaggerDescriptions.FEATURE_IMAGE_PATH)
+        String featureImagePath,
 
-        @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE_PATH)
-        String matchingFaceImagePath,
+        @Schema(description = SwaggerDescriptions.MATCHED_FEATURE_IMAGE_PATH)
+        String matchingFeatureImagePath,
 
         @Schema(description = SwaggerDescriptions.MATCHING_FAILURE_TYPE)
         String failureType,
@@ -74,13 +71,12 @@ public record MatchingHistoryResponseDTO(
                 fromUtc(result.matchingTime(), timezone),
                 result.checkLiveness(),
                 result.success(),
-                result.faceId(),
-                result.userId(),
-                result.userDescription(),
+                result.featureId(),
+                result.description(),
                 result.username(),
                 result.similarity(),
-                result.faceImagePath(),
-                result.matchingFaceImagePath(),
+                result.featureImagePath(),
+                result.matchingFeatureImagePath(),
                 result.failureType(),
                 failureReason,
                 result.transactionUuid(),

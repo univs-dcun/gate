@@ -1,8 +1,10 @@
 package ai.univs.gate.modules.match.domain.entity;
 
+import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.project.domain.entity.Project;
-import ai.univs.gate.modules.user.domain.entity.User;
 import ai.univs.gate.shared.domain.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -34,6 +36,10 @@ public class MatchHistory extends BaseEntity {
     private Project project;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "feature_type", nullable = false, length = 10)
+    private FeatureType featureType;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "match_type", nullable = false)
     private MatchType matchType;
 
@@ -47,32 +53,29 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "success")
     private Boolean success;
 
-    @ColumnDefault("''")
-    @Column(name = "match_face_id", length = 100)
-    private String matchFaceId;
-
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(name = "face_id")
-    private String faceId;
+    @Column(name = "username", length = 255)
+    private String username;
 
     @Column(name = "user_description")
     private String userDescription;
 
-    @Column(name = "username", length = 255)
-    private String username;
-
     @Column(name = "similarity", precision = 5, scale = 2)
     private BigDecimal similarity;
 
-    @ColumnDefault("''")
-    @Column(name = "face_image_path", length = 100)
-    private String faceImagePath;
+    @Column(name = "feature_id")
+    private String featureId;
 
     @ColumnDefault("''")
-    @Column(name = "match_face_image_path", length = 100)
-    private String matchFaceImagePath;
+    @Column(name = "matched_feature_id", length = 100)
+    private String matchedFeatureId;
+
+    @ColumnDefault("''")
+    @Column(name = "feature_image_path", length = 100)
+    private String featureImagePath;
+
+    @ColumnDefault("''")
+    @Column(name = "matched_feature_image_path", length = 100)
+    private String matchedFeatureImagePath;
 
     @ColumnDefault("''")
     @Column(name = "failure_type", length = 100)
@@ -85,17 +88,29 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "consent_snapshot")
     private Boolean consentSnapshot;
 
-    public void updateUser(User user) {
-        this.userId = user.getId();
-        this.faceId = user.getFaceId();
-        this.userDescription = user.getDescription();
-        this.username = user.getUsername();
-        this.faceImagePath = user.getFaceImagePath();
+    public void updateFaceFeature(FaceFeature faceFeature) {
+        this.featureId = faceFeature.getFeatureId();
+        this.username = faceFeature.getUsername();
+        this.userDescription = faceFeature.getDescription();
+        this.featureImagePath = faceFeature.getFeatureImagePath();
     }
 
-    public void success(User user, BigDecimal similarity) {
+    public void updatePalmFeature(PalmFeature palmFeature) {
+        this.featureId = palmFeature.getFeatureId();
+        this.username = palmFeature.getUsername();
+        this.userDescription = palmFeature.getDescription();
+        this.featureImagePath = palmFeature.getFeatureImagePath();
+    }
+
+    public void success(FaceFeature faceFeature, BigDecimal similarity) {
         this.success = true;
-        updateUser(user);
+        this.similarity = toPercent(similarity);
+        updateFaceFeature(faceFeature);
+    }
+
+    public void success(PalmFeature palmFeature, BigDecimal similarity) {
+        this.success = true;
+        updatePalmFeature(palmFeature);
         this.similarity = toPercent(similarity);
     }
 
@@ -107,8 +122,7 @@ public class MatchHistory extends BaseEntity {
     // 1:1 (이미지:이미지) 매칭은 성공해도 사용자 정보를 포함하지 않습니다.
     public void success(BigDecimal similarity) {
         this.success = true;
-        this.userId = null;
-        this.faceId = "";
+        this.featureId = null;
         this.userDescription = "";
         this.similarity = toPercent(similarity);
     }

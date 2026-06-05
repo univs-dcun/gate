@@ -3,20 +3,28 @@ package ai.univs.gate.facade.demo.api.controller;
 import ai.univs.gate.facade.demo.api.dto.*;
 import ai.univs.gate.facade.demo.application.dto.DemoRedisPayload;
 import ai.univs.gate.facade.demo.application.service.DemoRedisPublisher;
-import ai.univs.gate.facade.demo.application.usecase.CreateUserByApiKeyUseCase;
+import ai.univs.gate.facade.demo.application.usecase.CreateFaceFeatureByApiKeyUseCase;
+import ai.univs.gate.facade.demo.application.usecase.CreatePalmFeatureByApiKeyUseCase;
 import ai.univs.gate.facade.demo.application.usecase.GetDemoProjectConfigUseCase;
-import ai.univs.gate.facade.demo.application.usecase.GetUsersByApiKeyUseCase;
-import ai.univs.gate.modules.match.api.dto.IdentifyResponseDTO;
-import ai.univs.gate.modules.match.api.dto.LivenessResponseDTO;
-import ai.univs.gate.modules.match.api.dto.VerifyByFaceIdResponseDTO;
-import ai.univs.gate.modules.match.api.dto.VerifyByImageResponseDTO;
-import ai.univs.gate.modules.match.application.usecase.IdentifyUseCase;
-import ai.univs.gate.modules.match.application.usecase.LivenessUseCase;
-import ai.univs.gate.modules.match.application.usecase.VerifyByFaceIdUseCase;
-import ai.univs.gate.modules.match.application.usecase.VerifyByImageUseCase;
+import ai.univs.gate.facade.demo.application.usecase.GetFaceFeaturesByApiKeyUseCase;
+import ai.univs.gate.facade.demo.application.usecase.GetPalmFeaturesByApiKeyUseCase;
+import ai.univs.gate.modules.face_feature.api.dto.IdentifyResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.LivenessResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.VerifyByFaceIdResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.VerifyByImageResponseDTO;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceIdentifyUseCase;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceLivenessUseCase;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceVerifyByFeatureIdUseCase;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceVerifyByFeatureImageUseCase;
+import ai.univs.gate.modules.palm_feature.api.dto.PalmFeatureResponseDTO;
+import ai.univs.gate.modules.palm_feature.api.dto.PalmFeaturesResponseDTO;
+import ai.univs.gate.modules.palm_feature.api.dto.PalmIdentifyResponseDTO;
+import ai.univs.gate.modules.palm_feature.api.dto.PalmLivenessResponseDTO;
+import ai.univs.gate.modules.palm_feature.application.usecase.PalmIdentifyUseCase;
+import ai.univs.gate.modules.palm_feature.application.usecase.PalmLivenessUseCase;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
-import ai.univs.gate.modules.user.api.dto.UserResponseDTO;
-import ai.univs.gate.modules.user.api.dto.UsersResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.FaceFeatureResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.FaceFeaturesResponseDTO;
 import ai.univs.gate.shared.web.dto.CustomPage;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
@@ -45,13 +53,18 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = "/api/v1/demo")
 public class DemoController {
 
-    private final CreateUserByApiKeyUseCase createUserByApiKeyUseCase;
-    private final GetUsersByApiKeyUseCase getUsersByApiKeyUseCase;
-    private final VerifyByFaceIdUseCase verifyByFaceIdUseCase;
-    private final VerifyByImageUseCase verifyByImageUseCase;
-    private final IdentifyUseCase identifyUseCase;
-    private final LivenessUseCase livenessUseCase;
+    private final CreateFaceFeatureByApiKeyUseCase createFaceFeatureByApiKeyUseCase;
+    private final GetFaceFeaturesByApiKeyUseCase getFaceFeaturesByApiKeyUseCase;
+    private final FaceVerifyByFeatureIdUseCase faceVerifyByFeatureIdUseCase;
+    private final FaceVerifyByFeatureImageUseCase faceVerifyByFeatureImageUseCase;
+    private final FaceIdentifyUseCase faceIdentifyUseCase;
+    private final FaceLivenessUseCase faceLivenessUseCase;
+    private final CreatePalmFeatureByApiKeyUseCase createPalmFeatureByApiKeyUseCase;
+    private final GetPalmFeaturesByApiKeyUseCase getPalmFeaturesByApiKeyUseCase;
+    private final PalmIdentifyUseCase palmIdentifyUseCase;
+    private final PalmLivenessUseCase palmLivenessUseCase;
     private final GetDemoProjectConfigUseCase getDemoProjectConfigUseCase;
+
     private final MessageService messageService;
     private final DemoRedisPublisher demoRedisPublisher;
     private final ObjectMapper objectMapper;
@@ -79,19 +92,19 @@ public class DemoController {
     }
 
     @Operation(summary = "API Key 기반 사용자 등록")
-    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateUserByApiKeyRequestDTO.class)))
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateFaceFeatureByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
     @PostMapping(value = "/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<UserResponseDTO>> createUserByApiKey(
+    public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> createUserByApiKey(
             HttpServletRequest httpServletRequest,
-            @ModelAttribute @Valid CreateUserByApiKeyRequestDTO request
+            @ModelAttribute @Valid CreateFaceFeatureByApiKeyRequestDTO request
     ) throws JsonProcessingException {
         var input = request.toCreateUserByApiKeyInput();
-        var result = createUserByApiKeyUseCase.execute(input);
-        var response = UserResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
+        var result = createFaceFeatureByApiKeyUseCase.execute(input);
+        var response = FaceFeatureResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
         var responseApi = ResponseApi.ok(response);
 
         var payload = new DemoRedisPayload<>("REGISTER", result.transactionUuid(), responseApi);
@@ -100,7 +113,7 @@ public class DemoController {
         return ResponseEntity.ok(responseApi);
     }
 
-    @Operation(summary = "API Key, faceId 기반 사용자 확인")
+    @Operation(summary = "API Key, featureId 기반 사용자 확인")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
@@ -113,7 +126,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toVerifyByApiKeyInput();
-        var result = verifyByFaceIdUseCase.execute(input);
+        var result = faceVerifyByFeatureIdUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = VerifyByFaceIdResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -132,7 +145,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toVerifyByImageInput();
-        var result = verifyByImageUseCase.execute(input);
+        var result = faceVerifyByFeatureImageUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = VerifyByImageResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -151,7 +164,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toIdentifyInput();
-        var result = identifyUseCase.execute(input);
+        var result = faceIdentifyUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -164,18 +177,18 @@ public class DemoController {
             @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
     @GetMapping("/users")
-    public ResponseEntity<ResponseApi<UsersResponseDTO>> getUsersByApiKey(
+    public ResponseEntity<ResponseApi<FaceFeaturesResponseDTO>> getUsersByApiKey(
             HttpServletRequest httpServletRequest,
             @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toInput(timezone);
-        var result = getUsersByApiKeyUseCase.execute(input);
+        var result = getFaceFeaturesByApiKeyUseCase.execute(input);
 
-        var usersResponse = result.users().stream()
-                .map(userResult -> UserResponseDTO.from(userResult, timezone))
+        var faceFeatureResponses = result.faceFeatures().stream()
+                .map(fm -> FaceFeatureResponseDTO.from(fm, timezone))
                 .toList();
-        var response = new UsersResponseDTO(usersResponse, CustomPage.from(result.page()));
+        var response = new FaceFeaturesResponseDTO(faceFeatureResponses, CustomPage.from(result.page()));
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
@@ -190,9 +203,91 @@ public class DemoController {
             @ModelAttribute @Valid LivenessByApiKeyRequestDTO request
     ) {
         var input = request.toLivenessInput();
-        var result = livenessUseCase.execute(input);
+        var result = faceLivenessUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    // ── Palm Demo ──────────────────────────────────────────────────────────────
+
+    @Operation(summary = "API Key 기반 팜 등록")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreatePalmFeatureByApiKeyRequestDTO.class)))
+    @SecurityRequirements({})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/palm/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> createPalmByApiKey(
+            HttpServletRequest httpServletRequest,
+            @ModelAttribute @Valid CreatePalmFeatureByApiKeyRequestDTO request
+    ) throws com.fasterxml.jackson.core.JsonProcessingException {
+        var input = request.toInput();
+        var result = createPalmFeatureByApiKeyUseCase.execute(input);
+        var response = PalmFeatureResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
+        var responseApi = ResponseApi.ok(response);
+
+        var payload = new DemoRedisPayload<>("REGISTER", result.transactionUuid(), responseApi);
+        demoRedisPublisher.publish(objectMapper.writeValueAsString(payload));
+
+        return ResponseEntity.ok(responseApi);
+    }
+
+    @Operation(summary = "API Key 기반 팜 목록 조회")
+    @SecurityRequirements({})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
+    })
+    @GetMapping("/palm/users")
+    public ResponseEntity<ResponseApi<PalmFeaturesResponseDTO>> getPalmsByApiKey(
+            HttpServletRequest httpServletRequest,
+            @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
+    ) {
+        String timezone = httpServletRequest.getHeader("Accept-TimeZone");
+        var input = request.toInput(timezone);
+        var result = getPalmFeaturesByApiKeyUseCase.execute(input);
+
+        var palmFeatureResponses = result.palmFeatures().stream()
+                .map(pm -> PalmFeatureResponseDTO.from(pm, timezone))
+                .toList();
+        var response = new PalmFeaturesResponseDTO(palmFeatureResponses, CustomPage.from(result.page()));
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "API Key 기반 팜 1:N 매칭")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = DemoPalmIdentifyRequestDTO.class)))
+    @SecurityRequirements({})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/palm/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<PalmIdentifyResponseDTO>> palmIdentifyByApiKey(
+            HttpServletRequest httpServletRequest,
+            @ModelAttribute @Valid DemoPalmIdentifyRequestDTO request
+    ) {
+        String timezone = httpServletRequest.getHeader("Accept-TimeZone");
+        var input = request.toInput();
+        var result = palmIdentifyUseCase.execute(input);
+        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
+        var response = PalmIdentifyResponseDTO.from(result, failureReason, timezone);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "API Key 기반 팜 라이브니스")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = DemoPalmLivenessRequestDTO.class)))
+    @SecurityRequirements({})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/palm/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseApi<PalmLivenessResponseDTO>> palmLivenessByApiKey(
+            @ModelAttribute @Valid DemoPalmLivenessRequestDTO request
+    ) {
+        var input = request.toInput();
+        var result = palmLivenessUseCase.execute(input);
+        String failureReason = result.success() ? "" : messageService.getFailureMessageOrEmpty(result.message());
+        var response = PalmLivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 }

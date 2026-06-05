@@ -1,6 +1,7 @@
 package ai.univs.gate.facade.dashboard.application.usecase;
 
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -17,9 +18,9 @@ public class GetDashboardTrendUseCase {
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
-    public DashboardTrendResult execute(String apiKey, TrendPeriod period) {
+    public DashboardTrendResult execute(String apiKey, TrendPeriod period, FeatureType featureType) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         long projectId = findApiKey.getProject().getId();
-        return dashboardStatsService.getTrend(projectId, period);
+        return dashboardStatsService.getTrend(projectId, period, featureType);
     }
 }

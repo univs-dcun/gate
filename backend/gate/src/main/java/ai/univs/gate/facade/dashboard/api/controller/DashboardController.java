@@ -11,7 +11,10 @@ import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardRatiosUseC
 import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardSummaryUseCase;
 import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardTrendUseCase;
 import ai.univs.gate.shared.auth.UserContext;
+import ai.univs.gate.shared.swagger.SwaggerError;
+import ai.univs.gate.shared.swagger.SwaggerErrorExample;
 import ai.univs.gate.shared.web.dto.ResponseApi;
+import ai.univs.gate.shared.web.enums.ErrorType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -48,12 +51,16 @@ public class DashboardController {
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
     })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+    })
     @GetMapping("/summary")
     public ResponseEntity<ResponseApi<DashboardSummaryResponse>> getSummary(
             @ParameterObject @ModelAttribute DashboardPeriodRequest request
     ) {
         UserContext ctx = UserContext.get();
-        DashboardSummaryResult result = getDashboardSummaryUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
+        DashboardSummaryResult result = getDashboardSummaryUseCase.execute(
+                ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
         var response = DashboardSummaryResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -67,12 +74,16 @@ public class DashboardController {
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
     })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+    })
     @GetMapping("/trend")
     public ResponseEntity<ResponseApi<DashboardTrendResponse>> getTrend(
             @ParameterObject @ModelAttribute DashboardTrendRequest request
     ) {
         UserContext ctx = UserContext.get();
-        DashboardTrendResult result = getDashboardTrendUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
+        DashboardTrendResult result = getDashboardTrendUseCase.execute(
+                ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
         var response = DashboardTrendResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -85,12 +96,16 @@ public class DashboardController {
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
     })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+    })
     @GetMapping("/ratios")
     public ResponseEntity<ResponseApi<DashboardRatiosResponse>> getRatios(
             @ParameterObject @ModelAttribute DashboardPeriodRequest request
     ) {
         UserContext ctx = UserContext.get();
-        DashboardRatiosResult result = getDashboardRatiosUseCase.execute(ctx.getApiKey(), request.effectivePeriod());
+        DashboardRatiosResult result = getDashboardRatiosUseCase.execute(
+                ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
         var response = DashboardRatiosResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -102,6 +117,9 @@ public class DashboardController {
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @GetMapping(value = "/demo-qr", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getDemoQr() {
@@ -120,6 +138,10 @@ public class DashboardController {
             @SecurityRequirement(name = "Authentication"),
             @SecurityRequirement(name = "X-Api-Key")
     })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
     @GetMapping("/daily")
     public ResponseEntity<ResponseApi<DashboardDailyStatsResponse>> getDailyStats(
             @ParameterObject @ModelAttribute @Valid DashboardDailyStatsRequest request
@@ -128,7 +150,8 @@ public class DashboardController {
         DashboardDailyStatsResult result = getDashboardDailyStatsUseCase.execute(
                 ctx.getApiKey(),
                 request.effectivePage(),
-                request.effectivePageSize());
+                request.effectivePageSize(),
+                request.effectiveFeatureType());
         var response = DashboardDailyStatsResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
