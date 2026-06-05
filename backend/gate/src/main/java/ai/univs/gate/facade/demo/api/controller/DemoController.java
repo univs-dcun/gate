@@ -3,20 +3,20 @@ package ai.univs.gate.facade.demo.api.controller;
 import ai.univs.gate.facade.demo.api.dto.*;
 import ai.univs.gate.facade.demo.application.dto.DemoRedisPayload;
 import ai.univs.gate.facade.demo.application.service.DemoRedisPublisher;
-import ai.univs.gate.facade.demo.application.usecase.CreateUserByApiKeyUseCase;
+import ai.univs.gate.facade.demo.application.usecase.CreateFaceFeatureByApiKeyUseCase;
 import ai.univs.gate.facade.demo.application.usecase.GetDemoProjectConfigUseCase;
-import ai.univs.gate.facade.demo.application.usecase.GetUsersByApiKeyUseCase;
-import ai.univs.gate.modules.match.api.dto.IdentifyResponseDTO;
-import ai.univs.gate.modules.match.api.dto.LivenessResponseDTO;
-import ai.univs.gate.modules.match.api.dto.VerifyByFaceIdResponseDTO;
-import ai.univs.gate.modules.match.api.dto.VerifyByImageResponseDTO;
-import ai.univs.gate.modules.match.application.usecase.IdentifyUseCase;
-import ai.univs.gate.modules.match.application.usecase.LivenessUseCase;
-import ai.univs.gate.modules.match.application.usecase.VerifyByFaceIdUseCase;
-import ai.univs.gate.modules.match.application.usecase.VerifyByImageUseCase;
+import ai.univs.gate.facade.demo.application.usecase.GetFaceFeaturesByApiKeyUseCase;
+import ai.univs.gate.modules.face_feature.api.dto.IdentifyResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.LivenessResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.VerifyByFaceIdResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.VerifyByImageResponseDTO;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceIdentifyUseCase;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceLivenessUseCase;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceVerifyByFeatureIdUseCase;
+import ai.univs.gate.modules.face_feature.application.usecase.FaceVerifyByFeatureImageUseCase;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
-import ai.univs.gate.modules.face_media.api.dto.FaceMediaResponseDTO;
-import ai.univs.gate.modules.face_media.api.dto.FaceMediasResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.FaceFeatureResponseDTO;
+import ai.univs.gate.modules.face_feature.api.dto.FaceFeaturesResponseDTO;
 import ai.univs.gate.shared.web.dto.CustomPage;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
@@ -45,13 +45,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = "/api/v1/demo")
 public class DemoController {
 
-    private final CreateUserByApiKeyUseCase createUserByApiKeyUseCase;
-    private final GetUsersByApiKeyUseCase getUsersByApiKeyUseCase;
-    private final VerifyByFaceIdUseCase verifyByFaceIdUseCase;
-    private final VerifyByImageUseCase verifyByImageUseCase;
-    private final IdentifyUseCase identifyUseCase;
-    private final LivenessUseCase livenessUseCase;
+    private final CreateFaceFeatureByApiKeyUseCase createFaceFeatureByApiKeyUseCase;
+    private final GetFaceFeaturesByApiKeyUseCase getFaceFeaturesByApiKeyUseCase;
+    private final FaceVerifyByFeatureIdUseCase faceVerifyByFeatureIdUseCase;
+    private final FaceVerifyByFeatureImageUseCase faceVerifyByFeatureImageUseCase;
+    private final FaceIdentifyUseCase faceIdentifyUseCase;
+    private final FaceLivenessUseCase faceLivenessUseCase;
     private final GetDemoProjectConfigUseCase getDemoProjectConfigUseCase;
+
     private final MessageService messageService;
     private final DemoRedisPublisher demoRedisPublisher;
     private final ObjectMapper objectMapper;
@@ -79,19 +80,19 @@ public class DemoController {
     }
 
     @Operation(summary = "API Key 기반 사용자 등록")
-    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateUserByApiKeyRequestDTO.class)))
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateFaceFeatureByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
     })
     @PostMapping(value = "/user", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<FaceMediaResponseDTO>> createUserByApiKey(
+    public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> createUserByApiKey(
             HttpServletRequest httpServletRequest,
-            @ModelAttribute @Valid CreateUserByApiKeyRequestDTO request
+            @ModelAttribute @Valid CreateFaceFeatureByApiKeyRequestDTO request
     ) throws JsonProcessingException {
         var input = request.toCreateUserByApiKeyInput();
-        var result = createUserByApiKeyUseCase.execute(input);
-        var response = FaceMediaResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
+        var result = createFaceFeatureByApiKeyUseCase.execute(input);
+        var response = FaceFeatureResponseDTO.from(result, httpServletRequest.getHeader("Accept-TimeZone"));
         var responseApi = ResponseApi.ok(response);
 
         var payload = new DemoRedisPayload<>("REGISTER", result.transactionUuid(), responseApi);
@@ -100,7 +101,7 @@ public class DemoController {
         return ResponseEntity.ok(responseApi);
     }
 
-    @Operation(summary = "API Key, faceId 기반 사용자 확인")
+    @Operation(summary = "API Key, featureId 기반 사용자 확인")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({
@@ -113,7 +114,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toVerifyByApiKeyInput();
-        var result = verifyByFaceIdUseCase.execute(input);
+        var result = faceVerifyByFeatureIdUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = VerifyByFaceIdResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -132,7 +133,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toVerifyByImageInput();
-        var result = verifyByImageUseCase.execute(input);
+        var result = faceVerifyByFeatureImageUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = VerifyByImageResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -151,7 +152,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toIdentifyInput();
-        var result = identifyUseCase.execute(input);
+        var result = faceIdentifyUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -164,18 +165,18 @@ public class DemoController {
             @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
     @GetMapping("/users")
-    public ResponseEntity<ResponseApi<FaceMediasResponseDTO>> getUsersByApiKey(
+    public ResponseEntity<ResponseApi<FaceFeaturesResponseDTO>> getUsersByApiKey(
             HttpServletRequest httpServletRequest,
             @ParameterObject @ModelAttribute @Valid GetUsersByApiKeyRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toInput(timezone);
-        var result = getUsersByApiKeyUseCase.execute(input);
+        var result = getFaceFeaturesByApiKeyUseCase.execute(input);
 
-        var faceMediaResponses = result.faceMedias().stream()
-                .map(fm -> FaceMediaResponseDTO.from(fm, timezone))
+        var faceFeatureResponses = result.faceFeatures().stream()
+                .map(fm -> FaceFeatureResponseDTO.from(fm, timezone))
                 .toList();
-        var response = new FaceMediasResponseDTO(faceMediaResponses, CustomPage.from(result.page()));
+        var response = new FaceFeaturesResponseDTO(faceFeatureResponses, CustomPage.from(result.page()));
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
@@ -190,7 +191,7 @@ public class DemoController {
             @ModelAttribute @Valid LivenessByApiKeyRequestDTO request
     ) {
         var input = request.toLivenessInput();
-        var result = livenessUseCase.execute(input);
+        var result = faceLivenessUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));

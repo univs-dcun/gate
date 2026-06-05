@@ -6,7 +6,7 @@ import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.project.application.input.ProjectQuery;
 import ai.univs.gate.modules.project.application.result.ProjectSummaryResult;
 import ai.univs.gate.modules.project.domain.entity.QProject;
-import ai.univs.gate.modules.face_media.domain.entity.QFaceMedia;
+import ai.univs.gate.modules.face_feature.domain.entity.QFaceFeature;
 import ai.univs.gate.shared.utils.CustomPageable;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.BooleanBuilder;
@@ -30,7 +30,7 @@ public class ProjectDSLRepository {
     private final JPAQueryFactory queryFactory;
 
     private final QProject project = QProject.project;
-    private final QFaceMedia faceMedia = QFaceMedia.faceMedia;
+    private final QFaceFeature faceFeature = QFaceFeature.faceFeature;
     private final QMatchHistory matchHistory = QMatchHistory.matchHistory;
     private final QApiKey qApiKey = QApiKey.apiKey1;
 
@@ -42,9 +42,9 @@ public class ProjectDSLRepository {
         Pageable pageable = CustomPageable.of(query.page(), query.pageSize());
         var booleanBuilder = createBooleanBuilder(query);
 
-        var userCount = JPAExpressions.select(faceMedia.count())
-                .from(faceMedia)
-                .where(faceMedia.project.id.eq(project.id).and(faceMedia.isDeleted.isFalse()));
+        var userCount = JPAExpressions.select(faceFeature.count())
+                .from(faceFeature)
+                .where(faceFeature.project.id.eq(project.id).and(faceFeature.isDeleted.isFalse()));
 
         var verifyByIdCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)

@@ -1,6 +1,6 @@
 package ai.univs.gate.facade.demo.application.input;
 
-import ai.univs.gate.modules.face_media.application.input.FaceMediaQuery;
+import ai.univs.gate.modules.face_feature.application.input.FaceFeatureQuery;
 
 public record GetUsersByApiKeyInput(
         String apiKey,
@@ -13,8 +13,8 @@ public record GetUsersByApiKeyInput(
         String timezone
 ) {
 
-    public FaceMediaQuery toFaceMediaQuery() {
-        return new FaceMediaQuery(
+    public FaceFeatureQuery toFaceFeatureQuery() {
+        return new FaceFeatureQuery(
                 null,
                 apiKey,
                 userKeyword,
@@ -24,7 +24,7 @@ public record GetUsersByApiKeyInput(
                 startDate,
                 endDate,
                 "DESC",
-                "faceMediaId"
+                "faceFeatureId"
         );
     }
 }

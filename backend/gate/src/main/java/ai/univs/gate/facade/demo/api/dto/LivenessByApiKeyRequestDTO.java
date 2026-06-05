@@ -1,6 +1,6 @@
 package ai.univs.gate.facade.demo.api.dto;
 
-import ai.univs.gate.modules.match.application.input.LivenessInput;
+import ai.univs.gate.modules.face_feature.application.input.LivenessInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.utils.ValidImageFile;
@@ -18,7 +18,7 @@ public record LivenessByApiKeyRequestDTO(
 
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
         @ValidImageFile(message = "INVALID_FILE")
-        MultipartFile matchingFaceImage,
+        MultipartFile matchingFeatureImage,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
         @Length(max = 36, message = "INVALID_TRANSACTION_UUID_LENGTH")
@@ -30,7 +30,7 @@ public record LivenessByApiKeyRequestDTO(
                         CallerType.DEMO,
                         0L,
                         apiKey,
-                        matchingFaceImage,
+                        matchingFeatureImage,
                         TransactionUtil.useOrCreate(transactionUuid));
         }
 }

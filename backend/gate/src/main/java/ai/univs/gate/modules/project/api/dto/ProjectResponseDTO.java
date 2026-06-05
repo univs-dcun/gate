@@ -25,7 +25,7 @@ public record ProjectResponseDTO(
         ProjectModuleType projectModuleType,
         @Schema(description = SwaggerDescriptions.PACKAGE_KEY)
         String packageKey,
-        @Schema(description = SwaggerDescriptions.COUNT_USER_REGISTRATION)
+        @Schema(description = SwaggerDescriptions.COUNT_REGISTRATION)
         Long countUserRegistration,
         @Schema(description = SwaggerDescriptions.COUNT_VERIFY_BY_ID)
         Long countVerifyById,

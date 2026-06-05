@@ -1,7 +1,7 @@
 package ai.univs.gate.support.palm;
 
-import ai.univs.gate.modules.palm_media.infrastructure.client.PalmClient;
-import ai.univs.gate.modules.palm_media.infrastructure.client.dto.*;
+import ai.univs.gate.modules.palm_feature.infrastructure.client.PalmClient;
+import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

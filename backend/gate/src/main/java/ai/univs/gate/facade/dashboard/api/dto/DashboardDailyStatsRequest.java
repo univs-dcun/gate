@@ -1,6 +1,6 @@
 package ai.univs.gate.facade.dashboard.api.dto;
 
-import ai.univs.gate.facade.dashboard.domain.enums.DashboardMediaType;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
@@ -17,8 +17,8 @@ public record DashboardDailyStatsRequest(
         @Max(value = 1000, message = "INVALID_PAGE_COUNT")
         Integer pageSize,
 
-        @Schema(description = "미디어 타입 (FACE | PALM)", defaultValue = "FACE")
-        DashboardMediaType mediaType
+        @Schema(description = SwaggerDescriptions.DASHBOARD_FEATURE_TYPE, defaultValue = "FACE")
+        FeatureType featureType
 ) {
 
     public int effectivePage() {
@@ -29,7 +29,7 @@ public record DashboardDailyStatsRequest(
         return pageSize != null ? pageSize : 10;
     }
 
-    public DashboardMediaType effectiveMediaType() {
-        return mediaType != null ? mediaType : DashboardMediaType.FACE;
+    public FeatureType effectiveFeatureType() {
+        return featureType != null ? featureType : FeatureType.FACE;
     }
 }

@@ -1,8 +1,8 @@
 package ai.univs.gate.modules.match.domain.entity;
 
-import ai.univs.gate.modules.face_media.domain.entity.FaceMedia;
-import ai.univs.gate.modules.face_media.domain.enums.MediaType;
-import ai.univs.gate.modules.palm_media.domain.entity.PalmMedia;
+import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
@@ -36,6 +36,10 @@ public class MatchHistory extends BaseEntity {
     private Project project;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "feature_type", nullable = false, length = 10)
+    private FeatureType featureType;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "match_type", nullable = false)
     private MatchType matchType;
 
@@ -49,36 +53,29 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "success")
     private Boolean success;
 
-    @ColumnDefault("''")
-    @Column(name = "match_face_id", length = 100)
-    private String matchFaceId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "media_type", nullable = false, length = 10)
-    private MediaType mediaType;
-
-    @Column(name = "media_id")
-    private Long mediaId;
-
-    @Column(name = "face_id")
-    private String faceId;
+    @Column(name = "username", length = 255)
+    private String username;
 
     @Column(name = "user_description")
     private String userDescription;
 
-    @Column(name = "username", length = 255)
-    private String username;
-
     @Column(name = "similarity", precision = 5, scale = 2)
     private BigDecimal similarity;
 
-    @ColumnDefault("''")
-    @Column(name = "face_image_path", length = 100)
-    private String faceImagePath;
+    @Column(name = "feature_id")
+    private String featureId;
 
     @ColumnDefault("''")
-    @Column(name = "match_face_image_path", length = 100)
-    private String matchFaceImagePath;
+    @Column(name = "matched_feature_id", length = 100)
+    private String matchedFeatureId;
+
+    @ColumnDefault("''")
+    @Column(name = "feature_image_path", length = 100)
+    private String featureImagePath;
+
+    @ColumnDefault("''")
+    @Column(name = "matched_feature_image_path", length = 100)
+    private String matchedFeatureImagePath;
 
     @ColumnDefault("''")
     @Column(name = "failure_type", length = 100)
@@ -91,31 +88,29 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "consent_snapshot")
     private Boolean consentSnapshot;
 
-    public void updateFaceMedia(FaceMedia faceMedia) {
-        this.mediaId = faceMedia.getId();
-        this.faceId = faceMedia.getFaceId();
-        this.userDescription = faceMedia.getDescription();
-        this.username = faceMedia.getUsername();
-        this.faceImagePath = faceMedia.getFaceImagePath();
+    public void updateFaceFeature(FaceFeature faceFeature) {
+        this.featureId = faceFeature.getFeatureId();
+        this.username = faceFeature.getUsername();
+        this.userDescription = faceFeature.getDescription();
+        this.featureImagePath = faceFeature.getFeatureImagePath();
     }
 
-    public void updatePalmMedia(PalmMedia palmMedia) {
-        this.mediaId = palmMedia.getId();
-        this.faceId = palmMedia.getPalmId();
-        this.userDescription = palmMedia.getDescription();
-        this.username = palmMedia.getUsername();
-        this.faceImagePath = palmMedia.getPalmImagePath();
+    public void updatePalmFeature(PalmFeature palmFeature) {
+        this.featureId = palmFeature.getFeatureId();
+        this.username = palmFeature.getUsername();
+        this.userDescription = palmFeature.getDescription();
+        this.featureImagePath = palmFeature.getFeatureImagePath();
     }
 
-    public void success(FaceMedia faceMedia, BigDecimal similarity) {
+    public void success(FaceFeature faceFeature, BigDecimal similarity) {
         this.success = true;
-        updateFaceMedia(faceMedia);
         this.similarity = toPercent(similarity);
+        updateFaceFeature(faceFeature);
     }
 
-    public void success(PalmMedia palmMedia, BigDecimal similarity) {
+    public void success(PalmFeature palmFeature, BigDecimal similarity) {
         this.success = true;
-        updatePalmMedia(palmMedia);
+        updatePalmFeature(palmFeature);
         this.similarity = toPercent(similarity);
     }
 
@@ -127,8 +122,7 @@ public class MatchHistory extends BaseEntity {
     // 1:1 (이미지:이미지) 매칭은 성공해도 사용자 정보를 포함하지 않습니다.
     public void success(BigDecimal similarity) {
         this.success = true;
-        this.mediaId = null;
-        this.faceId = "";
+        this.featureId = null;
         this.userDescription = "";
         this.similarity = toPercent(similarity);
     }

@@ -8,8 +8,5 @@ public enum MatchType {
     VERIFY_IMAGE,  // /verify/image - 사진 인증
     IDENTIFY,
     LIVENESS,
-    PALM_REGISTER,
-    PALM_IDENTIFY,
-    PALM_LIVENESS
     ;
 }

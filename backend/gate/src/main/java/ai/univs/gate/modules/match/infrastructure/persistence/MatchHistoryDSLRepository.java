@@ -67,7 +67,7 @@ public class MatchHistoryDSLRepository {
         if (StringUtils.hasText(query.matchingHistoryKeyword())) {
             BooleanBuilder keywordBuilder = new BooleanBuilder();
             keywordBuilder.or(matchHistory.transactionUuid.containsIgnoreCase(query.matchingHistoryKeyword()));
-            keywordBuilder.or(matchHistory.faceId.containsIgnoreCase(query.matchingHistoryKeyword()));
+            keywordBuilder.or(matchHistory.featureId.containsIgnoreCase(query.matchingHistoryKeyword()));
             keywordBuilder.or(matchHistory.userDescription.containsIgnoreCase(query.matchingHistoryKeyword()));
             booleanBuilder.and(keywordBuilder);
         }
