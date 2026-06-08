@@ -67,7 +67,7 @@ public class UpdatePalmFeatureUseCase {
             palmFeature.updateFeatureId(featureId);
         }
 
-        palmFeature.updateInfo(input.description(), input.username());
+        palmFeature.updateInfo(input.description());
 
         return PalmFeatureResult.from(palmFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }

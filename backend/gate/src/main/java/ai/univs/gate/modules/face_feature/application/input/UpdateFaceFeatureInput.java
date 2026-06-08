@@ -10,7 +10,6 @@ public record UpdateFaceFeatureInput(
         Long faceFeatureId,
         MultipartFile featureImage,
         String description,
-        String username,
         String reason,
         String transactionUuid
 ) {

@@ -63,7 +63,7 @@ public class UpdateFaceFeatureUseCase {
             faceService.updateFace(updateRequest);
         }
 
-        faceFeature.updateInfo(input.description(), input.username());
+        faceFeature.updateInfo(input.description());
 
         return FaceFeatureResult.from(faceFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }

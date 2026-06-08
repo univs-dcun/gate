@@ -30,7 +30,6 @@ public class CreateFaceFeatureUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.username(),
                 input.transactionUuid());
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(

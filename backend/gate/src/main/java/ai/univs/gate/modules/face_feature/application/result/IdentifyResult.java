@@ -16,7 +16,6 @@ public record IdentifyResult(
         Boolean success,
         String featureId,
         String description,
-        String username,
         BigDecimal similarity,
         String featureImagePath,
         String matchingFeatureImagePath,
@@ -33,7 +32,6 @@ public record IdentifyResult(
                 matchHistory.getMatchTime(),
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
-                "",
                 "",
                 "",
                 matchHistory.getSimilarity(),
@@ -56,7 +54,6 @@ public record IdentifyResult(
                 matchHistory.getSuccess(),
                 matchHistory.getFeatureId(),
                 matchHistory.getUserDescription(),
-                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
                 consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
                         ? prefixImagePath + matchHistory.getFeatureImagePath()

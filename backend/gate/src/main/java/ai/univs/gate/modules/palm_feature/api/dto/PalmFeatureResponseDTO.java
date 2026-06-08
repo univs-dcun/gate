@@ -15,8 +15,6 @@ public record PalmFeatureResponseDTO(
         @Schema(description = SwaggerDescriptions.PALM_DESCRIPTION)
         String description,
 
-        @Schema(description = SwaggerDescriptions.USERNAME)
-        String username,
 
         @Schema(description = SwaggerDescriptions.PALM_FEATURE_AI_ID)
         String featureId,
@@ -38,7 +36,6 @@ public record PalmFeatureResponseDTO(
         return new PalmFeatureResponseDTO(
                 result.palmFeatureId(),
                 result.description(),
-                result.username(),
                 result.featureId(),
                 result.featureImagePath(),
                 result.checkLiveness(),

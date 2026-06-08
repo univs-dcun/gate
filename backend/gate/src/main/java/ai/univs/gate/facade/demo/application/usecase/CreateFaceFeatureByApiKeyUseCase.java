@@ -37,7 +37,6 @@ public class CreateFaceFeatureByApiKeyUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.username(),
                 input.transactionUuid());
         return FaceFeatureResult.from(result.faceFeature(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
     }

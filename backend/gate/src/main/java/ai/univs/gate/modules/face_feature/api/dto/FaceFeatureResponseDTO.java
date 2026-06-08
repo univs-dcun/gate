@@ -15,8 +15,6 @@ public record FaceFeatureResponseDTO(
         @Schema(description = SwaggerDescriptions.FACE_FEATURE_DESCRIPTION)
         String description,
 
-        @Schema(description = SwaggerDescriptions.USERNAME)
-        String username,
 
         @Schema(description = SwaggerDescriptions.FEATURE_AI_ID)
         String featureId,
@@ -38,7 +36,6 @@ public record FaceFeatureResponseDTO(
         return new FaceFeatureResponseDTO(
                 result.faceFeatureId(),
                 result.description(),
-                result.username(),
                 result.featureId(),
                 result.featureImagePath(),
                 result.checkLiveness(),

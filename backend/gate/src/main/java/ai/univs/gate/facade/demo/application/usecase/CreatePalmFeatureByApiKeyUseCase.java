@@ -37,7 +37,6 @@ public class CreatePalmFeatureByApiKeyUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.username(),
                 input.transactionUuid());
 
         return PalmFeatureResult.from(result.palmFeature(), result.livenessChecked(),

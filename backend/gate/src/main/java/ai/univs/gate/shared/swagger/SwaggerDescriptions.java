@@ -119,7 +119,6 @@ public class SwaggerDescriptions {
 
     /* 공통 추가 */
     public static final String PAGE_INFO = "페이징 정보";
-    public static final String USERNAME = "사용자 이름";
     public static final String REGISTERED_AT = "등록 일시";
 
     /* Feature 공통 */

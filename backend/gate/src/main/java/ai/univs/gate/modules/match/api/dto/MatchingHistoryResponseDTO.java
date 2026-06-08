@@ -42,8 +42,6 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
 
-        @Schema(description = SwaggerDescriptions.USERNAME)
-        String username,
 
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
@@ -85,7 +83,6 @@ public record MatchingHistoryResponseDTO(
                 result.featureId(),
                 result.matchedFeatureId(),
                 result.description(),
-                result.username(),
                 result.similarity(),
                 result.featureImagePath(),
                 result.matchingFeatureImagePath(),

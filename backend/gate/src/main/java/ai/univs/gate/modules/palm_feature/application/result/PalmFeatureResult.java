@@ -10,7 +10,6 @@ public record PalmFeatureResult(
         Long projectId,
         String featureId,
         String description,
-        String username,
         String featureImagePath,
         LocalDateTime createdAt,
         String transactionUuid,
@@ -23,7 +22,6 @@ public record PalmFeatureResult(
                 palmFeature.getProject().getId(),
                 palmFeature.getFeatureId(),
                 palmFeature.getDescription(),
-                palmFeature.getUsername(),
                 consentEnabled && StringUtils.hasText(palmFeature.getFeatureImagePath())
                         ? imagePrefix + palmFeature.getFeatureImagePath()
                         : "",
@@ -38,7 +36,6 @@ public record PalmFeatureResult(
                 palmFeature.getProject().getId(),
                 palmFeature.getFeatureId(),
                 palmFeature.getDescription(),
-                palmFeature.getUsername(),
                 consentEnabled && StringUtils.hasText(palmFeature.getFeatureImagePath())
                         ? imagePrefix + palmFeature.getFeatureImagePath()
                         : "",

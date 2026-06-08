@@ -7,7 +7,6 @@ public record CreatePalmFeatureInput(
         String apiKey,
         MultipartFile featureImage,
         String description,
-        String username,
         String transactionUuid,
         String externalKey
 ) {}

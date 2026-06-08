@@ -16,7 +16,6 @@ public record VerifyByFaceIdResult(
         Boolean success,
         String featureId,
         String description,
-        String username,
         BigDecimal similarity,
         String matchingFeatureId,
         String featureImagePath,
@@ -34,7 +33,6 @@ public record VerifyByFaceIdResult(
                 matchHistory.getMatchTime(),
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
-                "",
                 "",
                 "",
                 matchHistory.getSimilarity(),
@@ -58,7 +56,6 @@ public record VerifyByFaceIdResult(
                 history.getSuccess(),
                 history.getFeatureId(),
                 history.getUserDescription(),
-                history.getUsername(),
                 history.getSimilarity(),
                 history.getMatchedFeatureId(),
                 consentEnabled && StringUtils.hasText(history.getFeatureImagePath())

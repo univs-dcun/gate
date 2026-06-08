@@ -53,9 +53,6 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "success")
     private Boolean success;
 
-    @Column(name = "username", length = 255)
-    private String username;
-
     @Column(name = "user_description")
     private String userDescription;
 
@@ -90,14 +87,12 @@ public class MatchHistory extends BaseEntity {
 
     public void updateFaceFeature(FaceFeature faceFeature) {
         this.featureId = faceFeature.getFeatureId();
-        this.username = faceFeature.getUsername();
         this.userDescription = faceFeature.getDescription();
         this.featureImagePath = faceFeature.getFeatureImagePath();
     }
 
     public void updatePalmFeature(PalmFeature palmFeature) {
         this.featureId = palmFeature.getFeatureId();
-        this.username = palmFeature.getUsername();
         this.userDescription = palmFeature.getDescription();
         this.featureImagePath = palmFeature.getFeatureImagePath();
     }
