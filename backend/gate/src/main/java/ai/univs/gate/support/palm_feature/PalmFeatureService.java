@@ -57,7 +57,6 @@ public class PalmFeatureService {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();
 
-        projectService.validatePalmModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 

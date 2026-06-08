@@ -4,7 +4,6 @@ import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.application.result.LivenessSettingResult;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,8 +20,6 @@ public record ProjectSettingsResponseDTO(
         String projectName,
         @Schema(description = SwaggerDescriptions.PROJECT_TYPE)
         ProjectType projectType,
-        @Schema(description = SwaggerDescriptions.PROJECT_MODULE_TYPE)
-        ProjectModuleType projectModuleType,
         @Schema(description = SwaggerDescriptions.PACKAGE_KEY)
         String packageKey,
         @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
@@ -52,7 +49,6 @@ public record ProjectSettingsResponseDTO(
                 result.projectId(),
                 result.projectName(),
                 result.projectType(),
-                result.projectModuleType(),
                 result.packageKey(),
                 result.consentEnabled(),
                 result.consentAgreedAt(),

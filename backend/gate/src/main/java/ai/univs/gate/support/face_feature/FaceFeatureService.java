@@ -58,7 +58,6 @@ public class FaceFeatureService {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();
 
-        projectService.validateFaceModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 

@@ -1,6 +1,5 @@
 package ai.univs.gate.modules.project.application.result;
 
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 
@@ -12,7 +11,6 @@ public record ProjectSummaryResult(
         String projectDescription,
         ProjectStatus status,
         ProjectType projectType,
-        ProjectModuleType projectModuleType,
         String packageKey,
         Long countUserRegistration,
         Long countVerifyById,

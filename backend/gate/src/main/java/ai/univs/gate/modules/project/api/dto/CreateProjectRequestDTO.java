@@ -1,7 +1,6 @@
 package ai.univs.gate.modules.project.api.dto;
 
 import ai.univs.gate.modules.project.application.input.CreateProjectInput;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,11 +20,7 @@ public record CreateProjectRequestDTO(
 
         @Schema(description = SwaggerDescriptions.PROJECT_TYPE, requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull(message = "REQUIRED_PROJECT_TYPE")
-        ProjectType projectType,
-
-        @Schema(description = SwaggerDescriptions.PROJECT_MODULE_TYPE, requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "REQUIRED_PROJECT_MODULE_TYPE")
-        ProjectModuleType projectModuleType
+        ProjectType projectType
 ) {
 
         public CreateProjectInput toCreateProjectInput(Long accountId) {
@@ -33,7 +28,6 @@ public record CreateProjectRequestDTO(
                         accountId,
                         projectName,
                         projectDescription,
-                        projectType,
-                        projectModuleType);
+                        projectType);
         }
 }

@@ -57,7 +57,6 @@ public class FaceVerifyByFeatureIdUseCase {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = findApiKey.getProject();
 
-        projectService.validateFaceModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 

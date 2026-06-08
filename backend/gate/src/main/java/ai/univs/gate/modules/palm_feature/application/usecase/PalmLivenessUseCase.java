@@ -45,7 +45,6 @@ public class PalmLivenessUseCase {
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
 
-        projectService.validatePalmModuleType(project);
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
 
