@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.palm_feature.application.usecase;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.palm_feature.application.input.PalmIdentifyInput;
@@ -63,7 +66,7 @@ public class PalmIdentifyUseCase {
                 .matchType(MatchType.IDENTIFY)
                 .featureType(FeatureType.PALM)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(projectSettings.getLivenessIdentifyingEnabled())
+                .checkLiveness(projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.IDENTIFY))
                 .success(false)
                 .matchedFeatureImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
@@ -76,7 +79,7 @@ public class PalmIdentifyUseCase {
                 input.featureImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),
-                projectSettings.getLivenessIdentifyingEnabled());
+                projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.IDENTIFY));
 
         IdentifyPalmFeignResponseDTO data;
         try {

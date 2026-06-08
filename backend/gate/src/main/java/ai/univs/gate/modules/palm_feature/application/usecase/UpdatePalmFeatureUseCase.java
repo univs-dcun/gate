@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.palm_feature.application.usecase;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.palm_feature.application.input.UpdatePalmFeatureInput;
 import ai.univs.gate.modules.palm_feature.application.result.PalmFeatureResult;
@@ -10,6 +13,7 @@ import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.RegisterPalm
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
+import ai.univs.gate.support.project.ProjectSettingsService;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -30,6 +34,7 @@ public class UpdatePalmFeatureUseCase {
     private final PalmService palmService;
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsRepository projectSettingsRepository;
+    private final ProjectSettingsService projectSettingsService;
 
     @Transactional
     public PalmFeatureResult execute(UpdatePalmFeatureInput input) {
@@ -60,7 +65,7 @@ public class UpdatePalmFeatureUseCase {
                     input.featureImage(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId()),
-                    projectSettings.getLivenessRegisterEnabled()));
+                    projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.REGISTER)));
 
             String featureImagePath = fileService.uploadIfConsent(input.featureImage(), projectSettings.getConsentEnabled());
             palmFeature.updateFeatureImagePath(featureImagePath);

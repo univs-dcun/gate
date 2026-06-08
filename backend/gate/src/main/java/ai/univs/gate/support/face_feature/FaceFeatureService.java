@@ -1,5 +1,8 @@
 package ai.univs.gate.support.face_feature;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
 import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
@@ -67,7 +70,7 @@ public class FaceFeatureService {
                 .matchType(MatchType.REGISTER)
                 .featureType(FeatureType.FACE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessRegisterEnabled())
+                .checkLiveness(projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER))
                 .success(false)
                 .matchedFeatureImagePath(imagePath)
                 .transactionUuid(transactionUuid)
@@ -80,8 +83,8 @@ public class FaceFeatureService {
                 featureImage,
                 transactionUuid,
                 String.valueOf(accountId),
-                findProjectSettings.getLivenessRegisterEnabled(),
-                findProjectSettings.getLivenessRegisterEnabled());
+                projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER),
+                projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
         String featureId;
         try {
             featureId = faceService.createFace(createRequest);
@@ -102,7 +105,7 @@ public class FaceFeatureService {
 
         matchHistory.success(faceFeature, BigDecimal.ZERO);
 
-        return new CreateFaceFeatureServiceResult(faceFeature, findProjectSettings.getLivenessRegisterEnabled());
+        return new CreateFaceFeatureServiceResult(faceFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
     }
 
     public FaceFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {

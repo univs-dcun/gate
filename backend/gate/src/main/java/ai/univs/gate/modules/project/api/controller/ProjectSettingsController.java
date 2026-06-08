@@ -109,12 +109,10 @@ public class ProjectSettingsController {
             @PathVariable Long projectId,
             @Valid @RequestBody LivenessSettingsUpdateRequestDTO request
     ) {
-        var input = new UpdateLivenessSettingsInput(
-                projectId,
-                request.livenessRegisterEnabled(),
-                request.livenessIdentifyingEnabled(),
-                request.livenessVerifyingByIdEnabled(),
-                request.livenessVerifyingByImageEnabled());
+        var operationSettings = request.settings().stream()
+                .map(s -> new UpdateLivenessSettingsInput.OperationSetting(s.operation(), s.enabled()))
+                .toList();
+        var input = new UpdateLivenessSettingsInput(projectId, request.moduleType(), operationSettings);
 
         var result = updateLivenessSettingsUseCase.execute(input);
         var response = ProjectSettingsResponseDTO.from(result);

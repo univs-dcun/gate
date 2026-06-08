@@ -56,6 +56,9 @@ public class SwaggerDescriptions {
     public static final String LIVENESS_IDENTIFYING_ENABLED = "매칭시 라이브니스 적용 여부";
     public static final String LIVENESS_VERIFYING_BY_ID_ENABLED    = "1:1 촬영 인증(/verify/id)시 라이브니스 적용 여부";
     public static final String LIVENESS_VERIFYING_BY_IMAGE_ENABLED = "1:1 사진 인증(/verify/image)시 라이브니스 적용 여부";
+    public static final String LIVENESS_SETTINGS = "모듈별 라이브니스 설정 목록";
+    public static final String LIVENESS_OPERATION = "라이브니스 적용 오퍼레이션 [REGISTER | IDENTIFY | VERIFY_ID | VERIFY_IMAGE]";
+    public static final String LIVENESS_ENABLED = "라이브니스 활성화 여부";
     public static final String COUNT_REGISTRATION = "등록 요청 수";
     public static final String COUNT_VERIFY_BY_ID    = "1:1 촬영 인증(/verify/id) 요청 수";
     public static final String COUNT_VERIFY_BY_IMAGE = "1:1 사진 인증(/verify/image) 요청 수";

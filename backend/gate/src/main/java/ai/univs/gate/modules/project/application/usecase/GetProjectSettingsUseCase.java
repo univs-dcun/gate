@@ -3,6 +3,7 @@ package ai.univs.gate.modules.project.application.usecase;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.repository.ProjectLivenessSettingRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.exception.CustomGateException;
@@ -18,6 +19,7 @@ public class GetProjectSettingsUseCase {
 
     private final ProjectService projectService;
     private final ProjectSettingsRepository projectSettingsRepository;
+    private final ProjectLivenessSettingRepository livenessSettingRepository;
 
     @Transactional(readOnly = true)
     public ProjectSettingsResult execute(Long projectId) {
@@ -28,6 +30,7 @@ public class GetProjectSettingsUseCase {
         ProjectSettings settings = projectSettingsRepository.findByProject(project)
                 .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
 
-        return ProjectSettingsResult.from(settings, userContext.getTimezone());
+        var livenessSettings = livenessSettingRepository.findAllByProjectSettings(settings);
+        return ProjectSettingsResult.from(settings, livenessSettings, userContext.getTimezone());
     }
 }
