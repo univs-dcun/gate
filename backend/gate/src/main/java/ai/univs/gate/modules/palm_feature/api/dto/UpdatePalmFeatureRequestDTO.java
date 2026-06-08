@@ -17,9 +17,7 @@ public record UpdatePalmFeatureRequestDTO(
         @Length(max = 1000, message = "INVALID_DESCRIPTION_LENGTH")
         String description,
 
-        @Schema(description = SwaggerDescriptions.USERNAME)
         @Length(max = 255, message = "INVALID_USERNAME_LENGTH")
-        String username,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
         @Length(max = 36, message = "INVALID_TRANSACTION_UUID_LENGTH")
@@ -33,7 +31,6 @@ public record UpdatePalmFeatureRequestDTO(
                 palmFeatureId,
                 featureImage,
                 description,
-                username,
                 StringUtils.hasText(transactionUuid) ? transactionUuid : UUID.randomUUID().toString());
     }
 }

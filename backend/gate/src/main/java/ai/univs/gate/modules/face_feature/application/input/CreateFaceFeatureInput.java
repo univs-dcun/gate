@@ -7,7 +7,6 @@ public record CreateFaceFeatureInput(
         String apiKey,
         MultipartFile featureImage,
         String description,
-        String username,
         String transactionUuid
 ) {
 }

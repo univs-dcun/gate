@@ -19,7 +19,6 @@ public record MatchHistoryResult(
         String featureId,
         String matchedFeatureId,
         String description,
-        String username,
         BigDecimal similarity,
         String featureImagePath,
         String matchingFeatureImagePath,
@@ -41,7 +40,6 @@ public record MatchHistoryResult(
                 matchHistory.getFeatureId(),
                 matchHistory.getMatchedFeatureId(),
                 matchHistory.getUserDescription(),
-                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
                 consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
                         ? prefixImagePath + matchHistory.getFeatureImagePath()

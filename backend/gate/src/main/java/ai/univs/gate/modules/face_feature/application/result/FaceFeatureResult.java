@@ -10,7 +10,6 @@ public record FaceFeatureResult(
         Long projectId,
         String featureId,
         String description,
-        String username,
         String featureImagePath,
         LocalDateTime createdAt,
         String transactionUuid,
@@ -23,7 +22,6 @@ public record FaceFeatureResult(
                 faceFeature.getProject().getId(),
                 faceFeature.getFeatureId(),
                 faceFeature.getDescription(),
-                faceFeature.getUsername(),
                 consentEnabled && StringUtils.hasText(faceFeature.getFeatureImagePath())
                         ? imagePrefix + faceFeature.getFeatureImagePath()
                         : "",
@@ -38,7 +36,6 @@ public record FaceFeatureResult(
                 faceFeature.getProject().getId(),
                 faceFeature.getFeatureId(),
                 faceFeature.getDescription(),
-                faceFeature.getUsername(),
                 consentEnabled && StringUtils.hasText(faceFeature.getFeatureImagePath())
                         ? imagePrefix + faceFeature.getFeatureImagePath()
                         : "",

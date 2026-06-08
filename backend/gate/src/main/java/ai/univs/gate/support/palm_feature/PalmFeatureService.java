@@ -50,7 +50,6 @@ public class PalmFeatureService {
                                                         String apiKey,
                                                         MultipartFile featureImage,
                                                         String description,
-                                                        String username,
                                                         String transactionUuid
     ) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
@@ -96,7 +95,6 @@ public class PalmFeatureService {
                 .featureId(palmId)
                 .featureImagePath(imagePath)
                 .description(description)
-                .username(username)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
                 .build();

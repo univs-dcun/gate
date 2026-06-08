@@ -35,8 +35,6 @@ public record IdentifyResponseDTO(
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
 
-        @Schema(description = SwaggerDescriptions.USERNAME)
-        String username,
 
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
@@ -73,7 +71,6 @@ public record IdentifyResponseDTO(
                         result.success(),
                         result.featureId(),
                         result.description(),
-                        result.username(),
                         result.similarity(),
                         result.featureImagePath(),
                         result.matchingFeatureImagePath(),

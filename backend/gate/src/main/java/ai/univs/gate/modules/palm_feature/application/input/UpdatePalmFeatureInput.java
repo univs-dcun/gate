@@ -8,6 +8,5 @@ public record UpdatePalmFeatureInput(
         Long palmFeatureId,
         MultipartFile featureImage,
         String description,
-        String username,
         String transactionUuid
 ) {}

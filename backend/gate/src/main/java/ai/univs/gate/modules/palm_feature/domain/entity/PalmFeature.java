@@ -28,9 +28,6 @@ public class PalmFeature extends BaseEntity {
     private String featureImagePath;
     private String description;
 
-    @Column(length = 255)
-    private String username;
-
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
 
@@ -47,9 +44,8 @@ public class PalmFeature extends BaseEntity {
         this.featureId = featureId;
     }
 
-    public void updateInfo(String description, String username) {
+    public void updateInfo(String description) {
         if (StringUtils.hasText(description)) this.description = description;
-        if (StringUtils.hasText(username)) this.username = username;
     }
 
     public void delete() {

@@ -28,7 +28,6 @@ public class CreatePalmFeatureUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.username(),
                 input.transactionUuid());
 
         var apiKey = apiKeyService.findByApiKey(input.apiKey());
