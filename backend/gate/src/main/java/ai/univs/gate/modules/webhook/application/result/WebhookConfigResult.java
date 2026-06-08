@@ -7,7 +7,6 @@ public record WebhookConfigResult(
         Long projectId,
         String webhookUrl,
         Boolean demoEnabled,
-        Boolean sdkEnabled,
         Boolean apiEnabled
 ) {
     public static WebhookConfigResult from(WebhookConfig config) {
@@ -16,7 +15,6 @@ public record WebhookConfigResult(
                 config.getProject().getId(),
                 config.getWebhookUrl(),
                 config.getDemoEnabled(),
-                config.getSdkEnabled(),
                 config.getApiEnabled()
         );
     }

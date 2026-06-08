@@ -16,10 +16,6 @@ public record WebhookConfigRequestDTO(
         @NotNull
         Boolean demoEnabled,
 
-        @Schema(description = SwaggerDescriptions.WEBHOOK_SDK_ENABLED)
-        @NotNull
-        Boolean sdkEnabled,
-
         @Schema(description = SwaggerDescriptions.WEBHOOK_API_ENABLED)
         @NotNull
         Boolean apiEnabled

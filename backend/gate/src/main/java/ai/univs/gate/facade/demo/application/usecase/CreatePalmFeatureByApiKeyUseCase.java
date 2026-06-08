@@ -30,7 +30,6 @@ public class CreatePalmFeatureByApiKeyUseCase {
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
         // 데모 활성화 여부 체크
-        projectSettingsService.validateDemoEnabled(findProjectSettings);
 
         CreatePalmFeatureServiceResult result = palmFeatureService.createPalmFeature(
                 CallerType.DEMO,

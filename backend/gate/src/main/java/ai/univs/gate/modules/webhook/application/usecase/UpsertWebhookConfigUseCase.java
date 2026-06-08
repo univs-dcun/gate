@@ -33,7 +33,6 @@ public class UpsertWebhookConfigUseCase {
                     .project(project)
                     .webhookUrl(input.webhookUrl())
                     .demoEnabled(input.demoEnabled())
-                    .sdkEnabled(input.sdkEnabled())
                     .apiEnabled(input.apiEnabled())
                     .build();
             webhookConfigRepository.save(config);
@@ -43,7 +42,6 @@ public class UpsertWebhookConfigUseCase {
             config.update(
                     input.webhookUrl(),
                     input.demoEnabled(),
-                    input.sdkEnabled(),
                     input.apiEnabled());
             log.info("Webhook config updated: projectId={}", input.projectId());
         }

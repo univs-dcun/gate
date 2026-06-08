@@ -5,7 +5,6 @@ public record UpsertWebhookConfigInput(
         Long projectId,
         String webhookUrl,
         Boolean demoEnabled,
-        Boolean sdkEnabled,
         Boolean apiEnabled
 ) {
 }

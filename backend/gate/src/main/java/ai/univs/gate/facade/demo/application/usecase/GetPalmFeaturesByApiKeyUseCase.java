@@ -36,7 +36,6 @@ public class GetPalmFeaturesByApiKeyUseCase {
         Project project = apiKey.getProject();
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-        projectSettingsService.validateDemoEnabled(projectSettings);
 
         PalmFeatureQuery query = new PalmFeatureQuery(
                 null,

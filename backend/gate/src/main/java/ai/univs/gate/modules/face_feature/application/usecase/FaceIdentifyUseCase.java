@@ -60,7 +60,6 @@ public class FaceIdentifyUseCase {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
-        projectSettingsService.checkAvailabilityModules(input.callerType(), findProjectSettings);
 
         boolean consentEnabled = findProjectSettings.getConsentEnabled();
 

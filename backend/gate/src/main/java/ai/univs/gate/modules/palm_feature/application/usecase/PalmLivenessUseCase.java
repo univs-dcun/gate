@@ -49,7 +49,6 @@ public class PalmLivenessUseCase {
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
 
-        projectSettingsService.checkAvailabilityModules(input.callerType(), projectSettings);
 
         boolean consentEnabled = projectSettings.getConsentEnabled();
         var imagePath = fileService.uploadIfConsent(input.featureImage(), consentEnabled);

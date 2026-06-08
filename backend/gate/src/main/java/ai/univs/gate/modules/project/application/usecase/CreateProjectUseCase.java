@@ -70,8 +70,6 @@ public class CreateProjectUseCase {
         // 프로젝트 설정 초기화
         ProjectSettings projectSettings = ProjectSettings.builder()
                 .project(savedProject)
-                .demoEnabled(true)
-                .sdkEnabled(true)
                 .consentEnabled(false)
                 .livenessRegisterEnabled(false)
                 .livenessIdentifyingEnabled(true)

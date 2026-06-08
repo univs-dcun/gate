@@ -13,8 +13,6 @@ public record WebhookConfigResponseDTO(
         String webhookUrl,
         @Schema(description = SwaggerDescriptions.WEBHOOK_DEMO_ENABLED)
         Boolean demoEnabled,
-        @Schema(description = SwaggerDescriptions.WEBHOOK_SDK_ENABLED)
-        Boolean sdkEnabled,
         @Schema(description = SwaggerDescriptions.WEBHOOK_API_ENABLED)
         Boolean apiEnabled
 ) {
@@ -24,7 +22,6 @@ public record WebhookConfigResponseDTO(
                 result.projectId(),
                 result.webhookUrl(),
                 result.demoEnabled(),
-                result.sdkEnabled(),
                 result.apiEnabled()
         );
     }
