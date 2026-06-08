@@ -13,10 +13,7 @@ server:
   # SSL
   # ===============================
   ssl:
-    enabled: true
-    key-store-password: keystorepassword
-    key-store: keystore
-    key-store-type: keystoretype
+    enabled: false
 
 spring:
   main:
