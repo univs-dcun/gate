@@ -4,6 +4,7 @@ import ai.univs.gate.modules.palm_feature.application.input.CreatePalmFeatureInp
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.ValidImageFile;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
