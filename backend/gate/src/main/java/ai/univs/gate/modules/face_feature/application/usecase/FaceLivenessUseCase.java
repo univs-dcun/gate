@@ -47,7 +47,6 @@ public class FaceLivenessUseCase {
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
 
-        projectService.validateFaceModuleType(project);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 

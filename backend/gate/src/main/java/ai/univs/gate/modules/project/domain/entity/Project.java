@@ -1,6 +1,5 @@
 package ai.univs.gate.modules.project.domain.entity;
 
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.domain.BaseEntity;
@@ -43,13 +42,6 @@ public class Project extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "project_type", nullable = false, length = 20)
     private ProjectType projectType;
-
-    /**
-     * 한 번 설정되면 변경 불가. updatable = false 로 DB 레벨에서도 강제.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "project_module_type", nullable = false, length = 20, updatable = false)
-    private ProjectModuleType projectModuleType;
 
     /** External 타입일 때만 설정 가능. Standard 로 변경 시 자동 초기화. */
     @Column(name = "package_key", length = 99)

@@ -2,7 +2,6 @@ package ai.univs.gate.modules.project.api.dto;
 
 import ai.univs.gate.modules.project.application.result.ProjectResult;
 import ai.univs.gate.modules.project.application.result.ProjectSummaryResult;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
@@ -21,8 +20,6 @@ public record ProjectResponseDTO(
         String projectDescription,
         @Schema(description = SwaggerDescriptions.PROJECT_TYPE)
         ProjectType projectType,
-        @Schema(description = SwaggerDescriptions.PROJECT_MODULE_TYPE)
-        ProjectModuleType projectModuleType,
         @Schema(description = SwaggerDescriptions.PACKAGE_KEY)
         String packageKey,
         @Schema(description = SwaggerDescriptions.COUNT_REGISTRATION)
@@ -51,7 +48,6 @@ public record ProjectResponseDTO(
                 result.projectName(),
                 result.projectDescription(),
                 result.projectType(),
-                result.projectModuleType(),
                 result.packageKey(),
                 result.countUserRegistration(),
                 result.countVerifyById(),
@@ -70,7 +66,6 @@ public record ProjectResponseDTO(
                 result.projectName(),
                 result.projectDescription(),
                 result.projectType(),
-                result.projectModuleType(),
                 result.packageKey(),
                 null, null, null, null, null,
                 result.status(),

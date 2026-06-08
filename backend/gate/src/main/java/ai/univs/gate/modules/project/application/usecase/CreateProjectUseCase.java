@@ -9,7 +9,6 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.modules.project.domain.repository.ProjectLivenessSettingRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectRepository;
@@ -52,7 +51,6 @@ public class CreateProjectUseCase {
                 .branchName(UUID.randomUUID().toString())
                 .status(ProjectStatus.ACTIVE)
                 .projectType(input.projectType())
-                .projectModuleType(input.projectModuleType())
                 .isDeleted(false)
                 .build();
         Project savedProject = projectRepository.save(project);
@@ -78,10 +76,9 @@ public class CreateProjectUseCase {
                 .build();
         projectSettingsRepository.save(projectSettings);
 
-        // 모듈 타입에 맞는 liveness 기본값 저장
-        FeatureType moduleType = input.projectModuleType() == ProjectModuleType.PALM
-                ? FeatureType.PALM : FeatureType.FACE;
-        livenessSettingRepository.saveAll(defaultLivenessSettings(projectSettings, moduleType));
+        // FACE, PALM 모두 liveness 기본값 저장
+        livenessSettingRepository.saveAll(defaultLivenessSettings(projectSettings, FeatureType.FACE));
+        livenessSettingRepository.saveAll(defaultLivenessSettings(projectSettings, FeatureType.PALM));
         log.info("Project settings initialized: projectId={}", projectSettings.getId());
 
         return ProjectResult.from(savedProject, savedApiKey.getApiKey());

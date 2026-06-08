@@ -2,7 +2,6 @@ package ai.univs.gate.modules.project.application.result;
 
 import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 
 import java.time.LocalDateTime;
@@ -15,7 +14,6 @@ public record ProjectSettingsResult(
         Long projectId,
         String projectName,
         ProjectType projectType,
-        ProjectModuleType projectModuleType,
         String packageKey,
         Boolean consentEnabled,
         LocalDateTime consentAgreedAt,
@@ -28,7 +26,6 @@ public record ProjectSettingsResult(
                 settings.getProject().getId(),
                 settings.getProject().getProjectName(),
                 settings.getProject().getProjectType(),
-                settings.getProject().getProjectModuleType(),
                 settings.getProject().getPackageKey(),
                 settings.getConsentEnabled(),
                 fromUtc(settings.getConsentAgreedAt(), timezone),

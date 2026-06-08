@@ -53,7 +53,6 @@ public class PalmIdentifyUseCase {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = findApiKey.getProject();
 
-        projectService.validatePalmModuleType(project);
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
 
