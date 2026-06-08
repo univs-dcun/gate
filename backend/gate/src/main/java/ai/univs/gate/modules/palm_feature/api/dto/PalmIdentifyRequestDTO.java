@@ -13,6 +13,7 @@ import java.util.UUID;
 
 public record PalmIdentifyRequestDTO(
         @Schema(description = SwaggerDescriptions.PALM_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile featureImage,
 
