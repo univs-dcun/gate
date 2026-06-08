@@ -3,6 +3,7 @@ package ai.univs.gate.facade.demo.application.usecase;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.repository.ProjectLivenessSettingRepository;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ public class GetDemoProjectConfigUseCase {
 
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsService projectSettingsService;
+    private final ProjectLivenessSettingRepository livenessSettingRepository;
 
     @Transactional(readOnly = true)
     public ProjectSettingsResult execute(String apiKey, String timezone) {
@@ -22,6 +24,7 @@ public class GetDemoProjectConfigUseCase {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
-        return ProjectSettingsResult.from(findProjectSettings, timezone);
+        var livenessSettings = livenessSettingRepository.findAllByProjectSettings(findProjectSettings);
+        return ProjectSettingsResult.from(findProjectSettings, livenessSettings, timezone);
     }
 }

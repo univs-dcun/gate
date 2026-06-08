@@ -19,6 +19,8 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.palm.PalmService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -67,7 +69,7 @@ public class PalmFeatureService {
                 .matchType(MatchType.REGISTER)
                 .featureType(FeatureType.PALM)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessRegisterEnabled())
+                .checkLiveness(projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.PALM, LivenessOperation.REGISTER))
                 .success(false)
                 .matchedFeatureImagePath(imagePath)
                 .transactionUuid(transactionUuid)
@@ -80,7 +82,7 @@ public class PalmFeatureService {
                 featureImage,
                 transactionUuid,
                 String.valueOf(accountId),
-                findProjectSettings.getLivenessRegisterEnabled());
+                projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.PALM, LivenessOperation.REGISTER));
 
         String palmId;
         try {
@@ -102,7 +104,7 @@ public class PalmFeatureService {
 
         matchHistory.success(palmFeature, BigDecimal.ZERO);
 
-        return new CreatePalmFeatureServiceResult(palmFeature, findProjectSettings.getLivenessRegisterEnabled());
+        return new CreatePalmFeatureServiceResult(palmFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.PALM, LivenessOperation.REGISTER));
     }
 
     public PalmFeature getPalmFeatureByPalmIdAndProjectId(String featureId, Long projectId) {

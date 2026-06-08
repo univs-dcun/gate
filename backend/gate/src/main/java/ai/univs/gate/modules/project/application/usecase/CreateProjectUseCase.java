@@ -2,11 +2,16 @@ package ai.univs.gate.modules.project.application.usecase;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.api_key.domain.repository.ApiKeyRepository;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.application.input.CreateProjectInput;
 import ai.univs.gate.modules.project.application.result.ProjectResult;
 import ai.univs.gate.modules.project.domain.entity.Project;
+import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
+import ai.univs.gate.modules.project.domain.repository.ProjectLivenessSettingRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
 import ai.univs.gate.support.api_key.ApiKeyGenerator;
@@ -17,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static ai.univs.gate.shared.utils.DateTimeUtil.nowUtc;
@@ -29,6 +35,7 @@ public class CreateProjectUseCase {
     private final ProjectRepository projectRepository;
     private final ApiKeyRepository apiKeyRepository;
     private final ProjectSettingsRepository projectSettingsRepository;
+    private final ProjectLivenessSettingRepository livenessSettingRepository;
     private final ApiKeyGenerator apiKeyGenerator;
 
     @Value("${api-key.expiry-days}")
@@ -38,7 +45,6 @@ public class CreateProjectUseCase {
     public ProjectResult execute(CreateProjectInput input) {
         log.info("Creating project for userId: {}", input.accountId());
 
-        // 프로젝트 생성
         Project project = Project.builder()
                 .accountId(input.accountId())
                 .projectName(input.projectName())
@@ -52,7 +58,6 @@ public class CreateProjectUseCase {
         Project savedProject = projectRepository.save(project);
         log.info("Project created: projectId={}", savedProject.getId());
 
-        // API Key 자동 발급
         String apiKey = apiKeyGenerator.generateApiKey();
         String secretKey = apiKeyGenerator.generateSecretKey();
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(apiKeyExpiryDays);
@@ -67,18 +72,37 @@ public class CreateProjectUseCase {
         ApiKey savedApiKey = apiKeyRepository.save(newApiKey);
         log.info("API Key issued: apiKeyId={}", savedApiKey.getId());
 
-        // 프로젝트 설정 초기화
         ProjectSettings projectSettings = ProjectSettings.builder()
                 .project(savedProject)
                 .consentEnabled(false)
-                .livenessRegisterEnabled(false)
-                .livenessIdentifyingEnabled(true)
-                .livenessVerifyingByIdEnabled(true)
-                .livenessVerifyingByImageEnabled(true)
                 .build();
         projectSettingsRepository.save(projectSettings);
+
+        // 모듈 타입에 맞는 liveness 기본값 저장
+        FeatureType moduleType = input.projectModuleType() == ProjectModuleType.PALM
+                ? FeatureType.PALM : FeatureType.FACE;
+        livenessSettingRepository.saveAll(defaultLivenessSettings(projectSettings, moduleType));
         log.info("Project settings initialized: projectId={}", projectSettings.getId());
 
         return ProjectResult.from(savedProject, savedApiKey.getApiKey());
+    }
+
+    private List<ProjectLivenessSetting> defaultLivenessSettings(ProjectSettings settings, FeatureType moduleType) {
+        return List.of(
+                buildSetting(settings, moduleType, LivenessOperation.REGISTER, false),
+                buildSetting(settings, moduleType, LivenessOperation.IDENTIFY, true),
+                buildSetting(settings, moduleType, LivenessOperation.VERIFY_ID, true),
+                buildSetting(settings, moduleType, LivenessOperation.VERIFY_IMAGE, true)
+        );
+    }
+
+    private ProjectLivenessSetting buildSetting(ProjectSettings settings, FeatureType moduleType,
+                                                 LivenessOperation operation, boolean enabled) {
+        return ProjectLivenessSetting.builder()
+                .projectSettings(settings)
+                .moduleType(moduleType)
+                .operation(operation)
+                .enabled(enabled)
+                .build();
     }
 }

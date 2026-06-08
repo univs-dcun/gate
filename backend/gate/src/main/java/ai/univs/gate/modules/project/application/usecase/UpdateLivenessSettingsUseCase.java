@@ -2,8 +2,9 @@ package ai.univs.gate.modules.project.application.usecase;
 
 import ai.univs.gate.modules.project.application.input.UpdateLivenessSettingsInput;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
-import ai.univs.gate.modules.project.domain.entity.Project;
+import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.repository.ProjectLivenessSettingRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.exception.CustomGateException;
@@ -21,23 +22,34 @@ public class UpdateLivenessSettingsUseCase {
 
     private final ProjectService projectService;
     private final ProjectSettingsRepository projectSettingsRepository;
+    private final ProjectLivenessSettingRepository livenessSettingRepository;
 
     @Transactional
     public ProjectSettingsResult execute(UpdateLivenessSettingsInput input) {
         UserContext userContext = UserContext.get();
 
-        Project project = projectService.validateOwnership(input.projectId(), userContext.getAccountIdAsLong());
+        var project = projectService.validateOwnership(input.projectId(), userContext.getAccountIdAsLong());
         ProjectSettings settings = projectSettingsRepository.findByProject(project)
                 .orElseThrow(() -> new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
 
-        settings.updateLivenessSettings(
-                input.livenessRegisterEnabled(),
-                input.livenessIdentifyingEnabled(),
-                input.livenessVerifyingByIdEnabled(),
-                input.livenessVerifyingByImageEnabled());
+        input.settings().forEach(s -> {
+            var existing = livenessSettingRepository
+                    .findByProjectSettingsAndModuleTypeAndOperation(settings, input.moduleType(), s.operation());
+            if (existing.isPresent()) {
+                existing.get().updateEnabled(s.enabled());
+            } else {
+                livenessSettingRepository.save(ProjectLivenessSetting.builder()
+                        .projectSettings(settings)
+                        .moduleType(input.moduleType())
+                        .operation(s.operation())
+                        .enabled(s.enabled())
+                        .build());
+            }
+        });
 
-        log.info("Liveness settings updated: projectId={}", input.projectId());
+        log.info("Liveness settings updated: projectId={}, moduleType={}", input.projectId(), input.moduleType());
 
-        return ProjectSettingsResult.from(settings, userContext.getTimezone());
+        var livenessSettings = livenessSettingRepository.findAllByProjectSettings(settings);
+        return ProjectSettingsResult.from(settings, livenessSettings, userContext.getTimezone());
     }
 }

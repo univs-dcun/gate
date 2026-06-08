@@ -1,12 +1,16 @@
 package ai.univs.gate.modules.project.api.dto;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.application.result.LivenessSettingResult;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ProjectSettingsResponseDTO(
         @Schema(description = SwaggerDescriptions.PROJECT_SETTINGS_ID)
@@ -25,15 +29,22 @@ public record ProjectSettingsResponseDTO(
         Boolean consentEnabled,
         @Schema(description = SwaggerDescriptions.CONSENT_AGREED_AT)
         LocalDateTime consentAgreedAt,
-        @Schema(description = SwaggerDescriptions.LIVENESS_REGISTER_ENABLED)
-        Boolean livenessRegisterEnabled,
-        @Schema(description = SwaggerDescriptions.LIVENESS_IDENTIFYING_ENABLED)
-        Boolean livenessIdentifyingEnabled,
-        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_BY_ID_ENABLED)
-        Boolean livenessVerifyingByIdEnabled,
-        @Schema(description = SwaggerDescriptions.LIVENESS_VERIFYING_BY_IMAGE_ENABLED)
-        Boolean livenessVerifyingByImageEnabled
+        @Schema(description = SwaggerDescriptions.LIVENESS_SETTINGS)
+        List<LivenessSettingResponse> livenessSettings
 ) {
+
+    public record LivenessSettingResponse(
+            @Schema(description = SwaggerDescriptions.FEATURE_TYPE)
+            FeatureType moduleType,
+            @Schema(description = SwaggerDescriptions.LIVENESS_OPERATION)
+            LivenessOperation operation,
+            @Schema(description = SwaggerDescriptions.LIVENESS_ENABLED)
+            Boolean enabled
+    ) {
+        public static LivenessSettingResponse from(LivenessSettingResult result) {
+            return new LivenessSettingResponse(result.moduleType(), result.operation(), result.enabled());
+        }
+    }
 
     public static ProjectSettingsResponseDTO from(ProjectSettingsResult result) {
         return new ProjectSettingsResponseDTO(
@@ -45,9 +56,6 @@ public record ProjectSettingsResponseDTO(
                 result.packageKey(),
                 result.consentEnabled(),
                 result.consentAgreedAt(),
-                result.livenessRegisterEnabled(),
-                result.livenessIdentifyingEnabled(),
-                result.livenessVerifyingByIdEnabled(),
-                result.livenessVerifyingByImageEnabled());
+                result.livenessSettings().stream().map(LivenessSettingResponse::from).toList());
     }
 }

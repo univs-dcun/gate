@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.face_feature.application.usecase;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.application.input.VerifyByImageInput;
 import ai.univs.gate.modules.face_feature.application.result.VerifyByImageResult;
@@ -65,7 +68,7 @@ public class FaceVerifyByFeatureImageUseCase {
                 .matchType(MatchType.VERIFY_IMAGE)
                 .featureType(FeatureType.FACE)
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
-                .checkLiveness(findProjectSettings.getLivenessVerifyingByImageEnabled())
+                .checkLiveness(projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.VERIFY_IMAGE))
                 .success(false)
                 .featureImagePath(targetImagePath)
                 .matchedFeatureImagePath(imagePath)
@@ -79,8 +82,8 @@ public class FaceVerifyByFeatureImageUseCase {
                 input.documentImage(),
                 input.transactionUuid(),
                 input.accountId().toString(),
-                findProjectSettings.getLivenessVerifyingByImageEnabled(),
-                findProjectSettings.getLivenessVerifyingByImageEnabled());
+                projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.VERIFY_IMAGE),
+                projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.VERIFY_IMAGE));
 
         MatchFeignResponseDTO data;
         try {

@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.face_feature.application.usecase;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.application.input.UpdateFaceFeatureInput;
 import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
@@ -9,6 +12,7 @@ import ai.univs.gate.modules.face_feature.infrastructure.client.dto.UpdateFeignR
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
+import ai.univs.gate.support.project.ProjectSettingsService;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -29,6 +33,7 @@ public class UpdateFaceFeatureUseCase {
     private final FaceService faceService;
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsRepository projectSettingsRepository;
+    private final ProjectSettingsService projectSettingsService;
 
     @Transactional
     public FaceFeatureResult execute(UpdateFaceFeatureInput input) {
@@ -58,8 +63,8 @@ public class UpdateFaceFeatureUseCase {
                     input.featureImage(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId()),
-                    projectSettings.getLivenessRegisterEnabled(),
-                    projectSettings.getLivenessRegisterEnabled());
+                    projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.FACE, LivenessOperation.REGISTER),
+                    projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
             faceService.updateFace(updateRequest);
         }
 
