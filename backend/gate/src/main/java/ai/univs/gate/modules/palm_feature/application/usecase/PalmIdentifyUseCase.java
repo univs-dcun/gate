@@ -104,7 +104,7 @@ public class PalmIdentifyUseCase {
         BigDecimal similarity = parseSimilarity(data.getSimilarity());
         matchHistory.success(palmFeature, similarity);
 
-        return PalmIdentifyResult.successResult(matchHistory, palmFeature, similarity, data.getThreshold());
+        return PalmIdentifyResult.successResult(matchHistory, palmFeature, matchHistory.getSimilarity(), data.getThreshold());
     }
 
     private BigDecimal parseSimilarity(String similarity) {
