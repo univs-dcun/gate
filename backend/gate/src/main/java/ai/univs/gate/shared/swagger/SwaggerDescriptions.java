@@ -61,8 +61,6 @@ public class SwaggerDescriptions {
     public static final String COUNT_VERIFY_BY_IMAGE = "1:1 사진 인증(/verify/image) 요청 수";
     public static final String COUNT_IDENTIFY = "1:N 매칭 요청 수";
     public static final String COUNT_LIVENESS = "라이브니스 요청 수";
-    public static final String DEMO_ENABLED = "데모 활성화 여부";
-    public static final String SDK_ENABLED = "SDK 활성화 여부";
 
     /* Auth 요청/응답 DTO */
     public static final String ACCOUNT_ID = "계정 식별 번호";
@@ -117,7 +115,6 @@ public class SwaggerDescriptions {
     public static final String WEBHOOK_CONFIG_ID = "웹훅 설정 식별 번호";
     public static final String WEBHOOK_URL = "웹훅 URL (https:// 형태)";
     public static final String WEBHOOK_DEMO_ENABLED = "웹훅 데모 활성화 여부";
-    public static final String WEBHOOK_SDK_ENABLED = "웹훅 SDK 활성화 여부";
     public static final String WEBHOOK_API_ENABLED = "웹훅 API 활성화 여부";
 
     /* 공통 추가 */

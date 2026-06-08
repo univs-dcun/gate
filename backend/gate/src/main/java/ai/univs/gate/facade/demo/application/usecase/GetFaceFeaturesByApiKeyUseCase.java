@@ -36,7 +36,6 @@ public class GetFaceFeaturesByApiKeyUseCase {
         Project project = apiKey.getProject();
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-        projectSettingsService.validateDemoEnabled(projectSettings);
 
         FaceFeatureQuery query = input.toFaceFeatureQuery();
         long totalCount = faceFeatureRepository.countByProjectIdAndIsDeletedFalse(project.getId());

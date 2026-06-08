@@ -25,10 +25,6 @@ public record ProjectSettingsResponseDTO(
         Boolean consentEnabled,
         @Schema(description = SwaggerDescriptions.CONSENT_AGREED_AT)
         LocalDateTime consentAgreedAt,
-        @Schema(description = SwaggerDescriptions.DEMO_ENABLED)
-        Boolean demoEnabled,
-        @Schema(description = SwaggerDescriptions.SDK_ENABLED)
-        Boolean sdkEnabled,
         @Schema(description = SwaggerDescriptions.LIVENESS_REGISTER_ENABLED)
         Boolean livenessRegisterEnabled,
         @Schema(description = SwaggerDescriptions.LIVENESS_IDENTIFYING_ENABLED)
@@ -49,8 +45,6 @@ public record ProjectSettingsResponseDTO(
                 result.packageKey(),
                 result.consentEnabled(),
                 result.consentAgreedAt(),
-                result.demoEnabled(),
-                result.sdkEnabled(),
                 result.livenessRegisterEnabled(),
                 result.livenessIdentifyingEnabled(),
                 result.livenessVerifyingByIdEnabled(),

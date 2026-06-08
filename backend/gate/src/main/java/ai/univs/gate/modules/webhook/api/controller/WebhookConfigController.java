@@ -67,7 +67,6 @@ public class WebhookConfigController {
                 projectId,
                 request.webhookUrl(),
                 request.demoEnabled(),
-                request.sdkEnabled(),
                 request.apiEnabled());
 
         var result = upsertWebhookConfigUseCase.execute(input);

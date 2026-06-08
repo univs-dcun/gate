@@ -31,12 +31,6 @@ public class ProjectSettings extends BaseTimeEntity {
     @Column(name = "consent_agreed_at")
     private LocalDateTime consentAgreedAt;
 
-    @Column(name = "demo_enabled", nullable = false)
-    private Boolean demoEnabled;
-
-    @Column(name = "sdk_enabled", nullable = false)
-    private Boolean sdkEnabled;
-
     @Column(name = "liveness_register_enabled", nullable = false)
     private Boolean livenessRegisterEnabled;
 
@@ -67,11 +61,4 @@ public class ProjectSettings extends BaseTimeEntity {
         if (verifyingByImage != null) this.livenessVerifyingByImageEnabled = verifyingByImage;
     }
 
-    public void updateDemoSettings(Boolean demoEnabled) {
-        if (demoEnabled != null) this.demoEnabled = demoEnabled;
-    }
-
-    public void updateSdkSettings(Boolean sdkEnabled) {
-        if (sdkEnabled != null) this.sdkEnabled = sdkEnabled;
-    }
 }

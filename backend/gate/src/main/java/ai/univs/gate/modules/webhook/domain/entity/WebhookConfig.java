@@ -31,20 +31,15 @@ public class WebhookConfig extends BaseEntity {
     @Column(name = "demo_enabled", nullable = false)
     private Boolean demoEnabled;
 
-    @Column(name = "sdk_enabled", nullable = false)
-    private Boolean sdkEnabled;
-
     @Column(name = "api_enabled", nullable = false)
     private Boolean apiEnabled;
 
     public void update(String webhookUrl,
                        Boolean demoEnabled,
-                       Boolean sdkEnabled,
                        Boolean apiEnabled
     ) {
         this.webhookUrl = webhookUrl;
         this.demoEnabled = demoEnabled;
-        this.sdkEnabled = sdkEnabled;
         this.apiEnabled = apiEnabled;
     }
 }

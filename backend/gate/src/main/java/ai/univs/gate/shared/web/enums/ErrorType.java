@@ -76,9 +76,7 @@ public enum ErrorType {
 
     PACKAGE_KEY_NOT_ALLOWED("PJ-111", HttpStatus.BAD_REQUEST),
     PROJECT_MODULE_TYPE_IMMUTABLE("PJ-112", HttpStatus.BAD_REQUEST),
-    UNSUPPORTED_MODULE_TYPE("PJ-113", HttpStatus.BAD_REQUEST),
-    DEMO_DISABLED("PJ-114", HttpStatus.FORBIDDEN),
-    SDK_DISABLED("PJ-115", HttpStatus.FORBIDDEN);
+    UNSUPPORTED_MODULE_TYPE("PJ-113", HttpStatus.BAD_REQUEST);
 
     // 메시지는 다국어 지원으로 messages.properties 통해서 제공
     private final String code;       // 시스템 관리용 코드

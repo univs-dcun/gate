@@ -60,7 +60,6 @@ public class PalmFeatureService {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
 
-        projectSettingsService.checkAvailabilityModules(callerType, findProjectSettings);
 
         String imagePath = fileService.uploadIfConsent(featureImage, findProjectSettings.getConsentEnabled());
 

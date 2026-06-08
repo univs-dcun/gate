@@ -30,7 +30,6 @@ public class CreateFaceFeatureByApiKeyUseCase {
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
         // 데모 활성화 여부 체크
-        projectSettingsService.validateDemoEnabled(findProjectSettings);
 
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
                 CallerType.DEMO,

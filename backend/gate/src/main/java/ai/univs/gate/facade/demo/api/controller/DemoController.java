@@ -175,7 +175,6 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
     @GetMapping("/feature/faces")
     public ResponseEntity<ResponseApi<FaceFeaturesResponseDTO>> getUsersByApiKey(
@@ -239,7 +238,6 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.DEMO_DISABLED, status = 403),
     })
     @GetMapping("/feature/palms")
     public ResponseEntity<ResponseApi<PalmFeaturesResponseDTO>> getPalmsByApiKey(
