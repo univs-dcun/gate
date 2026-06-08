@@ -29,7 +29,6 @@ public class WebhookService {
                 .ifPresent(config -> {
                     boolean enabled = switch (webhookType.toLowerCase()) {
                         case "demo" -> config.getDemoEnabled();
-                        case "sdk"  -> config.getSdkEnabled();
                         case "api"  -> config.getApiEnabled();
                         default     -> false;
                     };
