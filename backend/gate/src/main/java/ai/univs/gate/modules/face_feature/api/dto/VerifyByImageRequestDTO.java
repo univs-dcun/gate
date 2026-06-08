@@ -5,6 +5,7 @@ import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.utils.ValidImageFile;
 import ai.univs.gate.shared.web.enums.CallerType;
+import jakarta.validation.constraints.NotNull;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.web.multipart.MultipartFile;
