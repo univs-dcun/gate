@@ -11,10 +11,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 public record VerifyByImageRequestDTO(
         @Schema(description = SwaggerDescriptions.TARGET_MATCHING_FEATURE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile documentImage,
 
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile matchingFeatureImage,
 

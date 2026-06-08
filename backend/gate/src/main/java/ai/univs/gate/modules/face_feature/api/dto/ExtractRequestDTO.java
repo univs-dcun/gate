@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public record ExtractRequestDTO(
         @Schema(description = SwaggerDescriptions.FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile featureImage,
 

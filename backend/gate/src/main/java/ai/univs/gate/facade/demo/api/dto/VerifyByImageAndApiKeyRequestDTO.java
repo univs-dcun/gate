@@ -6,6 +6,7 @@ import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.utils.ValidImageFile;
 import ai.univs.gate.shared.web.enums.CallerType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,10 +18,12 @@ public record VerifyByImageAndApiKeyRequestDTO(
         String apiKey,
 
         @Schema(description = SwaggerDescriptions.TARGET_MATCHING_FEATURE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile documentImage,
 
         @Schema(description = SwaggerDescriptions.MATCHING_FACE_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
         @ValidImageFile(message = "INVALID_FILE")
         MultipartFile matchingFeatureImage,
 
