@@ -109,7 +109,10 @@ public class PalmIdentifyUseCase {
 
     private BigDecimal parseSimilarity(String similarity) {
         try {
-            return new BigDecimal(similarity);
+            // Palm 서비스는 similarity를 퍼센트(0~100)로 반환.
+            // MatchHistory.toPercent()가 × 100을 하므로 미리 ÷ 100 처리.
+            return new BigDecimal(similarity)
+                    .divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP);
         } catch (Exception e) {
             return BigDecimal.ZERO;
         }
