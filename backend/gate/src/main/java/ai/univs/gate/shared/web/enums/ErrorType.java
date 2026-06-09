@@ -72,9 +72,7 @@ public enum ErrorType {
 
     // Demo
     INVALID_QR_CODE("DEMO-101", HttpStatus.BAD_REQUEST),
-    EXPIRED_QR_CODE("DEMO-102", HttpStatus.BAD_REQUEST),
-
-    PACKAGE_KEY_NOT_ALLOWED("PJ-111", HttpStatus.BAD_REQUEST);
+    EXPIRED_QR_CODE("DEMO-102", HttpStatus.BAD_REQUEST);
 
     // 메시지는 다국어 지원으로 messages.properties 통해서 제공
     private final String code;       // 시스템 관리용 코드

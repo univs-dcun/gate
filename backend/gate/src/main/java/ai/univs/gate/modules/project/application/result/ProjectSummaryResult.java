@@ -1,7 +1,6 @@
 package ai.univs.gate.modules.project.application.result;
 
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
-import ai.univs.gate.modules.project.domain.enums.ProjectType;
 
 import java.time.LocalDateTime;
 
@@ -10,8 +9,6 @@ public record ProjectSummaryResult(
         String projectName,
         String projectDescription,
         ProjectStatus status,
-        ProjectType projectType,
-        String packageKey,
         Long countUserRegistration,
         Long countVerifyById,
         Long countVerifyByImage,

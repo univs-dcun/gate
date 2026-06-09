@@ -50,7 +50,6 @@ public class CreateProjectUseCase {
                 .projectDescription(input.projectDescription())
                 .branchName(UUID.randomUUID().toString())
                 .status(ProjectStatus.ACTIVE)
-                .projectType(input.projectType())
                 .isDeleted(false)
                 .build();
         Project savedProject = projectRepository.save(project);

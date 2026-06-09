@@ -2,7 +2,6 @@ package ai.univs.gate.modules.project.application.result;
 
 import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.modules.project.domain.enums.ProjectType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,8 +12,6 @@ public record ProjectSettingsResult(
         Long projectSettingsId,
         Long projectId,
         String projectName,
-        ProjectType projectType,
-        String packageKey,
         Boolean consentEnabled,
         LocalDateTime consentAgreedAt,
         List<LivenessSettingResult> livenessSettings
@@ -25,8 +22,6 @@ public record ProjectSettingsResult(
                 settings.getId(),
                 settings.getProject().getId(),
                 settings.getProject().getProjectName(),
-                settings.getProject().getProjectType(),
-                settings.getProject().getPackageKey(),
                 settings.getConsentEnabled(),
                 fromUtc(settings.getConsentAgreedAt(), timezone),
                 livenessSettings.stream().map(LivenessSettingResult::from).toList());

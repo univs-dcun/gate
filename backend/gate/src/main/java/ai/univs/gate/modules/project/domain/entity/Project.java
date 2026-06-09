@@ -1,7 +1,6 @@
 package ai.univs.gate.modules.project.domain.entity;
 
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
-import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,32 +38,9 @@ public class Project extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ProjectStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "project_type", nullable = false, length = 20)
-    private ProjectType projectType;
-
-    /** External 타입일 때만 설정 가능. Standard 로 변경 시 자동 초기화. */
-    @Column(name = "package_key", length = 99)
-    private String packageKey;
-
     public void updateInfo(String projectName, String projectDescription) {
         if (projectName != null) this.projectName = projectName;
         if (projectDescription != null) this.projectDescription = projectDescription;
-    }
-
-    public void updateProjectType(ProjectType projectType) {
-        this.projectType = projectType;
-        if (projectType == ProjectType.STANDARD) {
-            this.packageKey = null;
-        }
-    }
-
-    public void updatePackageKey(String packageKey) {
-        this.packageKey = packageKey;
-    }
-
-    public boolean isExternal() {
-        return this.projectType == ProjectType.EXTERNAL;
     }
 
     public void activate() {
