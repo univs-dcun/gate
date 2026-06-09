@@ -7,11 +7,10 @@ import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.match.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository;
-import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.IdentifyPalmFeignRequestDTO;
-import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.IdentifyPalmFeignResponseDTO;
 import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -21,8 +20,6 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.palm.PalmService;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -59,14 +56,7 @@ public class PalmFeatureService {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();
 
-
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
-
-        // 동일 팜 중복 등록 방지: 유사도 >= 80이면 이미 등록된 사용자로 간주
-        if (palmFeatureRepository.countByProjectIdAndIsDeletedFalse(project.getId()) > 0) {
-            checkDuplicatePalm(project.getBranchName(), featureImage, transactionUuid,
-                    String.valueOf(accountId));
-        }
 
         String imagePath = fileService.uploadIfConsent(featureImage, findProjectSettings.getConsentEnabled());
 
@@ -116,24 +106,5 @@ public class PalmFeatureService {
     public PalmFeature getPalmFeatureByPalmIdAndProjectId(String featureId, Long projectId) {
         return palmFeatureRepository.findByFeatureIdAndProjectIdAndIsDeletedFalse(featureId, projectId)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
-    }
-
-    private static final double DUPLICATE_PALM_THRESHOLD = 80.0;
-
-    private void checkDuplicatePalm(String branchName, MultipartFile featureImage,
-                                    String transactionUuid, String clientId) {
-        var identifyRequest = new IdentifyPalmFeignRequestDTO(
-                branchName, featureImage, transactionUuid, clientId, false);
-        try {
-            IdentifyPalmFeignResponseDTO result = palmService.identify(identifyRequest);
-            if (result.getSimilarity() != null) {
-                double score = Double.parseDouble(result.getSimilarity());
-                if (score >= DUPLICATE_PALM_THRESHOLD) {
-                    throw new CustomGateException(ErrorType.ALREADY_REGISTERED_PALM_FEATURE);
-                }
-            }
-        } catch (CustomFeignException e) {
-            // 매칭 대상 없음 등 → 중복 아님, 등록 진행
-        }
     }
 }
