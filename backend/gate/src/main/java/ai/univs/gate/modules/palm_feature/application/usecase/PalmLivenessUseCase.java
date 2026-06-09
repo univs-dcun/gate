@@ -72,7 +72,10 @@ public class PalmLivenessUseCase {
 
         LivenessPalmFeignResponseDTO data = palmService.liveness(livenessRequest);
 
-        BigDecimal score = BigDecimal.valueOf(data.getScore());
+        // Palm 서비스는 score를 퍼센트(0~100)로 반환.
+        // MatchHistory.toPercent()가 × 100을 하므로 미리 ÷ 100 처리.
+        BigDecimal score = BigDecimal.valueOf(data.getScore())
+                .divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP);
         if (!data.isSuccess()) {
             matchHistory.fail(score, data.getMessage() != null ? data.getMessage().toUpperCase() : "LIVENESS_FAILED");
         } else {
