@@ -113,8 +113,8 @@ public class PalmIdentifyUseCase {
         }
 
         if (!data.isResult()) {
-            matchHistory.fail(parseSimilarity(data.getSimilarity()), ErrorType.NOT_MATCH.name());
-            return PalmIdentifyResult.failResult(matchHistory, ErrorType.NOT_MATCH.name(), prefixImagePath, consentEnabled);
+            matchHistory.fail(parseSimilarity(data.getSimilarity()), "PALM_NOT_MATCH");
+            return PalmIdentifyResult.failResult(matchHistory, "PALM_NOT_MATCH", prefixImagePath, consentEnabled);
         }
 
         PalmFeature palmFeature;
