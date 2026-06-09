@@ -1,7 +1,6 @@
 package ai.univs.gate.modules.project.api.dto;
 
 import ai.univs.gate.modules.project.application.input.CreateProjectInput;
-import ai.univs.gate.modules.project.domain.enums.ProjectType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -16,18 +15,13 @@ public record CreateProjectRequestDTO(
 
         @Schema(description = SwaggerDescriptions.PROJECT_DESCRIPTION)
         @Length(max = 1000, message = "INVALID_PROJECT_DESCRIPTION_LENGTH")
-        String projectDescription,
-
-        @Schema(description = SwaggerDescriptions.PROJECT_TYPE, requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull(message = "REQUIRED_PROJECT_TYPE")
-        ProjectType projectType
+        String projectDescription
 ) {
 
         public CreateProjectInput toCreateProjectInput(Long accountId) {
                 return new CreateProjectInput(
                         accountId,
                         projectName,
-                        projectDescription,
-                        projectType);
+                        projectDescription);
         }
 }

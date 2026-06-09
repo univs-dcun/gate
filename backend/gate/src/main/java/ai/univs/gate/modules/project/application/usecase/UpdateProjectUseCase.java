@@ -20,10 +20,6 @@ public class UpdateProjectUseCase {
 
         project.updateInfo(input.projectName(), input.description());
 
-        if (input.projectType() != null) {
-            project.updateProjectType(input.projectType());
-        }
-
         return ProjectResult.from(project);
     }
 }
