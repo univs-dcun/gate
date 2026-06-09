@@ -44,6 +44,7 @@ public class PalmIdentifyUseCase {
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final PalmService palmService;
+    private final ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository palmFeatureRepository;
 
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
@@ -58,6 +59,27 @@ public class PalmIdentifyUseCase {
 
 
         boolean consentEnabled = projectSettings.getConsentEnabled();
+
+        // 등록된 팜 사용자가 없으면 사전 차단
+        if (palmFeatureRepository.countByProjectIdAndIsDeletedFalse(project.getId()) == 0) {
+            var imagePath = fileService.uploadIfConsent(input.featureImage(), consentEnabled);
+            MatchHistory preCheckHistory = MatchHistory.builder()
+                    .project(project)
+                    .matchType(MatchType.IDENTIFY)
+                    .featureType(FeatureType.PALM)
+                    .matchTime(LocalDateTime.now(ZoneOffset.UTC))
+                    .checkLiveness(projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.IDENTIFY))
+                    .success(false)
+                    .matchedFeatureImagePath(imagePath)
+                    .transactionUuid(input.transactionUuid())
+                    .consentSnapshot(consentEnabled)
+                    .build();
+            matchHistoryRepository.save(preCheckHistory);
+            preCheckHistory.fail(BigDecimal.ZERO, "NO_REGISTERED_PALM_USERS");
+            return PalmIdentifyResult.failResult(preCheckHistory, "NO_REGISTERED_PALM_USERS",
+                    fileService.getFileServerPath(), consentEnabled);
+        }
+
         var imagePath = fileService.uploadIfConsent(input.featureImage(), consentEnabled);
 
         MatchHistory matchHistory = MatchHistory.builder()
