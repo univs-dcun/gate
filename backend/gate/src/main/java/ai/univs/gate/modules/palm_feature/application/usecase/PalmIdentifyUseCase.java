@@ -80,17 +80,19 @@ public class PalmIdentifyUseCase {
                 input.accountId().toString(),
                 projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.IDENTIFY));
 
+        String prefixImagePath = fileService.getFileServerPath();
+
         IdentifyPalmFeignResponseDTO data;
         try {
             data = palmService.identify(identifyRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            return PalmIdentifyResult.failResult(matchHistory, e.getType());
+            return PalmIdentifyResult.failResult(matchHistory, e.getType(), prefixImagePath, consentEnabled);
         }
 
         if (!data.isResult()) {
             matchHistory.fail(parseSimilarity(data.getSimilarity()), ErrorType.NOT_MATCH.name());
-            return PalmIdentifyResult.failResult(matchHistory, ErrorType.NOT_MATCH.name());
+            return PalmIdentifyResult.failResult(matchHistory, ErrorType.NOT_MATCH.name(), prefixImagePath, consentEnabled);
         }
 
         PalmFeature palmFeature;
@@ -98,13 +100,13 @@ public class PalmIdentifyUseCase {
             palmFeature = palmFeatureService.getPalmFeatureByPalmIdAndProjectId(data.getPalmId(), project.getId());
         } catch (CustomGateException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
-            return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name());
+            return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), prefixImagePath, consentEnabled);
         }
 
         BigDecimal similarity = parseSimilarity(data.getSimilarity());
         matchHistory.success(palmFeature, similarity);
 
-        return PalmIdentifyResult.successResult(matchHistory, palmFeature, matchHistory.getSimilarity(), data.getThreshold());
+        return PalmIdentifyResult.successResult(matchHistory, palmFeature, matchHistory.getSimilarity(), data.getThreshold(), prefixImagePath, consentEnabled);
     }
 
     private BigDecimal parseSimilarity(String similarity) {
