@@ -70,6 +70,9 @@ public enum ErrorType {
     FACE_TOO_SMALL("ID-225", HttpStatus.BAD_REQUEST),
     FACE_ANGLE_TOO_LARGE("ID-226", HttpStatus.BAD_REQUEST),
 
+    // Palm
+    ALREADY_REGISTERED_PALM_FEATURE("PALM-101", HttpStatus.BAD_REQUEST),
+
     // Demo
     INVALID_QR_CODE("DEMO-101", HttpStatus.BAD_REQUEST),
     EXPIRED_QR_CODE("DEMO-102", HttpStatus.BAD_REQUEST);
