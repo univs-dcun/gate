@@ -62,6 +62,16 @@ public class SwaggerDescriptions {
     public static final String COUNT_VERIFY_BY_IMAGE = "1:1 사진 인증(/verify/image) 요청 수";
     public static final String COUNT_IDENTIFY = "1:N 매칭 요청 수";
     public static final String COUNT_LIVENESS = "라이브니스 요청 수";
+    public static final String FACE_COUNT = "얼굴 인식 모듈 요청 횟수";
+    public static final String FACE_COUNT_REGISTRATION   = "얼굴 등록 요청 수";
+    public static final String FACE_COUNT_VERIFY_BY_ID   = "얼굴 1:1 확인(/verify/id) 요청 수";
+    public static final String FACE_COUNT_VERIFY_BY_IMAGE= "얼굴 1:1 확인(/verify/image) 요청 수";
+    public static final String FACE_COUNT_IDENTIFY       = "얼굴 1:N 매칭 요청 수";
+    public static final String FACE_COUNT_LIVENESS       = "얼굴 라이브니스 요청 수";
+    public static final String PALM_COUNT = "팜 정맥 인식 모듈 요청 횟수";
+    public static final String PALM_COUNT_REGISTRATION   = "팜 등록 요청 수";
+    public static final String PALM_COUNT_IDENTIFY       = "팜 1:N 매칭 요청 수";
+    public static final String PALM_COUNT_LIVENESS       = "팜 라이브니스 요청 수";
 
     /* Auth 요청/응답 DTO */
     public static final String ACCOUNT_ID = "계정 식별 번호";

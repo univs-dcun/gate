@@ -17,16 +17,10 @@ public record ProjectResponseDTO(
         String projectName,
         @Schema(description = SwaggerDescriptions.PROJECT_DESCRIPTION)
         String projectDescription,
-        @Schema(description = SwaggerDescriptions.COUNT_REGISTRATION)
-        Long countUserRegistration,
-        @Schema(description = SwaggerDescriptions.COUNT_VERIFY_BY_ID)
-        Long countVerifyById,
-        @Schema(description = SwaggerDescriptions.COUNT_VERIFY_BY_IMAGE)
-        Long countVerifyByImage,
-        @Schema(description = SwaggerDescriptions.COUNT_IDENTIFY)
-        Long countIdentify,
-        @Schema(description = SwaggerDescriptions.COUNT_LIVENESS)
-        Long countLiveness,
+        @Schema(description = SwaggerDescriptions.FACE_COUNT)
+        FaceCountDTO face,
+        @Schema(description = SwaggerDescriptions.PALM_COUNT)
+        PalmCountDTO palm,
         @Schema(description = SwaggerDescriptions.PROJECT_STATUS)
         ProjectStatus status,
         @Schema(description = SwaggerDescriptions.API_KEY)
@@ -37,16 +31,45 @@ public record ProjectResponseDTO(
         LocalDateTime updatedAt
 ) {
 
+    public record FaceCountDTO(
+            @Schema(description = SwaggerDescriptions.FACE_COUNT_REGISTRATION)
+            Long countRegistration,
+            @Schema(description = SwaggerDescriptions.FACE_COUNT_VERIFY_BY_ID)
+            Long countVerifyById,
+            @Schema(description = SwaggerDescriptions.FACE_COUNT_VERIFY_BY_IMAGE)
+            Long countVerifyByImage,
+            @Schema(description = SwaggerDescriptions.FACE_COUNT_IDENTIFY)
+            Long countIdentify,
+            @Schema(description = SwaggerDescriptions.FACE_COUNT_LIVENESS)
+            Long countLiveness
+    ) {}
+
+    public record PalmCountDTO(
+            @Schema(description = SwaggerDescriptions.PALM_COUNT_REGISTRATION)
+            Long countRegistration,
+            @Schema(description = SwaggerDescriptions.PALM_COUNT_IDENTIFY)
+            Long countIdentify,
+            @Schema(description = SwaggerDescriptions.PALM_COUNT_LIVENESS)
+            Long countLiveness
+    ) {}
+
     public static ProjectResponseDTO from(ProjectSummaryResult result, String timezone) {
+        FaceCountDTO face = new FaceCountDTO(
+                result.countFaceRegistration(),
+                result.countFaceVerifyById(),
+                result.countFaceVerifyByImage(),
+                result.countFaceIdentify(),
+                result.countFaceLiveness());
+        PalmCountDTO palm = new PalmCountDTO(
+                result.countPalmRegistration(),
+                result.countPalmIdentify(),
+                result.countPalmLiveness());
         return new ProjectResponseDTO(
                 result.projectId(),
                 result.projectName(),
                 result.projectDescription(),
-                result.countUserRegistration(),
-                result.countVerifyById(),
-                result.countVerifyByImage(),
-                result.countIdentify(),
-                result.countLiveness(),
+                face,
+                palm,
                 result.status(),
                 result.apiKey(),
                 fromUtc(result.createdAt(), timezone),
@@ -58,7 +81,8 @@ public record ProjectResponseDTO(
                 result.projectId(),
                 result.projectName(),
                 result.projectDescription(),
-                null, null, null, null, null,
+                null,
+                null,
                 result.status(),
                 result.apiKey(),
                 fromUtc(result.createdAt(), timezone),
