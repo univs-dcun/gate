@@ -38,9 +38,13 @@ public class Project extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private ProjectStatus status;
 
-    public void updateInfo(String projectName, String projectDescription) {
+    @Column(name = "color_tag", length = 50)
+    private String colorTag;
+
+    public void updateInfo(String projectName, String projectDescription, String colorTag) {
         if (projectName != null) this.projectName = projectName;
         if (projectDescription != null) this.projectDescription = projectDescription;
+        if (colorTag != null) this.colorTag = colorTag;
     }
 
     public void activate() {

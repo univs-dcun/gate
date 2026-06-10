@@ -116,7 +116,8 @@ public class ProjectController {
                 ctx.getAccountIdAsLong(),
                 projectId,
                 request.projectName(),
-                request.projectDescription());
+                request.projectDescription(),
+                request.colorTag());
         var result = updateProjectUseCase.execute(input);
         var response = ProjectResponseDTO.from(result, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));

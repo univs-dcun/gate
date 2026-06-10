@@ -8,6 +8,7 @@ public record ProjectSummaryResult(
         Long projectId,
         String projectName,
         String projectDescription,
+        String colorTag,
         ProjectStatus status,
         Long countFaceRegistration,
         Long countFaceVerifyById,

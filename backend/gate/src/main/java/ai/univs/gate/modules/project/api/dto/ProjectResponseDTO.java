@@ -17,6 +17,8 @@ public record ProjectResponseDTO(
         String projectName,
         @Schema(description = SwaggerDescriptions.PROJECT_DESCRIPTION)
         String projectDescription,
+        @Schema(description = SwaggerDescriptions.COLOR_TAG)
+        String colorTag,
         @Schema(description = SwaggerDescriptions.FACE_COUNT)
         FaceCountDTO face,
         @Schema(description = SwaggerDescriptions.PALM_COUNT)
@@ -68,6 +70,7 @@ public record ProjectResponseDTO(
                 result.projectId(),
                 result.projectName(),
                 result.projectDescription(),
+                result.colorTag(),
                 face,
                 palm,
                 result.status(),
@@ -81,6 +84,7 @@ public record ProjectResponseDTO(
                 result.projectId(),
                 result.projectName(),
                 result.projectDescription(),
+                result.colorTag(),
                 null,
                 null,
                 result.status(),

@@ -15,13 +15,18 @@ public record CreateProjectRequestDTO(
 
         @Schema(description = SwaggerDescriptions.PROJECT_DESCRIPTION)
         @Length(max = 1000, message = "INVALID_PROJECT_DESCRIPTION_LENGTH")
-        String projectDescription
+        String projectDescription,
+
+        @Schema(description = SwaggerDescriptions.COLOR_TAG)
+        @Length(max = 50, message = "INVALID_COLOR_TAG_LENGTH")
+        String colorTag
 ) {
 
         public CreateProjectInput toCreateProjectInput(Long accountId) {
                 return new CreateProjectInput(
                         accountId,
                         projectName,
-                        projectDescription);
+                        projectDescription,
+                        colorTag);
         }
 }
