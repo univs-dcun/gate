@@ -103,7 +103,9 @@ spring:
               predicates:
                 - Path=/api/v1/file
             - id: KYC-MESSAGES
-              uri: lb://gate-servic
+              uri: lb://gate-service
+              predicates:
+                - Path=/api/v1/messages/**
             - id: NOTIFY-WEB-SOCKET
               uri: lb:ws://notify-service
               predicates:
