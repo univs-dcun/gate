@@ -48,6 +48,7 @@ public class CreateProjectUseCase {
                 .accountId(input.accountId())
                 .projectName(input.projectName())
                 .projectDescription(input.projectDescription())
+                .colorTag(input.colorTag())
                 .branchName(UUID.randomUUID().toString())
                 .status(ProjectStatus.ACTIVE)
                 .isDeleted(false)

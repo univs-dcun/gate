@@ -5,6 +5,7 @@ public record UpdateProjectInput(
         Long accountId,
         Long projectId,
         String projectName,
-        String description
+        String description,
+        String colorTag
 ) {
 }
