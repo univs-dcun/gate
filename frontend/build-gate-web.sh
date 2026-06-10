@@ -49,7 +49,8 @@ echo "[1/3] 커스텀 파일 적용 중..."
 cp -f "${CONFIG_DIR}/Dockerfile"           "${GATE_WEB_DIR}/Dockerfile"
 cp -f "${CONFIG_DIR}/nginx.conf"           "${GATE_WEB_DIR}/nginx.conf"
 cp -f "${CONFIG_DIR}/docker-entrypoint.sh" "${GATE_WEB_DIR}/docker-entrypoint.sh"
-echo "  → Dockerfile, nginx.conf, docker-entrypoint.sh 적용 완료"
+cp -f "${CONFIG_DIR}/docker-compose.yml"   "${GATE_WEB_DIR}/docker-compose.yml"
+echo "  → Dockerfile, nginx.conf, docker-entrypoint.sh, docker-compose.yml 적용 완료"
 
 # ── 2단계: Docker 이미지 빌드 및 push ──────────────────────────
 echo ""

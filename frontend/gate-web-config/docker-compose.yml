@@ -1,0 +1,11 @@
+services:
+  gate-web:
+    image: dockhub.univs.ai:9870/univs-gate/gate-web:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - UNIVS_API_BASE_URL=http://gateway-server:8080/api
+      - UNIVS_API_GUIDE_URL=
+      - UNIVS_MOBILE_BASE_URL=
+      - QR_URL_REWRITE=false
+    restart: unless-stopped
