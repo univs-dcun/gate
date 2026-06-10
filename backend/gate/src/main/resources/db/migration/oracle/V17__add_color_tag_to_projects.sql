@@ -1,1 +1,1 @@
-ALTER TABLE projects ADD (color_tag VARCHAR2(50) NULL);
+ALTER TABLE projects ADD (color_tag VARCHAR2(255) NULL);

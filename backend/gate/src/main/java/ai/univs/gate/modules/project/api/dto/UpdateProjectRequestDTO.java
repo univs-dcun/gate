@@ -14,7 +14,7 @@ public record UpdateProjectRequestDTO(
         String projectDescription,
 
         @Schema(description = SwaggerDescriptions.COLOR_TAG)
-        @Length(max = 50, message = "INVALID_COLOR_TAG_LENGTH")
+        @Length(max = 255, message = "INVALID_COLOR_TAG_LENGTH")
         String colorTag
 ) {
 }
