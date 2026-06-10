@@ -1,54 +1,114 @@
-/* Design Tokens */
-:root {
-  /* Colors */
-  --color-primary: #006FFF;
-  --color-primary-100: #EFF9FF;
-  --color-white: #FFFFFF;
-  --color-surface-base: #ffffff;
-  --color-surface-layer: #f2f8fc;
-  --color-bg: #F5F6F8;
-  --color-border: #e8eef2;
-  --color-text-primary: #17191a;
-  --color-text-secondary: #334155;
-  --color-text-tertiary: #757b80;
-  --color-neutral-300: #CBD5E1;
-  --color-neutral-400: #94A3B8;
-  --color-neutral-500: #64748B;
-  --color-danger: #EF4444;
+@import "tailwindcss";
 
-  /* Button */
-  --btn-primary-bg: #006fff;
-  --btn-primary-text: #ffffff;
-  --btn-disabled-bg: #e8eef2;
-  --btn-disabled-text: #a4adb2;
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-  /* Spacing */
-  --radius-xs: 8px;
-  --radius-full: 999px;
-  --sizing-l: 48px;
-  --padding-m: 16px;
+  body {
+    font-family: var(--font-family);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    color: var(--color-text-primary);
+    background-color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* min-width는 각 데스크탑 레이아웃(DashboardLayout·AppLayout·WelcomeLayout)에서 개별 관리 */
+  }
 
-  /* Typography */
-  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Figma 타이포그래피 스케일 (Pretendard 웨이트별 매핑) */
+  h1 {
+    font-size: var(--type-h1-size);       /* 42px */
+    font-weight: var(--type-h1-weight);   /* SemiBold 600 */
+    line-height: var(--leading-normal);   /* 1.4 */
+    letter-spacing: var(--tracking-tight);
+  }
+
+  h2 {
+    font-size: var(--type-h2-size);       /* 36px */
+    font-weight: var(--type-h2-weight);   /* SemiBold 600 */
+    line-height: var(--leading-normal);   /* 1.4 */
+    letter-spacing: var(--tracking-tight);
+  }
+
+  h3 {
+    font-size: var(--type-h3-size);       /* 32px */
+    font-weight: var(--type-h3-weight);   /* SemiBold 600 */
+    line-height: var(--leading-normal);   /* 1.4 */
+    letter-spacing: var(--tracking-tight);
+  }
+
+  a {
+    color: var(--color-link-blue);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-link-blue-hover);
+  }
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
-}
+/* 토큰 기반 커스텀 유틸리티 */
+@layer utilities {
+  .text-primary   { color: var(--color-text-primary); }
+  .text-secondary { color: var(--color-text-secondary); }
+  .text-disabled  { color: var(--color-text-disabled); }
+  .text-inverse   { color: var(--color-text-inverse); }
 
-body {
-  margin: 0;
-  font-family: var(--font-family);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-bg);
-  color: var(--color-text-primary);
-}
+  .bg-page     { background-color: var(--color-bg-page); }
+  .bg-surface  { background-color: var(--color-bg-surface); }
+  .bg-elevated { background-color: var(--color-bg-elevated); }
 
-#root {
-  min-height: 100vh;
-}
-
-button, input {
-  font-family: var(--font-family);
+  /* Figma 네임드 타이포그래피 스타일 유틸리티 */
+  /* 공통: font-family=Pretendard, line-height=1.4, letter-spacing=-0.025em */
+  .type-h1 {
+    font-size: var(--type-h1-size);
+    font-weight: var(--type-h1-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-h2 {
+    font-size: var(--type-h2-size);
+    font-weight: var(--type-h2-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-h3 {
+    font-size: var(--type-h3-size);
+    font-weight: var(--type-h3-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-body1 {
+    font-size: var(--type-body1-size);
+    font-weight: var(--type-body1-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-body2 {
+    font-size: var(--type-body2-size);
+    font-weight: var(--type-body2-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-label1 {
+    font-size: var(--type-label1-size);
+    font-weight: var(--type-label1-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-label2 {
+    font-size: var(--type-label2-size);
+    font-weight: var(--type-label2-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-label3 {
+    font-size: var(--type-label3-size);
+    font-weight: var(--type-label3-weight);
+    line-height: var(--leading-normal);
+    letter-spacing: var(--tracking-tight);
+  }
 }

@@ -1,0 +1,347 @@
+/**
+ * Design Tokens — Figma 디자인 시스템 (UnivsAi Gate Service)
+ *
+ * Figma node-id: 93-14647 (guide) 기반
+ * 색상, 타이포, 스페이싱 등 모든 값이 Figma Dev Mode 변수와 1:1 매핑됨
+ */
+
+/* ============================================================
+   Font Face — 로컬 폰트 (public/fonts/)
+   Figma 사용 웨이트: Regular(400) / Medium(500) / SemiBold(600)
+   ============================================================ */
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/Pretendard-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/Pretendard-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  src: url('/fonts/Pretendard-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ============================================================
+     Brand Colors (Figma 컬러 팔레트)
+     ============================================================ */
+
+  /* color_blue_ — 주요 액션, 버튼, 링크 (brand/primary) */
+  --color-link-blue:        #006FFF;
+  --color-link-blue-hover:  #005CD6;
+  --color-link-blue-active: #004DB3;
+
+  /* blue_bt_bg — 버튼 배경 틴트 */
+  --color-blue-10: #D6F0FF;
+  --color-blue-40: #BFDBFE;
+
+  /* warning_fg — 학습/안내 강조 (주황-노랑) */
+  --color-learning:    #F59E0B;
+  --color-learning-bg: #FFFBEB;
+
+  /* error-fg — 오류/위험 */
+  --color-entry:        #EF4444;
+  --color-entry-hover:  #DC2626;
+  --color-entry-active: #B91C1C;
+  --color-entry-bg:     #FEF2F2;
+
+  /* teal_fg — 성공/완료 */
+  --color-task:    #22C55E;
+  --color-task-bg: #F0FDF4;
+  --color-liveness-on-fg: #04AB68;
+
+  /* purple_B / purple_light */
+  --color-purple:    #8A58FF;
+  --color-purple-10: #F5F2FF;
+  --color-purple-100: #F5F2FF;  /* Color/Accent/Purple/100 (= purple-10 alias) */
+  --color-purple-300: #DBCBFF;  /* Color/Accent/Purple/300 — 신규 */
+  --color-purple-400: #8A58FF;  /* Color/Accent/Purple/400 (= purple alias) */
+
+  /* ============================================================
+     신규 디자인 시스템 토큰 (상단 GNB / 손바닥 인증) — additive
+     Figma node 1744:5153, Color/Semantic/* 변수와 1:1 매핑
+     ※ 기존 --color-task / --color-link-blue 등은 유지, 신규 컴포넌트에만 사용
+     ============================================================ */
+
+  /* Primary 틴트 스케일 (Color/Semantic/Primary) — 400은 기존 --color-link-blue(#006FFF) */
+  --color-primary-100: #EFF9FF;  /* Primary/100 */
+  --color-primary-200: #D9E9FF;  /* Primary/200 */
+  --color-primary-300: #B0D2FF;  /* Primary/300 */
+  --color-primary-400: #006FFF;  /* Primary/400 (= link-blue alias) */
+  --color-primary-700: #004399;  /* Primary/700 — 짙은 블루 강조(텍스트) */
+
+  /* Success 신규 초록 (Color/Semantic/Success) — 기존 --color-task #22C55E와 별개 */
+  --color-success-100: #F4FCFB;  /* Success/100 — 배경 틴트 */
+  --color-success-400: #0FB981;  /* Success/400 (Main) — ON 상태 강조 */
+  --color-success-700: #0B8B61;  /* Success/700 — 텍스트/짙은 강조 */
+
+  /* Neutral 50 (배경) — Color/Neutral/50-background */
+  --color-neutral-50-bg: #F8F9FB;
+
+  /* ============================================================
+     Neutral Scale (Figma: neutral_0 ~ neutral_800)
+     ============================================================ */
+  --color-neutral-0:   #FFFFFF;
+  --color-neutral-50:  #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+
+  /* gray_background — 페이지/패널 배경 */
+  --color-gray-bg: #F5F6F8;
+
+  /* ============================================================
+     Graph Colors (차트 라인)
+     ============================================================ */
+  --graph-color-1: #7FD3FC;
+  --graph-color-2: #4BBBFB;
+  --graph-color-3: #2799F9;
+  --graph-color-4: #0B7CF8;
+
+  /* ============================================================
+     Semantic Aliases (Figma 변수 매핑)
+     ============================================================ */
+
+  /* Surface */
+  --color-bg-page:        var(--color-neutral-0);       /* surface/base */
+  --color-bg-surface:     var(--color-gray-bg);          /* gray_background */
+  --color-bg-elevated:    var(--color-neutral-0);
+  --color-surface-layer1: #F2F8FC;                       /* surface/layer-1 */
+  --color-surface-alpha-strong: #FFFFFFE5;               /* surface/alpha-strong */
+  --color-surface-alpha-light:  #FFFFFF4D;               /* surface/alpha-light */
+
+  /* Text */
+  --color-text-primary:   #17191A;   /* text/primary */
+  --color-text-secondary: var(--color-neutral-500);
+  --color-text-tertiary:  #757B80;   /* text/tertiary */
+  --color-text-disabled:  var(--color-neutral-300);
+  --color-text-inverse:   #FFFFFF;   /* text/inverse-primary */
+
+  /* Icon */
+  --color-icon-default:   #17191A;   /* icon/default */
+  --color-icon-inverse:   #FFFFFF;   /* icon/inverse */
+
+  /* Border */
+  --color-border-default:   #E8EEF2;   /* border/base */
+  --color-border-strong:    var(--color-neutral-300);
+  --color-border-focus:     var(--color-link-blue);
+  --color-border-alpha:     #0000001A; /* border/alpha */
+  --color-border-dropdown:  #E7E7E7;   /* menu_dropdown border */
+
+  /* Feedback */
+  --color-feedback-error: #EF4444;   /* feedback/error-fg */
+
+  /* Button — Primary */
+  --btn-primary-bg:   var(--color-link-blue);   /* button/primary/bg-default */
+  --btn-primary-text: #FFFFFF;                   /* button/primary/text-default */
+
+  /* Button — Tertiary */
+  --btn-tertiary-bg:      #FFFFFF;   /* button/tertiary/bg-default */
+  --btn-tertiary-bg-hover: #F2F8FC; /* button/tertiary/bg-hover */
+  --btn-tertiary-text:    #17191A;   /* button/tertiary/text-default */
+  --btn-tertiary-border:  #E8EEF2;   /* button/tertiary/border-default */
+
+  /* Button — Disabled */
+  --btn-disabled-bg:   #E8EEF2;     /* button/disabled/bg-disabled */
+  --btn-disabled-text: #A4ADB2;     /* button/disabled/text-disabled */
+
+  /* ============================================================
+     Typography (Figma: Pretendard)
+     ============================================================ */
+  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont,
+                 system-ui, Roboto, 'Helvetica Neue',
+                 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+  --font-family-mono: 'Fira Code', 'Cascadia Code', Consolas, monospace;
+
+  /* Font Size (Figma Primitive Font Size) */
+  --text-xxs:  0.75rem;     /* 12px — Caption S */
+  --text-xs:   0.75rem;     /* 12px — Caption S */
+  --text-label3: 0.8125rem; /* 13px — Label 3 */
+  --text-sm:   0.875rem;    /* 14px — Label 2, Body2, Button 3 */
+  --text-base: 1rem;        /* 16px — Label 1, Body1, Label M */
+  --text-md:   1.125rem;    /* 18px — title2, Button 1 */
+  --text-lg:   1.125rem;    /* 18px */
+  --text-xl:   1.5rem;      /* 24px */
+  --text-2xl:  2rem;        /* 32px — H3 */
+  --text-3xl:  2.25rem;     /* 36px — H2 */
+  --text-4xl:  2.625rem;    /* 42px — H1 */
+
+  /* Font Weight (Figma Font Weights) */
+  --font-regular:  400;   /* Font Weight R */
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;   /* Font Weight B */
+
+  /* Line Height (Figma Line Heights) */
+  --leading-s: 16px;      /* Line Height S */
+  --leading-m: 20px;      /* Line Height M */
+  --leading-l: 24px;      /* Line Height L */
+  --leading-tight:   1.25;
+  --leading-normal:  1.4;  /* Figma 기본 lineHeight */
+  --leading-relaxed: 1.625;
+  --leading-loose:   1.75;
+
+  /* Letter Spacing (Figma: -0.025em) */
+  --tracking-tight:  -0.025em;  /* Letter Spacing/Letter Spacing */
+  --tracking-normal:  0em;
+  --tracking-wide:    0.01em;
+
+  /* ============================================================
+     Typography Scale — Figma 네임드 스타일
+     모든 스타일 공통: font-family=Pretendard, letter-spacing=-0.025em, line-height=1.4
+     ============================================================ */
+  /* H1 — SemiBold 42px */
+  --type-h1-size:     var(--text-4xl);
+  --type-h1-weight:   var(--font-semibold);
+  /* H2 — SemiBold 36px */
+  --type-h2-size:     var(--text-3xl);
+  --type-h2-weight:   var(--font-semibold);
+  /* H3 — SemiBold 32px */
+  --type-h3-size:     var(--text-2xl);
+  --type-h3-weight:   var(--font-semibold);
+  /* Body1 — SemiBold 16px */
+  --type-body1-size:  var(--text-base);
+  --type-body1-weight: var(--font-semibold);
+  /* Body2 — SemiBold 14px */
+  --type-body2-size:  var(--text-sm);
+  --type-body2-weight: var(--font-semibold);
+  /* Label 1 — Medium 16px */
+  --type-label1-size: var(--text-base);
+  --type-label1-weight: var(--font-medium);
+  /* Label 2 — Medium 14px */
+  --type-label2-size: var(--text-sm);
+  --type-label2-weight: var(--font-medium);
+  /* Label 3 — Regular 13px */
+  --type-label3-size: var(--text-label3);
+  --type-label3-weight: var(--font-regular);
+
+  /* ============================================================
+     Spacing (Figma: margin/padding 체계)
+     ============================================================ */
+  --space-1:  4px;     /* margin/xs, padding/xxs */
+  --space-2:  8px;     /* margin/s, padding/xs */
+  --space-3:  12px;
+  --space-4:  16px;    /* margin/m, padding/m */
+  --space-5:  20px;
+  --space-6:  24px;    /* margin/l, padding/l */
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ============================================================
+     Sizing (Figma: sizing 체계)
+     ============================================================ */
+  --sizing-xs: 24px;
+  --sizing-s:  32px;
+  --sizing-m:  40px;
+  --sizing-l:  48px;
+
+  /* ============================================================
+     Border Radius (Figma: radius 체계)
+     ============================================================ */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-xs:   8px;     /* radius/xs */
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 999px;   /* radius/full */
+
+  /* ============================================================
+     Shadows (Figma: Shadow-1)
+     ============================================================ */
+  --shadow-1:  0px 2px 4px 0px rgba(0, 0, 0, 0.10);  /* Figma Shadow-1 */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.10), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.10), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+  --shadow-card:     0px 2px 6px 0px rgba(0, 0, 0, 0.02);
+  --shadow-dropdown: 0px 9.8px 40px 9.8px rgba(140, 152, 164, 0.18); /* menu_dropdown shadow */
+
+  /* ============================================================
+     Layout
+     ============================================================ */
+  --header-height:      56px;   /* Figma header 높이 */
+  --icon-sidebar-width: 56px;
+  --sidebar-width:      220px;  /* Figma sidebar 220px */
+  --content-max-w:      1280px;
+
+  /* ============================================================
+     Icon Sidebar (좌측 다크 아이콘 바 - AppLayout용)
+     ============================================================ */
+  --sidebar-icon-bg:           #16181D;
+  --sidebar-icon-color:        #64748B;
+  --sidebar-icon-active-bg:    rgba(0, 111, 255, 0.15);
+  --sidebar-icon-active-color: var(--color-link-blue);
+  --sidebar-icon-hover-bg:     rgba(255, 255, 255, 0.06);
+
+  /* ============================================================
+     Text Sidebar (화이트 텍스트 사이드바 - Dashboard용)
+     ============================================================ */
+  --sidebar-bg:              #F8F9FB;
+  --sidebar-nav-active-bg:   #EFF9FF;
+  --sidebar-nav-active-text: #006FFF;
+  --sidebar-nav-text:        var(--color-neutral-500);
+  --sidebar-nav-hover-bg:    var(--color-neutral-100);
+
+  /* Trial Banner */
+  --trial-banner-bg:         var(--color-purple-10);
+  --trial-btn-bg:            var(--color-purple);
+
+  /* ============================================================
+     Card
+     ============================================================ */
+  --card-bg:           var(--color-neutral-0);
+  --card-border:       var(--color-neutral-300);  /* CBD5E1 */
+  --card-radius:       var(--radius-xl);          /* 12px */
+  --card-shadow:       var(--shadow-card);
+  --card-hover-shadow: var(--shadow-md);
+
+  /* ============================================================
+     Interactive (Segmented Controls 등)
+     ============================================================ */
+  --interactive-bg-default:     #FFFFFF;
+  --interactive-bg-hover:       #F2F8FC;
+  --interactive-text-default:   #17191A;
+  --interactive-border-default: #E8EEF2;
+  --interactive-border-hover:   #BBC5CC;
+
+  /* ============================================================
+     Z-index
+     ============================================================ */
+  --z-base:     0;
+  --z-dropdown: 100;
+  --z-sticky:   200;
+  --z-overlay:  300;
+  --z-modal:    400;
+  --z-toast:    500;
+  --z-tooltip:  600;
+
+  /* ============================================================
+     Transitions
+     ============================================================ */
+  --transition-fast:   100ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow:   300ms ease;
+}
