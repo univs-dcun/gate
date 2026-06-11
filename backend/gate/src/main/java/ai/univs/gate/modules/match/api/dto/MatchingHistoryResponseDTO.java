@@ -36,9 +36,6 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.FEATURE_ID)
         String featureId,
 
-        @Schema(description = SwaggerDescriptions.MATCHED_FEATURE_ID)
-        String matchedFeatureId,
-
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
 
@@ -80,7 +77,6 @@ public record MatchingHistoryResponseDTO(
                 result.checkLiveness(),
                 result.success(),
                 result.featureId(),
-                result.matchedFeatureId(),
                 result.description(),
                 result.similarity(),
                 result.featureImagePath(),

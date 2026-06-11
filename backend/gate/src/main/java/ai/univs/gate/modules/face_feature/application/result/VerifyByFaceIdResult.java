@@ -36,7 +36,7 @@ public record VerifyByFaceIdResult(
                 "",
                 "",
                 matchHistory.getSimilarity(),
-                matchHistory.getMatchedFeatureId(),
+                matchHistory.getFeatureId(),
                 "",
                 consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
                         ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
@@ -57,7 +57,7 @@ public record VerifyByFaceIdResult(
                 history.getFeatureId(),
                 history.getUserDescription(),
                 history.getSimilarity(),
-                history.getMatchedFeatureId(),
+                history.getFeatureId(),
                 consentEnabled && StringUtils.hasText(history.getFeatureImagePath())
                         ? prefixImagePath + history.getFeatureImagePath()
                         : "",
