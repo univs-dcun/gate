@@ -32,7 +32,7 @@ pipeline {
                     env.BRANCH_NAME = branch
                     echo "Current branch: ${branch}"
 
-                    if (branch != 'dev' && branch != 'staging' && branch != 'master') {
+                    if (branch != 'dev' && branch != 'stage' && branch != 'master') {
                         echo "🔹 배포 대상 브랜치 아님. 건너뜀."
                         currentBuild.result = 'SUCCESS'
                         env.SKIP_BUILD = 'true'
@@ -47,7 +47,7 @@ pipeline {
                         env.TARGET_SERVER = '192.168.0.135'
                         env.TARGET_USER   = 'univs'
                         env.WORKING_DIR   = '/home/univs/platform/docker/config'
-                    } else if (branch == 'staging') {
+                    } else if (branch == 'stage') {
                         env.DEPLOY_ENV    = '스테이징 서버'
                         env.TARGET_SERVER = '192.168.0.136'
                         env.TARGET_USER   = 'univs'
@@ -76,10 +76,10 @@ pipeline {
 
                     // 브랜치별 비교 기준 설정
                     def baseRef
-                    if (env.BRANCH_NAME == 'staging') {
+                    if (env.BRANCH_NAME == 'stage') {
                         baseRef = 'origin/dev'
                     } else if (env.BRANCH_NAME == 'master') {
-                        baseRef = 'origin/staging'
+                        baseRef = 'origin/stage'
                     } else {
                         baseRef = 'HEAD~1'
                     }
