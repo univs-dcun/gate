@@ -122,7 +122,7 @@ function Header({ isLoggedIn = false, hideAuthButtons = false, onLogin, onSignup
       style={{ height: 'var(--header-height)' }}
     >
       <div className="flex items-center">
-        <Logo height={30} />
+        <Logo height={22} />
       </div>
 
       <div className="flex items-center gap-3">

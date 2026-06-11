@@ -89,7 +89,8 @@ src/
 | 디자인 토큰 | `src/styles/tokens.css` |
 | 프로젝트 컨텍스트 | `src/contexts/ProjectContext.tsx` |
 | 대시보드 레이아웃 | `src/components/layout/DashboardLayout.tsx` |
-| 사이드바 | `src/components/layout/Sidebar.tsx` |
+| 상단 GNB | `src/components/layout/TopNav.tsx` |
+| 웹훅 설정 API | `src/services/webhook.ts` |
 | 한국어 번역 | `src/i18n/locales/ko.json` |
 | 영어 번역 | `src/i18n/locales/en.json` |
 
@@ -167,31 +168,37 @@ const CONFIG: Record<string, string> = { active: '...', inactive: '...' };
 | 프로젝트 목록 | GET | `/v1/projects` |
 | 프로젝트 설정 | GET | `/v1/projects/{id}/settings` |
 | 대시보드 요약 | GET | `/v1/dashboard/summary` |
-| 로그 목록 | GET | `/v1/match` |
-| 특징점 목록 | GET | `/v1/users` |
+| 로그 목록 | GET | `/v1/match` (featureType 필터) |
+| 특징점 목록 | GET | `/api/v1/feature` |
 | 동의 이력 | GET | `/v1/projects/{id}/settings/consent/logs` |
+| 웹훅 설정 | GET/PUT/DELETE | `/v1/projects/{id}/webhook` |
 | SDK QR 발급 | GET | `/v1/sdk/*/qr` |
 
 ---
 
-## 8. 현재 상태 및 주요 변경 이력 (2026-06-04 기준)
+## 8. 현재 상태 및 주요 변경 이력 (2026-06-10 / v0.0.6 기준)
 
-### 완료된 주요 작업
-- ✅ 전체 페이지 max-width 1920px 중앙정렬
-- ✅ 사이드바 Figma 디자인 반영 (default/hover/selected)
-- ✅ 개인정보 동의 UI 개선 (설정 페이지, 헤더 배지, 확인 팝업)
-- ✅ consentSnapshot 기반 이미지 비공개 처리
-- ✅ 동의 변경 이력 팝업 API 연동
-- ✅ 팝업 z-index 통일 (전체 화면 가림)
-- ✅ i18n 하드코딩 전수 교체
-- ✅ 특징점 관리 상세 팝업 (개인정보 동의 시)
-- ✅ 테이블 UI 개선 (정렬, 구분선, 패딩, 이미지 크기)
-- ✅ 로그인 후 대시보드 데이터 미로딩 버그 수정 (v0.0.3)
-- ✅ 로그아웃 시 이전 세션 캐시 정리 (v0.0.3)
+### 최근 릴리즈 (자세한 내용은 `docs/release-notes.md`)
+- **v0.0.6 (2026-06-10)**
+  - 프로젝트 **색상 태그(`colorTag`)** — 생성 시 팔레트 인덱스 기반 자동 배정, 리스트 아바타·GNB 셀렉터 표시
+  - **웹훅 설정** `GET/PUT/DELETE /v1/projects/{id}/webhook` 연동(`src/services/webhook.ts`), 개발지원 이력·테스트 탭 제거 → 설정만 노출
+  - 로그 상세 다이얼로그 Figma 아이콘 전면 정합(`public/icons/detail/`), 유사도 카드 회색, 테이블 헤더 고정(sticky+언더라인), 로고 GNB 134×20 등
+- **v0.0.5** — 설정 라이브니스 카드 디자인 정합(얼굴/손바닥 좌우 독립 저장), Vite HMR clientPort 443
+- **v0.0.4** — 신규 디자인 전면 적용(상단 GNB / `DashboardLayout`), 신규 백엔드(v3) 연동: 인증방식(FACE/PALM) 필터, 특징점 `/v1/users` → `/api/v1/feature` 마이그레이션
+
+### 완료된 누적 작업
+- ✅ 전체 페이지 max-width 1920px 중앙정렬, 사이드바 → 상단 GNB 전환
+- ✅ 개인정보 동의 UI(설정/헤더 배지/확인 팝업), consentSnapshot 기반 이미지 비공개
+- ✅ 동의 변경 이력 팝업 API 연동, 팝업 z-index 통일
+- ✅ i18n 하드코딩 전수 교체 (ko/en)
+- ✅ 인증방식(얼굴/손바닥) 통합 — 대시보드·로그·특징점·설정 featureType 분기
+- ✅ 로그인 후 대시보드 미로딩 / 로그아웃 캐시 정리 (v0.0.3)
 
 ### 알려진 이슈 / TODO
 - 개인정보 동의 이력 페이지네이션 미구현 (현재 전체 목록 반환)
 - SDK 탭 숨김 처리 중 (`testMode: 'demo'` 고정)
+- 백엔드(v3) 개발 진행 중(WIP) — 일부 응답 스펙 변동 가능, 연동 시 OpenAPI(`https://api-dev.univsgate.com/gate/v3/api-docs`) 재확인 필요
+- 웹훅 설정 백엔드 응답 형식 최종 확정 시 `webhook.ts` 빈값/에러 처리 재검토
 
 ---
 

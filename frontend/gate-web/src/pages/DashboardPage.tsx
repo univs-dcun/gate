@@ -158,13 +158,13 @@ function DashboardContent() {
 
   /* 통계 카드 — 손바닥은 1:1 촬영/사진 인증이 없어 제외 (등록·1:N 매칭·라이브니스) */
   const statCards = [
-    { key: 'registration',  title: t('dashboard.stat_registration'),  data: summary?.registration },
+    { key: 'registration',  title: t('dashboard.stat_registration'),  tip: t('dashboard.stat_registration_tip'),  data: summary?.registration },
     ...(isPalm ? [] : [
-      { key: 'verifyById',    title: t('dashboard.stat_verify'),       data: summary?.verifyById },
-      { key: 'verifyByImage', title: t('dashboard.stat_verify_image'), data: summary?.verifyByImage },
+      { key: 'verifyById',    title: t('dashboard.stat_verify'),       tip: t('dashboard.stat_verify_tip'),        data: summary?.verifyById },
+      { key: 'verifyByImage', title: t('dashboard.stat_verify_image'), tip: t('dashboard.stat_verify_image_tip'),  data: summary?.verifyByImage },
     ]),
-    { key: 'identify',      title: t('dashboard.stat_identify'),       data: summary?.identify },
-    { key: 'liveness',      title: t('dashboard.stat_liveness'),       data: summary?.liveness },
+    { key: 'identify',      title: t('dashboard.stat_identify'),       tip: t('dashboard.stat_identify_tip'),      data: summary?.identify },
+    { key: 'liveness',      title: t('dashboard.stat_liveness'),       tip: t('dashboard.stat_liveness_tip'),      data: summary?.liveness },
   ];
 
   return (
@@ -185,7 +185,7 @@ function DashboardContent() {
         {/* row1 · col1: 통계 카드 — 얼굴 5개 / 손바닥 3개(등록·1:N 매칭·라이브니스) */}
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${statCards.length}, minmax(0, 1fr))` }}>
           {statCards.map((c) => (
-            <StatCardSimple key={c.key} title={c.title} value={fmt(c.data?.periodCount)} totalValue={fmt(c.data?.totalCount)} />
+            <StatCardSimple key={c.key} title={c.title} tooltip={c.tip} value={fmt(c.data?.periodCount)} totalValue={fmt(c.data?.totalCount)} />
           ))}
         </div>
 

@@ -111,7 +111,8 @@
       "Bash(npm run *)",
       "Bash(git tag *)",
       "mcp__figma__get_design_context",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git stash *)"
     ]
   }
 }

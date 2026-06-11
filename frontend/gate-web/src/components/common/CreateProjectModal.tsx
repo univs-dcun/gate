@@ -145,6 +145,7 @@ function CreateProjectPanel({ onClose, onSubmit, loading = false, error }: Omit<
                 />
               </div>
             </div>
+
           </div>
         </div>
 

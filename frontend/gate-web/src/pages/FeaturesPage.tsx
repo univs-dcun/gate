@@ -50,7 +50,7 @@ const TrashIcon = () => (
 );
 
 /* ── 스타일 상수 ── */
-const TH = 'px-4 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-[1.4] whitespace-nowrap';
+const TH = 'px-4 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-[1.4] whitespace-nowrap sticky-th';
 const TD = 'px-4 py-[14px] border-r border-[#e2e8f0] last:border-r-0';
 
 /* ── 클라우드 업 아이콘 ── */
@@ -349,8 +349,8 @@ function DeleteDialog({
         {/* 대상 정보 */}
         <div className="bg-[#f8fafc] rounded-[10px] px-4 py-3 flex flex-col gap-1">
           <div className="flex gap-2 text-[13px] tracking-[-0.325px]">
-            <span className="text-[#94a3b8] font-medium w-[40px] shrink-0">FID</span>
-            <span className="text-[#334155] font-medium break-all">{user.faceId}</span>
+            <span className="text-[#94a3b8] font-medium w-[40px] shrink-0">Feature ID</span>
+            <span className="text-[#334155] font-medium break-all">{user.featureId}</span>
           </div>
           {user.userDescription && (
             <div className="flex gap-2 text-[13px] tracking-[-0.325px]">
@@ -450,7 +450,7 @@ export default function FeaturesPage() {
 
   /* 삭제 mutation */
   const { mutate: execDelete, isPending: isDeleting } = useMutation({
-    mutationFn: (row: FeatureRow) => deleteFeature(row.featureType, row.featureId),
+    mutationFn: (row: FeatureRow) => deleteFeature(row.featureType, row.featureSeq),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['features'] });
       setDeleteTarget(null);
@@ -598,16 +598,16 @@ export default function FeaturesPage() {
         </div>
 
         {/* 테이블 */}
-        <div className="mt-[0px] w-full overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div className="mt-[0px] w-full overflow-auto max-h-[calc(100vh-340px)]">
+          <table className="w-full border-separate border-spacing-0">
             <thead>
-              <tr className="border-b-[2px] border-[#1E293B]">
+              <tr>
                 {/* 체크박스 컬럼 — 미사용으로 히든 */}
                 <th className="hidden" />
                 <th className={TH}>{t('logs.serial_no')}</th>
                 <th className={TH}>{t('projects.col_auth_method')}</th>
                 <th className={TH}>{t('features.col_memo')}</th>
-                <th className={TH}>FID</th>
+                <th className={TH}>Feature ID</th>
                 <th className={TH}>
                   <div className="flex items-center justify-center gap-1">
                     <span>{t('features.col_date')}</span>
@@ -642,14 +642,14 @@ export default function FeaturesPage() {
               )}
               {users.map((user) => (
                 <tr
-                  key={user.featureId}
-                  className="border-b border-[#e2e8f0] hover:bg-[#F8FAFC] transition-colors"
+                  key={user.featureSeq}
+                  className="[&>td]:border-b [&>td]:border-[#e2e8f0] hover:bg-[#F8FAFC] transition-colors"
                 >
                   {/* 체크박스 셀 — 히든 */}
                   <td className="hidden" />
                   {/* 일련번호 */}
                   <td className={`${TD} text-center text-[14px] font-medium text-[#475569] tracking-[-0.35px]`}>
-                    {user.featureId}
+                    {user.featureSeq}
                   </td>
                   {/* 인증 방식 */}
                   <td className={`${TD} text-center`}>
@@ -662,7 +662,7 @@ export default function FeaturesPage() {
                   </td>
                   <td className={`${TD} text-center`}>
                     <span className="text-[14px] font-medium text-[#334155] tracking-[-0.35px] leading-[1.4]">
-                      {user.faceId}
+                      {user.featureId}
                     </span>
                   </td>
                   <td className={`${TD} text-center`}>
@@ -675,7 +675,7 @@ export default function FeaturesPage() {
                     <div className="flex justify-center">
                     <button
                       type="button"
-                      onClick={() => navigate(`/dashboard/logs?fid=${encodeURIComponent(user.faceId)}`)}
+                      onClick={() => navigate(`/dashboard/logs?fid=${encodeURIComponent(user.featureId)}`)}
                       className={[
                         'flex items-center gap-1.5 h-[32px] px-3 rounded-[6px]',
                         'border border-[#93c5fd] text-[#006fff]',

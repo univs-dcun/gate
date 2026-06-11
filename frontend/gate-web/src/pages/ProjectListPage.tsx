@@ -12,7 +12,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TopNav } from '@/components/layout';
 import { CreateProjectModal, ProjectCreatedPanel, Pagination } from '@/components/common';
 import type { CreateProjectData } from '@/components/common';
-import { FaceIdIcon, PlamIcon } from '@/components/ui/icons';
 import axios from 'axios';
 import { getProjects, createProject, updatePackageKey } from '@/services/project';
 import type { Project } from '@/services/project';
@@ -45,21 +44,20 @@ const SearchIcon = () => (
 
 
 /* ── 스타일 상수 ── */
-const TH      = 'px-3 py-3 text-center text-[16px] font-semibold text-[#475569] tracking-[-0.4px] leading-[1.4] whitespace-nowrap';
-const TH_LEFT = 'px-3 py-3 text-left   text-[16px] font-semibold text-[#475569] tracking-[-0.4px] leading-[1.4] whitespace-nowrap';
+const TH_STICKY = 'sticky-th';
+const TH      = `px-3 py-3 text-center text-[16px] font-semibold text-[#475569] tracking-[-0.4px] leading-[1.4] whitespace-nowrap ${TH_STICKY}`;
+const TH_LEFT = `px-3 py-3 text-left   text-[16px] font-semibold text-[#475569] tracking-[-0.4px] leading-[1.4] whitespace-nowrap ${TH_STICKY}`;
 
 /* ── 서브컴포넌트 ── */
-/* 프로젝트별 랜덤(결정적) 이미지 — projectId 기반 그라데이션 아바타 */
-const AVATAR_PALETTE: [string, string][] = [
-  ['#60A5FA', '#A78BFA'], ['#34D399', '#22D3EE'], ['#FBBF24', '#F472B6'],
-  ['#F87171', '#FB923C'], ['#818CF8', '#C084FC'], ['#2DD4BF', '#60A5FA'],
-];
-function ProjectAvatar({ id }: { id: number }) {
-  const [c1, c2] = AVATAR_PALETTE[Math.abs(id) % AVATAR_PALETTE.length];
+/* 프로젝트 추가 시 인덱스(기존 개수)에 맞춰 자동 배정하는 색상 팔레트 */
+const PROJECT_COLOR_TAGS = ['#1E7BE4', '#8A58FF', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#EC4899', '#64748B'];
+
+function ProjectAvatar({ color }: { color?: string }) {
+  /* colorTag로 프로젝트 구분 — 미설정 시 GNB/콤보박스와 동일하게 회색 */
   return (
     <span
-      className="flex-shrink-0 w-[18px] h-[18px] rounded-[4px]"
-      style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}
+      className="flex-shrink-0 w-[18px] h-[18px] rounded-[4px] border border-[var(--color-neutral-200)]"
+      style={{ backgroundColor: color || '#e2e8f0' }}
       aria-hidden
     />
   );
@@ -77,7 +75,7 @@ function CountCell({ value, tone, divider }: { value: number | null; tone: 'tota
   return (
     <td className={['px-3 text-right align-middle', divider ? 'border-r border-[var(--color-neutral-300)]' : ''].join(' ')}>
       {value === null ? (
-        <span className="text-[15px] font-semibold" style={{ color: COUNT_TONE[tone] }}>-</span>
+        <span>&nbsp;</span>
       ) : (
         <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
           <span className="text-[15px] font-semibold leading-[20px]" style={{ color: COUNT_TONE[tone] }}>
@@ -98,7 +96,10 @@ function AuthMethodCell({ moduleType }: { moduleType?: 'FACE' | 'PALM' }) {
   return (
     <div className="flex items-center gap-2">
       <span className="w-[2px] h-5 rounded-[4px] flex-shrink-0" style={{ backgroundColor: color }} />
-      {isPalm ? <PlamIcon size={20} /> : <FaceIdIcon size={20} />}
+      {/* 얼굴=블루(#006FFF) / 손바닥=퍼플(#8A58FF) 컬러 아이콘 */}
+      {isPalm
+        ? <img src="/icons/ic-authbadge-palm.svg" alt="" className="block w-5 h-5 object-contain shrink-0" aria-hidden />
+        : <img src="/icons/ic-authbadge-face.svg" alt="" className="block w-[18px] h-[18px] object-contain shrink-0" aria-hidden />}
       <span className="text-[14px] font-semibold tracking-[-0.35px] leading-[20px] whitespace-nowrap" style={{ color }}>
         {isPalm ? t('auth_type.palm_short') : t('auth_type.face_short')}
       </span>
@@ -160,6 +161,8 @@ export default function ProjectListPage() {
       const res = await createProject({
         projectName:        formData.name,
         projectDescription: formData.goal,
+        /* 색상은 기존 프로젝트 수(인덱스)에 맞춰 팔레트에서 자동 배정 */
+        colorTag:           PROJECT_COLOR_TAGS[totalCount % PROJECT_COLOR_TAGS.length],
         projectType:        formData.projectType,
         projectModuleType:  formData.projectModuleType,
       });
@@ -255,14 +258,14 @@ export default function ProjectListPage() {
         </div>
 
         {/* 테이블 */}
-        <div className="mt-[26px] w-full overflow-x-auto">
-          <table className="w-full table-fixed border-collapse">
+        <div className="mt-[26px] w-full overflow-auto max-h-[calc(100vh-300px)]">
+          <table className="w-full table-fixed border-separate border-spacing-0">
             <colgroup>
               <col style={{ width: '247px' }} />
               <col /><col /><col /><col /><col /><col /><col />
             </colgroup>
             <thead>
-              <tr className="border-b border-[var(--color-neutral-300)]">
+              <tr>
                 <th className={TH_LEFT}>{t('projects.name_label')}</th>
                 <th className={TH_LEFT}>{t('projects.col_auth_method')}</th>
                 <th className={TH}>{t('module.enrollment')}</th>
@@ -290,24 +293,40 @@ export default function ProjectListPage() {
               )}
               {projects.map((project) => {
                 const created = project.createdAt ? project.createdAt.slice(0, 16).replace('T', ' ') : '-';
-                /* 현재 카운트는 해당 프로젝트의 단일 인증방식 카운트 → 모듈타입 행에만 적용, 반대 방식은 '-' */
-                const mod = project.projectModuleType ?? 'FACE';
+                /* 얼굴/손바닥 카운트 모두 제공됨 — 손바닥은 1:1 인증(vid/vimg)이 없어 null('-') */
+                const face = project.face
+                  ? {
+                      reg:  project.face.countRegistration,
+                      vid:  project.face.countVerifyById,
+                      vimg: project.face.countVerifyByImage,
+                      iden: project.face.countIdentify,
+                      live: project.face.countLiveness,
+                    }
+                  : null;
+                const palm = project.palm
+                  ? {
+                      reg:  project.palm.countRegistration,
+                      vid:  null,
+                      vimg: null,
+                      iden: project.palm.countIdentify,
+                      live: project.palm.countLiveness,
+                    }
+                  : null;
+                /* 합계 = 얼굴 + 손바닥 (손바닥에 없는 1:1 인증은 얼굴만) */
                 const c = {
-                  reg:  project.countUserRegistration ?? 0,
-                  vid:  project.countVerifyById ?? 0,
-                  vimg: project.countVerifyByImage ?? 0,
-                  iden: project.countIdentify ?? 0,
-                  live: project.countLiveness ?? 0,
+                  reg:  (face?.reg  ?? 0) + (palm?.reg  ?? 0),
+                  vid:  (face?.vid  ?? 0),
+                  vimg: (face?.vimg ?? 0),
+                  iden: (face?.iden ?? 0) + (palm?.iden ?? 0),
+                  live: (face?.live ?? 0) + (palm?.live ?? 0),
                 };
-                const face = mod === 'FACE' ? c : null;
-                const palm = mod === 'PALM' ? c : null;
                 return (
                   <Fragment key={project.projectId}>
                     {/* 합계(프로젝트 헤더) 행 — 배경 강조, 구분선 없음 */}
                     <tr onClick={() => handleRowClick(project)} className="h-[54px] bg-[var(--color-neutral-50-bg)] hover:bg-[var(--color-neutral-100)] cursor-pointer transition-colors">
                       <td className="px-3 align-middle">
                         <div className="flex items-center gap-2">
-                          <ProjectAvatar id={project.projectId} />
+                          <ProjectAvatar color={project.colorTag} />
                           <span className="text-[15px] font-semibold text-[var(--color-neutral-700)] leading-[20px] truncate">
                             {project.projectName}
                           </span>
@@ -339,7 +358,7 @@ export default function ProjectListPage() {
                     </tr>
 
                     {/* 손바닥 행 — 프로젝트 그룹 하단 구분선 */}
-                    <tr onClick={() => handleRowClick(project)} className="h-[42px] border-b border-[var(--color-neutral-300)] hover:bg-[#f8fafc] cursor-pointer transition-colors">
+                    <tr onClick={() => handleRowClick(project)} className="h-[42px] [&>td]:border-b [&>td]:border-[var(--color-neutral-300)] hover:bg-[#f8fafc] cursor-pointer transition-colors">
                       <td className="px-3" />
                       <td className="px-3 align-middle border-r border-[var(--color-neutral-300)]"><AuthMethodCell moduleType="PALM" /></td>
                       <CountCell value={palm?.reg  ?? null} tone="palm" divider />

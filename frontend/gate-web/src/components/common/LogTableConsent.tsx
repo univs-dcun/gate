@@ -26,7 +26,7 @@ const RESULT_CONFIG: Record<LogResult, { bg: string; text: string; border: strin
   '페이크': { bg: '#fff7f6', text: '#d83232', border: '#f3b4b4', i18nKey: 'logs.fake'    },
 };
 
-const TH = 'px-2.5 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.4px] whitespace-nowrap';
+const TH = 'px-2.5 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.4px] whitespace-nowrap sticky-th';
 const TD_BASE = 'px-2.5 border-r border-[#e2e8f0] last:border-r-0';
 
 /* ── 아이콘 ── */
@@ -126,15 +126,15 @@ export default function LogTableConsent({
 
   return (
     <div className="w-full bg-white">
-      <div className="overflow-x-auto">
+      <div className="overflow-auto max-h-[calc(100vh-340px)]">
         <table className="w-full min-w-[1188px] table-fixed">
           <thead>
-            <tr className="border-b-[2px] border-[#1e293b]">
+            <tr>
               <th className={TH} style={{ width: '70px' }}>{t('logs.serial_no')}</th>
               <th className={TH} style={{ width: '90px' }}>{t('projects.col_auth_method')}</th>
               <th className={TH} style={{ width: '120px' }}>{t('logs.test_module')}</th>
               <th className={`${TH} !px-2`} style={{ width: '170px' }}>{t('logs.request_id')}</th>
-              <th className={`${TH} !px-2`} style={{ width: '170px' }}>FID</th>
+              <th className={`${TH} !px-2`} style={{ width: '170px' }}>Feature ID</th>
               <th className={TH} style={{ width: '80px' }}>{t('logs.memo')}</th>
               <th className={TH} style={{ width: '100px' }}>{t('logs.result')}</th>
               {/* consent 추가 컬럼 */}
@@ -201,9 +201,9 @@ export default function LogTableConsent({
                         {row.fid ?? '-'}
                       </span>
                     </td>
-                    {/* 메모 */}
+                    {/* 메모 — 고정폭 컬럼 내 줄바꿈 */}
                     <td className={`${TD_BASE} py-2 text-[15px] font-medium text-[#334155] tracking-[-0.375px]`}>
-                      {row.memo || '-'}
+                      <span className="block break-words whitespace-normal">{row.memo || '-'}</span>
                     </td>
                     {/* 결과 */}
                     <td className={`${TD_BASE} py-2 text-center`}>

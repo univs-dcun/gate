@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Logo, ConsentBadge, LanguageSelect } from '@/components/ui';
-import { FaceIdIcon, FingerprintIcon } from '@/components/ui/icons';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { getCompanyInfo } from '@/services/account';
 
@@ -119,7 +118,7 @@ function TopNav({ consented = false, minimal = false }: TopNavProps) {
         {/* ── 좌측: 로고 + 프로젝트 선택 ── */}
         <div className="flex items-center gap-6 min-w-0">
           <button type="button" onClick={() => navigate('/projects')} className="flex items-center flex-shrink-0">
-            <Logo height={20} />
+            <Logo width={134} height={20} />
           </button>
 
           {!minimal && (
@@ -129,11 +128,11 @@ function TopNav({ consented = false, minimal = false }: TopNavProps) {
               onClick={() => setProjectOpen((v) => !v)}
               className="flex items-center gap-2 w-[176px] px-2 py-1.5 bg-white border border-[var(--color-neutral-200)] rounded-[8px] hover:border-[var(--color-neutral-300)] transition-colors"
             >
-              <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-[4px] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)]">
-                {selected?.projectModuleType === 'PALM'
-                  ? <FingerprintIcon size={13} />
-                  : <FaceIdIcon size={13} />}
-              </span>
+              <span
+                className="flex-shrink-0 w-5 h-5 rounded-[4px] border border-[var(--color-neutral-200)]"
+                style={{ backgroundColor: selected?.colorTag || '#e2e8f0' }}
+                aria-hidden
+              />
               <span className="flex-1 min-w-0 text-left text-[14px] font-semibold text-[var(--color-neutral-800)] tracking-[-0.35px] leading-[20px] truncate">
                 {selected?.name ?? '—'}
               </span>
@@ -149,9 +148,11 @@ function TopNav({ consented = false, minimal = false }: TopNavProps) {
                     onClick={() => { setSelectedId(p.id); setProjectOpen(false); }}
                     className="flex items-center gap-2 w-full px-1.5 py-2 rounded-[8px] hover:bg-[var(--color-surface-layer1)] transition-colors"
                   >
-                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-[4px] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)]">
-                      {p.projectModuleType === 'PALM' ? <FingerprintIcon size={13} /> : <FaceIdIcon size={13} />}
-                    </span>
+                    <span
+                      className="flex-shrink-0 w-5 h-5 rounded-[4px] border border-[var(--color-neutral-200)]"
+                      style={{ backgroundColor: p.colorTag || '#e2e8f0' }}
+                      aria-hidden
+                    />
                     <span className="flex-1 min-w-0 text-left text-[14px] text-[var(--color-text-primary)] tracking-[-0.35px] leading-[20px] truncate">
                       {p.name}
                     </span>

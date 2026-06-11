@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout';
+import { Alert } from '@/components/ui';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { getWebhookConfig, saveWebhookConfig, deleteWebhookConfig } from '@/services/webhook';
 
 /* ── SVG 일러스트 (90×90) ── */
 const ApiKeyIllust = () => (
@@ -52,11 +55,6 @@ const ExternalLinkIcon = () => (
   </svg>
 );
 
-const LightningIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-  </svg>
-);
 
 
 const LinkIcon = () => (
@@ -157,12 +155,56 @@ function WebhookRow({
 function DevSupportPage() {
   const { t, i18n } = useTranslation();
   const { selectedProject } = useProjectContext();
+  const queryClient = useQueryClient();
+  const projectId = selectedProject?.id ? Number(selectedProject.id) : undefined;
   const [copied, setCopied] = useState(false);
-  const [webhookTab, setWebhookTab] = useState<'settings' | 'history' | 'test'>('settings');
-  const [webhookEnabled, setWebhookEnabled] = useState(() => localStorage.getItem('webhook_enabled') === 'true');
-  const [webhookUrl, setWebhookUrl] = useState(() => localStorage.getItem('webhook_url') ?? '');
-  const [apiEnabled, setApiEnabled] = useState(() => localStorage.getItem('webhook_api_enabled') === 'true');
-  const [testWebhookEnabled, setTestWebhookEnabled] = useState(() => localStorage.getItem('test_webhook_enabled') === 'true');
+  /* 웹훅 설정 — 백엔드 연동 (GET/PUT/DELETE) */
+  const [webhookEnabled, setWebhookEnabled] = useState(false);  // 설정 존재 여부
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [demoEnabled, setDemoEnabled] = useState(false);
+  const [apiEnabled, setApiEnabled] = useState(false);
+  const [webhookToast, setWebhookToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
+
+  /* 웹훅 설정 조회 */
+  const { data: webhookData } = useQuery({
+    queryKey: ['webhook', projectId],
+    queryFn:  () => getWebhookConfig(projectId!).then(r => r.data.data),
+    enabled:  !!projectId,
+    staleTime: 0,
+  });
+  useEffect(() => {
+    if (webhookData && webhookData.webhookUrl !== undefined) {
+      setWebhookEnabled(true);
+      setWebhookUrl(webhookData.webhookUrl ?? '');
+      setDemoEnabled(!!webhookData.demoEnabled);
+      setApiEnabled(!!webhookData.apiEnabled);
+    } else {
+      setWebhookEnabled(false);
+    }
+  }, [webhookData]);
+
+  /* 저장(PUT) */
+  const { mutate: saveWebhook, isPending: isSavingWebhook } = useMutation({
+    mutationFn: () => saveWebhookConfig(projectId!, { webhookUrl, demoEnabled, apiEnabled }).then(r => r.data.data),
+    onSuccess: () => {
+      setWebhookEnabled(true);
+      queryClient.invalidateQueries({ queryKey: ['webhook', projectId] });
+      setWebhookToast({ message: t('support.webhook_saved'), variant: 'success' });
+    },
+    onError: () => setWebhookToast({ message: t('support.webhook_save_error'), variant: 'error' }),
+  });
+
+  /* 삭제(DELETE) */
+  const { mutate: removeWebhook, isPending: isDeletingWebhook } = useMutation({
+    mutationFn: () => deleteWebhookConfig(projectId!),
+    onSuccess: () => {
+      setWebhookEnabled(false);
+      setWebhookUrl(''); setDemoEnabled(false); setApiEnabled(false);
+      queryClient.invalidateQueries({ queryKey: ['webhook', projectId] });
+      setWebhookToast({ message: t('support.webhook_deleted'), variant: 'success' });
+    },
+    onError: () => setWebhookToast({ message: t('support.webhook_delete_error'), variant: 'error' }),
+  });
 
 
   const apiKey = selectedProject?.apiKey ?? '';
@@ -276,31 +318,13 @@ function DevSupportPage() {
         {/* ── 웹훅 섹션 ── */}
         <div className="bg-white border border-[#cbd5e1] rounded-[12px] pl-[24px] pr-[56px] pt-[16px] pb-[32px]">
 
-          {/* 탭 헤더 */}
-          <div className="flex border-b border-[#cbd5e1] mb-[32px]">
-            {([
-              ['settings', t('support.webhook_tab_settings')],
-              ['history', t('support.webhook_tab_history')],
-              ['test', t('support.webhook_tab_test')],
-            ] as const).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setWebhookTab(key)}
-                className={[
-                  'h-[48px] px-[20px] text-[16px] tracking-[-0.4px] leading-[1.4] transition-colors shrink-0',
-                  webhookTab === key
-                    ? 'text-[#006fff] font-semibold border-b-2 border-[#006fff] -mb-px'
-                    : 'text-[#94a3b8] font-medium',
-                ].join(' ')}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* 섹션 타이틀 */}
+          <p className="text-[18px] font-semibold text-[#334155] tracking-[-0.45px] leading-[1.4] pt-[8px] mb-[28px]">
+            {t('support.webhook_tab_settings')}
+          </p>
 
-          {/* 설정 탭 콘텐츠 */}
-          {webhookTab === 'settings' && (
-            <div className="flex gap-[50px]">
+          {/* 웹훅 설정 */}
+          <div className="flex gap-[50px]">
 
               {/* 왼쪽 패널 */}
               <div className="flex-1 flex flex-col gap-[24px] min-w-0">
@@ -312,12 +336,6 @@ function DevSupportPage() {
                     <p className="text-[13px] text-[#64748b] tracking-[-0.325px] leading-[1.4]">{t('support.webhook_desc')}</p>
                   </div>
                   <div className="flex flex-col gap-[12px]">
-                    <WebhookRow
-                      icon={<LightningIcon />}
-                      label={t('support.webhook_use')}
-                      active={webhookEnabled}
-                      onToggle={() => setWebhookEnabled(v => { const next = !v; localStorage.setItem('webhook_enabled', String(next)); return next; })}
-                    />
                     <div className="flex flex-col gap-[4px]">
                       <label className="text-[14px] font-semibold text-[#64748b] tracking-[-0.35px] leading-[1.4]">
                         {t('support.webhook_url')}
@@ -326,7 +344,7 @@ function DevSupportPage() {
                         <input
                           type="text"
                           value={webhookUrl}
-                          onChange={e => { setWebhookUrl(e.target.value); localStorage.setItem('webhook_url', e.target.value); }}
+                          onChange={e => setWebhookUrl(e.target.value)}
                           placeholder="https://your-server.com/webhook"
                           className="flex-1 text-[14px] font-medium text-[#334155] tracking-[-0.35px] leading-[1.4] outline-none placeholder:text-[#94a3b8] bg-transparent"
                         />
@@ -337,100 +355,66 @@ function DevSupportPage() {
 
                 <div className="bg-[#e2e8f0] h-px w-full" />
 
-                {/* 전송 */}
+                {/* 전송 — 웹훅을 발생시킬 서비스(데모/API) */}
                 <div className="flex flex-col gap-[16px]">
                   <div className="flex flex-col gap-[4px]">
                     <p className="text-[20px] font-semibold text-[#334155] tracking-[-0.5px] leading-[1.4]">{t('support.webhook_send_title')}</p>
                     <p className="text-[13px] text-[#64748b] tracking-[-0.325px] leading-[1.4]">{t('support.webhook_send_desc')}</p>
                   </div>
                   <div className="flex flex-col gap-[16px]">
-                    <WebhookRow
-                      icon={<LinkIcon />}
-                      label="API"
-                      active={apiEnabled}
-                      onToggle={() => setApiEnabled(v => { const next = !v; localStorage.setItem('webhook_api_enabled', String(next)); return next; })}
-                    />
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-          {/* 이력 탭 콘텐츠 */}
-          {webhookTab === 'history' && (
-            <div className="flex items-center justify-center h-[400px] text-[#94a3b8] text-[16px]">
-              {t('settings.coming_soon')}
-            </div>
-          )}
-
-          {/* 웹훅 테스트 탭 콘텐츠 */}
-          {webhookTab === 'test' && (
-            <div className="flex gap-[50px]">
-
-              {/* 왼쪽 패널 */}
-              <div className="flex-1 flex flex-col gap-[24px] min-w-0">
-
-                {/* 웹훅 테스트 */}
-                <div className="flex flex-col gap-[16px]">
-                  <div className="flex flex-col gap-[4px]">
-                    <p className="text-[20px] font-semibold text-[#334155] tracking-[-0.5px] leading-[1.4]">{t('support.test_webhook_title')}</p>
-                    <p className="text-[13px] text-[#64748b] tracking-[-0.325px] leading-[1.4]">{t('support.test_webhook_desc')}</p>
-                  </div>
-                  <div className="flex flex-col gap-[12px]">
                     <WebhookRow
                       icon={<ExperimentIcon />}
-                      label={t('support.test_webhook_use')}
-                      active={testWebhookEnabled}
-                      onToggle={() => setTestWebhookEnabled(v => { const next = !v; localStorage.setItem('test_webhook_enabled', String(next)); return next; })}
+                      label={t('support.webhook_demo')}
+                      active={demoEnabled}
+                      onToggle={() => setDemoEnabled(v => !v)}
                     />
-                    <div className="bg-[#f1f5f9] rounded-[8px] px-[14px] py-[10px] flex items-center gap-[8px]">
-                      <div className="flex items-center gap-[6px] min-w-0">
-                        <InfoIcon />
-                        <span className="text-[13px] text-[#475569] tracking-[-0.325px] leading-[1.4]">
-                          {t('support.test_webhook_hint')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-[#e2e8f0] h-px w-full" />
-
-                {/* 전송 */}
-                <div className="flex flex-col gap-[16px]">
-                  <div className="flex flex-col gap-[4px]">
-                    <p className="text-[20px] font-semibold text-[#334155] tracking-[-0.5px] leading-[1.4]">{t('support.webhook_send_title')}</p>
-                    <p className="text-[13px] text-[#64748b] tracking-[-0.325px] leading-[1.4]">{t('support.webhook_send_desc')}</p>
-                  </div>
-                  <div className="flex flex-col gap-[16px]">
                     <WebhookRow
                       icon={<LinkIcon />}
                       label="API"
                       active={apiEnabled}
-                      onToggle={() => setApiEnabled(v => { const next = !v; localStorage.setItem('webhook_api_enabled', String(next)); return next; })}
+                      onToggle={() => setApiEnabled(v => !v)}
                     />
                   </div>
+                </div>
+
+                {/* 저장 / 삭제 */}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={!projectId || isSavingWebhook}
+                    onClick={() => saveWebhook()}
+                    className="h-[44px] px-6 rounded-[8px] bg-[#006fff] text-white text-[14px] font-semibold tracking-[-0.35px] hover:bg-[#0056cc] transition-colors disabled:opacity-50"
+                  >
+                    {t('common.save')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!projectId || !webhookEnabled || isDeletingWebhook}
+                    onClick={() => removeWebhook()}
+                    className="h-[44px] px-6 rounded-[8px] border border-[#cbd5e1] bg-white text-[#475569] text-[14px] font-semibold tracking-[-0.35px] hover:bg-[#f1f5f9] transition-colors disabled:opacity-50"
+                  >
+                    {t('common.delete')}
+                  </button>
                 </div>
 
               </div>
 
             </div>
-          )}
 
         </div>
       </div>
+
+      {webhookToast && (
+        <Alert
+          message={webhookToast.message}
+          variant={webhookToast.variant}
+          onClose={() => setWebhookToast(null)}
+        />
+      )}
     </DashboardLayout>
   );
 }
 
-/* ── InfoIcon ── */
-const InfoIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-  </svg>
-);
 
 
 export default DevSupportPage;

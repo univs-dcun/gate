@@ -51,7 +51,7 @@ const ChevronDown = ({ open }: { open: boolean }) => (
 
 const TRIGGER_BASE = ['flex items-center gap-1 bg-white border border-[#cbd5e1] rounded-[8px]', 'pl-[10px] pr-3 py-3 cursor-pointer select-none'].join(' ');
 const DROPDOWN_BASE = ['absolute top-[calc(100%+4px)] left-0 z-50 min-w-[160px]', 'bg-white rounded-[8px] shadow-[0px_9.8px_40px_9.8px_rgba(140,152,164,0.18)]', 'p-2 overflow-hidden'].join(' ');
-const DROPDOWN_ITEM = ['flex items-center gap-1.5 px-2 py-2 rounded-[8px]', 'text-[14px] font-medium text-[#475569] tracking-[-0.35px] cursor-pointer', 'hover:bg-[#f1f5f9] transition-colors'].join(' ');
+const DROPDOWN_ITEM = ['w-full flex items-center gap-1.5 px-2 py-2 rounded-[8px]', 'text-[14px] font-medium text-[#475569] tracking-[-0.35px] cursor-pointer text-left', 'hover:bg-[#f1f5f9] transition-colors'].join(' ');
 
 function ModuleItemIcon({ module }: { module: string }) {
   return <ModuleTypeIcon module={module} size={20} />;
@@ -224,7 +224,7 @@ export default function LogDetailConsentPage() {
                 {moduleFilter ? <ModuleItemIcon module={moduleFilter} /> : <FilterModuleIcon size={20} />}
                 <span className="flex items-center gap-1.5 text-left whitespace-nowrap">
                   <span className="text-[14px] font-medium text-[#64748b] tracking-[-0.35px]">{t('logs.test_module')}</span>
-                  <span className="text-[14px] font-semibold text-[#334155] tracking-[-0.35px]">
+                  <span className="text-[14px] font-semibold tracking-[-0.35px]" style={{ color: moduleFilter ? MODULE_COLOR[moduleFilter] : '#334155' }}>
                     {moduleFilter ? t(MODULE_I18N[moduleFilter]) : t('common.all')}
                   </span>
                 </span>
@@ -236,7 +236,7 @@ export default function LogDetailConsentPage() {
                   {MODULE_ITEMS.map(m => (
                     <button key={m} className={DROPDOWN_ITEM} onClick={() => { handleModuleFilter(moduleFilter === m ? '' : m); setModuleDropdownOpen(false); }}>
                       <ModuleItemIcon module={m} />
-                      <span style={{ color: moduleFilter === m ? MODULE_COLOR[m] : '#475569' }}>{t(MODULE_I18N[m])}</span>
+                      <span style={{ color: MODULE_COLOR[m] }}>{t(MODULE_I18N[m])}</span>
                     </button>
                   ))}
                   <div className="border-t border-[#e2e8f0] mt-1 pt-1">
@@ -260,6 +260,7 @@ export default function LogDetailConsentPage() {
               </button>
               {resultDropdownOpen && (
                 <div className={DROPDOWN_BASE}>
+                  <div className="px-2 py-1 mb-1"><span className="text-[13px] text-[#64748b] tracking-[-0.325px]">{t('logs.result')}</span></div>
                   {RESULT_ITEMS.map(r => (
                     <button key={r} className={DROPDOWN_ITEM} onClick={() => { handleResultFilter(resultFilter === r ? '' : r); setResultDropdownOpen(false); }}>
                       {t(RESULT_I18N[r])}

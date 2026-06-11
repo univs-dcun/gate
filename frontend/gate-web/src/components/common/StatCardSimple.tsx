@@ -4,6 +4,7 @@ interface StatCardSimpleProps {
   title:      string;
   value:      string;  // 기간 내 건수 (periodCount)
   totalValue?: string; // 전체 누적 건수 (totalCount)
+  tooltip?:   string;  // ? 아이콘 호버 설명
 }
 
 const HelpIcon = () => (
@@ -15,16 +16,27 @@ const HelpIcon = () => (
   </svg>
 );
 
-function StatCardSimple({ title, value, totalValue }: StatCardSimpleProps) {
+function StatCardSimple({ title, value, totalValue, tooltip }: StatCardSimpleProps) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col p-4 bg-white border border-[#CBD5E1] rounded-[12px] shadow-[0px_2px_6px_0px_rgba(0,0,0,0.02)] h-full gap-3">
-      {/* 타이틀 + ? 아이콘 */}
+      {/* 타이틀 + ? 아이콘 (호버 툴팁) */}
       <div className="flex items-center gap-1.5">
         <span className="text-[16px] font-medium text-[#334155] tracking-[-0.4px] leading-6 whitespace-nowrap">
           {title}
         </span>
-        <HelpIcon />
+        <span className="relative inline-flex group">
+          <HelpIcon />
+          {tooltip && (
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded-[6px] bg-[#1e293b] px-2.5 py-1.5 text-[12px] font-medium text-white tracking-[-0.3px] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            >
+              {tooltip}
+              <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#1e293b]" />
+            </span>
+          )}
+        </span>
       </div>
 
       {/* 기간 내 건수 + 단위 */}

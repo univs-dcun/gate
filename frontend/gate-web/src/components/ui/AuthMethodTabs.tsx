@@ -21,12 +21,12 @@ interface AuthMethodTabsProps {
 const TAB_BASE = 'flex items-center gap-2 px-3 py-2 transition-colors';
 const TAB_ACTIVE = 'border-b border-solid border-[var(--color-neutral-800)]';
 const LABEL_BASE = 'text-[20px] leading-[32px] tracking-[-0.5px] whitespace-nowrap';
-const LABEL_ACTIVE = 'font-semibold text-[var(--color-neutral-800)]';
 const LABEL_INACTIVE = 'font-normal text-[var(--color-neutral-400)]';
 
-const TABS: { id: AuthMethod; i18nKey: string }[] = [
-  { id: 'face', i18nKey: 'auth_type.face' },
-  { id: 'palm', i18nKey: 'auth_type.palm' },
+/* 선택 시 라벨 색 = 아이콘 색 (얼굴 다크 / 손바닥 퍼플) */
+const TABS: { id: AuthMethod; i18nKey: string; activeColor: string }[] = [
+  { id: 'face', i18nKey: 'auth_type.face', activeColor: 'var(--color-neutral-800)' },
+  { id: 'palm', i18nKey: 'auth_type.palm', activeColor: '#8a58ff' },
 ];
 
 export default function AuthMethodTabs({ value, onChange, className }: AuthMethodTabsProps) {
@@ -48,7 +48,10 @@ export default function AuthMethodTabs({ value, onChange, className }: AuthMetho
           >
             {/* 아이콘은 img 기반이라 색상 토큰이 적용되지 않음 → 미선택은 opacity로 근사 */}
             <Icon size={32} className={isActive ? '' : 'opacity-40'} />
-            <span className={[LABEL_BASE, isActive ? LABEL_ACTIVE : LABEL_INACTIVE].join(' ')}>
+            <span
+              className={[LABEL_BASE, isActive ? 'font-semibold' : LABEL_INACTIVE].join(' ')}
+              style={isActive ? { color: tab.activeColor } : undefined}
+            >
               {t(tab.i18nKey)}
             </span>
           </button>

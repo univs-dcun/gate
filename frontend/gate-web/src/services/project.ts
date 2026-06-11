@@ -1,18 +1,31 @@
 import httpClient from './http';
 
 /* ── 타입 ──────────────────────────────────────────────── */
+/** 얼굴 인증 모듈별 카운트 */
+export interface FaceCount {
+  countRegistration:  number;
+  countVerifyById:    number;   // 1:1 촬영인증
+  countVerifyByImage: number;   // 1:1 사진인증
+  countIdentify:      number;   // 1:N 매칭
+  countLiveness:      number;
+}
+/** 손바닥 인증 모듈별 카운트 (1:1 인증 없음) */
+export interface PalmCount {
+  countRegistration:  number;
+  countIdentify:      number;   // 1:N 매칭
+  countLiveness:      number;
+}
+
 export interface Project {
   projectId:              number;
   projectName:            string;
   projectDescription:     string;
+  colorTag?:              string;      // 프로젝트 구분용 색상 태그 (hex 또는 색명)
+  face?:                  FaceCount;   // 얼굴 인증 카운트
+  palm?:                  PalmCount;   // 손바닥 인증 카운트
   projectType?:           'STANDARD' | 'EXTERNAL';
   projectModuleType?:     'FACE' | 'PALM';
   packageKey?:            string;
-  countUserRegistration?: number;
-  countVerifyById?:       number;   // 1:1 촬영인증
-  countVerifyByImage?:    number;   // 1:1 사진인증
-  countIdentify?:         number;
-  countLiveness?:         number;
   status:                 'ACTIVE' | 'INACTIVE' | 'DELETED';
   apiKey:                 string | null;
   createdAt:              string;
@@ -45,6 +58,7 @@ export const getProjects = (params?: { projectKeyword?: string; page?: number; p
 export interface CreateProjectRequest {
   projectName:        string;
   projectDescription: string;
+  colorTag?:          string;   // 프로젝트 구분용 색상 태그
   projectType:        'STANDARD' | 'EXTERNAL';
   projectModuleType:  'FACE' | 'PALM';
 }
@@ -60,6 +74,7 @@ export const updatePackageKey = (projectId: number, packageKey: string) =>
 export interface UpdateProjectRequest {
   projectName:        string;
   projectDescription: string;
+  colorTag?:          string;   // 프로젝트 구분용 색상 태그
 }
 
 /** 프로젝트 정보 수정 */

@@ -68,7 +68,7 @@ const UserIcon = () => (
 );
 
 /* ── 스타일 상수 ── */
-const TH = 'px-4 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-[1.4] whitespace-nowrap';
+const TH = 'px-4 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-[1.4] whitespace-nowrap sticky-th';
 const TD = 'px-4 py-2 border-r border-[#e2e8f0] last:border-r-0';
 
 interface RegisterResult {
@@ -412,8 +412,8 @@ function FeatureDetailPanel({ user, onClose }: { user: FeatureRow; onClose: () =
         {/* 정보 */}
         <div className="flex flex-col gap-4 bg-[#f9fafc] rounded-[16px] px-5 py-5">
           <div className="flex flex-col gap-1">
-            <span className="text-[12px] font-medium text-[#94a3b8] tracking-[-0.3px]">FID</span>
-            <span className="text-[14px] font-mono text-[#334155] tracking-[-0.35px] break-all">{user.faceId}</span>
+            <span className="text-[12px] font-medium text-[#94a3b8] tracking-[-0.3px]">Feature ID</span>
+            <span className="text-[14px] font-mono text-[#334155] tracking-[-0.35px] break-all">{user.featureId}</span>
           </div>
           <div className="h-px bg-[#e2e8f0]" />
           <div className="flex flex-col gap-1">
@@ -453,8 +453,8 @@ function DeleteDialog({ user, isDeleting, onConfirm, onCancel }: { user: Feature
         </div>
         <div className="bg-[#f8fafc] rounded-[10px] px-4 py-3 flex flex-col gap-1">
           <div className="flex gap-2 text-[13px] tracking-[-0.325px]">
-            <span className="text-[#94a3b8] font-medium w-[40px] shrink-0">FID</span>
-            <span className="text-[#334155] font-medium break-all">{user.faceId}</span>
+            <span className="text-[#94a3b8] font-medium w-[40px] shrink-0">Feature ID</span>
+            <span className="text-[#334155] font-medium break-all">{user.featureId}</span>
           </div>
           {user.userDescription && (
             <div className="flex gap-2 text-[13px] tracking-[-0.325px]">
@@ -505,7 +505,7 @@ function EditInfoPanel({
   };
 
   const { mutate: save, isPending } = useMutation({
-    mutationFn: () => updateFeature(user.featureType, user.featureId, {
+    mutationFn: () => updateFeature(user.featureType, user.featureSeq, {
       ...(newPhoto ? { featureImage: newPhoto } : {}),
       description: memo,
     }),
@@ -689,8 +689,8 @@ function EditInfoPanel({
 
               <div className="flex gap-3">
                 <div className="flex-1 bg-white border border-[#cbd5e1] rounded-[12px] p-5 flex flex-col gap-2">
-                  <p className="text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-5">FID</p>
-                  <p className="text-[16px] font-normal text-[#64748b] tracking-[-0.4px] leading-5 break-all">{user.faceId}</p>
+                  <p className="text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-5">Feature ID</p>
+                  <p className="text-[16px] font-normal text-[#64748b] tracking-[-0.4px] leading-5 break-all">{user.featureId}</p>
                 </div>
                 <div className="flex-1 bg-white border border-[#cbd5e1] rounded-[12px] p-5 flex flex-col gap-2">
                   <p className="text-[14px] font-semibold text-[#475569] tracking-[-0.35px] leading-5">
@@ -834,7 +834,7 @@ function ActionMenu({ user, onDelete, onEdit }: { user: FeatureRow; onDelete: ()
       onMouseDown={e => e.stopPropagation()}
     >
       <button
-        onClick={() => { setOpen(false); navigate(`/dashboard/logs?fid=${encodeURIComponent(user.faceId)}`); }}
+        onClick={() => { setOpen(false); navigate(`/dashboard/logs?fid=${encodeURIComponent(user.featureId)}`); }}
         className="w-full flex items-center gap-3 px-5 py-3.5 text-[16px] font-medium text-[#334155] tracking-[-0.4px] hover:bg-[#f8fafc] transition-colors"
       >
         <span className="text-[#475569]"><ExternalLinkIcon /></span>
@@ -906,7 +906,7 @@ export default function FeaturesConsentPage() {
   const totalCount = data?.page.totalElements ?? 0;
 
   const { mutate: doDelete, isPending: isDeleting } = useMutation({
-    mutationFn: (row: FeatureRow) => deleteFeature(row.featureType, row.featureId),
+    mutationFn: (row: FeatureRow) => deleteFeature(row.featureType, row.featureSeq),
     onSuccess:  () => {
       queryClient.invalidateQueries({ queryKey: ['features'] });
       setDeleteTarget(null);
@@ -995,16 +995,16 @@ export default function FeaturesConsentPage() {
         </div>
 
         {/* 테이블 */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div className="w-full overflow-auto max-h-[calc(100vh-340px)]">
+          <table className="w-full border-separate border-spacing-0">
             <thead>
-              <tr className="border-b-[2px] border-[#1e293b]">
+              <tr>
                 <th className="hidden" />
                 <th className={TH} style={{ width: 70 }}>{t('logs.serial_no')}</th>
                 <th className={TH} style={{ width: 110 }}>{t('projects.col_auth_method')}</th>
                 <th className={TH} style={{ width: 368 }}>{t('features.col_memo')}</th>
                 <th className={TH} style={{ width: 80 }}>{t('features.col_photo')}</th>
-                <th className={TH}>FID</th>
+                <th className={TH}>Feature ID</th>
                 <th className={TH}>{t('features.col_created_at')}</th>
                 <th className={TH} style={{ width: 120 }}>{t('features.col_action')}</th>
               </tr>
@@ -1017,11 +1017,11 @@ export default function FeaturesConsentPage() {
                 <tr><td colSpan={7} className="px-4 py-8 text-center text-[14px] text-[#94a3b8]">{t('common.no_data')}</td></tr>
               )}
               {users.map((user) => (
-                <tr key={user.featureId} className="border-b border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors cursor-pointer" onClick={() => setDetailTarget(user)}>
+                <tr key={user.featureSeq} className="[&>td]:border-b [&>td]:border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors cursor-pointer" onClick={() => setDetailTarget(user)}>
                   <td className="hidden" />
                   {/* 일련번호 */}
                   <td className={`${TD} text-center text-[15px] text-[#334155] tracking-[-0.375px]`}>
-                    {user.featureId}
+                    {user.featureSeq}
                   </td>
                   {/* 인증 방식 */}
                   <td className={`${TD} text-center`}>
@@ -1040,7 +1040,7 @@ export default function FeaturesConsentPage() {
                   {/* FID */}
                   <td className={`${TD} text-center`}>
                     <span className="text-[15px] font-mono text-[#334155] tracking-[-0.375px] leading-6 break-all">
-                      {user.faceId}
+                      {user.featureId}
                     </span>
                   </td>
                   {/* 등록 일시 */}

@@ -111,7 +111,7 @@ function MobileHeader() {
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex items-center justify-between px-5 h-14">
-        <Logo height={28} />
+        <Logo height={21} />
         <LanguageSelect />
       </div>
     </header>

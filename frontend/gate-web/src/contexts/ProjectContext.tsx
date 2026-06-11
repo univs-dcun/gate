@@ -48,6 +48,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     name:              p.projectName,
     authType:          'face',
     apiKey:            p.apiKey ?? '',
+    colorTag:          p.colorTag,
     projectType:       p.projectType,
     projectModuleType: p.projectModuleType,
     description:       p.projectDescription,

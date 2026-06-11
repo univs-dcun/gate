@@ -247,7 +247,7 @@ function DataTable({ period: _period, featureType, periodLabel = '' }: DataTable
           </p>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-0.5 text-[13px] font-medium text-[#006fff] tracking-[-0.325px] hover:opacity-80 transition-opacity"
+            className="flex items-center gap-0.5 text-[13px] font-medium text-[#64748b] tracking-[-0.325px] hover:opacity-80 transition-opacity"
           >
             {t('common.view_more')}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

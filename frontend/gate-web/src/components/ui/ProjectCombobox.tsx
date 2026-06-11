@@ -9,13 +9,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaceIdIcon, FingerprintIcon } from '@/components/ui/icons';
 
 export interface ProjectOption {
   id: string;
   name: string;
   authType: string;
   apiKey: string;
+  colorTag?: string;   // 프로젝트 구분용 색상
   projectType?: 'STANDARD' | 'EXTERNAL';
   projectModuleType?: 'FACE' | 'PALM';
   planType?: 'FREE' | 'STARTER' | 'BUSINESS' | 'SECURITY_PLUS' | 'ENTERPRISE';
@@ -31,10 +31,15 @@ interface Props {
   onViewAll?: () => void;
 }
 
-/* ── 모듈 타입 → 메인 아이콘 (얼굴/손바닥) ── */
-function AuthIcon({ projectModuleType, size }: { projectModuleType?: string; size: number }) {
-  if (projectModuleType === 'PALM') return <FingerprintIcon size={size} />;
-  return <FaceIdIcon size={size} />;
+/* ── 프로젝트 색상 스와치 (colorTag로 구분) ── */
+function ColorSwatch({ color, className }: { color?: string; className?: string }) {
+  return (
+    <span
+      className={['flex-shrink-0 w-9 h-9 rounded-[8px] border border-[var(--color-neutral-300)]', className ?? ''].join(' ')}
+      style={{ backgroundColor: color || '#e2e8f0' }}
+      aria-hidden
+    />
+  );
 }
 
 
@@ -114,9 +119,7 @@ export default function ProjectCombobox({ projects, selectedId, onSelect, onView
       >
         {/* 상단: 아이콘 + 프로젝트명 + 프로젝트 타입 */}
         <div className="flex items-start gap-2 w-full">
-          <span className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-[8px] border border-[var(--color-neutral-300)] bg-gray-50">
-            <AuthIcon projectModuleType={selected?.projectModuleType} size={22} />
-          </span>
+          <ColorSwatch color={selected?.colorTag} />
           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
             <span className="text-[14px] font-semibold text-[var(--color-neutral-800)] tracking-[-0.35px] leading-[1.4] truncate">
               {selected?.name ?? ''}
@@ -147,10 +150,8 @@ export default function ProjectCombobox({ projects, selectedId, onSelect, onView
                   onClick={() => { onSelect(p.id); setIsOpen(false); }}
                   className={[ITEM_BASE, 'hover:bg-[var(--color-surface-layer1)]'].join(' ')}
                 >
-                  {/* 아이콘: 드롭다운 아이템은 24px */}
-                  <span className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-[8px] border border-[var(--color-neutral-300)] bg-gray-50">
-                    <AuthIcon projectModuleType={p.projectModuleType} size={24} />
-                  </span>
+                  {/* 프로젝트 색상 스와치 */}
+                  <ColorSwatch color={p.colorTag} />
                   <span className="flex flex-col gap-0.5 items-start text-left min-w-0">
                     {/* 이름: Regular 14px, text/primary #17191A, lh 20px */}
                     <span className="text-[14px] font-normal text-[var(--color-text-primary)] tracking-[-0.35px] leading-[20px] truncate">

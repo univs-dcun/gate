@@ -3,7 +3,6 @@ import type { LogModule, LogResult, LogEntry } from '@/components/common';
 
 /* ── 이미지 경로가 추가된 확장 LogEntry (consent ON 전용) ── */
 export interface LogEntryWithImages extends LogEntry {
-  userId?:                number;
   username?:              string;
   faceImagePath?:         string;  // 등록된 얼굴 이미지 URL
   matchingFaceImagePath?: string;  // 매칭에 사용된 얼굴 이미지 URL
@@ -21,7 +20,9 @@ export interface MatchLog {
   checkLiveness?:         boolean | null;
   failureType?:           string | null;
   failureReason?:         string | null;
+  // ※ 백엔드 응답 용어 변경(특징점 관리와 동일): FID → featureId(문자열), 특징점 일련번호 → featureSeq(정수)
   featureId:                string | null;  // FID
+  featureSeq?:              number | null;  // 특징점 일련번호(DB 식별자)
   username:                 string | null;  // 사용자명
   description:              string | null;  // 메모
   featureImagePath:         string | null;  // 등록된 특징 이미지 URL
@@ -91,6 +92,7 @@ export function toLogEntry(item: MatchLog): LogEntry {
     requestId:     item.transactionUuid,
     result:        getLogResult(item),
     fid:           item.featureId ?? undefined,
+    featureSeq:    item.featureSeq ?? undefined,
     score:         item.similarity ?? undefined,
     checkLiveness: item.checkLiveness ?? undefined,
     memo:          item.description ?? undefined,

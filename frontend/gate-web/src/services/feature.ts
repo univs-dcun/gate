@@ -4,16 +4,18 @@ import httpClient from './http';
  * 특징점(Feature) 서비스 — 신규 백엔드 /api/v1/feature 통합 API
  *  - 목록: GET /v1/feature  (featureType 으로 얼굴/손바닥 필터)
  *  - 등록: POST /v1/feature/face | /v1/feature/palm  (multipart)
- *  - 삭제: DELETE /v1/feature/{face|palm}/{featureId}
+ *  - 삭제: DELETE /v1/feature/{face|palm}/{featureSeq}
+ *
+ * ※ 백엔드 응답 용어 변경: 기존 FID → featureId(문자열), 기존 featureId → featureSeq(일련번호)
  * ────────────────────────────────────────────────────────── */
 
 export type FeatureType = 'FACE' | 'PALM';
 
 /** 목록 행 (통합 응답을 화면 표시용으로 정규화) */
 export interface FeatureRow {
-  featureId:       number;        // DB 식별자(face/palmFeatureId) — 일련번호 · 삭제 키
+  featureSeq:      number;        // 일련번호(DB 식별자) — 삭제 · 수정 키
   featureType:     FeatureType;   // 인증 방식
-  faceId:          string;        // FID (표시용)
+  featureId:       string;        // FID (표시용)
   userDescription: string | null; // 메모
   faceImagePath:   string;        // 특징 이미지 URL
   createdAt:       string;
@@ -34,10 +36,10 @@ interface ApiResponse<T> { success: boolean; data: T; errors: Record<string, str
 
 interface FeatureItemResponse {
   featureType: FeatureType;
-  featureId:   number;
+  featureSeq:  number;          // 일련번호(DB 식별자)
   description: string | null;
   imageUrl:    string;
-  fid:         string;
+  featureId:   string;          // FID
   createdAt:   string;
 }
 interface FeatureListResponse {
@@ -64,9 +66,9 @@ export const getFeatures = async (params?: GetFeaturesParams): Promise<FeaturesD
   const d = res.data.data;
   return {
     content: (d.features ?? []).map((f) => ({
-      featureId:       f.featureId,
+      featureSeq:      f.featureSeq,
       featureType:     f.featureType,
-      faceId:          f.fid,
+      featureId:       f.featureId,
       userDescription: f.description,
       faceImagePath:   f.imageUrl,
       createdAt:       f.createdAt,
@@ -112,7 +114,7 @@ export const registerPalmFeature = (
 /** 특징점 정보 수정 (modality 에 따라 face/palm 경로 분기) */
 export const updateFeature = (
   featureType: FeatureType,
-  featureId: number,
+  featureSeq: number,
   opts: { featureImage?: File; description?: string; username?: string; transactionUuid?: string },
 ) => {
   const fd = new FormData();
@@ -120,14 +122,14 @@ export const updateFeature = (
   if (opts.description !== undefined) fd.append('description', opts.description);
   if (opts.username)                  fd.append('username', opts.username);
   if (opts.transactionUuid)           fd.append('transactionUuid', opts.transactionUuid);
-  return httpClient.put<ApiResponse<unknown>>(`/v1/feature/${featurePath(featureType)}/${featureId}`, fd, {
+  return httpClient.put<ApiResponse<unknown>>(`/v1/feature/${featurePath(featureType)}/${featureSeq}`, fd, {
     headers: { 'Content-Type': 'multipart/form-data' },
     skipNetworkErrorRedirect: true,
   });
 };
 
 /** 특징점 삭제 (modality 에 따라 face/palm 경로 분기) */
-export const deleteFeature = (featureType: FeatureType, featureId: number) =>
-  httpClient.delete<ApiResponse<null>>(`/v1/feature/${featurePath(featureType)}/${featureId}`, {
+export const deleteFeature = (featureType: FeatureType, featureSeq: number) =>
+  httpClient.delete<ApiResponse<null>>(`/v1/feature/${featurePath(featureType)}/${featureSeq}`, {
     skipNetworkErrorRedirect: true,
   });

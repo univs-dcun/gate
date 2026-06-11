@@ -112,3 +112,21 @@
     letter-spacing: var(--tracking-tight);
   }
 }
+
+/* ── 스크롤 테이블 고정 헤더 셀 — 언더라인(::after)까지 함께 고정 ── */
+.sticky-th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+}
+.sticky-th::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--th-line-w, 2px);
+  background: var(--th-line-c, #1e293b);
+  pointer-events: none;
+}

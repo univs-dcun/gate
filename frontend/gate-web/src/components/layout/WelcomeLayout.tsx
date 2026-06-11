@@ -184,7 +184,7 @@ export default function WelcomeLayout({ children }: WelcomeLayoutProps) {
         {/* 헤더: 로고 + 접기 버튼 */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-default)] flex-shrink-0">
           <button type="button" onClick={() => navigate('/projects')} className="flex items-center">
-            <Logo height={30} />
+            <Logo height={22} />
           </button>
           <button
             onClick={() => setIsCollapsed(true)}

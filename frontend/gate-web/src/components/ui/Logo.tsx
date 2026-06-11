@@ -2,6 +2,8 @@ interface LogoProps {
   className?: string;
   /** 로고 전체 높이 (px). 너비는 비율(129:20)로 자동 조정됩니다. */
   height?: number;
+  /** 너비를 명시적으로 지정 (미지정 시 height 비율로 자동) */
+  width?: number;
 }
 
 // 로고 SVG viewBox 가로:세로 비율 (Figma node 1735:8337)
@@ -15,18 +17,17 @@ const LOGO_ASPECT = 129 / 20; // ≈ 6.45
  *   <Logo height={22} />   // 사이드바 헤더
  *   <Logo height={48} />   // 랜딩 페이지
  */
-function Logo({ className, height = 30 }: LogoProps) {
-  // 기존 호출부 높이 호환: 이전 로고의 시각적 높이(심볼 = 0.75h)에 맞춤
-  const h = Math.round(height * 0.75);
-
+function Logo({ className, height = 22, width }: LogoProps) {
+  // height = 실제 렌더 높이(px). width 지정 시 그 값으로, 아니면 비율(129:20) 자동
+  const w = width ?? Math.round(height * LOGO_ASPECT);
   return (
     <img
       src="/icons/logo/logo-full.svg"
       alt="UNIVS GATE"
       className={className}
-      width={Math.round(h * LOGO_ASPECT)}
-      height={h}
-      style={{ display: 'block', height: h, width: 'auto' }}
+      width={w}
+      height={height}
+      style={{ display: 'block', height, width: w }}
     />
   );
 }

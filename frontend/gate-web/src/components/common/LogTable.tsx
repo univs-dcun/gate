@@ -13,7 +13,8 @@ export interface LogEntry {
   authMethod?:     'FACE' | 'PALM';   // 인증 방식 (얼굴/손바닥) — 백엔드 제공 시 표시
   requestId:       string;
   result:          LogResult;
-  fid?:            string;
+  fid?:            string;        // Feature ID (구 FID)
+  featureSeq?:     number;        // 특징점 일련번호
   score?:          number;
   checkLiveness?:  boolean;
   memo?:           string;
@@ -66,7 +67,7 @@ const SortArrows = () => (
 );
 
 /* ── 헤더 스타일 상수 ── */
-const TH = 'px-2.5 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.4px] whitespace-nowrap';
+const TH = 'px-2.5 py-3 text-center text-[14px] font-semibold text-[#475569] tracking-[-0.4px] whitespace-nowrap sticky-th';
 const TD_BASE = 'px-2.5 border-r border-[#e2e8f0] last:border-r-0';
 
 function LogTable({ data, totalCount, totalRecords, page: pageProp, pageSize: pageSizeProp, onPageChange, onPageSizeChange, isLoading }: LogTableProps) {
@@ -88,15 +89,15 @@ function LogTable({ data, totalCount, totalRecords, page: pageProp, pageSize: pa
 
   return (
     <div className="w-full bg-white">
-      <div className="overflow-x-auto">
+      <div className="overflow-auto max-h-[calc(100vh-340px)]">
         <table className="w-full min-w-[900px]">
           <thead>
-            <tr className="border-b-[2px] border-[#1e293b]">
+            <tr>
               <th className={TH}>{t('logs.serial_no')}</th>
               <th className={TH}>{t('projects.col_auth_method')}</th>
               <th className={TH}>{t('logs.test_module')}</th>
               <th className={`${TH} !px-2`} style={{ width: '175px' }}>{t('logs.request_id')}</th>
-              <th className={`${TH} !px-2`} style={{ width: '175px' }}>FID</th>
+              <th className={`${TH} !px-2`} style={{ width: '175px' }}>Feature ID</th>
               <th className={[TH, 'min-w-[160px]'].join(' ')}>{t('logs.memo')}</th>
               <th className={TH}>{t('logs.result')}</th>
               <th className={TH}>{t('logs.score')}</th>
@@ -161,9 +162,11 @@ function LogTable({ data, totalCount, totalRecords, page: pageProp, pageSize: pa
                         {row.fid ?? '-'}
                       </span>
                     </td>
-                    {/* 메모 */}
-                    <td className={`${TD_BASE} py-[18px] text-[15px] font-medium text-[#334155] tracking-[-0.375px]`}>
-                      {row.memo || '-'}
+                    {/* 메모 — 길면 줄바꿈(최대 폭 제한) */}
+                    <td className={`${TD_BASE} py-[18px]`}>
+                      <span className="block max-w-[220px] break-words whitespace-normal text-[15px] font-medium text-[#334155] tracking-[-0.375px]">
+                        {row.memo || '-'}
+                      </span>
                     </td>
                     {/* 결과 */}
                     <td className={`${TD_BASE} py-[13px] text-center`}>
