@@ -72,7 +72,7 @@ public class FaceVerifyByFeatureIdUseCase {
                 .matchTime(LocalDateTime.now(ZoneOffset.UTC))
                 .checkLiveness(projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.VERIFY_ID))
                 .success(false)
-                .matchedFeatureId(input.faceId())
+                .featureId(input.faceId())
                 .matchedFeatureImagePath(imagePath)
                 .transactionUuid(input.transactionUuid())
                 .consentSnapshot(consentEnabled)

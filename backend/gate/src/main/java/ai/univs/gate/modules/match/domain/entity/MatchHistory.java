@@ -63,10 +63,6 @@ public class MatchHistory extends BaseEntity {
     private String featureId;
 
     @ColumnDefault("''")
-    @Column(name = "matched_feature_id", length = 100)
-    private String matchedFeatureId;
-
-    @ColumnDefault("''")
     @Column(name = "feature_image_path", length = 100)
     private String featureImagePath;
 
