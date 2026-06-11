@@ -13,10 +13,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-GATE_WEB_DIR="${REPO_ROOT}/frontend/gate-web"
 CONFIG_DIR="${REPO_ROOT}/frontend/gate-web-config"
 SERVICE="gate-web"
 VERSION="${1:-}"
+BITBUCKET_URL="git@bitbucket.org:univsai/univsaigateserviceweb.git"
 
 # ── 유효성 검사 ────────────────────────────────────────────────
 if [ -z "$REGISTRY" ]; then
@@ -36,36 +36,46 @@ if ! docker buildx version &>/dev/null; then
   exit 1
 fi
 
+# ── 임시 디렉토리 (스크립트 종료 시 자동 삭제) ──────────────────
+TMP_DIR="$(mktemp -d)"
+trap "rm -rf '${TMP_DIR}'" EXIT
+
 echo ""
 echo "========================================"
 echo "  gate-web 빌드 및 배포"
 echo "  버전      : ${VERSION}"
 echo "  레지스트리 : ${REGISTRY}"
+echo "  소스      : ${BITBUCKET_URL}"
 echo "========================================"
 
-# ── 1단계: 커스텀 파일 덮어쓰기 ────────────────────────────────
+# ── 1단계: Bitbucket에서 소스 clone ────────────────────────────
 echo ""
-echo "[1/3] 커스텀 파일 적용 중..."
-cp -f "${CONFIG_DIR}/Dockerfile"           "${GATE_WEB_DIR}/Dockerfile"
-cp -f "${CONFIG_DIR}/nginx.conf"           "${GATE_WEB_DIR}/nginx.conf"
-cp -f "${CONFIG_DIR}/docker-entrypoint.sh" "${GATE_WEB_DIR}/docker-entrypoint.sh"
-cp -f "${CONFIG_DIR}/docker-compose.yml"   "${GATE_WEB_DIR}/docker-compose.yml"
-echo "  → Dockerfile, nginx.conf, docker-entrypoint.sh, docker-compose.yml 적용 완료"
+echo "[1/4] 소스 클론 중..."
+git clone --branch main --single-branch "${BITBUCKET_URL}" "${TMP_DIR}"
+echo "  → 클론 완료: ${TMP_DIR}"
 
-# ── 2단계: Docker 이미지 빌드 및 push ──────────────────────────
+# ── 2단계: 커스텀 파일 덮어쓰기 ────────────────────────────────
 echo ""
-echo "[2/3] Docker 이미지 빌드 중 (linux/amd64)..."
+echo "[2/4] 커스텀 파일 적용 중..."
+cp -f "${CONFIG_DIR}/Dockerfile"           "${TMP_DIR}/Dockerfile"
+cp -f "${CONFIG_DIR}/nginx.conf"           "${TMP_DIR}/nginx.conf"
+cp -f "${CONFIG_DIR}/docker-entrypoint.sh" "${TMP_DIR}/docker-entrypoint.sh"
+echo "  → Dockerfile, nginx.conf, docker-entrypoint.sh 적용 완료"
+
+# ── 3단계: Docker 이미지 빌드 및 push ──────────────────────────
+echo ""
+echo "[3/4] Docker 이미지 빌드 중 (linux/amd64)..."
 docker buildx build \
   --platform linux/amd64 \
   --tag "${REGISTRY}/${SERVICE}:${VERSION}" \
   --tag "${REGISTRY}/${SERVICE}:latest" \
   --no-cache \
   --push \
-  "${GATE_WEB_DIR}"
+  "${TMP_DIR}"
 
-# ── 3단계: 완료 ────────────────────────────────────────────────
+# ── 4단계: 완료 ────────────────────────────────────────────────
 echo ""
-echo "[3/3] 배포 완료!"
+echo "[4/4] 배포 완료!"
 echo "  이미지: ${REGISTRY}/${SERVICE}:${VERSION}"
 echo "  이미지: ${REGISTRY}/${SERVICE}:latest"
 echo ""
