@@ -36,6 +36,9 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.FEATURE_ID)
         String featureId,
 
+        @Schema(description = SwaggerDescriptions.FEATURE_SEQ_ID)
+        Long featureSeq,
+
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
 
@@ -77,6 +80,7 @@ public record MatchingHistoryResponseDTO(
                 result.checkLiveness(),
                 result.success(),
                 result.featureId(),
+                result.featureSeq(),
                 result.description(),
                 result.similarity(),
                 result.featureImagePath(),

@@ -81,16 +81,21 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "consent_snapshot")
     private Boolean consentSnapshot;
 
+    @Column(name = "feature_seq")
+    private Long featureSeq;
+
     public void updateFaceFeature(FaceFeature faceFeature) {
         this.featureId = faceFeature.getFeatureId();
         this.userDescription = faceFeature.getDescription();
         this.featureImagePath = faceFeature.getFeatureImagePath();
+        this.featureSeq = faceFeature.getId();
     }
 
     public void updatePalmFeature(PalmFeature palmFeature) {
         this.featureId = palmFeature.getFeatureId();
         this.userDescription = palmFeature.getDescription();
         this.featureImagePath = palmFeature.getFeatureImagePath();
+        this.featureSeq = palmFeature.getId();
     }
 
     public void success(FaceFeature faceFeature, BigDecimal similarity) {
