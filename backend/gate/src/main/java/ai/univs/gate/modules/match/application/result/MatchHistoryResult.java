@@ -17,6 +17,7 @@ public record MatchHistoryResult(
         Boolean checkLiveness,
         Boolean success,
         String featureId,
+        Long featureSeq,
         String description,
         BigDecimal similarity,
         String featureImagePath,
@@ -37,6 +38,7 @@ public record MatchHistoryResult(
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
                 matchHistory.getFeatureId(),
+                matchHistory.getFeatureSeq(),
                 matchHistory.getUserDescription(),
                 matchHistory.getSimilarity(),
                 consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
