@@ -13,7 +13,7 @@ public record FeatureItemResponse(
         String featureType,
 
         @Schema(description = SwaggerDescriptions.FEATURE_SEQ_ID)
-        Long featureId,
+        Long featureSeq,
 
         @Schema(description = SwaggerDescriptions.FEATURE_MEMO)
         String description,
@@ -21,8 +21,8 @@ public record FeatureItemResponse(
         @Schema(description = SwaggerDescriptions.FEATURE_IMAGE_URL)
         String imageUrl,
 
-        @Schema(description = SwaggerDescriptions.FEATURE_FID)
-        String fid,
+        @Schema(description = SwaggerDescriptions.FEATURE_ID)
+        String featureId,
 
         @Schema(description = SwaggerDescriptions.REGISTERED_AT)
         LocalDateTime createdAt
@@ -31,10 +31,10 @@ public record FeatureItemResponse(
     public static FeatureItemResponse from(FeatureItemResult result, String timezone) {
         return new FeatureItemResponse(
                 result.featureType(),
-                result.featureId(),
+                result.featureSeq(),
                 result.description(),
                 result.imageUrl(),
-                result.fid(),
+                result.featureId(),
                 fromUtc(result.createdAt(), timezone));
     }
 }

@@ -114,7 +114,7 @@ public class DemoController {
         return ResponseEntity.ok(responseApi);
     }
 
-    @Operation(summary = "featureId 기반 특징점 얼굴 확인")
+    @Operation(summary = "featureSeq 기반 특징점 얼굴 확인")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByApiKeyRequestDTO.class)))
     @SecurityRequirements({})
     @SwaggerErrorExample({

@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 
 public record FeatureRow(
         String featureType,
-        Long featureId,
+        Long featureSeq,
         String description,
         String imagePath,
-        String fid,
+        String featureId,
         LocalDateTime createdAt
 ) {}

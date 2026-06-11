@@ -16,7 +16,7 @@ public record FaceFeatureResponseDTO(
         String description,
 
 
-        @Schema(description = SwaggerDescriptions.FEATURE_AI_ID)
+        @Schema(description = SwaggerDescriptions.FEATURE_ID)
         String featureId,
 
         @Schema(description = SwaggerDescriptions.FACE_IMAGE_PATH)

@@ -135,7 +135,7 @@ public class SwaggerDescriptions {
 
     /* Feature 공통 */
     public static final String FEATURE_IMAGE = "특징점 이미지";
-    public static final String FEATURE_AI_ID = "특징점 아이디";
+    public static final String FEATURE_ID = "특징점 아이디";
     public static final String FEATURE_SEQ_ID = "특징점 식별 번호";
     public static final String FEATURE_DESCRIPTION = "특징점 설명";
     public static final String FEATURE_IMAGE_PATH = "특징점 이미지 경로";
@@ -148,7 +148,6 @@ public class SwaggerDescriptions {
     /* Feature 타입 / 통합 목록 */
     public static final String FEATURE_TYPE_ALL = "특징점 타입 [FACE | PALM | ALL]";
     public static final String FEATURE_TYPE = "특징점 타입 [FACE | PALM]";
-    public static final String FEATURE_FID = "FID (Face ID 또는 Palm ID)";
     public static final String FEATURE_IMAGE_URL = "이미지 URL";
     public static final String FEATURE_MEMO = "메모 (설명)";
     public static final String FEATURE_LIST_COMBINED = "특징점 목록 (Face + Palm 통합)";
@@ -166,7 +165,7 @@ public class SwaggerDescriptions {
     public static final String PALM_DESCRIPTION = "팜 설명";
     public static final String PALM_FEATURE_AI_ID = "팜 AI 서비스 식별자";
     public static final String PALM_FEATURE_LIST = "특징점 팜 목록";
-    public static final String PALM_KEYWORD = "검색 키워드 (featureId, description, transactionUuid)";
+    public static final String PALM_KEYWORD = "검색 키워드 (featureSeq, description, transactionUuid)";
 
     /* Dashboard 추가 */
     public static final String DASHBOARD_FEATURE_TYPE = "특징점 타입 (FACE | PALM)";
