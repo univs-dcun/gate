@@ -33,7 +33,7 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_SUCCESS)
         Boolean success,
 
-        @Schema(description = SwaggerDescriptions.FEATURE_AI_ID)
+        @Schema(description = SwaggerDescriptions.FEATURE_ID)
         String featureId,
 
         @Schema(description = SwaggerDescriptions.MATCHED_FEATURE_ID)
@@ -41,7 +41,6 @@ public record MatchingHistoryResponseDTO(
 
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
-
 
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,

@@ -29,7 +29,7 @@ public record VerifyByImageResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_SUCCESS)
         Boolean success,
 
-        @Schema(description = SwaggerDescriptions.FEATURE_AI_ID)
+        @Schema(description = SwaggerDescriptions.FEATURE_ID)
         String featureId,
 
         @Schema(description = SwaggerDescriptions.SIMILARITY)

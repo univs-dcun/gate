@@ -58,7 +58,7 @@ public class FaceFeatureMatchController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "얼굴 확인 (featureId 기반)")
+    @Operation(summary = "얼굴 확인 (featureSeq 기반)")
     @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = VerifyByFaceIdRequestDTO.class)))
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),

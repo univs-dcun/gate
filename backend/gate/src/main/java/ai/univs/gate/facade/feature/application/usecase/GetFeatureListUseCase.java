@@ -85,10 +85,10 @@ public class GetFeatureListUseCase {
                 : "";
         return new FeatureItemResult(
                 row.featureType(),
-                row.featureId(),
+                row.featureSeq(),
                 row.description(),
                 imageUrl,
-                row.fid(),
+                row.featureId(),
                 row.createdAt());
     }
 
