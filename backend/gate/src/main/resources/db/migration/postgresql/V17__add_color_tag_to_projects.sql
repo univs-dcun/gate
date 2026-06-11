@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN color_tag VARCHAR(255) NULL;

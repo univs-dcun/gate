@@ -1,7 +1,6 @@
 package ai.univs.gate.modules.project.api.controller;
 
 import ai.univs.gate.modules.project.api.dto.*;
-import ai.univs.gate.modules.project.application.input.UpdatePackageKeyInput;
 import ai.univs.gate.modules.project.application.input.UpdateProjectInput;
 import ai.univs.gate.modules.project.application.usecase.*;
 import ai.univs.gate.shared.auth.UserContext;
@@ -30,7 +29,6 @@ public class ProjectController {
 
     private final CreateProjectUseCase createProjectUseCase;
     private final UpdateProjectUseCase updateProjectUseCase;
-    private final UpdatePackageKeyUseCase updatePackageKeyUseCase;
     private final DeleteProjectUseCase deleteProjectUseCase;
     private final GetProjectsUseCase getProjectsUseCase;
     private final GetProjectUseCase getProjectUseCase;
@@ -119,34 +117,8 @@ public class ProjectController {
                 projectId,
                 request.projectName(),
                 request.projectDescription(),
-                request.projectType());
+                request.colorTag());
         var result = updateProjectUseCase.execute(input);
-        var response = ProjectResponseDTO.from(result, ctx.getTimezone());
-        return ResponseEntity.ok(ResponseApi.ok(response));
-    }
-
-    @Operation(summary = "패키지 키 설정", description = "External 타입 프로젝트의 패키지 키를 설정합니다")
-    @SecurityRequirements({
-            @SecurityRequirement(name = "Authentication"),
-    })
-    @SwaggerErrorExample({
-            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
-            @SwaggerError(errorType = ErrorType.PACKAGE_KEY_NOT_ALLOWED, status = 400),
-    })
-    @PatchMapping("/{projectId}/package-key")
-    public ResponseEntity<ResponseApi<ProjectResponseDTO>> updatePackageKey(
-            @Parameter(description = SwaggerDescriptions.PROJECT_ID)
-            @PathVariable Long projectId,
-            @Valid @RequestBody UpdatePackageKeyRequestDTO request
-    ) {
-        UserContext ctx = UserContext.get();
-        var input = new UpdatePackageKeyInput(
-                ctx.getAccountIdAsLong(),
-                projectId,
-                request.packageKey());
-        var result = updatePackageKeyUseCase.execute(input);
         var response = ProjectResponseDTO.from(result, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }

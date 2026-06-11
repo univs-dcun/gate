@@ -1,3 +1,5 @@
+# chore: 자동배포 파이프라인 테스트
+
 spring:
   application:
     name: auth-service

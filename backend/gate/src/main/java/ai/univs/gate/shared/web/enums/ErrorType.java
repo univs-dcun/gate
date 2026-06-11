@@ -70,15 +70,12 @@ public enum ErrorType {
     FACE_TOO_SMALL("ID-225", HttpStatus.BAD_REQUEST),
     FACE_ANGLE_TOO_LARGE("ID-226", HttpStatus.BAD_REQUEST),
 
+    // Palm
+    ALREADY_REGISTERED_PALM_FEATURE("PALM-101", HttpStatus.BAD_REQUEST),
+
     // Demo
     INVALID_QR_CODE("DEMO-101", HttpStatus.BAD_REQUEST),
-    EXPIRED_QR_CODE("DEMO-102", HttpStatus.BAD_REQUEST),
-
-    PACKAGE_KEY_NOT_ALLOWED("PJ-111", HttpStatus.BAD_REQUEST),
-    PROJECT_MODULE_TYPE_IMMUTABLE("PJ-112", HttpStatus.BAD_REQUEST),
-    UNSUPPORTED_MODULE_TYPE("PJ-113", HttpStatus.BAD_REQUEST),
-    DEMO_DISABLED("PJ-114", HttpStatus.FORBIDDEN),
-    SDK_DISABLED("PJ-115", HttpStatus.FORBIDDEN);
+    EXPIRED_QR_CODE("DEMO-102", HttpStatus.BAD_REQUEST);
 
     // 메시지는 다국어 지원으로 messages.properties 통해서 제공
     private final String code;       // 시스템 관리용 코드

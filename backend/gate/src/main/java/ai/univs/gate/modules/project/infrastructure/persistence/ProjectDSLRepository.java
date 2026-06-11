@@ -1,12 +1,14 @@
 package ai.univs.gate.modules.project.infrastructure.persistence;
 
 import ai.univs.gate.modules.api_key.domain.entity.QApiKey;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
+import ai.univs.gate.modules.palm_feature.domain.entity.QPalmFeature;
 import ai.univs.gate.modules.project.application.input.ProjectQuery;
 import ai.univs.gate.modules.project.application.result.ProjectSummaryResult;
 import ai.univs.gate.modules.project.domain.entity.QProject;
-import ai.univs.gate.modules.user.domain.entity.QUser;
+import ai.univs.gate.modules.face_feature.domain.entity.QFaceFeature;
 import ai.univs.gate.shared.utils.CustomPageable;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.BooleanBuilder;
@@ -30,7 +32,8 @@ public class ProjectDSLRepository {
     private final JPAQueryFactory queryFactory;
 
     private final QProject project = QProject.project;
-    private final QUser user = QUser.user;
+    private final QFaceFeature faceFeature = QFaceFeature.faceFeature;
+    private final QPalmFeature palmFeature = QPalmFeature.palmFeature;
     private final QMatchHistory matchHistory = QMatchHistory.matchHistory;
     private final QApiKey qApiKey = QApiKey.apiKey1;
 
@@ -42,44 +45,67 @@ public class ProjectDSLRepository {
         Pageable pageable = CustomPageable.of(query.page(), query.pageSize());
         var booleanBuilder = createBooleanBuilder(query);
 
-        var userCount = JPAExpressions.select(user.count())
-                .from(user)
-                .where(user.project.id.eq(project.id).and(user.isDeleted.isFalse()));
+        // Face counts
+        var faceRegistrationCount = JPAExpressions.select(faceFeature.count())
+                .from(faceFeature)
+                .where(faceFeature.project.id.eq(project.id).and(faceFeature.isDeleted.isFalse()));
 
-        var verifyByIdCount = JPAExpressions.select(matchHistory.count())
+        var faceVerifyByIdCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
                 .where(matchHistory.project.id.eq(project.id)
-                        .and(matchHistory.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY)));
+                        .and(matchHistory.matchType.in(MatchType.VERIFY_ID, MatchType.VERIFY))
+                        .and(matchHistory.featureType.eq(FeatureType.FACE)));
 
-        var verifyByImageCount = JPAExpressions.select(matchHistory.count())
+        var faceVerifyByImageCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
                 .where(matchHistory.project.id.eq(project.id)
-                        .and(matchHistory.matchType.eq(MatchType.VERIFY_IMAGE)));
+                        .and(matchHistory.matchType.eq(MatchType.VERIFY_IMAGE))
+                        .and(matchHistory.featureType.eq(FeatureType.FACE)));
 
-        var identifyCount = JPAExpressions.select(matchHistory.count())
+        var faceIdentifyCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
                 .where(matchHistory.project.id.eq(project.id)
-                        .and(matchHistory.matchType.eq(MatchType.IDENTIFY)));
+                        .and(matchHistory.matchType.eq(MatchType.IDENTIFY))
+                        .and(matchHistory.featureType.eq(FeatureType.FACE)));
 
-        var livenessCount = JPAExpressions.select(matchHistory.count())
+        var faceLivenessCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
                 .where(matchHistory.project.id.eq(project.id)
-                        .and(matchHistory.matchType.eq(MatchType.LIVENESS)));
+                        .and(matchHistory.matchType.eq(MatchType.LIVENESS))
+                        .and(matchHistory.featureType.eq(FeatureType.FACE)));
+
+        // Palm counts
+        var palmRegistrationCount = JPAExpressions.select(palmFeature.count())
+                .from(palmFeature)
+                .where(palmFeature.project.id.eq(project.id).and(palmFeature.isDeleted.isFalse()));
+
+        var palmIdentifyCount = JPAExpressions.select(matchHistory.count())
+                .from(matchHistory)
+                .where(matchHistory.project.id.eq(project.id)
+                        .and(matchHistory.matchType.eq(MatchType.IDENTIFY))
+                        .and(matchHistory.featureType.eq(FeatureType.PALM)));
+
+        var palmLivenessCount = JPAExpressions.select(matchHistory.count())
+                .from(matchHistory)
+                .where(matchHistory.project.id.eq(project.id)
+                        .and(matchHistory.matchType.eq(MatchType.LIVENESS))
+                        .and(matchHistory.featureType.eq(FeatureType.PALM)));
 
         List<Tuple> rows = queryFactory
                 .select(
                         project.id,
                         project.projectName,
                         project.projectDescription,
+                        project.colorTag,
                         project.status,
-                        project.projectType,
-                        project.projectModuleType,
-                        project.packageKey,
-                        userCount,
-                        verifyByIdCount,
-                        verifyByImageCount,
-                        identifyCount,
-                        livenessCount,
+                        faceRegistrationCount,
+                        faceVerifyByIdCount,
+                        faceVerifyByImageCount,
+                        faceIdentifyCount,
+                        faceLivenessCount,
+                        palmRegistrationCount,
+                        palmIdentifyCount,
+                        palmLivenessCount,
                         project.createdAt,
                         project.updatedAt,
                         qApiKey.apiKey)
@@ -96,15 +122,16 @@ public class ProjectDSLRepository {
                         t.get(project.id),
                         t.get(project.projectName),
                         t.get(project.projectDescription),
+                        t.get(project.colorTag),
                         t.get(project.status),
-                        t.get(project.projectType),
-                        t.get(project.projectModuleType),
-                        t.get(project.packageKey),
-                        t.get(userCount),
-                        t.get(verifyByIdCount),
-                        t.get(verifyByImageCount),
-                        t.get(identifyCount),
-                        t.get(livenessCount),
+                        t.get(faceRegistrationCount),
+                        t.get(faceVerifyByIdCount),
+                        t.get(faceVerifyByImageCount),
+                        t.get(faceIdentifyCount),
+                        t.get(faceLivenessCount),
+                        t.get(palmRegistrationCount),
+                        t.get(palmIdentifyCount),
+                        t.get(palmLivenessCount),
                         t.get(project.createdAt),
                         t.get(project.updatedAt),
                         t.get(qApiKey.apiKey)

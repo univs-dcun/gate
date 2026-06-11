@@ -1,5 +1,6 @@
 package ai.univs.gate.modules.match.application.result;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.domain.entity.MatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import org.springframework.util.StringUtils;
@@ -10,43 +11,45 @@ import java.time.LocalDateTime;
 public record MatchHistoryResult(
         Long matchingHistoryId,
         Long projectId,
+        FeatureType featureType,
         MatchType matchType,
         LocalDateTime matchingTime,
         Boolean checkLiveness,
         Boolean success,
-        String faceId,
-        Long userId,
-        String userDescription,
-        String username,
+        String featureId,
+        Long featureSeq,
+        String description,
         BigDecimal similarity,
-        String faceImagePath,
-        String matchingFaceImagePath,
+        String featureImagePath,
+        String matchingFeatureImagePath,
         String failureType,
         String transactionUuid,
-        Boolean consentSnapshot
+        Boolean consentSnapshot,
+        LocalDateTime createdAt
 ) {
 
     public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
         return new MatchHistoryResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
+                matchHistory.getFeatureType(),
                 matchHistory.getMatchType(),
                 matchHistory.getMatchTime(),
                 matchHistory.getCheckLiveness(),
                 matchHistory.getSuccess(),
-                matchHistory.getFaceId(),
-                matchHistory.getUserId(),
+                matchHistory.getFeatureId(),
+                matchHistory.getFeatureSeq(),
                 matchHistory.getUserDescription(),
-                matchHistory.getUsername(),
                 matchHistory.getSimilarity(),
-                consentEnabled && StringUtils.hasText(matchHistory.getFaceImagePath())
-                        ? prefixImagePath + matchHistory.getFaceImagePath()
+                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
+                        ? prefixImagePath + matchHistory.getFeatureImagePath()
                         : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchFaceImagePath())
-                        ? prefixImagePath + matchHistory.getMatchFaceImagePath()
+                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
+                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
                         : "",
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),
-                matchHistory.getConsentSnapshot());
+                matchHistory.getConsentSnapshot(),
+                matchHistory.getCreatedAt());
     }
 }

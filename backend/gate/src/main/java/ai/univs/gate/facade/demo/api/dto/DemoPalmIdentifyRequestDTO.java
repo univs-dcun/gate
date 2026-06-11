@@ -1,0 +1,38 @@
+package ai.univs.gate.facade.demo.api.dto;
+
+import ai.univs.gate.modules.palm_feature.application.input.PalmIdentifyInput;
+import ai.univs.gate.shared.swagger.SwaggerDescriptions;
+import ai.univs.gate.shared.utils.TransactionUtil;
+import ai.univs.gate.shared.utils.ValidImageFile;
+import ai.univs.gate.shared.web.enums.CallerType;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import org.hibernate.validator.constraints.Length;
+import org.springframework.web.multipart.MultipartFile;
+
+public record DemoPalmIdentifyRequestDTO(
+        @Schema(description = SwaggerDescriptions.API_KEY, requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotBlank(message = "REQUIRED_API_KEY")
+        @Length(max = 36, message = "INVALID_API_KEY_LENGTH")
+        String apiKey,
+
+        @Schema(description = SwaggerDescriptions.PALM_IMAGE, requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "binary")
+        @NotNull(message = "REQUIRED_IMAGE_FILE")
+        @ValidImageFile(message = "INVALID_FILE")
+        MultipartFile featureImage,
+
+        @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
+        @Length(max = 36, message = "INVALID_TRANSACTION_UUID_LENGTH")
+        String transactionUuid
+) {
+
+    public PalmIdentifyInput toInput() {
+        return new PalmIdentifyInput(
+                CallerType.DEMO,
+                0L,
+                apiKey,
+                featureImage,
+                TransactionUtil.useOrCreate(transactionUuid));
+    }
+}

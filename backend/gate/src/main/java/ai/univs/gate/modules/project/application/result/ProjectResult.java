@@ -1,9 +1,7 @@
 package ai.univs.gate.modules.project.application.result;
 
 import ai.univs.gate.modules.project.domain.entity.Project;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
-import ai.univs.gate.modules.project.domain.enums.ProjectType;
 
 import java.time.LocalDateTime;
 
@@ -11,10 +9,8 @@ public record ProjectResult(
         Long projectId,
         String projectName,
         String projectDescription,
+        String colorTag,
         ProjectStatus status,
-        ProjectType projectType,
-        ProjectModuleType projectModuleType,
-        String packageKey,
         String apiKey,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -25,10 +21,8 @@ public record ProjectResult(
                 project.getId(),
                 project.getProjectName(),
                 project.getProjectDescription(),
+                project.getColorTag(),
                 project.getStatus(),
-                project.getProjectType(),
-                project.getProjectModuleType(),
-                project.getPackageKey(),
                 apiKey,
                 project.getCreatedAt(),
                 project.getUpdatedAt());

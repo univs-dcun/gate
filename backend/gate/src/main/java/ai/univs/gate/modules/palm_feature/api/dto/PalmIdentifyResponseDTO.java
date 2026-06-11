@@ -1,0 +1,86 @@
+package ai.univs.gate.modules.palm_feature.api.dto;
+
+import ai.univs.gate.modules.match.domain.enums.MatchType;
+import ai.univs.gate.modules.palm_feature.application.result.PalmIdentifyResult;
+import ai.univs.gate.shared.swagger.SwaggerDescriptions;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
+
+public record PalmIdentifyResponseDTO(
+        @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_ID)
+        Long matchingHistoryId,
+
+        @Schema(description = SwaggerDescriptions.PROJECT_ID)
+        Long projectId,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_TYPE)
+        MatchType matchType,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_TIME)
+        LocalDateTime matchingTime,
+
+        @Schema(description = SwaggerDescriptions.CHECK_LIVENESS)
+        Boolean checkLiveness,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_SUCCESS)
+        Boolean success,
+
+        @Schema(description = SwaggerDescriptions.PALM_FEATURE_ID)
+        Long palmFeatureId,
+
+        @Schema(description = SwaggerDescriptions.PALM_FEATURE_AI_ID)
+        String featureId,
+
+        @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
+        String description,
+
+        @Schema(description = SwaggerDescriptions.SIMILARITY)
+        BigDecimal similarity,
+
+        @Schema(description = SwaggerDescriptions.FEATURE_IMAGE_PATH)
+        String featureImagePath,
+
+        @Schema(description = SwaggerDescriptions.MATCHED_FEATURE_IMAGE_PATH)
+        String matchingFeatureImagePath,
+
+        @Schema(description = SwaggerDescriptions.THRESHOLD)
+        String threshold,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_FAILURE_TYPE)
+        String failureType,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_FAILURE_REASON)
+        String failureReason,
+
+        @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
+        Boolean consentSnapshot
+) {
+
+    public static PalmIdentifyResponseDTO from(PalmIdentifyResult result, String failureReason, String timezone) {
+        return new PalmIdentifyResponseDTO(
+                result.matchingHistoryId(),
+                result.projectId(),
+                result.matchType(),
+                fromUtc(result.matchingTime(), timezone),
+                result.checkLiveness(),
+                result.success(),
+                result.palmFeatureId(),
+                result.featureId(),
+                result.description(),
+                result.similarity(),
+                result.featureImagePath(),
+                result.matchingFeatureImagePath(),
+                result.threshold(),
+                result.failureType(),
+                failureReason,
+                result.transactionUuid(),
+                result.consentSnapshot());
+    }
+}

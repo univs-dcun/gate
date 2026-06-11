@@ -18,11 +18,7 @@ public class UpdateProjectUseCase {
     public ProjectResult execute(UpdateProjectInput input) {
         Project project = projectService.validateOwnership(input.projectId(), input.accountId());
 
-        project.updateInfo(input.projectName(), input.description());
-
-        if (input.projectType() != null) {
-            project.updateProjectType(input.projectType());
-        }
+        project.updateInfo(input.projectName(), input.description(), input.colorTag());
 
         return ProjectResult.from(project);
     }

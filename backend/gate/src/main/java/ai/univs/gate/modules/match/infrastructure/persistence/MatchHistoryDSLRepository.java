@@ -1,5 +1,6 @@
 package ai.univs.gate.modules.match.infrastructure.persistence;
 
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.domain.entity.MatchHistory;
 import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
@@ -67,7 +68,7 @@ public class MatchHistoryDSLRepository {
         if (StringUtils.hasText(query.matchingHistoryKeyword())) {
             BooleanBuilder keywordBuilder = new BooleanBuilder();
             keywordBuilder.or(matchHistory.transactionUuid.containsIgnoreCase(query.matchingHistoryKeyword()));
-            keywordBuilder.or(matchHistory.faceId.containsIgnoreCase(query.matchingHistoryKeyword()));
+            keywordBuilder.or(matchHistory.featureId.containsIgnoreCase(query.matchingHistoryKeyword()));
             keywordBuilder.or(matchHistory.userDescription.containsIgnoreCase(query.matchingHistoryKeyword()));
             booleanBuilder.and(keywordBuilder);
         }
@@ -76,6 +77,12 @@ public class MatchHistoryDSLRepository {
         if (!query.matchType().equals("ALL")) {
             MatchType matchType = MatchType.valueOf(query.matchType());
             booleanBuilder.and(matchHistory.matchType.eq(matchType));
+        }
+
+        // 특징점 타입이 지정된 경우 (FACE | PALM)
+        if (!query.featureType().equals("ALL")) {
+            FeatureType featureType = FeatureType.valueOf(query.featureType());
+            booleanBuilder.and(matchHistory.featureType.eq(featureType));
         }
 
         if ("SUCCESS".equals(query.matchResultType())) {

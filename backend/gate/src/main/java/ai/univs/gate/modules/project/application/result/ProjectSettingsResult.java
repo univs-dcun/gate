@@ -1,10 +1,10 @@
 package ai.univs.gate.modules.project.application.result;
 
+import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.modules.project.domain.enums.ProjectModuleType;
-import ai.univs.gate.modules.project.domain.enums.ProjectType;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 
@@ -12,34 +12,18 @@ public record ProjectSettingsResult(
         Long projectSettingsId,
         Long projectId,
         String projectName,
-        ProjectType projectType,
-        ProjectModuleType projectModuleType,
-        String packageKey,
         Boolean consentEnabled,
         LocalDateTime consentAgreedAt,
-        Boolean demoEnabled,
-        Boolean sdkEnabled,
-        Boolean livenessRegisterEnabled,
-        Boolean livenessIdentifyingEnabled,
-        Boolean livenessVerifyingByIdEnabled,
-        Boolean livenessVerifyingByImageEnabled
+        List<LivenessSettingResult> livenessSettings
 ) {
 
-    public static ProjectSettingsResult from(ProjectSettings settings, String timezone) {
+    public static ProjectSettingsResult from(ProjectSettings settings, List<ProjectLivenessSetting> livenessSettings, String timezone) {
         return new ProjectSettingsResult(
                 settings.getId(),
                 settings.getProject().getId(),
                 settings.getProject().getProjectName(),
-                settings.getProject().getProjectType(),
-                settings.getProject().getProjectModuleType(),
-                settings.getProject().getPackageKey(),
                 settings.getConsentEnabled(),
                 fromUtc(settings.getConsentAgreedAt(), timezone),
-                settings.getDemoEnabled(),
-                settings.getSdkEnabled(),
-                settings.getLivenessRegisterEnabled(),
-                settings.getLivenessIdentifyingEnabled(),
-                settings.getLivenessVerifyingByIdEnabled(),
-                settings.getLivenessVerifyingByImageEnabled());
+                livenessSettings.stream().map(LivenessSettingResult::from).toList());
     }
 }

@@ -1,6 +1,7 @@
 package ai.univs.gate.facade.dashboard.application.usecase;
 
 import ai.univs.gate.facade.dashboard.application.result.DashboardSummaryResult;
+import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -21,7 +22,7 @@ public class GetDashboardSummaryUseCase {
     private final ProjectService projectService;
     private final DashboardStatsService dashboardStatsService;
 
-    public DashboardSummaryResult execute(String apiKey, TrendPeriod period) {
+    public DashboardSummaryResult execute(String apiKey, TrendPeriod period, FeatureType featureType) {
         UserContext ctx = UserContext.get();
 
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
@@ -31,16 +32,16 @@ public class GetDashboardSummaryUseCase {
         Long projectId = project.getId();
         LocalDateTime from = DashboardStatsService.periodFrom(period);
         return new DashboardSummaryResult(
-                dashboardStatsService.countRegistrations(projectId, from),
-                dashboardStatsService.countTotalRegistrations(projectId),
-                dashboardStatsService.countVerifyById(projectId, from),
-                dashboardStatsService.countTotalVerifyById(projectId),
-                dashboardStatsService.countVerifyByImage(projectId, from),
-                dashboardStatsService.countTotalVerifyByImage(projectId),
-                dashboardStatsService.countIdentify(projectId, from),
-                dashboardStatsService.countTotalIdentify(projectId),
-                dashboardStatsService.countLiveness(projectId, from),
-                dashboardStatsService.countTotalLiveness(projectId)
+                dashboardStatsService.countRegistrations(projectId, from, featureType),
+                dashboardStatsService.countTotalRegistrations(projectId, featureType),
+                dashboardStatsService.countVerifyById(projectId, from, featureType),
+                dashboardStatsService.countTotalVerifyById(projectId, featureType),
+                dashboardStatsService.countVerifyByImage(projectId, from, featureType),
+                dashboardStatsService.countTotalVerifyByImage(projectId, featureType),
+                dashboardStatsService.countIdentify(projectId, from, featureType),
+                dashboardStatsService.countTotalIdentify(projectId, featureType),
+                dashboardStatsService.countLiveness(projectId, from, featureType),
+                dashboardStatsService.countTotalLiveness(projectId, featureType)
         );
     }
 }

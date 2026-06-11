@@ -122,11 +122,11 @@ public class SwaggerConfig {
     private void addExamplesToResponses(ApiResponses responses, Map<Integer, List<ExampleHolder>> exampleHolders) {
         exampleHolders
                 .forEach((status, v) -> {
-                    MediaType mediaType = new MediaType();
-                    v.forEach(exampleHolder -> mediaType.addExamples(exampleHolder.getName(), exampleHolder.getHolder()));
+                    MediaType featureType = new MediaType();
+                    v.forEach(exampleHolder -> featureType.addExamples(exampleHolder.getName(), exampleHolder.getHolder()));
 
                     Content content = new Content();
-                    content.addMediaType("application/json", mediaType);
+                    content.addMediaType("application/json", featureType);
 
                     ApiResponse apiResponse = new ApiResponse();
                     apiResponse.setContent(content);
