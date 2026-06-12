@@ -9,7 +9,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN cp node_modules/@innovatrics/dot-palm-capture/index.umd.js public/dot-palm-capture.js && \
-    cp node_modules/@innovatrics/dot-auto-capture-ui/palm.umd.js public/dot-palm-capture-ui.js
+    cp node_modules/@innovatrics/dot-auto-capture-ui/palm.umd.js public/dot-palm-capture-ui.js && \
+    cp -r node_modules/@innovatrics/dot-palm-capture/dot-assets ./public/dot-assets
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
