@@ -51,7 +51,7 @@ pipeline {
                         env.DEPLOY_ENV    = '스테이징 서버'
                         env.TARGET_SERVER = '192.168.0.136'
                         env.TARGET_USER   = 'univs'
-                        env.WORKING_DIR   = '/home/univs/platform/stag/config'
+                        env.WORKING_DIR   = '/home/univs/platform/docker/config'
                     } else if (branch == 'master') {
                         env.DEPLOY_ENV    = '운영 서버'
                         env.TARGET_SERVER = '192.168.79.8'
