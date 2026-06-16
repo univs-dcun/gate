@@ -224,7 +224,7 @@ pipeline {
                     script {
                         def remoteScript = """
                             cd ${WORKING_DIR} && \
-                            if [ '${env.BRANCH_NAME}' != 'dev' ]; then cp .env .env.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
+                            if [ '${env.BRANCH_NAME}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
                             sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}/' .env && \
                             echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}" && \
                             docker compose stop ${SERVICE_NAME} || true && \
