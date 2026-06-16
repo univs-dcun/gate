@@ -76,10 +76,8 @@ pipeline {
 
                     // 브랜치별 비교 기준 설정
                     def baseRef
-                    if (env.BRANCH_NAME == 'stage') {
-                        baseRef = 'origin/dev'
-                    } else if (env.BRANCH_NAME == 'master') {
-                        baseRef = 'origin/stage'
+                    if (env.BRANCH_NAME == 'stage' || env.BRANCH_NAME == 'master') {
+                        baseRef = 'HEAD^1'
                     } else {
                         baseRef = 'HEAD~1'
                     }
