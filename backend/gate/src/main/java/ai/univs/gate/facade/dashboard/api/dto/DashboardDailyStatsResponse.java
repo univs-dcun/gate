@@ -10,6 +10,7 @@ import java.util.List;
 public record DashboardDailyStatsResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_DAILY_STATS_LIST)
         List<DashboardDailyStatItemResponse> contents,
+
         @Schema(description = SwaggerDescriptions.PAGE_INFO)
         CustomPage page
 ) {

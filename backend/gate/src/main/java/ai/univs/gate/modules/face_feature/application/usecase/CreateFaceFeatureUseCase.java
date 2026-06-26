@@ -25,7 +25,6 @@ public class CreateFaceFeatureUseCase {
     @Transactional
     public FaceFeatureResult execute(CreateFaceFeatureInput input) {
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
-                CallerType.API,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),

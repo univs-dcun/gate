@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LivenessPalmFeignResponseDTO {
+
     private boolean success;
     private double score;
     private double threshold;

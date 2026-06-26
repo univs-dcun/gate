@@ -23,7 +23,6 @@ public class CreatePalmFeatureUseCase {
 
     public PalmFeatureResult execute(CreatePalmFeatureInput input) {
         CreatePalmFeatureServiceResult result = palmFeatureService.createPalmFeature(
-                CallerType.API,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),

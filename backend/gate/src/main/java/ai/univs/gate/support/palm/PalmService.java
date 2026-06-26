@@ -1,6 +1,6 @@
 package ai.univs.gate.support.palm;
 
-import ai.univs.gate.modules.palm_feature.infrastructure.client.PalmClient;
+import ai.univs.gate.modules.feature.infrastructure.client.palm.PalmClient;
 import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,7 @@ public class PalmService {
     public String registerPalm(RegisterPalmFeignRequestDTO request) {
         return palmClient.register(request)
                 .getData()
-                .getPalmId();
+                .getFeatureId();
     }
 
     public void deletePalm(DeletePalmFeignRequestDTO request) {

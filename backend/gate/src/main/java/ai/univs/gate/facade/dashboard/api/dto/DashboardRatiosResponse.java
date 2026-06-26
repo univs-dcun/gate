@@ -7,12 +7,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record DashboardRatiosResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_REGISTRATION)
         RatioSummary registration,
+
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_VERIFY_BY_ID)
         RatioSummary verifyById,
+
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_VERIFY_BY_IMAGE)
         RatioSummary verifyByImage,
+
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_IDENTIFY)
         RatioSummary identify,
+
         @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_LIVENESS)
         RatioSummary liveness
 ) {
@@ -20,10 +24,13 @@ public record DashboardRatiosResponse(
     public record RatioSummary(
             @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_SUMMARY_PP)
             int primaryPercent,
+
             @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_SUMMARY_SP)
             int secondaryPercent,
+
             @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_SUMMARY_PC)
             long primaryCount,
+
             @Schema(description = SwaggerDescriptions.DASHBOARD_RATIO_SUMMARY_SC)
             long secondaryCount
     ) {}

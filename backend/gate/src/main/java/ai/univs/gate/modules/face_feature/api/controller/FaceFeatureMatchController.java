@@ -34,8 +34,8 @@ public class FaceFeatureMatchController {
     private final FaceVerifyByFeatureIdUseCase faceVerifyByFeatureIdUseCase;
     private final FaceVerifyByFeatureImageUseCase faceVerifyByFeatureImageUseCase;
     private final VerifyByDescriptorUseCase verifyByDescriptorUseCase;
-    private final FaceIdentifyUseCase faceIdentifyUseCase;
-    private final FaceLivenessUseCase faceLivenessUseCase;
+    private final IdentifyFaceUseCase identifyFaceUseCase;
+    private final LivenessFaceUseCase livenessFaceUseCase;
     private final MessageService messageService;
 
     @Operation(summary = "특징점 추출")
@@ -134,7 +134,7 @@ public class FaceFeatureMatchController {
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toIdentifyInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
-        var result = faceIdentifyUseCase.execute(input);
+        var result = identifyFaceUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -155,7 +155,7 @@ public class FaceFeatureMatchController {
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toLivenessInput(ctx.getAccountIdAsLong(), ctx.getTimezone());
-        var result = faceLivenessUseCase.execute(input);
+        var result = livenessFaceUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));

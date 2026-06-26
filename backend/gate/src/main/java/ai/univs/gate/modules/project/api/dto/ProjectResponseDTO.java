@@ -13,22 +13,31 @@ import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 public record ProjectResponseDTO(
         @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
+
         @Schema(description = SwaggerDescriptions.PROJECT_NAME)
         String projectName,
+
         @Schema(description = SwaggerDescriptions.PROJECT_DESCRIPTION)
         String projectDescription,
+
         @Schema(description = SwaggerDescriptions.COLOR_TAG)
         String colorTag,
+
         @Schema(description = SwaggerDescriptions.FACE_COUNT)
         FaceCountDTO face,
+
         @Schema(description = SwaggerDescriptions.PALM_COUNT)
         PalmCountDTO palm,
+
         @Schema(description = SwaggerDescriptions.PROJECT_STATUS)
         ProjectStatus status,
+
         @Schema(description = SwaggerDescriptions.API_KEY)
         String apiKey,
+
         @Schema(description = SwaggerDescriptions.CREATED_AT)
         LocalDateTime createdAt,
+
         @Schema(description = SwaggerDescriptions.UPDATED_AT)
         LocalDateTime updatedAt
 ) {

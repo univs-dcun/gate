@@ -35,7 +35,6 @@ public record VerifyByFaceIdResponseDTO(
         @Schema(description = SwaggerDescriptions.FEATURE_DESCRIPTION)
         String description,
 
-
         @Schema(description = SwaggerDescriptions.SIMILARITY)
         BigDecimal similarity,
 

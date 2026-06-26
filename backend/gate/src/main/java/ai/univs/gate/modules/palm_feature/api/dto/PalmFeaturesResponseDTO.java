@@ -9,6 +9,7 @@ import java.util.List;
 public record PalmFeaturesResponseDTO(
         @Schema(description = SwaggerDescriptions.PALM_FEATURE_LIST)
         List<PalmFeatureResponseDTO> palmFeatures,
+
         @Schema(description = SwaggerDescriptions.PAGE_INFO)
         CustomPage page
 ) {}

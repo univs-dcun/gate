@@ -9,6 +9,7 @@ import java.util.List;
 public record FaceFeaturesResponseDTO(
         @Schema(description = SwaggerDescriptions.FACE_FEATURE_LIST)
         List<FaceFeatureResponseDTO> faceFeatures,
+
         @Schema(description = SwaggerDescriptions.PAGE_INFO)
         CustomPage page
 ) {

@@ -29,10 +29,7 @@ public class CreatePalmFeatureByApiKeyUseCase {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
-        // 데모 활성화 여부 체크
-
         CreatePalmFeatureServiceResult result = palmFeatureService.createPalmFeature(
-                CallerType.DEMO,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),

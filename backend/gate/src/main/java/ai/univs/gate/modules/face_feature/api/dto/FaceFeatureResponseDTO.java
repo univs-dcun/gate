@@ -15,7 +15,6 @@ public record FaceFeatureResponseDTO(
         @Schema(description = SwaggerDescriptions.FACE_FEATURE_DESCRIPTION)
         String description,
 
-
         @Schema(description = SwaggerDescriptions.FEATURE_ID)
         String featureId,
 

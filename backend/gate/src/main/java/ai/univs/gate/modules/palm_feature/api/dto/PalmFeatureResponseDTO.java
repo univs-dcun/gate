@@ -15,7 +15,6 @@ public record PalmFeatureResponseDTO(
         @Schema(description = SwaggerDescriptions.PALM_DESCRIPTION)
         String description,
 
-
         @Schema(description = SwaggerDescriptions.PALM_FEATURE_AI_ID)
         String featureId,
 

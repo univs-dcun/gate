@@ -1,7 +1,7 @@
 package ai.univs.gate.modules.palm_feature.api.controller;
 
-import ai.univs.gate.modules.palm_feature.application.usecase.PalmIdentifyUseCase;
-import ai.univs.gate.modules.palm_feature.application.usecase.PalmLivenessUseCase;
+import ai.univs.gate.modules.palm_feature.application.usecase.IdentifyPalmUseCase;
+import ai.univs.gate.modules.palm_feature.application.usecase.LivenessPalmUseCase;
 import ai.univs.gate.modules.palm_feature.api.dto.PalmIdentifyRequestDTO;
 import ai.univs.gate.modules.palm_feature.api.dto.PalmIdentifyResponseDTO;
 import ai.univs.gate.modules.palm_feature.api.dto.PalmLivenessRequestDTO;
@@ -28,11 +28,11 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "특징점 팜 매칭")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/match/palm")
+@RequestMapping("/api/v1/feature/palm/match")
 public class PalmMatchController {
 
-    private final PalmIdentifyUseCase palmIdentifyUseCase;
-    private final PalmLivenessUseCase palmLivenessUseCase;
+    private final IdentifyPalmUseCase identifyPalmUseCase;
+    private final LivenessPalmUseCase livenessPalmUseCase;
     private final MessageService messageService;
 
     @Operation(summary = "팜 1:N 매칭")
@@ -51,7 +51,7 @@ public class PalmMatchController {
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
-        var result = palmIdentifyUseCase.execute(input);
+        var result = identifyPalmUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = PalmIdentifyResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -72,7 +72,7 @@ public class PalmMatchController {
     ) {
         UserContext ctx = UserContext.get();
         var input = request.toInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
-        var result = palmLivenessUseCase.execute(input);
+        var result = livenessPalmUseCase.execute(input);
         String failureReason = result.success() ? "" : messageService.getFailureMessageOrEmpty(result.message());
         var response = PalmLivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));

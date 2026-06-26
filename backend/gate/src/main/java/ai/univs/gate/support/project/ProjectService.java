@@ -13,11 +13,6 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
 
-    public Project findById(Long projectId) {
-        return projectRepository.findByIdAndIsDeletedFalse(projectId)
-                .orElseThrow(() -> new CustomGateException(ErrorType.PROJECT_NOT_FOUND));
-    }
-
     public Project validateOwnership(Long projectId, Long userId) {
         Project project = projectRepository.findByIdAndIsDeletedFalse(projectId)
                 .orElseThrow(() -> new CustomGateException(ErrorType.PROJECT_NOT_FOUND));

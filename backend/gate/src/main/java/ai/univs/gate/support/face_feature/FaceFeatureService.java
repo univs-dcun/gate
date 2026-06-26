@@ -39,7 +39,6 @@ public class FaceFeatureService {
     private final FaceFeatureRepository faceFeatureRepository;
     private final MatchHistoryRepository matchHistoryRepository;
     private final ApiKeyService apiKeyService;
-    private final ProjectService projectService;
     private final FileService fileService;
     private final FaceService faceService;
     private final ProjectSettingsService projectSettingsService;
@@ -48,12 +47,11 @@ public class FaceFeatureService {
             propagation = Propagation.REQUIRES_NEW,
             noRollbackFor = CustomFeignException.class
     )
-    public CreateFaceFeatureServiceResult createFaceFeature(CallerType callerType,
-                                                        Long accountId,
-                                                        String apiKey,
-                                                        MultipartFile featureImage,
-                                                        String description,
-                                                        String transactionUuid
+    public CreateFaceFeatureServiceResult createFaceFeature(Long accountId,
+                                                            String apiKey,
+                                                            MultipartFile featureImage,
+                                                            String description,
+                                                            String transactionUuid
     ) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();

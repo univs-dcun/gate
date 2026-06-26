@@ -1,6 +1,7 @@
 package ai.univs.gate.modules.palm_feature.infrastructure.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PalmFeignResponseDTO {
+
     private String branchName;
-    private String palmId;
+    @JsonProperty("palmId")
+    private String featureId;
     private String transactionUuid;
 }

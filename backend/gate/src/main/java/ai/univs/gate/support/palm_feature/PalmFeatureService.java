@@ -37,7 +37,6 @@ public class PalmFeatureService {
     private final PalmFeatureRepository palmFeatureRepository;
     private final MatchHistoryRepository matchHistoryRepository;
     private final ApiKeyService apiKeyService;
-    private final ProjectService projectService;
     private final FileService fileService;
     private final PalmService palmService;
     private final ProjectSettingsService projectSettingsService;
@@ -46,12 +45,11 @@ public class PalmFeatureService {
             propagation = Propagation.REQUIRES_NEW,
             noRollbackFor = CustomFeignException.class
     )
-    public CreatePalmFeatureServiceResult createPalmFeature(CallerType callerType,
-                                                        Long accountId,
-                                                        String apiKey,
-                                                        MultipartFile featureImage,
-                                                        String description,
-                                                        String transactionUuid
+    public CreatePalmFeatureServiceResult createPalmFeature(Long accountId,
+                                                            String apiKey,
+                                                            MultipartFile featureImage,
+                                                            String description,
+                                                            String transactionUuid
     ) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();

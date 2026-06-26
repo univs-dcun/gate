@@ -7,10 +7,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record LivenessResponseDTO(
         @Schema(description = SwaggerDescriptions.LIVENESS_SUCCESS)
         boolean success,
+
         @Schema(description = SwaggerDescriptions.LIVENESS_FAILURE_REASON)
         String failureReason,
+
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
         String transactionUuid,
+
         @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
         Boolean consentSnapshot
 ) {

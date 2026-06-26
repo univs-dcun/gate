@@ -9,6 +9,7 @@ import java.util.List;
 public record MatchingHistoriesResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_LIST)
         List<MatchingHistoryResponseDTO> contents,
+
         @Schema(description = SwaggerDescriptions.PAGE_INFO)
         CustomPage page
 ) {
