@@ -82,8 +82,12 @@ pipeline {
 
                     echo "변경된 파일 목록:\n${changedFiles}"
 
-                    // ✅ 이 서비스 경로(backend/service-auth)가 변경됐는지 확인
-                    if (!changedFiles.contains(SERVICE_PATH)) {
+                    // SERVICE_PATH에 해당하는 파일만 정확히 필터링
+                    def relevantChanges = changedFiles.split('\n').findAll { file ->
+                        file.startsWith(SERVICE_PATH + '/')
+                    }
+
+                    if (relevantChanges.isEmpty()) {
                         echo "🔹 ${SERVICE_NAME} 변경 없음. 배포 건너뜀."
                         currentBuild.result = 'SUCCESS'
                         env.SKIP_BUILD = 'true'
