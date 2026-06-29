@@ -60,6 +60,9 @@ cp -f "${CONFIG_DIR}/docker-entrypoint.sh"  "${DEMO_WEB_DIR}/docker-entrypoint.s
 cp -f "${CONFIG_DIR}/docker-compose.yml"    "${DEMO_WEB_DIR}/docker-compose.yml"
 echo "  → Dockerfile, server-https.js, docker-entrypoint.sh, docker-compose.yml 적용 완료"
 
+cp -rf "${SCRIPT_DIR}/Reference/"           "${DEMO_WEB_DIR}/Reference/"
+echo "  → Reference/ (로컬 npm 패키지) 적용 완료"
+
 # ── 3단계: Docker 이미지 빌드 및 push ──────────────────────────
 echo ""
 echo "[3/4] Docker 이미지 빌드 중 (linux/amd64)..."
