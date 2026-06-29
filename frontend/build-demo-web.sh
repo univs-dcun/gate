@@ -14,6 +14,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 DEMO_WEB_DIR="${REPO_ROOT}/frontend/demo-web"
+DEMO_WEB_URL="https://github.com/hjkim-univsai/face-auth-demo.git"
 CONFIG_DIR="${REPO_ROOT}/frontend/demo-web-config"
 SERVICE="demo-web"
 VERSION="${1:-}"
@@ -43,11 +44,14 @@ echo "  버전      : ${VERSION}"
 echo "  레지스트리 : ${REGISTRY}"
 echo "========================================"
 
-# ── 1단계: 서브모듈 최신화 ─────────────────────────────────────
+# ── 1단계: 소스 최신화 ─────────────────────────────────────────
 echo ""
-echo "[1/4] 원본 코드(submodule) 업데이트 중..."
-cd "${REPO_ROOT}"
-git submodule update --remote --merge frontend/demo-web
+echo "[1/4] 원본 코드 업데이트 중..."
+if [ -d "${DEMO_WEB_DIR}/.git" ]; then
+  git -C "${DEMO_WEB_DIR}" pull origin main
+else
+  git clone --branch main --single-branch "${DEMO_WEB_URL}" "${DEMO_WEB_DIR}"
+fi
 COMMIT=$(git -C "${DEMO_WEB_DIR}" rev-parse --short HEAD)
 echo "  → 원본 최신 커밋: ${COMMIT}"
 
