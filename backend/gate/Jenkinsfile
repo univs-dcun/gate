@@ -92,7 +92,7 @@ pipeline {
 
                     // SERVICE_PATH에 해당하는 파일만 정확히 필터링
                     def relevantChanges = changedFiles.split('\n').findAll { file ->
-                        file.contains(SERVICE_PATH)
+                        file.startsWith(SERVICE_PATH + '/')
                     }
 
                     if (relevantChanges.isEmpty()) {
