@@ -32,15 +32,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         return (exchange, chain) -> {
             HttpHeaders headers = exchange.getRequest().getHeaders();
 
-            // JWT
             String authorization = headers.getFirst(HttpHeaders.AUTHORIZATION);
-            if (!StringUtils.hasText(authorization) || !authorization.startsWith(BEARER_PREFIX)) {
-                log.warn("Missing or malformed Authorization header: path={}", exchange.getRequest().getURI());
-                return exchange.getResponse().setComplete();
-            }
-
+            String accessToken = (StringUtils.hasText(authorization) && authorization.startsWith(BEARER_PREFIX))
+                    ? authorization.substring(BEARER_PREFIX.length())
+                    : "";
             String lang = headers.getFirst(HttpHeaders.ACCEPT_LANGUAGE);
-            String accessToken = authorization.substring(BEARER_PREFIX.length());
 
             // JWT validation
             return authClient.validateToken(accessToken, lang)
