@@ -1,9 +1,9 @@
 package ai.univs.gate.support.face_feature;
 
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 
 public record CreateFaceFeatureServiceResult(
-        FaceFeature faceFeature,
+        BiometricFeature biometricFeature,
         boolean livenessChecked
 ) {
 }

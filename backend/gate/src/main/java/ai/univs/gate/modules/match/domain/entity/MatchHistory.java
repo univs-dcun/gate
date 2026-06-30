@@ -1,8 +1,7 @@
 package ai.univs.gate.modules.match.domain.entity;
 
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
@@ -84,30 +83,17 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "feature_seq")
     private Long featureSeq;
 
-    public void updateFaceFeature(FaceFeature faceFeature) {
-        this.featureId = faceFeature.getFeatureId();
-        this.userDescription = faceFeature.getDescription();
-        this.featureImagePath = faceFeature.getFeatureImagePath();
-        this.featureSeq = faceFeature.getId();
+    public void updateBiometricFeature(BiometricFeature biometricFeature) {
+        this.featureId = biometricFeature.getFeatureId();
+        this.userDescription = biometricFeature.getDescription();
+        this.featureImagePath = biometricFeature.getFeatureImagePath();
+        this.featureSeq = biometricFeature.getId();
     }
 
-    public void updatePalmFeature(PalmFeature palmFeature) {
-        this.featureId = palmFeature.getFeatureId();
-        this.userDescription = palmFeature.getDescription();
-        this.featureImagePath = palmFeature.getFeatureImagePath();
-        this.featureSeq = palmFeature.getId();
-    }
-
-    public void success(FaceFeature faceFeature, BigDecimal similarity) {
+    public void success(BiometricFeature biometricFeature, BigDecimal similarity) {
         this.success = true;
         this.similarity = toPercent(similarity);
-        updateFaceFeature(faceFeature);
-    }
-
-    public void success(PalmFeature palmFeature, BigDecimal similarity) {
-        this.success = true;
-        updatePalmFeature(palmFeature);
-        this.similarity = toPercent(similarity);
+        updateBiometricFeature(biometricFeature);
     }
 
     public void successById(BigDecimal similarity) {

@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.face_feature.application.result;
 
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -16,31 +16,31 @@ public record FaceFeatureResult(
         Boolean checkLiveness
 ) {
 
-    public static FaceFeatureResult from(FaceFeature faceFeature, String imagePrefix, boolean consentEnabled) {
+    public static FaceFeatureResult from(BiometricFeature feature, String imagePrefix, boolean consentEnabled) {
         return new FaceFeatureResult(
-                faceFeature.getId(),
-                faceFeature.getProject().getId(),
-                faceFeature.getFeatureId(),
-                faceFeature.getDescription(),
-                consentEnabled && StringUtils.hasText(faceFeature.getFeatureImagePath())
-                        ? imagePrefix + faceFeature.getFeatureImagePath()
+                feature.getId(),
+                feature.getProject().getId(),
+                feature.getFeatureId(),
+                feature.getDescription(),
+                consentEnabled && StringUtils.hasText(feature.getFeatureImagePath())
+                        ? imagePrefix + feature.getFeatureImagePath()
                         : "",
-                faceFeature.getCreatedAt(),
-                faceFeature.getTransactionUuid(),
+                feature.getCreatedAt(),
+                feature.getTransactionUuid(),
                 null);
     }
 
-    public static FaceFeatureResult from(FaceFeature faceFeature, boolean livenessChecked, String imagePrefix, boolean consentEnabled) {
+    public static FaceFeatureResult from(BiometricFeature feature, boolean livenessChecked, String imagePrefix, boolean consentEnabled) {
         return new FaceFeatureResult(
-                faceFeature.getId(),
-                faceFeature.getProject().getId(),
-                faceFeature.getFeatureId(),
-                faceFeature.getDescription(),
-                consentEnabled && StringUtils.hasText(faceFeature.getFeatureImagePath())
-                        ? imagePrefix + faceFeature.getFeatureImagePath()
+                feature.getId(),
+                feature.getProject().getId(),
+                feature.getFeatureId(),
+                feature.getDescription(),
+                consentEnabled && StringUtils.hasText(feature.getFeatureImagePath())
+                        ? imagePrefix + feature.getFeatureImagePath()
                         : "",
-                faceFeature.getCreatedAt(),
-                faceFeature.getTransactionUuid(),
+                feature.getCreatedAt(),
+                feature.getTransactionUuid(),
                 livenessChecked);
     }
 }

@@ -1,7 +1,7 @@
 package ai.univs.gate.modules.project.infrastructure.persistence;
 
 import ai.univs.gate.modules.api_key.domain.entity.QApiKey;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.palm_feature.domain.entity.QPalmFeature;

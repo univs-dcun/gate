@@ -33,6 +33,6 @@ public class CreateFaceFeatureUseCase {
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(
                 apiKeyService.findByApiKey(input.apiKey()).getProject());
-        return FaceFeatureResult.from(result.faceFeature(), result.livenessChecked(), fileService.getFileServerPath(), projectSettings.getConsentEnabled());
+        return FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

@@ -1,8 +1,8 @@
 package ai.univs.gate.modules.palm_feature.application.result;
 
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.match.domain.entity.MatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
-import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -49,7 +49,7 @@ public record PalmIdentifyResult(
                 matchHistory.getConsentSnapshot());
     }
 
-    public static PalmIdentifyResult successResult(MatchHistory matchHistory, PalmFeature palmFeature,
+    public static PalmIdentifyResult successResult(MatchHistory matchHistory, BiometricFeature biometricFeature,
                                                    BigDecimal similarity, String threshold,
                                                    String prefixImagePath, boolean consentEnabled) {
         return new PalmIdentifyResult(
@@ -59,8 +59,8 @@ public record PalmIdentifyResult(
                 matchHistory.getMatchTime(),
                 matchHistory.getCheckLiveness(),
                 true,
-                palmFeature.getId(),
-                palmFeature.getFeatureId(),
+                biometricFeature.getId(),
+                biometricFeature.getFeatureId(),
                 matchHistory.getUserDescription(),
                 similarity,
                 consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())

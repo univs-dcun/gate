@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.project.application.input;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 
 import java.util.List;

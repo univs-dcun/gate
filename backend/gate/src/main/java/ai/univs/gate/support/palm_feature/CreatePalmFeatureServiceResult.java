@@ -1,8 +1,8 @@
 package ai.univs.gate.support.palm_feature;
 
-import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 
 public record CreatePalmFeatureServiceResult(
-        PalmFeature palmFeature,
+        BiometricFeature biometricFeature,
         boolean livenessChecked
 ) {}

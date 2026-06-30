@@ -3,8 +3,9 @@ package ai.univs.gate.modules.face_feature.application.usecase;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.application.input.GetFaceFeatureByFeatureIdInput;
 import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
-import ai.univs.gate.modules.face_feature.domain.repository.FaceFeatureRepository;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomGateException;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetFaceFeatureByFaceIdUseCase {
 
-    private final FaceFeatureRepository faceFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final ProjectSettingsService projectSettingsService;
@@ -29,10 +30,11 @@ public class GetFaceFeatureByFaceIdUseCase {
     public FaceFeatureResult execute(GetFaceFeatureByFeatureIdInput input) {
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
-        FaceFeature faceFeature = faceFeatureRepository.findByFeatureIdAndProjectIdAndIsDeletedFalse(input.featureId(), project.getId())
+        BiometricFeature biometricFeature = biometricFeatureRepository
+                .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(input.featureId(), project.getId(), FeatureType.FACE)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-        return FaceFeatureResult.from(faceFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
+        return FaceFeatureResult.from(biometricFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

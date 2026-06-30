@@ -4,8 +4,10 @@ import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.application.input.FaceFeatureQuery;
 import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
 import ai.univs.gate.modules.face_feature.application.result.GetFaceFeaturesResult;
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
-import ai.univs.gate.modules.face_feature.domain.repository.FaceFeatureRepository;
+import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.auth.UserContext;
@@ -25,7 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetFaceFeaturesUseCase {
 
-    private final FaceFeatureRepository faceFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final ProjectSettingsService projectSettingsService;
@@ -36,8 +38,15 @@ public class GetFaceFeaturesUseCase {
 
         ApiKey apiKey = apiKeyService.findByApiKey(userContext.getApiKey());
         Project project = apiKey.getProject();
-        long totalCount = faceFeatureRepository.countByProjectIdAndIsDeletedFalse(project.getId());
-        Page<FaceFeature> faceFeatures = faceFeatureRepository.findAllByQuery(query, project.getId());
+
+        long totalCount = biometricFeatureRepository.countByProjectIdAndTypeAndIsDeletedFalse(project.getId(), FeatureType.FACE);
+
+        BiometricFeatureQuery biometricQuery = new BiometricFeatureQuery(
+                query.accountId(), query.apiKey(), FeatureType.FACE, query.keyword(),
+                query.page(), query.pageSize(), query.isDeleted(),
+                query.startDate(), query.endDate(), query.direction(), query.sortBy());
+
+        Page<BiometricFeature> faceFeatures = biometricFeatureRepository.findAllByQuery(biometricQuery, project.getId());
 
         if (faceFeatures.isEmpty()) {
             return new GetFaceFeaturesResult(Collections.emptyList(), CustomPageResult.of(Page.empty(), totalCount));

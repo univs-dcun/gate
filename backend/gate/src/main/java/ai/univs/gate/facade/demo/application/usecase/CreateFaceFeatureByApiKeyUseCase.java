@@ -35,6 +35,6 @@ public class CreateFaceFeatureByApiKeyUseCase {
                 input.featureImage(),
                 input.description(),
                 input.transactionUuid());
-        return FaceFeatureResult.from(result.faceFeature(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
+        return FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
     }
 }

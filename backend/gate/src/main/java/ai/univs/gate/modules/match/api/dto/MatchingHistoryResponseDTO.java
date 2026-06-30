@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.match.api.dto;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.match.application.result.MatchHistoryResult;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;

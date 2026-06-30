@@ -4,7 +4,7 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatItemR
 import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatsResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;

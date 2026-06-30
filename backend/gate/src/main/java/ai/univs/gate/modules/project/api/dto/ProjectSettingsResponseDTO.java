@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.project.api.dto;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.application.result.LivenessSettingResult;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;

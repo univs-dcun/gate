@@ -1,26 +1,22 @@
 package ai.univs.gate.support.face_feature;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
-
-import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.face_feature.domain.repository.FaceFeatureRepository;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.face_feature.infrastructure.client.dto.CreateFeignRequestDTO;
 import ai.univs.gate.modules.match.domain.entity.MatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.match.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
+import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
-import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,7 +32,7 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class FaceFeatureService {
 
-    private final FaceFeatureRepository faceFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
     private final MatchHistoryRepository matchHistoryRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
@@ -56,9 +52,7 @@ public class FaceFeatureService {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         Project project = findApiKey.getProject();
 
-
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
-
 
         String imagePath = fileService.uploadIfConsent(featureImage, findProjectSettings.getConsentEnabled());
 
@@ -90,23 +84,24 @@ public class FaceFeatureService {
             throw e;
         }
 
-        FaceFeature faceFeature = FaceFeature.builder()
+        BiometricFeature biometricFeature = BiometricFeature.builder()
                 .project(project)
+                .type(FeatureType.FACE)
                 .featureId(featureId)
                 .featureImagePath(imagePath)
                 .description(description)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
                 .build();
-        faceFeatureRepository.save(faceFeature);
+        biometricFeatureRepository.save(biometricFeature);
 
-        matchHistory.success(faceFeature, BigDecimal.ZERO);
+        matchHistory.success(biometricFeature, BigDecimal.ZERO);
 
-        return new CreateFaceFeatureServiceResult(faceFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
+        return new CreateFaceFeatureServiceResult(biometricFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
     }
 
-    public FaceFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {
-        return faceFeatureRepository.findByFeatureIdAndProjectIdAndIsDeletedFalse(featureId, projectId)
+    public BiometricFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {
+        return biometricFeatureRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(featureId, projectId, FeatureType.FACE)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
     }
 }

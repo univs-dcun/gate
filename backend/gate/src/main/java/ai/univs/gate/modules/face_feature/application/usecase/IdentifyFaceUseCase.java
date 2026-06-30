@@ -1,6 +1,7 @@
 package ai.univs.gate.modules.face_feature.application.usecase;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
@@ -13,7 +14,6 @@ import ai.univs.gate.modules.face_feature.infrastructure.client.dto.IdentifyFeig
 import ai.univs.gate.modules.face_feature.infrastructure.client.dto.MatchFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -57,9 +57,7 @@ public class IdentifyFaceUseCase {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = findApiKey.getProject();
 
-
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
-
 
         boolean consentEnabled = findProjectSettings.getConsentEnabled();
 
@@ -101,16 +99,16 @@ public class IdentifyFaceUseCase {
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        FaceFeature faceFeature;
+        BiometricFeature biometricFeature;
         try {
-            faceFeature = faceFeatureService.getFaceFeatureByFaceIdAndProjectId(data.getFaceId(), project.getId());
+            biometricFeature = faceFeatureService.getFaceFeatureByFaceIdAndProjectId(data.getFaceId(), project.getId());
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
-        matchHistory.success(faceFeature, data.getSimilarity());
+        matchHistory.success(biometricFeature, data.getSimilarity());
 
         return success(input.callerType(), matchHistory, consentEnabled);
     }

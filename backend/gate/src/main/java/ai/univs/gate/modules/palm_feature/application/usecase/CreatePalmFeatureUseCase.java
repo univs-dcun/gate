@@ -32,7 +32,7 @@ public class CreatePalmFeatureUseCase {
         var apiKey = apiKeyService.findByApiKey(input.apiKey());
         ProjectSettings settings = projectSettingsService.findByProject(apiKey.getProject());
 
-        return PalmFeatureResult.from(result.palmFeature(), result.livenessChecked(),
+        return PalmFeatureResult.from(result.biometricFeature(), result.livenessChecked(),
                 fileService.getFileServerPath(), settings.getConsentEnabled());
     }
 }

@@ -1,13 +1,13 @@
 package ai.univs.gate.modules.face_feature.application.usecase;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.face_feature.application.input.UpdateFaceFeatureInput;
 import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
-import ai.univs.gate.modules.face_feature.domain.entity.FaceFeature;
-import ai.univs.gate.modules.face_feature.domain.repository.FaceFeatureRepository;
 import ai.univs.gate.modules.face_feature.infrastructure.client.dto.UpdateFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateFaceFeatureUseCase {
 
-    private final FaceFeatureRepository faceFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
     private final FileService fileService;
     private final FaceService faceService;
     private final ApiKeyService apiKeyService;
@@ -37,12 +37,12 @@ public class UpdateFaceFeatureUseCase {
 
     @Transactional
     public FaceFeatureResult execute(UpdateFaceFeatureInput input) {
-        FaceFeature faceFeature = faceFeatureRepository.findByIdAndIsDeletedFalse(input.faceFeatureId())
+        BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.faceFeatureId(), FeatureType.FACE)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
-        if (!faceFeature.getProject().equals(project)) {
+        if (!biometricFeature.getProject().equals(project)) {
             log.error("Not faceFeature who created based on this apikey. accountId: {}, apiKey: {}, faceFeatureId: {}",
                     input.accountId(), input.apiKey(), input.faceFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
@@ -55,11 +55,11 @@ public class UpdateFaceFeatureUseCase {
             input.validationFileExtension();
 
             String featureImagePath = fileService.uploadIfConsent(input.featureImage(), projectSettings.getConsentEnabled());
-            faceFeature.updateFeatureImagePath(featureImagePath);
+            biometricFeature.updateFeatureImagePath(featureImagePath);
 
             var updateRequest = new UpdateFeignRequestDTO(
                     project.getBranchName(),
-                    faceFeature.getFeatureId(),
+                    biometricFeature.getFeatureId(),
                     input.featureImage(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId()),
@@ -68,8 +68,8 @@ public class UpdateFaceFeatureUseCase {
             faceService.updateFace(updateRequest);
         }
 
-        faceFeature.updateInfo(input.description());
+        biometricFeature.updateInfo(input.description());
 
-        return FaceFeatureResult.from(faceFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
+        return FaceFeatureResult.from(biometricFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

@@ -1,6 +1,8 @@
 package ai.univs.gate.modules.palm_feature.application.usecase;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
@@ -9,7 +11,6 @@ import ai.univs.gate.modules.palm_feature.application.result.PalmIdentifyResult;
 import ai.univs.gate.modules.match.domain.entity.MatchHistory;
 import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.match.domain.repository.MatchHistoryRepository;
-import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.IdentifyPalmFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.IdentifyPalmFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -42,7 +43,7 @@ public class IdentifyPalmUseCase {
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final PalmService palmService;
-    private final ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository palmFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
 
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
@@ -52,14 +53,12 @@ public class IdentifyPalmUseCase {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = findApiKey.getProject();
 
-
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-
 
         boolean consentEnabled = projectSettings.getConsentEnabled();
 
         // 등록된 팜 사용자가 없으면 사전 차단
-        if (palmFeatureRepository.countByProjectIdAndIsDeletedFalse(project.getId()) == 0) {
+        if (biometricFeatureRepository.countByProjectIdAndTypeAndIsDeletedFalse(project.getId(), FeatureType.PALM) == 0) {
             var imagePath = fileService.uploadIfConsent(input.featureImage(), consentEnabled);
             MatchHistory preCheckHistory = MatchHistory.builder()
                     .project(project)
@@ -115,18 +114,18 @@ public class IdentifyPalmUseCase {
             return PalmIdentifyResult.failResult(matchHistory, "PALM_NOT_MATCH", prefixImagePath, consentEnabled);
         }
 
-        PalmFeature palmFeature;
+        BiometricFeature biometricFeature;
         try {
-            palmFeature = palmFeatureService.getPalmFeatureByPalmIdAndProjectId(data.getFeatureId(), project.getId());
+            biometricFeature = palmFeatureService.getPalmFeatureByPalmIdAndProjectId(data.getFeatureId(), project.getId());
         } catch (CustomGateException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), prefixImagePath, consentEnabled);
         }
 
         BigDecimal similarity = parseSimilarity(data.getSimilarity());
-        matchHistory.success(palmFeature, similarity);
+        matchHistory.success(biometricFeature, similarity);
 
-        return PalmIdentifyResult.successResult(matchHistory, palmFeature, matchHistory.getSimilarity(), data.getThreshold(), prefixImagePath, consentEnabled);
+        return PalmIdentifyResult.successResult(matchHistory, biometricFeature, matchHistory.getSimilarity(), data.getThreshold(), prefixImagePath, consentEnabled);
     }
 
     private BigDecimal parseSimilarity(String similarity) {

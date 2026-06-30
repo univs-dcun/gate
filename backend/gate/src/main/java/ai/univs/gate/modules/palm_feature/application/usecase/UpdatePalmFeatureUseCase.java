@@ -1,13 +1,13 @@
 package ai.univs.gate.modules.palm_feature.application.usecase;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.palm_feature.application.input.UpdatePalmFeatureInput;
 import ai.univs.gate.modules.palm_feature.application.result.PalmFeatureResult;
-import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
-import ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdatePalmFeatureUseCase {
 
-    private final PalmFeatureRepository palmFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
     private final FileService fileService;
     private final PalmService palmService;
     private final ApiKeyService apiKeyService;
@@ -38,12 +38,12 @@ public class UpdatePalmFeatureUseCase {
 
     @Transactional
     public PalmFeatureResult execute(UpdatePalmFeatureInput input) {
-        PalmFeature palmFeature = palmFeatureRepository.findByIdAndIsDeletedFalse(input.palmFeatureId())
+        BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.palmFeatureId(), FeatureType.PALM)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
         ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = apiKey.getProject();
-        if (!palmFeature.getProject().equals(project)) {
+        if (!biometricFeature.getProject().equals(project)) {
             log.error("Not palmFeature who created based on this apikey. accountId: {}, apiKey: {}, palmFeatureId: {}",
                     input.accountId(), input.apiKey(), input.palmFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
@@ -56,7 +56,7 @@ public class UpdatePalmFeatureUseCase {
             // palm-service는 update 미지원: 기존 팜 삭제 후 재등록
             palmService.deletePalm(new DeletePalmFeignRequestDTO(
                     project.getBranchName(),
-                    palmFeature.getFeatureId(),
+                    biometricFeature.getFeatureId(),
                     input.transactionUuid(),
                     String.valueOf(input.accountId())));
 
@@ -68,12 +68,12 @@ public class UpdatePalmFeatureUseCase {
                     projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.REGISTER)));
 
             String featureImagePath = fileService.uploadIfConsent(input.featureImage(), projectSettings.getConsentEnabled());
-            palmFeature.updateFeatureImagePath(featureImagePath);
-            palmFeature.updateFeatureId(featureId);
+            biometricFeature.updateFeatureImagePath(featureImagePath);
+            biometricFeature.updateFeatureId(featureId);
         }
 
-        palmFeature.updateInfo(input.description());
+        biometricFeature.updateInfo(input.description());
 
-        return PalmFeatureResult.from(palmFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
+        return PalmFeatureResult.from(biometricFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }
