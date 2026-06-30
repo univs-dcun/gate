@@ -1,10 +1,10 @@
 package ai.univs.gate.modules.feature.api.controller;
 
-import ai.univs.gate.modules.face_feature.api.dto.*;
-import ai.univs.gate.modules.face_feature.application.input.DeleteFaceFeatureInput;
-import ai.univs.gate.modules.face_feature.application.input.GetFaceFeatureByFeatureIdInput;
-import ai.univs.gate.modules.face_feature.application.input.GetFaceFeatureInput;
-import ai.univs.gate.modules.face_feature.application.usecase.*;
+import ai.univs.gate.modules.feature.api.dto.face.*;
+import ai.univs.gate.modules.feature.application.input.face.DeleteFaceFeatureInput;
+import ai.univs.gate.modules.feature.application.input.face.GetFaceFeatureByFeatureIdInput;
+import ai.univs.gate.modules.feature.application.input.face.GetFaceFeatureInput;
+import ai.univs.gate.modules.feature.application.usecase.face.*;
 import ai.univs.gate.modules.feature.api.dto.CreateFeatureRequestDTO;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.swagger.SwaggerError;

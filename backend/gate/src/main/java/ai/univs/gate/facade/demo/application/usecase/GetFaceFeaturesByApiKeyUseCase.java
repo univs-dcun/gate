@@ -2,9 +2,9 @@ package ai.univs.gate.facade.demo.application.usecase;
 
 import ai.univs.gate.facade.demo.application.input.GetUsersByApiKeyInput;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import ai.univs.gate.modules.face_feature.application.input.FaceFeatureQuery;
-import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
-import ai.univs.gate.modules.face_feature.application.result.GetFaceFeaturesResult;
+import ai.univs.gate.modules.feature.application.input.face.FaceFeatureQuery;
+import ai.univs.gate.modules.feature.application.result.face.FaceFeatureResult;
+import ai.univs.gate.modules.feature.application.result.face.GetFaceFeaturesResult;
 import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;

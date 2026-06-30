@@ -2,7 +2,7 @@ package ai.univs.gate.facade.demo.application.usecase;
 
 import ai.univs.gate.facade.demo.application.input.CreatePalmFeatureByApiKeyInput;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import ai.univs.gate.modules.palm_feature.application.result.PalmFeatureResult;
+import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.api_key.ApiKeyService;

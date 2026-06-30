@@ -1,0 +1,51 @@
+package ai.univs.gate.modules.feature.application.usecase.face;
+
+import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.modules.feature.application.input.face.DeleteFaceFeatureInput;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
+import ai.univs.gate.modules.feature.infrastructure.client.face.dto.DeleteFaceFeignRequestDTO;
+import ai.univs.gate.modules.project.domain.entity.Project;
+import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.utils.TransactionUtil;
+import ai.univs.gate.shared.web.enums.ErrorType;
+import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.face.FaceService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class DeleteFaceFeatureUseCase {
+
+    private final BiometricFeatureRepository biometricFeatureRepository;
+    private final ApiKeyService apiKeyService;
+    private final FaceService faceService;
+
+    @Transactional
+    public void execute(DeleteFaceFeatureInput input) {
+        BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.faceFeatureId(), FeatureType.FACE)
+                .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
+
+        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        Project project = apiKey.getProject();
+        if (!biometricFeature.getProject().equals(project)) {
+            log.error("Not faceFeature who created based on this apikey. accountId: {}, apiKey: {}, faceFeatureId: {}",
+                    input.accountId(), input.apiKey(), input.faceFeatureId());
+            throw new CustomGateException(ErrorType.INVALID_USER);
+        }
+
+        var deleteRequest = new DeleteFaceFeignRequestDTO(
+                project.getBranchName(),
+                biometricFeature.getFeatureId(),
+                TransactionUtil.useOrCreate(null),
+                String.valueOf(input.accountId()));
+        faceService.deleteFace(deleteRequest);
+
+        biometricFeature.delete();
+    }
+}

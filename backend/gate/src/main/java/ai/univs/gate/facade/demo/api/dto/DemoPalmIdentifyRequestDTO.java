@@ -1,6 +1,6 @@
 package ai.univs.gate.facade.demo.api.dto;
 
-import ai.univs.gate.modules.palm_feature.application.input.PalmIdentifyInput;
+import ai.univs.gate.modules.feature.application.input.palm.PalmIdentifyInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.utils.ValidImageFile;

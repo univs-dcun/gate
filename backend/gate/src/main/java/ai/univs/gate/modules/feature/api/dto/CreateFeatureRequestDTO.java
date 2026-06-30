@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.feature.api.dto;
 
-import ai.univs.gate.modules.face_feature.application.input.CreateFaceFeatureInput;
+import ai.univs.gate.modules.feature.application.input.face.CreateFaceFeatureInput;
 import ai.univs.gate.modules.feature.application.input.CreateFeatureInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.ValidImageFile;

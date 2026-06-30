@@ -1,9 +1,9 @@
 package ai.univs.gate.modules.feature.api.controller;
 
-import ai.univs.gate.modules.palm_feature.api.dto.*;
-import ai.univs.gate.modules.palm_feature.application.input.DeletePalmFeatureInput;
-import ai.univs.gate.modules.palm_feature.application.input.GetPalmFeatureInput;
-import ai.univs.gate.modules.palm_feature.application.usecase.*;
+import ai.univs.gate.modules.feature.api.dto.palm.*;
+import ai.univs.gate.modules.feature.application.input.palm.DeletePalmFeatureInput;
+import ai.univs.gate.modules.feature.application.input.palm.GetPalmFeatureInput;
+import ai.univs.gate.modules.feature.application.usecase.palm.*;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;

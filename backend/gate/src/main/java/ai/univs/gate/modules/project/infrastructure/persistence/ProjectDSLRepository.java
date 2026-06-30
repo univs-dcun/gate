@@ -1,14 +1,13 @@
 package ai.univs.gate.modules.project.infrastructure.persistence;
 
 import ai.univs.gate.modules.api_key.domain.entity.QApiKey;
+import ai.univs.gate.modules.feature.domain.entity.QBiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
-import ai.univs.gate.modules.match.domain.enums.MatchType;
-import ai.univs.gate.modules.palm_feature.domain.entity.QPalmFeature;
+import ai.univs.gate.modules.feature.domain.entity.QMatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.project.application.input.ProjectQuery;
 import ai.univs.gate.modules.project.application.result.ProjectSummaryResult;
 import ai.univs.gate.modules.project.domain.entity.QProject;
-import ai.univs.gate.modules.face_feature.domain.entity.QFaceFeature;
 import ai.univs.gate.shared.utils.CustomPageable;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.BooleanBuilder;
@@ -32,8 +31,7 @@ public class ProjectDSLRepository {
     private final JPAQueryFactory queryFactory;
 
     private final QProject project = QProject.project;
-    private final QFaceFeature faceFeature = QFaceFeature.faceFeature;
-    private final QPalmFeature palmFeature = QPalmFeature.palmFeature;
+    private final QBiometricFeature bf = QBiometricFeature.biometricFeature;
     private final QMatchHistory matchHistory = QMatchHistory.matchHistory;
     private final QApiKey qApiKey = QApiKey.apiKey1;
 
@@ -46,9 +44,9 @@ public class ProjectDSLRepository {
         var booleanBuilder = createBooleanBuilder(query);
 
         // Face counts
-        var faceRegistrationCount = JPAExpressions.select(faceFeature.count())
-                .from(faceFeature)
-                .where(faceFeature.project.id.eq(project.id).and(faceFeature.isDeleted.isFalse()));
+        var faceRegistrationCount = JPAExpressions.select(bf.count())
+                .from(bf)
+                .where(bf.project.id.eq(project.id).and(bf.type.eq(FeatureType.FACE)).and(bf.isDeleted.isFalse()));
 
         var faceVerifyByIdCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
@@ -75,9 +73,9 @@ public class ProjectDSLRepository {
                         .and(matchHistory.featureType.eq(FeatureType.FACE)));
 
         // Palm counts
-        var palmRegistrationCount = JPAExpressions.select(palmFeature.count())
-                .from(palmFeature)
-                .where(palmFeature.project.id.eq(project.id).and(palmFeature.isDeleted.isFalse()));
+        var palmRegistrationCount = JPAExpressions.select(bf.count())
+                .from(bf)
+                .where(bf.project.id.eq(project.id).and(bf.type.eq(FeatureType.PALM)).and(bf.isDeleted.isFalse()));
 
         var palmIdentifyCount = JPAExpressions.select(matchHistory.count())
                 .from(matchHistory)
