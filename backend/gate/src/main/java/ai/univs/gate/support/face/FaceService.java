@@ -1,7 +1,6 @@
 package ai.univs.gate.support.face;
 
-import ai.univs.gate.modules.feature.infrastructure.client.face.FaceFeatureClient;
-import ai.univs.gate.modules.feature.infrastructure.client.face.FaceMatchClient;
+import ai.univs.gate.modules.feature.infrastructure.client.face.FaceClient;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,50 +9,49 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FaceService {
 
-    private final FaceFeatureClient faceUserClient;
-    private final FaceMatchClient faceMatchClient;
+    private final FaceClient faceClient;
 
     public String createFace(CreateFaceFeignRequestDTO request) {
-        return faceUserClient.createWithoutFaceId(request)
+        return faceClient.createWithoutFaceId(request)
                 .getData()
                 .getFaceId();
     }
 
     public void updateFace(UpdateFaceFeignRequestDTO request) {
-        faceUserClient.update(request);
+        faceClient.update(request);
     }
 
     public void deleteFace(DeleteFaceFeignRequestDTO request) {
-        faceUserClient.delete(request);
+        faceClient.delete(request);
     }
 
     public MatchFaceFeignResponseDTO identify(IdentifyFaceFeignRequestDTO feignRequest) {
-        return faceMatchClient.identify(feignRequest)
+        return faceClient.identify(feignRequest)
                 .getData();
     }
 
     public MatchFaceFeignResponseDTO verifyByFaceId(VerifyFaceByFaceIdFeignRequestDTO feignRequest) {
-        return faceMatchClient.verifyByFaceId(feignRequest)
+        return faceClient.verifyByFaceId(feignRequest)
                 .getData();
     }
 
     public MatchFaceFeignResponseDTO verifyByImage(VerifyFaceByImageFeignRequestDTO feignRequest) {
-        return faceMatchClient.verifyByImage(feignRequest)
+        return faceClient.verifyByImage(feignRequest)
                 .getData();
     }
 
     public LivenessFaceFeignResponseDTO liveness(LivenessFaceFeignRequestDTO feignRequest) {
-        return faceMatchClient.liveness(feignRequest)
+        return faceClient.liveness(feignRequest)
                 .getData();
     }
 
     public ExtractFaceFeignResponseDTO extract(ExtractFaceFeignRequestDTO feignRequest) {
-        return faceMatchClient.extract(feignRequest)
+        return faceClient.extract(feignRequest)
                 .getData();
     }
 
     public VerifyFaceByDescriptorFeignResponseDTO verifyDescriptor(VerifyFaceByDescriptorFeignRequestDTO feignRequest) {
-        return faceMatchClient.verifyDescriptor(feignRequest)
+        return faceClient.verifyDescriptor(feignRequest)
                 .getData();
     }
 }

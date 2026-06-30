@@ -7,14 +7,23 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "face-service",
-        contextId = "faceMatchClient",
         configuration = CommonFeignConfig.class
 )
-public interface FaceMatchClient {
+public interface FaceClient {
+
+    @PostMapping(value = "/api/v2/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    FeignResponseApi<FaceFeignResponseDTO> createWithoutFaceId(@ModelAttribute CreateFaceFeignRequestDTO request);
+
+    @PutMapping(value = "/api/v1/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    FeignResponseApi<FaceFeignResponseDTO> update(@ModelAttribute UpdateFaceFeignRequestDTO request);
+
+    @PostMapping(value = "/api/v1/face/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
+    FeignResponseApi<FaceFeignResponseDTO> delete(DeleteFaceFeignRequestDTO request);
 
     @PostMapping(value = "/api/v1/face/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<MatchFaceFeignResponseDTO> identify(@ModelAttribute IdentifyFaceFeignRequestDTO request);
