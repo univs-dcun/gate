@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.palm_feature.application.result;
 
-import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.LivenessPalmFeignResponseDTO;
+import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.LivenessPalmFeignResponseDTO;
 
 public record PalmLivenessResult(
         boolean success,

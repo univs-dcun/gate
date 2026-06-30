@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.face_feature.api.dto;
 
-import ai.univs.gate.modules.face_feature.application.input.CreateFaceFeatureInput;
+import ai.univs.gate.modules.feature.application.input.CreateFeatureInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.ValidImageFile;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,8 +26,8 @@ public record CreateFaceFeatureRequestDTO(
         String transactionUuid
 ) {
 
-    public CreateFaceFeatureInput toInput(Long accountId, String apiKey) {
-        return new CreateFaceFeatureInput(
+    public CreateFeatureInput toInput(Long accountId, String apiKey) {
+        return new CreateFeatureInput(
                 accountId,
                 apiKey,
                 featureImage,

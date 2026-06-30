@@ -8,8 +8,8 @@ import ai.univs.gate.modules.palm_feature.application.input.UpdatePalmFeatureInp
 import ai.univs.gate.modules.palm_feature.application.result.PalmFeatureResult;
 import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository;
-import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.DeletePalmFeignRequestDTO;
-import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.RegisterPalmFeignRequestDTO;
+import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFeignRequestDTO;
+import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;

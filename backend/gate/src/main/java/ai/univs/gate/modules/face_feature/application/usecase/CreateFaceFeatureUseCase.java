@@ -1,7 +1,7 @@
 package ai.univs.gate.modules.face_feature.application.usecase;
 
-import ai.univs.gate.modules.face_feature.application.input.CreateFaceFeatureInput;
 import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
+import ai.univs.gate.modules.feature.application.input.CreateFeatureInput;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -23,7 +23,7 @@ public class CreateFaceFeatureUseCase {
     private final ProjectSettingsService projectSettingsService;
 
     @Transactional
-    public FaceFeatureResult execute(CreateFaceFeatureInput input) {
+    public FaceFeatureResult execute(CreateFeatureInput input) {
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
                 input.accountId(),
                 input.apiKey(),

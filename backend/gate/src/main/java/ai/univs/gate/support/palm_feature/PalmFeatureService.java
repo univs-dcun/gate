@@ -7,7 +7,7 @@ import ai.univs.gate.modules.match.domain.enums.MatchType;
 import ai.univs.gate.modules.match.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
 import ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository;
-import ai.univs.gate.modules.palm_feature.infrastructure.client.dto.RegisterPalmFeignRequestDTO;
+import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
