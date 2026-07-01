@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.project.infrastructure.persistence;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.ProjectLivenessSetting;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;

@@ -24,6 +24,7 @@ public class MessageService {
     public String getFailureMessageOrEmpty(String failureType) {
         return StringUtils.hasText(failureType)
                 ? getMessage(failureType)
-                : "";
+                : ""
+                ;
     }
 }

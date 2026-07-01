@@ -2,11 +2,12 @@ package ai.univs.gate.facade.demo.application.usecase;
 
 import ai.univs.gate.facade.demo.application.input.GetUsersByApiKeyInput;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import ai.univs.gate.modules.palm_feature.application.input.PalmFeatureQuery;
-import ai.univs.gate.modules.palm_feature.application.result.GetPalmFeaturesResult;
-import ai.univs.gate.modules.palm_feature.application.result.PalmFeatureResult;
-import ai.univs.gate.modules.palm_feature.domain.entity.PalmFeature;
-import ai.univs.gate.modules.palm_feature.domain.repository.PalmFeatureRepository;
+import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
+import ai.univs.gate.modules.feature.application.result.palm.GetPalmFeaturesResult;
+import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
@@ -25,7 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetPalmFeaturesByApiKeyUseCase {
 
-    private final PalmFeatureRepository palmFeatureRepository;
+    private final BiometricFeatureRepository biometricFeatureRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final ProjectSettingsService projectSettingsService;
@@ -37,9 +38,12 @@ public class GetPalmFeaturesByApiKeyUseCase {
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
 
-        PalmFeatureQuery query = new PalmFeatureQuery(
+        long totalCount = biometricFeatureRepository.countByProjectIdAndTypeAndIsDeletedFalse(project.getId(), FeatureType.PALM);
+
+        BiometricFeatureQuery biometricQuery = new BiometricFeatureQuery(
                 null,
                 input.apiKey(),
+                FeatureType.PALM,
                 input.userKeyword(),
                 input.page(),
                 input.pageSize(),
@@ -50,8 +54,7 @@ public class GetPalmFeaturesByApiKeyUseCase {
                 "palmFeatureId"
         );
 
-        long totalCount = palmFeatureRepository.countByProjectIdAndIsDeletedFalse(project.getId());
-        Page<PalmFeature> palmFeatures = palmFeatureRepository.findAllByQuery(query, project.getId());
+        Page<BiometricFeature> palmFeatures = biometricFeatureRepository.findAllByQuery(biometricQuery, project.getId());
 
         if (palmFeatures.isEmpty()) {
             return new GetPalmFeaturesResult(Collections.emptyList(), CustomPageResult.of(Page.empty(), totalCount));

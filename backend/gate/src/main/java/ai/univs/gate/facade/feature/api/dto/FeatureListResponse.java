@@ -9,6 +9,7 @@ import java.util.List;
 public record FeatureListResponse(
         @Schema(description = SwaggerDescriptions.FEATURE_LIST_COMBINED)
         List<FeatureItemResponse> features,
+
         @Schema(description = SwaggerDescriptions.PAGE_INFO)
         CustomPage page
 ) {}

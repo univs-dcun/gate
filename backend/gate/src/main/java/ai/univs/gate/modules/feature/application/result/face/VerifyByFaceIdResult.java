@@ -1,0 +1,71 @@
+package ai.univs.gate.modules.feature.application.result.face;
+
+import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.MatchType;
+import ai.univs.gate.shared.utils.ImagePathUtil;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+public record VerifyByFaceIdResult(
+        Long matchingHistoryId,
+        Long projectId,
+        MatchType matchType,
+        LocalDateTime matchingTime,
+        Boolean checkLiveness,
+        Boolean success,
+        String featureId,
+        String description,
+        BigDecimal similarity,
+        String matchingFeatureId,
+        String featureImagePath,
+        String matchingFeatureImagePath,
+        String failureType,
+        String transactionUuid,
+        Boolean consentSnapshot
+) {
+
+    public static VerifyByFaceIdResult failResult(MatchHistory matchHistory,
+                                                  String prefixImagePath,
+                                                  boolean consentEnabled
+    ) {
+        return new VerifyByFaceIdResult(
+                matchHistory.getId(),
+                matchHistory.getProject().getId(),
+                matchHistory.getMatchType(),
+                matchHistory.getMatchTime(),
+                matchHistory.getCheckLiveness(),
+                matchHistory.getSuccess(),
+                "",
+                "",
+                matchHistory.getSimilarity(),
+                matchHistory.getFeatureId(),
+                "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
+                matchHistory.getFailureType(),
+                matchHistory.getTransactionUuid(),
+                matchHistory.getConsentSnapshot());
+    }
+
+    public static VerifyByFaceIdResult successResult(MatchHistory history,
+                                                     String prefixImagePath,
+                                                     boolean consentEnabled
+    ) {
+        return new VerifyByFaceIdResult(
+                history.getId(),
+                history.getProject().getId(),
+                history.getMatchType(),
+                history.getMatchTime(),
+                history.getCheckLiveness(),
+                history.getSuccess(),
+                history.getFeatureId(),
+                history.getUserDescription(),
+                history.getSimilarity(),
+                history.getFeatureId(),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, history.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, history.getMatchedFeatureImagePath()),
+                "",
+                history.getTransactionUuid(),
+                history.getConsentSnapshot());
+    }
+}

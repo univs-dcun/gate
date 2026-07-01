@@ -1,6 +1,6 @@
 package ai.univs.gate.facade.demo.api.dto;
 
-import ai.univs.gate.modules.face_feature.application.input.IdentifyInput;
+import ai.univs.gate.modules.feature.application.input.face.IdentifyInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.utils.ValidImageFile;

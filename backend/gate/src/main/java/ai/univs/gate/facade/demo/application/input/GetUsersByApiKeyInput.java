@@ -1,6 +1,6 @@
 package ai.univs.gate.facade.demo.application.input;
 
-import ai.univs.gate.modules.face_feature.application.input.FaceFeatureQuery;
+import ai.univs.gate.modules.feature.application.input.face.FaceFeatureQuery;
 
 public record GetUsersByApiKeyInput(
         String apiKey,

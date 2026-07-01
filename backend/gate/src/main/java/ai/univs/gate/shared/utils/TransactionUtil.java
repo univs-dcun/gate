@@ -9,6 +9,7 @@ public class TransactionUtil {
     public static String useOrCreate(String transactionUuid) {
         return StringUtils.hasText(transactionUuid)
                 ? transactionUuid
-                : UUID.randomUUID().toString();
+                : UUID.randomUUID().toString()
+                ;
     }
 }

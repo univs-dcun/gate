@@ -9,18 +9,25 @@ import java.time.LocalDateTime;
 public record ConsentLogResponseDTO(
         @Schema(description = SwaggerDescriptions.CONSENT_LOG_ID)
         Long id,
+
         @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
+
         @Schema(description = SwaggerDescriptions.CONSENT_LOG_ACCOUNT_ID)
         Long endUserIdentifier,
+
         @Schema(description = SwaggerDescriptions.CONSENT_LOG_TYPE)
         String consentType,
+
         @Schema(description = SwaggerDescriptions.CONSENT_LOG_AGREED)
         Boolean agreed,
+
         @Schema(description = SwaggerDescriptions.CONSENT_LOG_IP)
         String ipAddress,
+
         @Schema(description = SwaggerDescriptions.CONSENT_LOG_AGREED_AT)
         LocalDateTime agreedAt,
+
         @Schema(description = SwaggerDescriptions.CREATED_AT)
         LocalDateTime createdAt
 ) {

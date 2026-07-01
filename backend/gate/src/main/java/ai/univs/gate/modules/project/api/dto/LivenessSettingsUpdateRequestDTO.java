@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.project.api.dto;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
