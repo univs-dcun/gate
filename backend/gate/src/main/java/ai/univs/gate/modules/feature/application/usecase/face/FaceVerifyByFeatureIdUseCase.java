@@ -1,19 +1,18 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
-import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
-
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.face.VerifyByFaceIdInput;
 import ai.univs.gate.modules.feature.application.result.face.VerifyByFaceIdResult;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByFaceIdFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -24,7 +23,6 @@ import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.face_feature.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
-import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -43,7 +41,6 @@ public class FaceVerifyByFeatureIdUseCase {
     private final FileService fileService;
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsService projectSettingsService;
-    private final ProjectService projectService;
     private final FaceService faceService;
     private final FaceFeatureService faceFeatureService;
     private final UseCaseNotifyService useCaseNotifyService;

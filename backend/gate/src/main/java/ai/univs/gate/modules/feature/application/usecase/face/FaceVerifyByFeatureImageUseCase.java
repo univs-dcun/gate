@@ -1,18 +1,17 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
-
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.face.VerifyByImageInput;
 import ai.univs.gate.modules.feature.application.result.face.VerifyByImageResult;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByImageFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
+import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
@@ -21,7 +20,6 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
-import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -41,7 +39,6 @@ public class FaceVerifyByFeatureImageUseCase {
     private final FaceService faceService;
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsService projectSettingsService;
-    private final ProjectService projectService;
     private final UseCaseNotifyService useCaseNotifyService;
 
     @Transactional(
