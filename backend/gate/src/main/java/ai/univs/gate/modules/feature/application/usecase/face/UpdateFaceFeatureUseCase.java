@@ -16,7 +16,7 @@ import ai.univs.gate.support.project.ProjectSettingsService;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.face.FaceService;
+import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

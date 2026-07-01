@@ -4,7 +4,7 @@ import ai.univs.gate.modules.feature.application.input.face.ExtractInput;
 import ai.univs.gate.modules.feature.application.result.face.ExtractResult;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.ExtractFaceFeignRequestDTO;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.face.FaceService;
+import ai.univs.gate.support.feature.face.FaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

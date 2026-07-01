@@ -10,5 +10,4 @@ public record VerifyByFaceIdInput(
         String faceId,
         MultipartFile matchingFeatureImage,
         String transactionUuid
-) {
-}
+) {}

@@ -1,4 +1,4 @@
-package ai.univs.gate.support.palm_feature;
+package ai.univs.gate.support.feature.palm;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
@@ -16,7 +16,6 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.palm.PalmService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

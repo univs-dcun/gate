@@ -16,5 +16,4 @@ public record MatchHistoryQuery(
         LocalDateTime endDateTime,
         String direction,
         String sortBy
-) {
-}
+) {}

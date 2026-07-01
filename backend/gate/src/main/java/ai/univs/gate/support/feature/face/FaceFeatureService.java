@@ -1,4 +1,4 @@
-package ai.univs.gate.support.face_feature;
+package ai.univs.gate.support.feature.face;
 
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
@@ -15,7 +15,6 @@ import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;

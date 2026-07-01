@@ -8,5 +8,4 @@ public record CreateFaceFeatureInput(
         MultipartFile featureImage,
         String description,
         String transactionUuid
-) {
-}
+) {}

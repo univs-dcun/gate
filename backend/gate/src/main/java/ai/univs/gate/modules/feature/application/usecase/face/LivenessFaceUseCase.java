@@ -12,7 +12,7 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.face.FaceService;
+import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectSettingsService;

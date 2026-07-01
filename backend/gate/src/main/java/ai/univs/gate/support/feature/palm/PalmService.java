@@ -1,4 +1,4 @@
-package ai.univs.gate.support.palm;
+package ai.univs.gate.support.feature.palm;
 
 import ai.univs.gate.modules.feature.infrastructure.client.palm.PalmClient;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.*;
@@ -14,7 +14,7 @@ public class PalmService {
     public String registerPalm(RegisterPalmFeignRequestDTO request) {
         return palmClient.register(request)
                 .getData()
-                .getFeatureId();
+                .getPalmId();
     }
 
     public void deletePalm(DeletePalmFeignRequestDTO request) {

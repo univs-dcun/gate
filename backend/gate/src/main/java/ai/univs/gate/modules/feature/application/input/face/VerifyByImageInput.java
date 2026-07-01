@@ -10,5 +10,4 @@ public record VerifyByImageInput(
         MultipartFile documentImage,
         MultipartFile matchingFeatureImage,
         String transactionUuid
-) {
-}
+) {}

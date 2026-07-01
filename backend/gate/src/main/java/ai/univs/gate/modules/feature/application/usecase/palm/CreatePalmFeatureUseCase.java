@@ -5,10 +5,9 @@ import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.palm_feature.CreatePalmFeatureServiceResult;
-import ai.univs.gate.support.palm_feature.PalmFeatureService;
+import ai.univs.gate.support.feature.palm.CreatePalmFeatureServiceResult;
+import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.project.ProjectSettingsService;
-import ai.univs.gate.shared.web.enums.CallerType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

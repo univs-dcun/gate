@@ -2,7 +2,7 @@ package ai.univs.gate.modules.feature.application.result.face;
 
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import org.springframework.util.StringUtils;
+import ai.univs.gate.shared.utils.ImagePathUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,7 +25,10 @@ public record VerifyByFaceIdResult(
         Boolean consentSnapshot
 ) {
 
-    public static VerifyByFaceIdResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
+    public static VerifyByFaceIdResult failResult(MatchHistory matchHistory,
+                                                  String prefixImagePath,
+                                                  boolean consentEnabled
+    ) {
         return new VerifyByFaceIdResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -38,15 +41,16 @@ public record VerifyByFaceIdResult(
                 matchHistory.getSimilarity(),
                 matchHistory.getFeatureId(),
                 "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());
     }
 
-    public static VerifyByFaceIdResult successResult(MatchHistory history, String prefixImagePath, boolean consentEnabled) {
+    public static VerifyByFaceIdResult successResult(MatchHistory history,
+                                                     String prefixImagePath,
+                                                     boolean consentEnabled
+    ) {
         return new VerifyByFaceIdResult(
                 history.getId(),
                 history.getProject().getId(),
@@ -58,12 +62,8 @@ public record VerifyByFaceIdResult(
                 history.getUserDescription(),
                 history.getSimilarity(),
                 history.getFeatureId(),
-                consentEnabled && StringUtils.hasText(history.getFeatureImagePath())
-                        ? prefixImagePath + history.getFeatureImagePath()
-                        : "",
-                consentEnabled && StringUtils.hasText(history.getMatchedFeatureImagePath())
-                        ? prefixImagePath + history.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, history.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, history.getMatchedFeatureImagePath()),
                 "",
                 history.getTransactionUuid(),
                 history.getConsentSnapshot());

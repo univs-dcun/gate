@@ -1,4 +1,4 @@
-package ai.univs.gate.support.palm_feature;
+package ai.univs.gate.support.feature.palm;
 
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 

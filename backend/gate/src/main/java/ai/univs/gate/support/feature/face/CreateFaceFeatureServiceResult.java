@@ -1,4 +1,4 @@
-package ai.univs.gate.support.face_feature;
+package ai.univs.gate.support.feature.face;
 
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 

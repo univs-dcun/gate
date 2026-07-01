@@ -3,6 +3,7 @@ package ai.univs.gate.modules.feature.application.result.match;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
+import ai.univs.gate.shared.utils.ImagePathUtil;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -41,12 +42,8 @@ public record MatchHistoryResult(
                 matchHistory.getFeatureSeq(),
                 matchHistory.getUserDescription(),
                 matchHistory.getSimilarity(),
-                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getFeatureImagePath()
-                        : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot(),

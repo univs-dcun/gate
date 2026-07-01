@@ -2,7 +2,7 @@ package ai.univs.gate.modules.feature.application.result.face;
 
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import org.springframework.util.StringUtils;
+import ai.univs.gate.shared.utils.ImagePathUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,12 +33,8 @@ public record VerifyByImageResult(
                 matchHistory.getSuccess(),
                 "",
                 matchHistory.getSimilarity(),
-                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getFeatureImagePath()
-                        : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());
@@ -54,12 +50,8 @@ public record VerifyByImageResult(
                 matchHistory.getSuccess(),
                 matchHistory.getFeatureId(),
                 matchHistory.getSimilarity(),
-                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getFeatureImagePath()
-                        : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 "",
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());

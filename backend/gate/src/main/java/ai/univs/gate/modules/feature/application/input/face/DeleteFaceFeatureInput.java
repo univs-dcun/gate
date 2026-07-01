@@ -4,5 +4,4 @@ public record DeleteFaceFeatureInput(
         Long accountId,
         String apiKey,
         Long faceFeatureId
-) {
-}
+) {}

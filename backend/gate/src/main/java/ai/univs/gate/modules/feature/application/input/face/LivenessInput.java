@@ -9,5 +9,4 @@ public record LivenessInput(
         String apiKey,
         MultipartFile matchingFeatureImage,
         String transactionUuid
-) {
-}
+) {}

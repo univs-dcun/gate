@@ -4,5 +4,4 @@ public record GetFaceFeatureByFeatureIdInput(
         Long accountId,
         String apiKey,
         String featureId
-) {
-}
+) {}

@@ -7,5 +7,4 @@ public record ExtractInput(
         Long accountId,
         MultipartFile featureImage,
         String transactionUuid
-) {
-}
+) {}

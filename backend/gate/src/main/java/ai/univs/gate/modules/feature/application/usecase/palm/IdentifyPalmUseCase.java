@@ -18,8 +18,8 @@ import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.palm.PalmService;
-import ai.univs.gate.support.palm_feature.PalmFeatureService;
+import ai.univs.gate.support.feature.palm.PalmService;
+import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -113,7 +113,7 @@ public class IdentifyPalmUseCase {
 
         BiometricFeature biometricFeature;
         try {
-            biometricFeature = palmFeatureService.getPalmFeatureByPalmIdAndProjectId(data.getFeatureId(), project.getId());
+            biometricFeature = palmFeatureService.getPalmFeatureByPalmIdAndProjectId(data.getPalmId(), project.getId());
         } catch (CustomGateException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), prefixImagePath, consentEnabled);

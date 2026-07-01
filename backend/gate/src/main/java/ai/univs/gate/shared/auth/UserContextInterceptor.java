@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -28,6 +29,10 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
         log.info("#### Header info accountId: {}, apiKey: {}, timezone: {}", accountId, apiKey, timezone);
 
+        if (StringUtils.hasText(accountId)) {
+            MDC.put("accountId", accountId);
+        }
+
         UserContext context = UserContext.builder()
                 .accountId(accountId)
                 .apiKey(apiKey)
@@ -44,6 +49,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
                                 Object handler,
                                 Exception ex
     ) {
+        MDC.remove("accountId");
         UserContext.clear();
     }
 }

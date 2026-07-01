@@ -1,13 +1,13 @@
 package ai.univs.gate.shared.logging;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -20,6 +20,7 @@ import java.util.*;
 @Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class LoggingAspect {
 
     private static final Set<String> SENSITIVE_KEYS = Set.of(
@@ -34,15 +35,38 @@ public class LoggingAspect {
             "faceData"
     );
 
-    @Autowired
-    private HttpServletRequest request;
+    private final HttpServletRequest request;
 
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
     public void restControllerMethods() {
     }
 
-    @Before("restControllerMethods()")
-    public void logRequest(JoinPoint joinPoint) {
+    @Around("restControllerMethods()")
+    public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
+        String clientIp = getClientIpAddress(request);
+        String httpMethod = request.getMethod();
+        String uri = request.getRequestURI();
+        String controller = joinPoint.getSignature().getDeclaringType().getSimpleName();
+        String methodName = joinPoint.getSignature().getName();
+        Map<String, Object> requestData = extractRequestData(joinPoint);
+
+        log.info("[REQUEST] {} {} | {}.{} | ip={} | data={}",
+                httpMethod, uri, controller, methodName, clientIp, requestData);
+
+        long start = System.currentTimeMillis();
+        try {
+            Object result = joinPoint.proceed();
+            log.info("[RESPONSE] {} {} | {}.{} | duration={}ms",
+                    httpMethod, uri, controller, methodName, System.currentTimeMillis() - start);
+            return result;
+        } catch (Throwable ex) {
+            log.error("[EXCEPTION] {} {} | {}.{} | duration={}ms | exception={}",
+                    httpMethod, uri, controller, methodName, System.currentTimeMillis() - start, ex.getMessage());
+            throw ex;
+        }
+    }
+
+    private Map<String, Object> extractRequestData(ProceedingJoinPoint joinPoint) {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         Object[] args = joinPoint.getArgs();
         Annotation[][] paramAnnotations = method.getParameterAnnotations();
@@ -69,13 +93,7 @@ public class LoggingAspect {
             }
         }
 
-        String clientIp = getClientIpAddress(request);
-        String httpMethod = request.getMethod();
-        String uri = request.getRequestURI();
-
-        log.info(">>>>> Client IP: {}, Method: {}, URI: {}", clientIp, httpMethod, uri);
-        log.info("Controller: {}.{}", joinPoint.getSignature().getDeclaringTypeName(), joinPoint.getSignature().getName());
-        log.info("Data: {}", requestData);
+        return requestData;
     }
 
     private Object sanitize(Object arg) {
@@ -127,7 +145,7 @@ public class LoggingAspect {
     private String getClientIpAddress(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader != null && !xfHeader.isBlank()) {
-            return xfHeader.split(",")[0]; // first IP in the chain
+            return xfHeader.split(",")[0];
         }
         return request.getRemoteAddr();
     }

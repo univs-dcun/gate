@@ -1,4 +1,4 @@
-package ai.univs.gate.support.face;
+package ai.univs.gate.support.feature.face;
 
 import ai.univs.gate.modules.feature.infrastructure.client.face.FaceClient;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.*;
@@ -12,7 +12,7 @@ public class FaceService {
     private final FaceClient faceClient;
 
     public String createFace(CreateFaceFeignRequestDTO request) {
-        return faceClient.createWithoutFaceId(request)
+        return faceClient.create(request)
                 .getData()
                 .getFaceId();
     }

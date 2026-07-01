@@ -9,5 +9,4 @@ public record IdentifyInput(
         String apiKey,
         MultipartFile matchingFeatureImage,
         String transactionUuid
-) {
-}
+) {}

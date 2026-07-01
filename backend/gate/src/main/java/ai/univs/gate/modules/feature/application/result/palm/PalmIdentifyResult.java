@@ -3,7 +3,7 @@ package ai.univs.gate.modules.feature.application.result.palm;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import org.springframework.util.StringUtils;
+import ai.univs.gate.shared.utils.ImagePathUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,8 +27,11 @@ public record PalmIdentifyResult(
         Boolean consentSnapshot
 ) {
 
-    public static PalmIdentifyResult failResult(MatchHistory matchHistory, String failureType,
-                                                String prefixImagePath, boolean consentEnabled) {
+    public static PalmIdentifyResult failResult(MatchHistory matchHistory,
+                                                String failureType,
+                                                String prefixImagePath,
+                                                boolean consentEnabled
+    ) {
         return new PalmIdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -41,17 +44,20 @@ public record PalmIdentifyResult(
                 "",
                 matchHistory.getSimilarity(),
                 "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath() : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 null,
                 failureType,
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());
     }
 
-    public static PalmIdentifyResult successResult(MatchHistory matchHistory, BiometricFeature biometricFeature,
-                                                   BigDecimal similarity, String threshold,
-                                                   String prefixImagePath, boolean consentEnabled) {
+    public static PalmIdentifyResult successResult(MatchHistory matchHistory,
+                                                   BiometricFeature biometricFeature,
+                                                   BigDecimal similarity,
+                                                   String threshold,
+                                                   String prefixImagePath,
+                                                   boolean consentEnabled
+    ) {
         return new PalmIdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -63,10 +69,8 @@ public record PalmIdentifyResult(
                 biometricFeature.getFeatureId(),
                 matchHistory.getUserDescription(),
                 similarity,
-                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getFeatureImagePath() : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath() : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 threshold,
                 null,
                 matchHistory.getTransactionUuid(),

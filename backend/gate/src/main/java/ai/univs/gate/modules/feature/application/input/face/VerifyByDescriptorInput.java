@@ -6,5 +6,4 @@ public record VerifyByDescriptorInput(
         String descriptor,
         String targetDescriptor,
         String transactionUuid
-) {
-}
+) {}

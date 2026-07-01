@@ -1,6 +1,5 @@
 package ai.univs.gate.modules.feature.infrastructure.client.palm.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -9,8 +8,7 @@ import lombok.Getter;
 public class DeletePalmFeignRequestDTO {
 
     private String branchName;
-    @JsonProperty("palmId")
-    private String featureId;
+    private String palmId;
     private String transactionUuid;
     private String clientId;
 }

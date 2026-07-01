@@ -2,7 +2,7 @@ package ai.univs.gate.modules.feature.application.result.face;
 
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import org.springframework.util.StringUtils;
+import ai.univs.gate.shared.utils.ImagePathUtil;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,7 +24,10 @@ public record IdentifyResult(
         Boolean consentSnapshot
 ) {
 
-    public static IdentifyResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
+    public static IdentifyResult failResult(MatchHistory matchHistory,
+                                            String prefixImagePath,
+                                            boolean consentEnabled
+    ) {
         return new IdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -36,15 +39,16 @@ public record IdentifyResult(
                 "",
                 matchHistory.getSimilarity(),
                 "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());
     }
 
-    public static IdentifyResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
+    public static IdentifyResult successResult(MatchHistory matchHistory,
+                                               String prefixImagePath,
+                                               boolean consentEnabled
+    ) {
         return new IdentifyResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -55,12 +59,8 @@ public record IdentifyResult(
                 matchHistory.getFeatureId(),
                 matchHistory.getUserDescription(),
                 matchHistory.getSimilarity(),
-                consentEnabled && StringUtils.hasText(matchHistory.getFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getFeatureImagePath()
-                        : "",
-                consentEnabled && StringUtils.hasText(matchHistory.getMatchedFeatureImagePath())
-                        ? prefixImagePath + matchHistory.getMatchedFeatureImagePath()
-                        : "",
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
                 "",
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());

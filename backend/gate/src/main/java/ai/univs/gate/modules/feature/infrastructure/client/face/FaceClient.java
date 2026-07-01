@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface FaceClient {
 
     @PostMapping(value = "/api/v2/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    FeignResponseApi<FaceFeignResponseDTO> createWithoutFaceId(@ModelAttribute CreateFaceFeignRequestDTO request);
+    FeignResponseApi<FaceFeignResponseDTO> create(@ModelAttribute CreateFaceFeignRequestDTO request);
 
     @PutMapping(value = "/api/v1/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<FaceFeignResponseDTO> update(@ModelAttribute UpdateFaceFeignRequestDTO request);
@@ -25,8 +25,8 @@ public interface FaceClient {
     @PostMapping(value = "/api/v1/face/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
     FeignResponseApi<FaceFeignResponseDTO> delete(DeleteFaceFeignRequestDTO request);
 
-    @PostMapping(value = "/api/v1/face/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    FeignResponseApi<MatchFaceFeignResponseDTO> identify(@ModelAttribute IdentifyFaceFeignRequestDTO request);
+    @PostMapping(value = "/api/v2/face/extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    FeignResponseApi<ExtractFaceFeignResponseDTO> extract(@ModelAttribute ExtractFaceFeignRequestDTO request);
 
     @PostMapping(value = "/api/v1/face/verify/id", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<MatchFaceFeignResponseDTO> verifyByFaceId(@ModelAttribute VerifyFaceByFaceIdFeignRequestDTO request);
@@ -34,12 +34,12 @@ public interface FaceClient {
     @PostMapping(value = "/api/v1/face/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<MatchFaceFeignResponseDTO> verifyByImage(@ModelAttribute VerifyFaceByImageFeignRequestDTO request);
 
-    @PostMapping(value = "/api/v2/face/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    FeignResponseApi<LivenessFaceFeignResponseDTO> liveness(@ModelAttribute LivenessFaceFeignRequestDTO request);
-
-    @PostMapping(value = "/api/v2/face/extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    FeignResponseApi<ExtractFaceFeignResponseDTO> extract(@ModelAttribute ExtractFaceFeignRequestDTO request);
-
     @PostMapping(value = "/api/v1/face/verify/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
     FeignResponseApi<VerifyFaceByDescriptorFeignResponseDTO> verifyDescriptor(@RequestBody VerifyFaceByDescriptorFeignRequestDTO request);
+
+    @PostMapping(value = "/api/v1/face/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    FeignResponseApi<MatchFaceFeignResponseDTO> identify(@ModelAttribute IdentifyFaceFeignRequestDTO request);
+
+    @PostMapping(value = "/api/v2/face/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    FeignResponseApi<LivenessFaceFeignResponseDTO> liveness(@ModelAttribute LivenessFaceFeignRequestDTO request);
 }

@@ -11,7 +11,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.palm.PalmService;
+import ai.univs.gate.support.feature.palm.PalmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

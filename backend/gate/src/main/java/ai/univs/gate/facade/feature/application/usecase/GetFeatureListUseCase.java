@@ -31,7 +31,7 @@ public class GetFeatureListUseCase {
         Project project = apiKeyService.findByApiKey(query.apiKey()).getProject();
         Long projectId = project.getId();
         ProjectSettings settings = projectSettingsService.findByProject(project);
-        String imagePrefix = settings.getConsentEnabled() ? fileService.getFileServerPath() : "";
+        String prefixImagePath = settings.getConsentEnabled() ? fileService.getFileServerPath() : "";
 
         int offset = (query.page() - 1) * query.pageSize();
 
@@ -39,16 +39,16 @@ public class GetFeatureListUseCase {
             case FACE -> buildSingleResult(
                     featureDSLRepository.countFace(projectId, query),
                     featureDSLRepository.findFaceRows(projectId, query, offset, query.pageSize()),
-                    query, imagePrefix);
+                    query, prefixImagePath);
             case PALM -> buildSingleResult(
                     featureDSLRepository.countPalm(projectId, query),
                     featureDSLRepository.findPalmRows(projectId, query, offset, query.pageSize()),
-                    query, imagePrefix);
-            case ALL -> buildAllResult(projectId, query, offset, imagePrefix);
+                    query, prefixImagePath);
+            case ALL -> buildAllResult(projectId, query, offset, prefixImagePath);
         };
     }
 
-    private FeatureListResult buildAllResult(Long projectId, FeatureListQuery query, int offset, String imagePrefix) {
+    private FeatureListResult buildAllResult(Long projectId, FeatureListQuery query, int offset, String prefixImagePath) {
         long faceCount = featureDSLRepository.countFace(projectId, query);
         long palmCount = featureDSLRepository.countPalm(projectId, query);
         long total = faceCount + palmCount;
@@ -63,25 +63,25 @@ public class GetFeatureListUseCase {
         int to = Math.min(offset + query.pageSize(), merged.size());
         List<FeatureRow> page = merged.subList(from, to);
 
-        return buildResult(page, total, query, imagePrefix);
+        return buildResult(page, total, query, prefixImagePath);
     }
 
-    private FeatureListResult buildSingleResult(long total, List<FeatureRow> rows, FeatureListQuery query, String imagePrefix) {
-        return buildResult(rows, total, query, imagePrefix);
+    private FeatureListResult buildSingleResult(long total, List<FeatureRow> rows, FeatureListQuery query, String prefixImagePath) {
+        return buildResult(rows, total, query, prefixImagePath);
     }
 
-    private FeatureListResult buildResult(List<FeatureRow> rows, long total, FeatureListQuery query, String imagePrefix) {
+    private FeatureListResult buildResult(List<FeatureRow> rows, long total, FeatureListQuery query, String prefixImagePath) {
         List<FeatureItemResult> items = rows.stream()
-                .map(row -> toItemResult(row, imagePrefix))
+                .map(row -> toItemResult(row, prefixImagePath))
                 .toList();
         int totalPages = query.pageSize() > 0 ? (int) Math.ceil((double) total / query.pageSize()) : 0;
         CustomPageResult page = new CustomPageResult(query.pageSize(), query.page(), total, totalPages, total);
         return new FeatureListResult(items, page);
     }
 
-    private FeatureItemResult toItemResult(FeatureRow row, String imagePrefix) {
-        String imageUrl = StringUtils.hasText(row.imagePath()) && StringUtils.hasText(imagePrefix)
-                ? imagePrefix + row.imagePath()
+    private FeatureItemResult toItemResult(FeatureRow row, String prefixImagePath) {
+        String imageUrl = StringUtils.hasText(row.imagePath()) && StringUtils.hasText(prefixImagePath)
+                ? prefixImagePath + row.imagePath()
                 : "";
         return new FeatureItemResult(
                 row.featureType(),
