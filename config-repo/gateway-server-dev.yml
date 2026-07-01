@@ -153,6 +153,8 @@ logging:
   level:
     org.springframework.web.filter.CommonsRequestLoggingFilter: OFF
     org.springframework.http.server.reactive: INFO
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
 
 # ===============================
 # Docs
