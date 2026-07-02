@@ -6,6 +6,12 @@ spring:
   config:
     import: optional:configserver:http://config-server:8888
 
+# 생체인증 modality 제공 여부 (온프레미스 선택 설치 대응, 기본값: 모두 제공)
+gate:
+  features:
+    face: true
+    palm: true
+
 ---
 
 server:
