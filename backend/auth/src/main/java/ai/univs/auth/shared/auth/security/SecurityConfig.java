@@ -1,6 +1,7 @@
 package ai.univs.auth.shared.auth.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,7 +43,7 @@ public class SecurityConfig {
                         .requestMatchers(matcher.matcher("/api/v1/auth/password/reset/**")).permitAll()
                         .requestMatchers(matcher.matcher("/api/v1/auth/admin/init")).permitAll()
                         // Infra
-                        .requestMatchers(matcher.matcher("/actuator/**")).permitAll()
+                        .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
                         .requestMatchers(matcher.matcher("/swagger-ui/**")).permitAll()
                         .requestMatchers(matcher.matcher("/swagger-ui.html")).permitAll()
                         .requestMatchers(matcher.matcher("/api-docs/**")).permitAll()
