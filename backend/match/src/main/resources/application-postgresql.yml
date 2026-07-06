@@ -13,6 +13,9 @@ spring:
 #   개발 PC
     password: univs0411!
   flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 3
     locations: classpath:db/migration/postgresql
   jpa:
     show-sql: false
