@@ -27,8 +27,9 @@ spring:
   # Database version Management
   # ===============================
   flyway:
-    enabled: false
+    enabled: true
     baseline-on-migrate: true
+    baseline-version: 21
 
   data:
     # ===============================
