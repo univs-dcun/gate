@@ -31,6 +31,14 @@ spring:
       max-file-size: 4GB
       max-request-size: 4GB
 
+  # ===============================
+  # Database version Management
+  # ===============================
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+
 # ===============================
 # Eureka client
 # ===============================
