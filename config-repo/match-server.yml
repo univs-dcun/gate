@@ -50,7 +50,7 @@ management:
       access: unrestricted
   endpoints:
     web:
-      base-path: /matcher/actuator
+      base-path: /match/actuator
       exposure:
         include: refresh, health, info, prometheus
 
