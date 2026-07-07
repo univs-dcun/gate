@@ -68,10 +68,10 @@ spring:
                 - Path=/api/v1/company/**
               filters:
                 - AuthenticationFilter
-            - id: GATE-USER
+            - id: GATE-FEATURE
               uri: lb://gate-service
               predicates:
-                - Path=/api/v1/users/**
+                - Path=/api/v1/feature/**
               filters:
                 - AuthenticationFilter
             - id: GATE-MATCH
@@ -84,16 +84,6 @@ spring:
               uri: lb://gate-service
               predicates:
                 - Path=/api/v1/demo/**
-            - id: GATE-SDK-QR
-              uri: lb://gate-service
-              predicates:
-                - Path=/api/v1/sdk/user/qr, /api/v1/sdk/verify/qr/**, /api/v1/sdk/identify/qr, /api/v1/sdk/liveness/qr
-              filters:
-                - AuthenticationFilter
-            - id: GATE-SDK
-              uri: lb://gate-service
-              predicates:
-                - Path=/api/v1/sdk/**
             - id: GATE-DASHBOARD
               uri: lb://gate-service
               predicates:
