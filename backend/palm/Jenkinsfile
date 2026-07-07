@@ -32,8 +32,7 @@ pipeline {
                     env.BRANCH_NAME = branch
                     echo "Current branch: ${branch}"
 
-                    // TODO: 운영 서버 배포 준비 완료 시 'master' 조건 추가
-                    if (branch != 'dev' && branch != 'stage') {
+                    if (branch != 'dev' && branch != 'stage' && branch != 'master') {
                         echo "🔹 배포 대상 브랜치 아님. 건너뜀."
                         currentBuild.result = 'SUCCESS'
                         env.SKIP_BUILD = 'true'
