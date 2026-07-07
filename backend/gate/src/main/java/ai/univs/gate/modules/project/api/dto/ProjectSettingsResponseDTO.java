@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.project.api.dto;
 
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.application.result.LivenessSettingResult;
 import ai.univs.gate.modules.project.application.result.ProjectSettingsResult;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
@@ -13,14 +13,19 @@ import java.util.List;
 public record ProjectSettingsResponseDTO(
         @Schema(description = SwaggerDescriptions.PROJECT_SETTINGS_ID)
         Long projectSettingsId,
+
         @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
+
         @Schema(description = SwaggerDescriptions.PROJECT_NAME)
         String projectName,
+
         @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
         Boolean consentEnabled,
+
         @Schema(description = SwaggerDescriptions.CONSENT_AGREED_AT)
         LocalDateTime consentAgreedAt,
+
         @Schema(description = SwaggerDescriptions.LIVENESS_SETTINGS)
         List<LivenessSettingResponse> livenessSettings
 ) {

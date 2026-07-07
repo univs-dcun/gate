@@ -4,12 +4,11 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatItemR
 import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatsResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
-import ai.univs.gate.modules.match.domain.entity.QMatchHistory;
-import ai.univs.gate.modules.match.domain.enums.MatchType;
-import ai.univs.gate.modules.face_feature.domain.entity.QFaceFeature;
-import ai.univs.gate.modules.palm_feature.domain.entity.QPalmFeature;
+import ai.univs.gate.modules.feature.domain.entity.QBiometricFeature;
+import ai.univs.gate.modules.feature.domain.entity.QMatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringTemplate;
@@ -30,8 +29,7 @@ public class DashboardStatsService {
     private final JPAQueryFactory queryFactory;
 
     private final QMatchHistory mh = QMatchHistory.matchHistory;
-    private final QFaceFeature faceFeature = QFaceFeature.faceFeature;
-    private final QPalmFeature palmFeature = QPalmFeature.palmFeature;
+    private final QBiometricFeature bf = QBiometricFeature.biometricFeature;
 
     public DashboardStatsService(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
@@ -40,18 +38,10 @@ public class DashboardStatsService {
     // ── 단순 건수 집계 (기간 필터) ─────────────────────────────────────────────────
 
     public long countRegistrations(Long projectId, LocalDateTime from, FeatureType featureType) {
-        if (featureType == FeatureType.PALM) {
-            Long count = queryFactory.select(palmFeature.count()).from(palmFeature)
-                    .where(palmFeature.project.id.eq(projectId), palmFeature.isDeleted.eq(false), palmFeature.createdAt.goe(from))
-                    .fetchOne();
-            return Optional.ofNullable(count).orElse(0L);
-        }
-        else {
-            Long count = queryFactory.select(faceFeature.count()).from(faceFeature)
-                    .where(faceFeature.project.id.eq(projectId), faceFeature.isDeleted.eq(false), faceFeature.createdAt.goe(from))
-                    .fetchOne();
-            return Optional.ofNullable(count).orElse(0L);
-        }
+        Long count = queryFactory.select(bf.count()).from(bf)
+                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false), bf.createdAt.goe(from))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
     }
 
     public long countVerifyById(Long projectId, LocalDateTime from, FeatureType featureType) {
@@ -85,18 +75,10 @@ public class DashboardStatsService {
     // ── 단순 건수 집계 (전체 누적) ─────────────────────────────────────────────────
 
     public long countTotalRegistrations(Long projectId, FeatureType featureType) {
-        if (featureType == FeatureType.PALM) {
-            Long count = queryFactory.select(palmFeature.count()).from(palmFeature)
-                    .where(palmFeature.project.id.eq(projectId), palmFeature.isDeleted.eq(false))
-                    .fetchOne();
-            return Optional.ofNullable(count).orElse(0L);
-        }
-        else {
-            Long count = queryFactory.select(faceFeature.count()).from(faceFeature)
-                    .where(faceFeature.project.id.eq(projectId), faceFeature.isDeleted.eq(false))
-                    .fetchOne();
-            return Optional.ofNullable(count).orElse(0L);
-        }
+        Long count = queryFactory.select(bf.count()).from(bf)
+                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false))
+                .fetchOne();
+        return Optional.ofNullable(count).orElse(0L);
     }
 
     public long countTotalVerifyById(Long projectId, FeatureType featureType) {
@@ -224,23 +206,11 @@ public class DashboardStatsService {
     // ── private 헬퍼: 비율 집계 ─────────────────────────────────────────────────────
 
     private DashboardRatiosResult.RatioItem queryRegistrationRatio(Long projectId, LocalDateTime from, FeatureType featureType) {
-        if (featureType == FeatureType.PALM) {
-            Long active = queryFactory.select(palmFeature.count()).from(palmFeature)
-                    .where(palmFeature.project.id.eq(projectId), palmFeature.isDeleted.eq(false), palmFeature.createdAt.goe(from))
-                    .fetchOne();
-            Long total = queryFactory.select(palmFeature.count()).from(palmFeature)
-                    .where(palmFeature.project.id.eq(projectId), palmFeature.createdAt.goe(from))
-                    .fetchOne();
-            long activeCount = Optional.ofNullable(active).orElse(0L);
-            long totalCount  = Optional.ofNullable(total).orElse(0L);
-            return new DashboardRatiosResult.RatioItem(activeCount, totalCount - activeCount);
-        }
-
-        Long active = queryFactory.select(faceFeature.count()).from(faceFeature)
-                .where(faceFeature.project.id.eq(projectId), faceFeature.isDeleted.eq(false), faceFeature.createdAt.goe(from))
+        Long active = queryFactory.select(bf.count()).from(bf)
+                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false), bf.createdAt.goe(from))
                 .fetchOne();
-        Long total = queryFactory.select(faceFeature.count()).from(faceFeature)
-                .where(faceFeature.project.id.eq(projectId), faceFeature.createdAt.goe(from))
+        Long total = queryFactory.select(bf.count()).from(bf)
+                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.createdAt.goe(from))
                 .fetchOne();
         long activeCount = Optional.ofNullable(active).orElse(0L);
         long totalCount  = Optional.ofNullable(total).orElse(0L);
@@ -274,27 +244,15 @@ public class DashboardStatsService {
     // ── private 헬퍼: 추이용 (기간 필터 + 문자열 날짜 키) ───────────────────────────
 
     private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour, FeatureType featureType) {
-        if (featureType == FeatureType.PALM) {
-            StringTemplate label = byHour
-                    ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        palmFeature.createdAt)
-                    : byMonth
-                        ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    palmFeature.createdAt)
-                        : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", palmFeature.createdAt);
-            return queryFactory.select(label, palmFeature.count()).from(palmFeature)
-                    .where(palmFeature.project.id.eq(projectId), palmFeature.isDeleted.eq(false), palmFeature.createdAt.goe(from))
-                    .groupBy(label).fetch().stream()
-                    .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(palmFeature.count())).orElse(0L)));
-        }
-
         StringTemplate label = byHour
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        faceFeature.createdAt)
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        bf.createdAt)
                 : byMonth
-                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    faceFeature.createdAt)
-                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceFeature.createdAt);
-        return queryFactory.select(label, faceFeature.count()).from(faceFeature)
-                .where(faceFeature.project.id.eq(projectId), faceFeature.isDeleted.eq(false), faceFeature.createdAt.goe(from))
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    bf.createdAt)
+                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", bf.createdAt);
+        return queryFactory.select(label, bf.count()).from(bf)
+                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false), bf.createdAt.goe(from))
                 .groupBy(label).fetch().stream()
-                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(faceFeature.count())).orElse(0L)));
+                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(bf.count())).orElse(0L)));
     }
 
     private Map<String, Long> queryMatchByDate(
@@ -328,19 +286,11 @@ public class DashboardStatsService {
     // ── private 헬퍼: 일일통계용 (전체 기간, LocalDate 키) ──────────────────────────
 
     private Map<LocalDate, Long> queryAllRegistrationByDate(Long projectId, FeatureType featureType) {
-        if (featureType == FeatureType.PALM) {
-            StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", palmFeature.createdAt);
-            return queryFactory.select(dateStr, palmFeature.count()).from(palmFeature)
-                    .where(palmFeature.project.id.eq(projectId), palmFeature.isDeleted.eq(false))
-                    .groupBy(dateStr).fetch().stream()
-                    .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(palmFeature.count())).orElse(0L)));
-        }
-
-        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", faceFeature.createdAt);
-        return queryFactory.select(dateStr, faceFeature.count()).from(faceFeature)
-                .where(faceFeature.project.id.eq(projectId), faceFeature.isDeleted.eq(false))
+        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", bf.createdAt);
+        return queryFactory.select(dateStr, bf.count()).from(bf)
+                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false))
                 .groupBy(dateStr).fetch().stream()
-                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(faceFeature.count())).orElse(0L)));
+                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(bf.count())).orElse(0L)));
     }
 
     private Map<LocalDate, Long> queryAllMatchByDate(Long projectId, FeatureType featureType, MatchType matchType) {

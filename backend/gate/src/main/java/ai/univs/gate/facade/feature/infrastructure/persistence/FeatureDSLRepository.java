@@ -1,8 +1,8 @@
 package ai.univs.gate.facade.feature.infrastructure.persistence;
 
 import ai.univs.gate.facade.feature.application.input.FeatureListQuery;
-import ai.univs.gate.modules.face_feature.domain.entity.QFaceFeature;
-import ai.univs.gate.modules.palm_feature.domain.entity.QPalmFeature;
+import ai.univs.gate.modules.feature.domain.entity.QBiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
@@ -16,8 +16,7 @@ import java.util.List;
 public class FeatureDSLRepository {
 
     private final JPAQueryFactory queryFactory;
-    private final QFaceFeature qf = QFaceFeature.faceFeature;
-    private final QPalmFeature qp = QPalmFeature.palmFeature;
+    private final QBiometricFeature bf = QBiometricFeature.biometricFeature;
 
     public FeatureDSLRepository(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
@@ -27,14 +26,14 @@ public class FeatureDSLRepository {
         return queryFactory
                 .select(Projections.constructor(FeatureRow.class,
                         Expressions.constant("FACE"),
-                        qf.id,
-                        qf.description,
-                        qf.featureImagePath,
-                        qf.featureId,
-                        qf.createdAt))
-                .from(qf)
-                .where(buildFaceWhere(projectId, query))
-                .orderBy(qf.createdAt.desc(), qf.id.desc())
+                        bf.id,
+                        bf.description,
+                        bf.featureImagePath,
+                        bf.featureId,
+                        bf.createdAt))
+                .from(bf)
+                .where(buildWhere(projectId, query, FeatureType.FACE))
+                .orderBy(bf.createdAt.desc(), bf.id.desc())
                 .offset(offset)
                 .limit(limit)
                 .fetch();
@@ -42,9 +41,9 @@ public class FeatureDSLRepository {
 
     public long countFace(Long projectId, FeatureListQuery query) {
         Long result = queryFactory
-                .select(qf.count())
-                .from(qf)
-                .where(buildFaceWhere(projectId, query))
+                .select(bf.count())
+                .from(bf)
+                .where(buildWhere(projectId, query, FeatureType.FACE))
                 .fetchOne();
         return result != null ? result : 0L;
     }
@@ -53,14 +52,14 @@ public class FeatureDSLRepository {
         return queryFactory
                 .select(Projections.constructor(FeatureRow.class,
                         Expressions.constant("PALM"),
-                        qp.id,
-                        qp.description,
-                        qp.featureImagePath,
-                        qp.featureId,
-                        qp.createdAt))
-                .from(qp)
-                .where(buildPalmWhere(projectId, query))
-                .orderBy(qp.createdAt.desc(), qp.id.desc())
+                        bf.id,
+                        bf.description,
+                        bf.featureImagePath,
+                        bf.featureId,
+                        bf.createdAt))
+                .from(bf)
+                .where(buildWhere(projectId, query, FeatureType.PALM))
+                .orderBy(bf.createdAt.desc(), bf.id.desc())
                 .offset(offset)
                 .limit(limit)
                 .fetch();
@@ -68,51 +67,31 @@ public class FeatureDSLRepository {
 
     public long countPalm(Long projectId, FeatureListQuery query) {
         Long result = queryFactory
-                .select(qp.count())
-                .from(qp)
-                .where(buildPalmWhere(projectId, query))
+                .select(bf.count())
+                .from(bf)
+                .where(buildWhere(projectId, query, FeatureType.PALM))
                 .fetchOne();
         return result != null ? result : 0L;
     }
 
-    private BooleanBuilder buildFaceWhere(Long projectId, FeatureListQuery query) {
+    private BooleanBuilder buildWhere(Long projectId, FeatureListQuery query, FeatureType featureType) {
         BooleanBuilder b = new BooleanBuilder();
-        b.and(qf.project.id.eq(projectId));
+        b.and(bf.project.id.eq(projectId));
+        b.and(bf.type.eq(featureType));
         if (query.isDeleted() != null) {
-            b.and(qf.isDeleted.eq(query.isDeleted()));
+            b.and(bf.isDeleted.eq(query.isDeleted()));
         } else {
-            b.and(qf.isDeleted.eq(false));
+            b.and(bf.isDeleted.eq(false));
         }
         if (query.keyword() != null && !query.keyword().isBlank()) {
             BooleanBuilder kw = new BooleanBuilder();
-            kw.or(qf.featureId.containsIgnoreCase(query.keyword()));
-            kw.or(qf.description.containsIgnoreCase(query.keyword()));
+            kw.or(bf.featureId.containsIgnoreCase(query.keyword()));
+            kw.or(bf.description.containsIgnoreCase(query.keyword()));
             b.and(kw);
         }
         if (query.hasDate()) {
-            b.and(qf.createdAt.goe(query.startDateTime()));
-            b.and(qf.createdAt.loe(query.endDateTime()));
-        }
-        return b;
-    }
-
-    private BooleanBuilder buildPalmWhere(Long projectId, FeatureListQuery query) {
-        BooleanBuilder b = new BooleanBuilder();
-        b.and(qp.project.id.eq(projectId));
-        if (query.isDeleted() != null) {
-            b.and(qp.isDeleted.eq(query.isDeleted()));
-        } else {
-            b.and(qp.isDeleted.eq(false));
-        }
-        if (query.keyword() != null && !query.keyword().isBlank()) {
-            BooleanBuilder kw = new BooleanBuilder();
-            kw.or(qp.featureId.containsIgnoreCase(query.keyword()));
-            kw.or(qp.description.containsIgnoreCase(query.keyword()));
-            b.and(kw);
-        }
-        if (query.hasDate()) {
-            b.and(qp.createdAt.goe(query.startDateTime()));
-            b.and(qp.createdAt.loe(query.endDateTime()));
+            b.and(bf.createdAt.goe(query.startDateTime()));
+            b.and(bf.createdAt.loe(query.endDateTime()));
         }
         return b;
     }

@@ -2,7 +2,7 @@ package ai.univs.gate.modules.project.application.usecase;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.api_key.domain.repository.ApiKeyRepository;
-import ai.univs.gate.modules.face_feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.application.input.CreateProjectInput;
 import ai.univs.gate.modules.project.application.result.ProjectResult;
 import ai.univs.gate.modules.project.domain.entity.Project;

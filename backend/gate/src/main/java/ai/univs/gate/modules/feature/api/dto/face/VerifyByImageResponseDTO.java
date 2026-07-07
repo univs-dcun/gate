@@ -1,0 +1,77 @@
+package ai.univs.gate.modules.feature.api.dto.face;
+
+import ai.univs.gate.modules.feature.application.result.face.VerifyByImageResult;
+import ai.univs.gate.modules.feature.domain.enums.MatchType;
+import ai.univs.gate.shared.swagger.SwaggerDescriptions;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
+
+public record VerifyByImageResponseDTO(
+        @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_ID)
+        Long matchingHistoryId,
+
+        @Schema(description = SwaggerDescriptions.PROJECT_ID)
+        Long projectId,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_TYPE)
+        MatchType matchType,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_TIME)
+        LocalDateTime matchingTime,
+
+        @Schema(description = SwaggerDescriptions.CHECK_LIVENESS)
+        Boolean checkLiveness,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_SUCCESS)
+        Boolean success,
+
+        @Schema(description = SwaggerDescriptions.FEATURE_ID)
+        String featureId,
+
+        @Schema(description = SwaggerDescriptions.SIMILARITY)
+        BigDecimal similarity,
+
+        @Schema(description = SwaggerDescriptions.MATCHED_FEATURE_IMAGE_PATH)
+        String matchingFeatureImagePath,
+
+        @Schema(description = SwaggerDescriptions.TARGET_FEATURE_IMAGE_PATH)
+        String targetMatchingFeatureImagePath,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_FAILURE_TYPE)
+        String failureType,
+
+        @Schema(description = SwaggerDescriptions.MATCHING_FAILURE_REASON)
+        String failureReason,
+
+        @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.CONSENT_ENABLED)
+        Boolean consentSnapshot
+) {
+
+    public static VerifyByImageResponseDTO from(VerifyByImageResult result,
+                                                String failureReason,
+                                                String timezone
+    ) {
+        return new VerifyByImageResponseDTO(
+                result.matchingHistoryId(),
+                result.projectId(),
+                result.matchType(),
+                fromUtc(result.matchingTime(), timezone),
+                result.checkLiveness(),
+                result.success(),
+                result.featureId(),
+                result.similarity(),
+                result.matchingFeatureImagePath(),
+                result.targetMatchingFeatureImagePath(),
+                result.failureType(),
+                failureReason,
+                result.transactionUuid(),
+                result.consentSnapshot());
+    }
+}

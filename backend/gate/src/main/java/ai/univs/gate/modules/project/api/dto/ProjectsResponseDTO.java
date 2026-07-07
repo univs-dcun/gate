@@ -9,6 +9,7 @@ import java.util.List;
 public record ProjectsResponseDTO(
         @Schema(description = SwaggerDescriptions.PROJECT_LIST)
         List<ProjectResponseDTO> contents,
+
         @Schema(description = SwaggerDescriptions.PAGE_INFO)
         CustomPage page
 ) {

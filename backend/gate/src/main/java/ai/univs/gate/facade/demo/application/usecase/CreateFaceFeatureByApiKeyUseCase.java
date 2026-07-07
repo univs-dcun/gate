@@ -2,12 +2,11 @@ package ai.univs.gate.facade.demo.application.usecase;
 
 import ai.univs.gate.facade.demo.application.input.CreateFaceFeatureByApiKeyInput;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import ai.univs.gate.modules.face_feature.application.result.FaceFeatureResult;
+import ai.univs.gate.modules.feature.application.result.face.FaceFeatureResult;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
-import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.face_feature.CreateFaceFeatureServiceResult;
-import ai.univs.gate.support.face_feature.FaceFeatureService;
+import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
+import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
@@ -29,15 +28,12 @@ public class CreateFaceFeatureByApiKeyUseCase {
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
-        // 데모 활성화 여부 체크
-
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
-                CallerType.DEMO,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
                 input.transactionUuid());
-        return FaceFeatureResult.from(result.faceFeature(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
+        return FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());
     }
 }

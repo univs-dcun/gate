@@ -92,7 +92,9 @@ pipeline {
 
                     // SERVICE_PATH에 해당하는 파일만 정확히 필터링
                     def relevantChanges = changedFiles.split('\n').findAll { file ->
-                        file.startsWith(SERVICE_PATH + '/')
+                        file.startsWith(SERVICE_PATH + '/') &&
+                        !file.endsWith('Jenkinsfile') &&
+                        !file.endsWith('.md')
                     }
 
                     if (relevantChanges.isEmpty()) {

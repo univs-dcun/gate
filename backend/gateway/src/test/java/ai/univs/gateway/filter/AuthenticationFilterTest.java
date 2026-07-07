@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -136,22 +137,48 @@ class AuthenticationFilterTest {
     }
 
     @Test
-    void Authorization_헤더가_없으면_빈_응답을_반환한다() {
+    void Authorization_헤더가_없으면_auth_서비스에서_반환한_에러를_그대로_전달한다() {
+        org.springframework.web.reactive.function.client.WebClientResponseException authError =
+                org.springframework.web.reactive.function.client.WebClientResponseException.create(
+                        400, "Bad Request",
+                        org.springframework.http.HttpHeaders.EMPTY,
+                        """
+                        {"success":false,"data":null,"errors":[{"code":"REQUIRED_ACCESS_TOKEN"}]}
+                        """.getBytes(),
+                        null
+                );
+        given(authClient.validateToken(eq(""), any()))
+                .willReturn(Mono.error(authError));
+
         webTestClient.get()
                 .uri("/test/hello")
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody().isEmpty();
+                .expectStatus().isBadRequest()
+                .expectBody(String.class)
+                .value(body -> assertThat(body).contains("REQUIRED_ACCESS_TOKEN"));
     }
 
     @Test
-    void Bearer가_아닌_Authorization_헤더이면_빈_응답을_반환한다() {
+    void Bearer가_아닌_Authorization_헤더이면_auth_서비스에서_반환한_에러를_그대로_전달한다() {
+        org.springframework.web.reactive.function.client.WebClientResponseException authError =
+                org.springframework.web.reactive.function.client.WebClientResponseException.create(
+                        400, "Bad Request",
+                        org.springframework.http.HttpHeaders.EMPTY,
+                        """
+                        {"success":false,"data":null,"errors":[{"code":"REQUIRED_ACCESS_TOKEN"}]}
+                        """.getBytes(),
+                        null
+                );
+        given(authClient.validateToken(eq(""), any()))
+                .willReturn(Mono.error(authError));
+
         webTestClient.get()
                 .uri("/test/hello")
                 .header("Authorization", "Basic dXNlcjpwYXNz")
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody().isEmpty();
+                .expectStatus().isBadRequest()
+                .expectBody(String.class)
+                .value(body -> assertThat(body).contains("REQUIRED_ACCESS_TOKEN"));
     }
 
     // -------------------------------------------------------------------------

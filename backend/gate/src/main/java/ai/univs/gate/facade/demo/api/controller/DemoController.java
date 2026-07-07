@@ -8,23 +8,23 @@ import ai.univs.gate.facade.demo.application.usecase.CreatePalmFeatureByApiKeyUs
 import ai.univs.gate.facade.demo.application.usecase.GetDemoProjectConfigUseCase;
 import ai.univs.gate.facade.demo.application.usecase.GetFaceFeaturesByApiKeyUseCase;
 import ai.univs.gate.facade.demo.application.usecase.GetPalmFeaturesByApiKeyUseCase;
-import ai.univs.gate.modules.face_feature.api.dto.IdentifyResponseDTO;
-import ai.univs.gate.modules.face_feature.api.dto.LivenessResponseDTO;
-import ai.univs.gate.modules.face_feature.api.dto.VerifyByFaceIdResponseDTO;
-import ai.univs.gate.modules.face_feature.api.dto.VerifyByImageResponseDTO;
-import ai.univs.gate.modules.face_feature.application.usecase.FaceIdentifyUseCase;
-import ai.univs.gate.modules.face_feature.application.usecase.FaceLivenessUseCase;
-import ai.univs.gate.modules.face_feature.application.usecase.FaceVerifyByFeatureIdUseCase;
-import ai.univs.gate.modules.face_feature.application.usecase.FaceVerifyByFeatureImageUseCase;
-import ai.univs.gate.modules.palm_feature.api.dto.PalmFeatureResponseDTO;
-import ai.univs.gate.modules.palm_feature.api.dto.PalmFeaturesResponseDTO;
-import ai.univs.gate.modules.palm_feature.api.dto.PalmIdentifyResponseDTO;
-import ai.univs.gate.modules.palm_feature.api.dto.PalmLivenessResponseDTO;
-import ai.univs.gate.modules.palm_feature.application.usecase.PalmIdentifyUseCase;
-import ai.univs.gate.modules.palm_feature.application.usecase.PalmLivenessUseCase;
+import ai.univs.gate.modules.feature.api.dto.face.IdentifyResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.face.LivenessResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.face.VerifyByFaceIdResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.face.VerifyByImageResponseDTO;
+import ai.univs.gate.modules.feature.application.usecase.face.IdentifyFaceUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.LivenessFaceUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureIdUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureImageUseCase;
+import ai.univs.gate.modules.feature.api.dto.palm.PalmFeatureResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.palm.PalmFeaturesResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.palm.PalmIdentifyResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.palm.PalmLivenessResponseDTO;
+import ai.univs.gate.modules.feature.application.usecase.palm.IdentifyPalmUseCase;
+import ai.univs.gate.modules.feature.application.usecase.palm.LivenessPalmUseCase;
 import ai.univs.gate.modules.project.api.dto.ProjectSettingsResponseDTO;
-import ai.univs.gate.modules.face_feature.api.dto.FaceFeatureResponseDTO;
-import ai.univs.gate.modules.face_feature.api.dto.FaceFeaturesResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.face.FaceFeatureResponseDTO;
+import ai.univs.gate.modules.feature.api.dto.face.FaceFeaturesResponseDTO;
 import ai.univs.gate.shared.web.dto.CustomPage;
 import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
@@ -58,12 +58,12 @@ public class DemoController {
     private final GetFaceFeaturesByApiKeyUseCase getFaceFeaturesByApiKeyUseCase;
     private final FaceVerifyByFeatureIdUseCase faceVerifyByFeatureIdUseCase;
     private final FaceVerifyByFeatureImageUseCase faceVerifyByFeatureImageUseCase;
-    private final FaceIdentifyUseCase faceIdentifyUseCase;
-    private final FaceLivenessUseCase faceLivenessUseCase;
+    private final IdentifyFaceUseCase identifyFaceUseCase;
+    private final LivenessFaceUseCase livenessFaceUseCase;
     private final CreatePalmFeatureByApiKeyUseCase createPalmFeatureByApiKeyUseCase;
     private final GetPalmFeaturesByApiKeyUseCase getPalmFeaturesByApiKeyUseCase;
-    private final PalmIdentifyUseCase palmIdentifyUseCase;
-    private final PalmLivenessUseCase palmLivenessUseCase;
+    private final IdentifyPalmUseCase identifyPalmUseCase;
+    private final LivenessPalmUseCase livenessPalmUseCase;
     private final GetDemoProjectConfigUseCase getDemoProjectConfigUseCase;
 
     private final MessageService messageService;
@@ -165,7 +165,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toIdentifyInput();
-        var result = faceIdentifyUseCase.execute(input);
+        var result = identifyFaceUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -203,7 +203,7 @@ public class DemoController {
             @ModelAttribute @Valid LivenessByApiKeyRequestDTO request
     ) {
         var input = request.toLivenessInput();
-        var result = faceLivenessUseCase.execute(input);
+        var result = livenessFaceUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -268,7 +268,7 @@ public class DemoController {
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var input = request.toInput();
-        var result = palmIdentifyUseCase.execute(input);
+        var result = identifyPalmUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = PalmIdentifyResponseDTO.from(result, failureReason, timezone);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -285,7 +285,7 @@ public class DemoController {
             @ModelAttribute @Valid DemoPalmLivenessRequestDTO request
     ) {
         var input = request.toInput();
-        var result = palmLivenessUseCase.execute(input);
+        var result = livenessPalmUseCase.execute(input);
         String failureReason = result.success() ? "" : messageService.getFailureMessageOrEmpty(result.message());
         var response = PalmLivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));

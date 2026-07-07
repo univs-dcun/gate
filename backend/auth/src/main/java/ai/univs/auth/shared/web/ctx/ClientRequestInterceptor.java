@@ -28,6 +28,11 @@ public class ClientRequestInterceptor implements HandlerInterceptor {
             ip = request.getRemoteAddr();
         }
 
+        // X-Forwarded-For는 "client, proxy1, proxy2" 형태로 올 수 있으므로 첫 번째 IP만 사용
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+
         return ip;
     }
 }

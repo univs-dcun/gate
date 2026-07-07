@@ -34,7 +34,6 @@ public class SwaggerDescriptions {
     public static final String UPDATED_AT = "수정 일자";
     public static final String PROJECT_KEYWORD = "프로젝트 검색 키워드";
     public static final String COLOR_TAG = "프로젝트 구분용 색상 태그 (예: #1E7BE4, blue 등, 최대 255자)";
-    public static final String PACKAGE_KEY = "패키지 키 (External 타입 프로젝트 전용, 최대 99자)";
     public static final String API_KEY_ID = "API KEY 식별 번호";
     public static final String MASKED_API_KEY = "보호 처리된 API KEY 정보";
     public static final String ISSUED_AT = "발행 일자";
