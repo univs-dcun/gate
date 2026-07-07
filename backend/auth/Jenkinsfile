@@ -76,10 +76,8 @@ pipeline {
 
                     // 브랜치별 비교 기준 설정
                     def baseRef
-                    if (env.BRANCH_NAME == 'stage') {
-                        baseRef = 'origin/dev'
-                    } else if (env.BRANCH_NAME == 'master') {
-                        baseRef = 'origin/staging'
+                    if (env.BRANCH_NAME == 'stage' || env.BRANCH_NAME == 'master') {
+                        baseRef = 'HEAD^1'
                     } else {
                         baseRef = 'HEAD~1'
                     }
@@ -94,7 +92,9 @@ pipeline {
 
                     // SERVICE_PATH에 해당하는 파일만 정확히 필터링
                     def relevantChanges = changedFiles.split('\n').findAll { file ->
-                        file.contains(SERVICE_PATH)
+                        file.startsWith(SERVICE_PATH) &&
+                        !file.endsWith('Jenkinsfile') &&
+                        !file.endsWith('.md')
                     }
 
                     if (relevantChanges.isEmpty()) {
@@ -226,6 +226,7 @@ pipeline {
                     script {
                         def remoteScript = """
                             cd ${WORKING_DIR} && \
+                            if [ '${env.BRANCH_NAME}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
                             sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}/' .env && \
                             echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${IMAGE_TAG}" && \
                             docker compose -p gate stop ${SERVICE_NAME} || true && \
