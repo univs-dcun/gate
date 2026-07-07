@@ -6,8 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ResponseApi<T>(
         @Schema(description = SwaggerDescriptions.RESPONSE_SUCCESS)
         boolean success,
+
         @Schema(description = SwaggerDescriptions.RESPONSE_DATA)
         T data,
+
         @Schema(description = SwaggerDescriptions.ERRORS)
         Errors errors
 ) {

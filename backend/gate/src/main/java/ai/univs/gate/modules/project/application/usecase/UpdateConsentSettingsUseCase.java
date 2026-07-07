@@ -5,6 +5,7 @@ import ai.univs.gate.modules.project.domain.entity.ConsentLog;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.repository.ConsentLogRepository;
+import ai.univs.gate.modules.project.domain.repository.ProjectLivenessSettingRepository;
 import ai.univs.gate.modules.project.domain.repository.ProjectSettingsRepository;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.exception.CustomGateException;
@@ -23,6 +24,7 @@ public class UpdateConsentSettingsUseCase {
     private final ProjectService projectService;
     private final ProjectSettingsRepository projectSettingsRepository;
     private final ConsentLogRepository consentLogRepository;
+    private final ProjectLivenessSettingRepository livenessSettingRepository;
 
     @Transactional
     public ProjectSettingsResult execute(Long projectId, boolean consentEnabled, String ipAddress) {
@@ -45,6 +47,7 @@ public class UpdateConsentSettingsUseCase {
 
         log.info("Consent settings updated: projectId={}, enabled={}", projectId, consentEnabled);
 
-        return ProjectSettingsResult.from(settings, userContext.getTimezone());
+        var livenessSettings = livenessSettingRepository.findAllByProjectSettings(settings);
+        return ProjectSettingsResult.from(settings, livenessSettings, userContext.getTimezone());
     }
 }

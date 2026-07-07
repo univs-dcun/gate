@@ -7,22 +7,31 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record CompanyResponseDTO(
         @Schema(description = SwaggerDescriptions.COMPANY_ID)
         Long companyId,
+
         @Schema(description = SwaggerDescriptions.ACCOUNT_ID)
         Long accountId,
+
         @Schema(description = SwaggerDescriptions.COMPANY_NAME)
         String companyName,
+
         @Schema(description = SwaggerDescriptions.BUSINESS_NUMBER)
         String businessNumber,
+
         @Schema(description = SwaggerDescriptions.MANAGER_MAIL)
         String managerMail,
+
         @Schema(description = SwaggerDescriptions.MANAGER_NAME)
         String managerName,
+
         @Schema(description = SwaggerDescriptions.MANAGER_NUMBER)
         String managerNumber,
+
         @Schema(description = SwaggerDescriptions.MAIN_SERVICE)
         String mainService,
+
         @Schema(description = SwaggerDescriptions.BUSINESS_TYPE)
         String businessType,
+
         @Schema(description = SwaggerDescriptions.EMPLOYEE_COUNT)
         String employeeCount
 ) {

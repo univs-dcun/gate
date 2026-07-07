@@ -1,6 +1,7 @@
 package ai.univs.gate.facade.dashboard.application.usecase;
 
 import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -19,10 +20,10 @@ public class GetDashboardRatiosUseCase {
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
-    public DashboardRatiosResult execute(String apiKey, TrendPeriod period) {
+    public DashboardRatiosResult execute(String apiKey, TrendPeriod period, FeatureType featureType) {
         ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
         long projectId = findApiKey.getProject().getId();
         LocalDateTime from = DashboardStatsService.periodFrom(period);
-        return dashboardStatsService.getRatios(projectId, from);
+        return dashboardStatsService.getRatios(projectId, from, featureType);
     }
 }

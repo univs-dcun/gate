@@ -1,26 +1,34 @@
 package ai.univs.gate.modules.project.api.dto;
 
 import ai.univs.gate.modules.project.application.result.ConsentLogResult;
+import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
 public record ConsentLogResponseDTO(
-        @Schema(description = "동의 이력 식별 번호")
+        @Schema(description = SwaggerDescriptions.CONSENT_LOG_ID)
         Long id,
-        @Schema(description = "프로젝트 식별 번호")
+
+        @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
-        @Schema(description = "변경 계정 식별 번호")
+
+        @Schema(description = SwaggerDescriptions.CONSENT_LOG_ACCOUNT_ID)
         Long endUserIdentifier,
-        @Schema(description = "동의 유형")
+
+        @Schema(description = SwaggerDescriptions.CONSENT_LOG_TYPE)
         String consentType,
-        @Schema(description = "동의 여부")
+
+        @Schema(description = SwaggerDescriptions.CONSENT_LOG_AGREED)
         Boolean agreed,
-        @Schema(description = "요청 IP")
+
+        @Schema(description = SwaggerDescriptions.CONSENT_LOG_IP)
         String ipAddress,
-        @Schema(description = "동의 일자")
+
+        @Schema(description = SwaggerDescriptions.CONSENT_LOG_AGREED_AT)
         LocalDateTime agreedAt,
-        @Schema(description = "생성 일자")
+
+        @Schema(description = SwaggerDescriptions.CREATED_AT)
         LocalDateTime createdAt
 ) {
     public static ConsentLogResponseDTO from(ConsentLogResult result) {

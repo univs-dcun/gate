@@ -7,6 +7,8 @@ import ai.univs.palm.domain.PalmHistory;
 import ai.univs.palm.domain.PalmLiveness;
 import ai.univs.palm.domain.repository.PalmHistoryRepository;
 import ai.univs.palm.infrastructure.feign.PalmFeign;
+import ai.univs.palm.infrastructure.feign.dto.IdentifyFeignRequestDTO;
+import ai.univs.palm.infrastructure.feign.dto.IdentifyFeignResponseDTO;
 import ai.univs.palm.infrastructure.feign.dto.LivenessFeignRequestDTO;
 import ai.univs.palm.infrastructure.feign.dto.LivenessFeignResponseDTO;
 import ai.univs.palm.infrastructure.feign.dto.RegisterFeignRequestDTO;
@@ -22,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,6 +41,7 @@ public class RegisterUseCase {
     private static final String PALM_DETECTOR_RESOURCE_ID = "cpu";
     private static final String SPOOF_DETECTOR_RESOURCE_ID = "liveness_any_remote";
     private static final int LIVENESS_THRESHOLD = 85;
+    private static final double DUPLICATE_PALM_THRESHOLD = 80.0;
 
     @Transactional(noRollbackFor = InvalidPalmModuleException.class)
     public RegisterResult execute(RegisterInput input) {
@@ -51,6 +55,9 @@ public class RegisterUseCase {
         palmHistoryRepository.save(palmHistory);
 
         try {
+            // 동일 팜 중복 등록 방지: 유사도 >= 80이면 이미 등록된 사용자로 간주
+            checkDuplicatePalm(input, palmHistory);
+
             // checkLiveness=true일 경우: 선 라이브니스 통과 시에만 등록 진행
             if (input.checkLiveness()) {
                 performLivenessCheck(input, palmHistory);
@@ -81,6 +88,43 @@ public class RegisterUseCase {
             log.warn("Palm module register failed: [{}] {}", e.getType(), e.getMessage());
             palmHistory.fail(e.getMessage(), input.clientId());
             throw new InvalidPalmModuleException(e.getCode(), e.getType(), e.getMessage());
+        }
+    }
+
+    /**
+     * 동일 팜 중복 등록 사전 체크
+     * - 유사도 >= DUPLICATE_PALM_THRESHOLD: InvalidPalmModuleException 발생 (등록 중단)
+     * - 유사도 < DUPLICATE_PALM_THRESHOLD 또는 매칭 없음: 정상 반환 (등록 계속 진행)
+     * - SmartFace 에러 (watchlist 없음 등): 무시하고 등록 계속 진행
+     */
+    private void checkDuplicatePalm(RegisterInput input, PalmHistory palmHistory) {
+        String base64Image = Base64.getEncoder().encodeToString(getImageBytes(input.palmImage()));
+
+        IdentifyFeignRequestDTO identifyRequest = new IdentifyFeignRequestDTO(
+                new IdentifyFeignRequestDTO.ImageDTO(base64Image),
+                List.of(input.branchName())
+        );
+
+        try {
+            List<IdentifyFeignResponseDTO> results = palmFeign.identify(identifyRequest);
+
+            double bestScore = results.stream()
+                    .filter(r -> r.getMatchResults() != null && !r.getMatchResults().isEmpty())
+                    .flatMap(r -> r.getMatchResults().stream())
+                    .max(Comparator.comparingDouble(IdentifyFeignResponseDTO.MatchResultDTO::getScore))
+                    .map(IdentifyFeignResponseDTO.MatchResultDTO::getScore)
+                    .orElse(0.0);
+
+            if (bestScore >= DUPLICATE_PALM_THRESHOLD) {
+                palmHistory.fail("Already registered palm user", input.clientId());
+                throw new InvalidPalmModuleException(
+                        "PALM-201",
+                        "ALREADY_REGISTERED_PALM",
+                        "Already registered palm user.");
+            }
+        } catch (CustomFeignException e) {
+            // watchlist 미존재 등 → 등록된 사용자 없음, 등록 진행
+            log.debug("Palm identify skipped during duplicate check: [{}] {}", e.getType(), e.getMessage());
         }
     }
 

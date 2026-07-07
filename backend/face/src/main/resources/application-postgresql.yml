@@ -15,4 +15,7 @@ spring:
         use_sql_comments: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
     locations: classpath:db/migration/postgresql

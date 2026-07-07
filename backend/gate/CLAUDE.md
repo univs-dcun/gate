@@ -66,16 +66,7 @@ modules/<module>/
 - **project** — CRUD for projects with settings (liveness, consent), each project gets auto-generated API keys
 - **api_key** — API key retrieval and regeneration
 - **company** — Company profile management
-- **user** — Full CRUD for users (`/api/v1/users`): create/update/delete/get by userId or faceId, paginated list. Uses `FaceUserClient` (Feign) to sync with external face AI service.
 - **match** — e-KYC face matching (`/api/v1/match`): identify (1:N), verify by faceId (1:1), verify by image (1:1), liveness check, match history CRUD. Uses `FaceMatchClient` (Feign). Note: controller class is named `matchController` (lowercase).
-
-### BillingService Integration
-
-Billing logic is handled by a separate **BillingService** microservice (`payment-service` in Eureka). GateService calls it via `PaymentClient` (Feign).
-
-- Local profile: `spring.cloud.openfeign.client.config.payment-service.url=http://localhost:8081`
-- Read-only billing entities in `shared/billing/` (`SubscriptionReadModel`, `CreditBalanceReadModel`, `FeatureLimitReadModel`, `PlanType`) are kept in GateService **only** for `ProjectDSLRepository` JOIN queries (same MariaDB instance). These contain no business logic.
-- All billing mutations and validations go through `PaymentClient` Feign calls.
 
 ### Shared Layer (`shared/`)
 
@@ -98,21 +89,9 @@ Cross-cutting services used by multiple modules:
 - **mail** — `MailService` (Google OAuth2 SMTP via Thymeleaf templates)
 - **message** — `MessageService` (i18n)
 - **project** — `ProjectService`, `ProjectSettingsService`
-- **user** — `UserService`
 - **match** — `MatchService`
 - **face** — `FaceService`
-- **qr** — `QrCodeService`
 - **feign** — `CommonFeignConfig`, `CommonErrorDecoder`, `ClientResponseApi` (shared Feign infrastructure)
-- **billing/client** — `PaymentClient` (Feign interface to BillingService). All billing operations (validate/deduct usage, project init/deletion, free-plan limit check) are delegated to BillingService via this client. DTOs: `BillingOperationFeignRequestDTO` `{projectId, accountId}`, `BillingDeductFeignRequestDTO` `{projectId, accountId}`, `ProjectInitFeignRequestDTO` `{accountId}`, `BillingSummaryFeignResponseDTO`.
-
-### Facade Layer (`facade/`)
-
-BFF/demo layer for cross-domain orchestration. Currently contains `facade/demo/`:
-
-- QR code generation for demo flows (create user, verify, identify, liveness)
-- Token-based operations: QR codes embed a short-lived UUID code (not JWT); client exchanges `code` → JWT via `DemoQrCodeService.exchangeCode()`
-- Entity: `DemoQrCode` (code, jwt, type, expiresAt, isUsed)
-- Endpoints: `/api/v1/demo/**` (all permitAll in SecurityConfig)
 
 ## Conventions
 

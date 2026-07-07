@@ -7,19 +7,24 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record DashboardSummaryResponse(
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_REGISTRATION)
         UsageSummary registration,
-        @Schema(description = "1:1 촬영 인증 건수 (/verify/id)")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_VERIFY_BY_ID)
         UsageSummary verifyById,
-        @Schema(description = "1:1 사진 인증 건수 (/verify/image)")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_VERIFY_BY_IMAGE)
         UsageSummary verifyByImage,
+
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_IDENTIFY)
         UsageSummary identify,
+
         @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_LIVENESS)
         UsageSummary liveness
 ) {
 
     public record UsageSummary(
-            @Schema(description = "선택한 기간 내 사용 건수")
+            @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_PERIOD_COUNT)
             long periodCount,
+
             @Schema(description = SwaggerDescriptions.DASHBOARD_USAGE_TOTAL_COUNT)
             long totalCount
     ) {}

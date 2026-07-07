@@ -7,19 +7,25 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 public record DashboardTrendResponse(
-        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_PERIOD, defaultValue = "WEEK")
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_PERIOD)
         String period, // "WEEK" | "MONTH" | "YEAR"
-        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_LABELS, defaultValue = "WEEK")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_LABELS)
         List<String> labels, // WEEK/MONTH: "yyyy-MM-dd"  YEAR: "yyyy-MM"
-        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_REGISTRATION, defaultValue = "WEEK")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_REGISTRATION)
         List<Long> registration,
-        @Schema(description = "1:1 촬영 인증 추이 (/verify/id + 레거시)")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_VERIFY_BY_ID)
         List<Long> verifyById,
-        @Schema(description = "1:1 사진 인증 추이 (/verify/image)")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_VERIFY_BY_IMAGE)
         List<Long> verifyByImage,
-        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_IDENTIFY, defaultValue = "WEEK")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_IDENTIFY)
         List<Long> identify,
-        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_LIVENESS, defaultValue = "WEEK")
+
+        @Schema(description = SwaggerDescriptions.DASHBOARD_TREND_LIVENESS)
         List<Long> liveness
 ) {
 

@@ -11,14 +11,19 @@ import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 public record ApiKeyResponseDTO(
         @Schema(description = SwaggerDescriptions.API_KEY_ID)
         Long apiKeyId,
+
         @Schema(description = SwaggerDescriptions.API_KEY)
         String apiKey,
+
         @Schema(description = SwaggerDescriptions.MASKED_API_KEY)
         String maskedApiKey,
+
         @Schema(description = SwaggerDescriptions.ISSUED_AT)
         LocalDateTime issuedAt,
+
         @Schema(description = SwaggerDescriptions.EXPIRES_AT)
         LocalDateTime expiresAt,
+
         @Schema(description = SwaggerDescriptions.IS_ACTIVE)
         Boolean isActive
 ) {

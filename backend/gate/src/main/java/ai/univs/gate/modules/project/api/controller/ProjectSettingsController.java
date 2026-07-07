@@ -30,8 +30,6 @@ public class ProjectSettingsController {
     private final UpdateConsentSettingsUseCase updateConsentSettingsUseCase;
     private final GetConsentLogsUseCase getConsentLogsUseCase;
     private final UpdateLivenessSettingsUseCase updateLivenessSettingsUseCase;
-    private final UpdateDemoSettingsUseCase updateDemoSettingsUseCase;
-    private final UpdateSdkSettingsUseCase updateSdkSettingsUseCase;
 
     @Operation(summary = "프로젝트 설정 조회", description = "프로젝트의 모든 설정을 조회합니다")
     @SecurityRequirements({
@@ -111,56 +109,12 @@ public class ProjectSettingsController {
             @PathVariable Long projectId,
             @Valid @RequestBody LivenessSettingsUpdateRequestDTO request
     ) {
-        var input = new UpdateLivenessSettingsInput(
-                projectId,
-                request.livenessRegisterEnabled(),
-                request.livenessIdentifyingEnabled(),
-                request.livenessVerifyingByIdEnabled(),
-                request.livenessVerifyingByImageEnabled());
+        var operationSettings = request.settings().stream()
+                .map(s -> new UpdateLivenessSettingsInput.OperationSetting(s.operation(), s.enabled()))
+                .toList();
+        var input = new UpdateLivenessSettingsInput(projectId, request.moduleType(), operationSettings);
 
         var result = updateLivenessSettingsUseCase.execute(input);
-        var response = ProjectSettingsResponseDTO.from(result);
-        return ResponseEntity.ok(ResponseApi.ok(response));
-    }
-
-    @Operation(summary = "데모 사용 여부 설정", description = "데모 사용 여부를 설정합니다")
-    @SecurityRequirements({
-            @SecurityRequirement(name = "Authentication"),
-    })
-    @SwaggerErrorExample({
-            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
-            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
-    })
-    @PutMapping("/demo")
-    public ResponseEntity<ResponseApi<ProjectSettingsResponseDTO>> updateDemoSettings(
-            @Parameter(description = SwaggerDescriptions.PROJECT_ID)
-            @PathVariable Long projectId,
-            @Valid @RequestBody DemoSettingsUpdateRequestDTO request
-    ) {
-        var result = updateDemoSettingsUseCase.execute(projectId, request.demoEnabled());
-        var response = ProjectSettingsResponseDTO.from(result);
-        return ResponseEntity.ok(ResponseApi.ok(response));
-    }
-
-    @Operation(summary = "SDK 사용 여부 설정", description = "SDK 사용 여부를 설정합니다")
-    @SecurityRequirements({
-            @SecurityRequirement(name = "Authentication"),
-    })
-    @SwaggerErrorExample({
-            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
-            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
-    })
-    @PutMapping("/sdk")
-    public ResponseEntity<ResponseApi<ProjectSettingsResponseDTO>> updateDemoSettings(
-            @Parameter(description = SwaggerDescriptions.PROJECT_ID)
-            @PathVariable Long projectId,
-            @Valid @RequestBody SdkSettingsUpdateRequestDTO request
-    ) {
-        var result = updateSdkSettingsUseCase.execute(projectId, request.sdkEnabled());
         var response = ProjectSettingsResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
