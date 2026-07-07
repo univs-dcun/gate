@@ -33,7 +33,7 @@ pipeline {
                     echo "Current branch: ${branch}"
 
                     // TODO: 운영 서버 배포 준비 완료 시 'master' 조건 추가
-                    if (branch != 'dev' && branch != 'staging') {
+                    if (branch != 'dev' && branch != 'stage') {
                         echo "🔹 배포 대상 브랜치 아님. 건너뜀."
                         currentBuild.result = 'SUCCESS'
                         env.SKIP_BUILD = 'true'
@@ -48,7 +48,7 @@ pipeline {
                         env.TARGET_SERVER = '192.168.0.135'
                         env.TARGET_USER   = 'univs'
                         env.WORKING_DIR   = '/home/univs/platform/docker/config'
-                    } else if (branch == 'staging') {
+                    } else if (branch == 'stage') {
                         env.DEPLOY_ENV    = '스테이징 서버'
                         env.TARGET_SERVER = '192.168.0.136'
                         env.TARGET_USER   = 'univs'
