@@ -121,12 +121,12 @@ pipeline {
                 script {
                     // ✅ 기존 로직 동일 유지
                     COMMIT_HASH = sh(
-                        script: "git log --no-merges -1 --pretty=format:'%h' -- ${SERVICE_PATH}",
+                        script: "git log --no-merges -1 --pretty=format:'%h' -- ${SERVICE_PATH} ':!${SERVICE_PATH}/Jenkinsfile' ':!${SERVICE_PATH}/*.md'",
                         returnStdout: true
                     ).trim()
 
                     COMMIT_DATE = sh(
-                        script: "git log --no-merges -1 --pretty=format:'%cd' --date=format:'%Y%m%d' -- ${SERVICE_PATH}",
+                        script: "git log --no-merges -1 --pretty=format:'%cd' --date=format:'%Y%m%d' -- ${SERVICE_PATH} ':!${SERVICE_PATH}/Jenkinsfile' ':!${SERVICE_PATH}/*.md'",
                         returnStdout: true
                     ).trim()
 
