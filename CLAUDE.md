@@ -39,7 +39,12 @@
 - PR 대상 브랜치: `dev`
 
 ## Spring 환경 파일 수정 규칙
-- config-repo 폴더 하위에 파일 수정 요청이 발생한 경우 반드시 master branch 에서 작업하고 Github 에 push 로 작업을 완료한다. (PR + Merge 사용 안함)
+- Spring 설정(yml)의 단일 진실은 별도 레포 `univs-dcun/gate-config`의 `main` 브랜치다 (UG-233). 설정 수정은 gate-config 레포에서 main에 직접 커밋 + push 로 완료한다. (PR + Merge 사용 안함)
+- 이 레포(모노레포)의 config-repo 폴더는 **온프레미스(native) 납품 전용 스냅샷**이다. 삭제 금지. 일상적인 설정 수정 대상이 아니며, 납품 준비 시 gate-config 내용으로 동기화한다.
+
+## CI/CD 파일 수정 규칙
+- Jenkinsfile(파이프라인 로직) 수정 시 dev/stage/master 세 브랜치에 동일 커밋을 cherry-pick 하여 직접 push 한다 (PR 사용 안함). 세 브랜치의 Jenkinsfile은 항상 동일해야 한다.
+- 배포 타깃 정보(서버 IP/계정/경로)는 master 브랜치의 `infra/ci-cd/deploy-targets/{dev,stage,master}.env` 가 단일 진실이다 (UG-232). 수정은 master에서 직접 push, 다른 브랜치에 이 폴더를 만들지 않는다.
 
 ## 코딩 규칙
 - 패키지 구조: controller > usecase (+ service) > repository
