@@ -40,7 +40,7 @@
 
 ## Spring 환경 파일 수정 규칙
 - Spring 설정(yml)의 단일 진실은 별도 레포 `univs-dcun/gate-config`의 `main` 브랜치다 (UG-233). 설정 수정은 gate-config 레포에서 main에 직접 커밋 + push 로 완료한다. (PR + Merge 사용 안함)
-- 이 레포(모노레포)의 config-repo 폴더는 **온프레미스(native) 납품 전용 스냅샷**이다. 삭제 금지. 일상적인 설정 수정 대상이 아니며, 납품 준비 시 gate-config 내용으로 동기화한다.
+- 온프레미스(native) 납품 시 config-server가 마운트하는 `/config-repo` 볼륨의 내용물은 gate-config 레포를 클론하여 준비한다. (모노레포에 있던 config-repo 폴더는 UG-233에서 제거됨 — 스냅샷이 낡은 채 납품되는 사고 방지)
 
 ## CI/CD 파일 수정 규칙
 - Jenkinsfile(파이프라인 로직) 수정 시 dev/stage/master 세 브랜치에 동일 커밋을 cherry-pick 하여 직접 push 한다 (PR 사용 안함). 세 브랜치의 Jenkinsfile은 항상 동일해야 한다.
