@@ -41,23 +41,6 @@ pipeline {
                         env.SKIP_BUILD = 'false'
                     }
 
-                    // 브랜치별 서버 설정 (기존과 동일)
-                    if (branch == 'dev') {
-                        env.DEPLOY_ENV    = '개발 서버'
-                        env.TARGET_SERVER = '192.168.0.135'
-                        env.TARGET_USER   = 'univs'
-                        env.WORKING_DIR   = '/home/univs/platform/docker/config'
-                    } else if (branch == 'stage') {
-                        env.DEPLOY_ENV    = '스테이징 서버'
-                        env.TARGET_SERVER = '192.168.0.136'
-                        env.TARGET_USER   = 'univs'
-                        env.WORKING_DIR   = '/home/univs/platform/stag/config'
-                    } else if (branch == 'master') {
-                        env.DEPLOY_ENV    = '운영 서버'
-                        env.TARGET_SERVER = '192.168.79.8'
-                        env.TARGET_USER   = 'psh'
-                        env.WORKING_DIR   = '/home/psh/gate/docker'
-                    }
                 }
             }
         }
@@ -73,6 +56,21 @@ pipeline {
                     git branch: "${env.BRANCH_NAME}",
                         credentialsId: 'github-credentials',   // ✅ Jenkins credential ID 변경
                         url: "${GITHUB_REPO_URL}"
+
+                    // ✅ 배포 타깃 정보는 실행 브랜치와 무관하게 master의 단일 파일에서 로드
+                    //    (infra/ci-cd/deploy-targets/{branch}.env — config-repo와 동일한 master 단일 진실 규칙)
+                    def targetEnv = sh(
+                        script: "git show origin/master:infra/ci-cd/deploy-targets/${env.BRANCH_NAME}.env",
+                        returnStdout: true
+                    ).trim()
+                    for (line in targetEnv.split('\n')) {
+                        def kv = line.trim()
+                        if (kv && !kv.startsWith('#')) {
+                            def idx = kv.indexOf('=')
+                            env."${kv.substring(0, idx).trim()}" = kv.substring(idx + 1).trim()
+                        }
+                    }
+                    echo "✅ 배포 타깃 로드: ${env.DEPLOY_ENV} (${env.TARGET_SERVER}:${env.WORKING_DIR})"
 
                     // 브랜치별 비교 기준 설정
                     def baseRef
