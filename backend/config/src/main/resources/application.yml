@@ -9,9 +9,9 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/univs-dcun/gate.git
-          default-label: master
-          search-paths: config-repo
+          # 별도 config 저장소 (main 브랜치가 dev/stage/prod 전 환경의 단일 진실) (UG-233)
+          uri: https://github.com/univs-dcun/gate-config.git
+          default-label: main
           username: ${GIT_USERNAME}
           password: ${GIT_PASSWORD}
         native:
