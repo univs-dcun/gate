@@ -23,6 +23,20 @@ infra/docker/
 3. `*_VERSION`을 마지막 배포 버전으로 갱신 (레지스트리 태그 목록 또는 Slack 배포 알림 참고)
 4. `docker network create platform-net` (external 네트워크) 후 `docker compose -p gate up -d`
 
+## 환경 간 구조적 차이 (2026-07-08 스냅샷 기준)
+
+| 항목 | dev | stage | master(운영) |
+|---|---|---|---|
+| 네트워크 | `platform-net` | `platform-net` | **`gate-net`** |
+| PostgreSQL 서비스명 | `platform-postgresql` | `platform-postgresql` | **`postgresql`** (CORE_DB_URL도 다름) |
+| 외부 포트 | 표준 (5432, 8888, 8080…) | 표준 | **7xxx 대역** (7432, 7888, 7080…) |
+| gate-web | **없음** | 3000 | 7751 |
+| demo-web | 3001 | 3001 | 7750 |
+| fxp-preprocess env 표기 | UPPER_SNAKE | dot-notation | dot-notation |
+
+- 운영 서버는 다른 서비스와 공존하는 장비라 포트 충돌 회피를 위해 7xxx 대역 사용으로 추정.
+- config-server는 git 모드로 동작 중이지만 세 서버 모두 `../spring-config:/config-repo` 볼륨을 마운트하고 있음 (native 전환 대비용, 현재는 읽히지 않음 — 내용물이 낡았을 수 있으니 native 전환 시 반드시 gate-config 최신본으로 교체).
+
 ## 2단계 (미착수)
 
 레포를 진실로 역전(배포 파이프라인이 레포의 compose를 서버로 복사)하는 것은 별도 결정.

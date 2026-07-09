@@ -1,0 +1,321 @@
+services:
+
+
+  postgresql:
+    networks:
+      - gate-net
+    ports:
+      - 7432:5432
+    image: postgres:17.2
+    volumes:
+      - ../docker-backup/postgresql_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${CORE_DB_PASSWORD}
+    restart: unless-stopped
+
+
+  redis:
+    networks:
+      - gate-net
+    ports:
+      - 7379:6379
+    image: redis:7.4.2
+    volumes:
+      - ../docker-backup/redis_data:/data
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    restart: unless-stopped
+
+
+  config-server:
+    networks:
+      - gate-net
+    ports:
+      - 7888:8888
+    image: ${DOCKHUB_GATE_URL}/config-server:${CONFIG_SERVER_VERSION}
+    volumes:
+      - ../spring-config:/config-repo
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CONFIG_SERVER_PROFILE}
+      GIT_USERNAME: ${GIT_USERNAME}
+      GIT_PASSWORD: ${GIT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+
+  discovery-server:
+    networks:
+      - gate-net
+    ports:
+      - 7761:8761
+    image: ${DOCKHUB_GATE_URL}/discovery-server:${DISCOVERY_SERVER_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+
+  gateway-server:
+    networks:
+      - gate-net
+    ports:
+      - 7080:8080
+    image: ${DOCKHUB_GATE_URL}/gateway-server:${GATEWAY_SERVER_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+
+  auth-service:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_GATE_URL}/auth-service:${AUTH_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/auth
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      GOOGLE_OAUTH2_EMAIL: ${GOOGLE_OAUTH2_EMAIL}
+      GOOGLE_OAUTH2_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
+      GOOGLE_OAUTH2_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
+      GOOGLE_OAUTH2_REFRESH_TOKEN: ${GOOGLE_OAUTH2_REFRESH_TOKEN}
+      GOOGLE_OAUTH2_ACCESS_TOKEN_URL: ${GOOGLE_OAUTH2_ACCESS_TOKEN_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_CREATE_USER_TOKEN_EXPIRY: ${JWT_CREATE_USER_TOKEN_EXPIRY}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/auth/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+
+  palm-service:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_GATE_URL}/palm-service:${PALM_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/palm
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      PALM_MODULE_URL: ${PALM_MODULE_URL}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/palm/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+
+  face-service:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_GATE_URL}/face-service:${FACE_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/faces
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/face/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+
+  match-server:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_GATE_URL}/match-server:${MATCH_SERVER_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/match
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/match/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+
+  fxp-preprocess-service:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_POINT_URL}/univs-platform-preprocess-service:${FXP_PREPROCESS_SERVICE_VERSION}
+    environment:
+      spring.application.name: fxp-preprocess-service
+      server.port: 0
+      eureka.client.enabled: true
+      eureka.instance.hostname: fxp-preprocess-service
+      eureka.client.service-url.defaultZone: http://discovery-server:8761/eureka
+      LICENSE_SERVER_HOST: http://192.168.0.20:8080
+      LD_LIBRARY_PATH: /univs/svr/libs
+    ports:
+      - 7947:1947
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  gate-service:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_GATE_URL}/gate-service:${GATE_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+      - ../docker-backup/uploads:/var/uploads
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/gate
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_CREATE_USER_TOKEN_EXPIRY: ${JWT_CREATE_USER_TOKEN_EXPIRY}
+      GATEWAY_URL: ${GATEWAY_URL}
+      GATE_DEMO_URL: ${GATE_DEMO_URL}
+      GATE_DASHBOARD_QR-URL: ${GATE_DEMO_URL}
+      FILE_API-ENDPOINT_GET: ${FILE_API_ENDPOINT_GET}
+      FILE_ENABLE_UPLOAD: ${FILE_ENABLE_UPLOAD}
+      FILE_ROOT_PATH: ${FILE_ROOT_PATH}
+      FILE_SECRET_KEY: ${FILE_SECRET_KEY}
+      FILE_ALGORITHM_WAY: ${FILE_ALGORITHM_WAY}
+      FILE_ALGORITHM_MOD: ${FILE_ALGORITHM_MOD}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/gate/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+
+  notify-service:
+    networks:
+      - gate-net
+    image: ${DOCKHUB_GATE_URL}/notify-service:${NOTIFY_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_CREATE_USER_TOKEN_EXPIRY: ${JWT_CREATE_USER_TOKEN_EXPIRY}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY}
+      WEB_SOCKET_ALLOW_ORIGINS: ${WEB_SOCKET_ALLOW_ORIGINS}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/notify/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+
+  demo-web:
+    networks:
+      - gate-net
+    ports:
+      - 7750:3000
+    image: ${DOCKHUB_GATE_URL}/demo-web:${DEMO_WEB_VERSION}
+    environment:
+      - UNIVS_API_BASE_URL=https://api.univsgate.com
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+
+
+  gate-web:
+    networks:
+      - gate-net
+    ports:
+      - 7751:3000
+    image: ${DOCKHUB_GATE_URL}/gate-web:${GATE_WEB_VERSION}
+    environment:
+      - UNIVS_API_BASE_URL=https://api.univsgate.com/api
+      - UNIVS_API_GUIDE_URL=https://docs.univsgate.com
+      - UNIVS_MOBILE_BASE_URL=https://demo.univsgate.com
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+
+
+networks:
+  gate-net:
+    external: true
+
+
+volumes:
+  postgresql_data:
+    driver: local
+  redis_data:
+    driver: local
