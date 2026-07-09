@@ -58,7 +58,8 @@ out/
 **/application-local.properties
 **/.env
 **/.env.*
-!**/.env.example        # example 파일은 올려도 됨
+# example 파일은 올려도 됨 (gitignore는 인라인 주석 미지원 — 주석은 반드시 별도 줄에)
+!**/.env.example
 
 # ============================
 # Frontend (React)
