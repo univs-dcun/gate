@@ -29,7 +29,7 @@ pipeline {
 
         MONOREPO_URL           = 'https://github.com/univs-dcun/gate'
         SOURCE_REPO_URL        = 'https://github.com/hjkim-univsai/face-auth-demo.git'
-        SOURCE_CREDENTIALS_ID  = 'github-psh-credentials'   // 개인 계정 PAT (face-auth-demo 접근 권한 보유)
+        SOURCE_CREDENTIALS_ID  = 'github-credentials'   // 기존 backend용과 동일 (univs-dcun — face-auth-demo 접근 확인됨)
         CONFIG_DIR             = 'frontend/demo-web-config'
 
         DOCKER_REGISTRY_URL    = 'dockhub.univs.ai:9870'
