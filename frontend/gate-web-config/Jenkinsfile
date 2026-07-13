@@ -28,7 +28,7 @@ pipeline {
 
         MONOREPO_URL           = 'https://github.com/univs-dcun/gate'
         SOURCE_REPO_URL        = 'git@bitbucket.org:univsai/univsaigateserviceweb.git'
-        SOURCE_CREDENTIALS_ID  = 'bitbucket-ssh-credentials'   // Jenkins에 등록된 Bitbucket SSH 키 credential ID
+        SOURCE_CREDENTIALS_ID  = 'bitbucket-credentials'   // Jenkins에 등록된 Bitbucket credential (SSH 키 타입이어야 sshagent 동작)
         CONFIG_DIR             = 'frontend/gate-web-config'
 
         DOCKER_REGISTRY_URL    = 'dockhub.univs.ai:9870'
