@@ -1,0 +1,176 @@
+// ================================================================
+// gate-web 빌드·배포 파이프라인 (UG-236)
+//
+// - 트리거 없음: Jenkins에서 "Build with Parameters"로 수동 실행
+// - job 설정: Pipeline from SCM, Branch Specifier */master 고정
+//   (frontend 파이프라인은 모노레포 master가 단일 진실)
+// - 소스: Bitbucket univsai/univsaigateserviceweb (SSH 자격증명)
+// ================================================================
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'MODE', choices: ['build-deploy', 'promote'],
+               description: 'build-deploy: 소스 빌드 후 배포 / promote: 기존 이미지 태그를 검증 후 배포만')
+        choice(name: 'TARGET_ENV', choices: ['stage', 'master'],
+               description: '배포 대상 환경 (gate-web은 dev 환경에 없음)')
+        string(name: 'SOURCE_REF', defaultValue: 'main',
+               description: 'build-deploy: 빌드할 브랜치/태그/커밋 (Bitbucket 기준)')
+        string(name: 'PROMOTE_TAG', defaultValue: '',
+               description: 'promote: 배포할 기존 이미지 태그 (예: 20260708-a1b2c3)')
+    }
+
+    environment {
+        SERVICE_NAME           = 'gate-web'
+        SERVICE_NAME_KO        = '유니버스 게이트 웹'
+        SERVICE_ENV_VAR_NAME   = 'GATE_WEB_VERSION'
+        REPOSITORY             = "/univs-gate/${SERVICE_NAME}"
+
+        MONOREPO_URL           = 'https://github.com/univs-dcun/gate'
+        SOURCE_REPO_URL        = 'git@bitbucket.org:univsai/univsaigateserviceweb.git'
+        SOURCE_CREDENTIALS_ID  = 'bitbucket-ssh-credentials'   // Jenkins에 등록된 Bitbucket SSH 키 credential ID
+        CONFIG_DIR             = 'frontend/gate-web-config'
+
+        DOCKER_REGISTRY_URL    = 'dockhub.univs.ai:9870'
+        SLACK_CHANNEL          = '#devops'
+        SLACK_SUCCESS_COLOR    = '#2C953C'
+        SLACK_FAIL_COLOR       = '#FF3232'
+    }
+
+    stages {
+        stage('Checkout Monorepo & Load Deploy Target') {
+            steps {
+                script {
+                    git branch: 'master',
+                        credentialsId: 'github-credentials',
+                        url: "${MONOREPO_URL}"
+
+                    // 배포 타깃 정보는 master의 단일 파일에서 로드 (UG-232 규칙)
+                    def targetEnv = sh(
+                        script: "git show origin/master:infra/ci-cd/deploy-targets/${params.TARGET_ENV}.env",
+                        returnStdout: true
+                    ).trim()
+                    for (line in targetEnv.split('\n')) {
+                        def kv = line.trim()
+                        if (kv && !kv.startsWith('#')) {
+                            def idx = kv.indexOf('=')
+                            env."${kv.substring(0, idx).trim()}" = kv.substring(idx + 1).trim()
+                        }
+                    }
+                    echo "✅ 배포 타깃 로드: ${env.DEPLOY_ENV} (${env.TARGET_SERVER}:${env.WORKING_DIR})"
+                }
+            }
+        }
+
+        stage('Clone Source & Resolve Tag') {
+            when { expression { params.MODE == 'build-deploy' } }
+            steps {
+                sshagent(credentials: [env.SOURCE_CREDENTIALS_ID]) {
+                    script {
+                        sh """
+                            rm -rf src
+                            GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no' git clone ${SOURCE_REPO_URL} src
+                            cd src
+                            git checkout ${params.SOURCE_REF}
+                        """
+                        def sha   = sh(script: "cd src && git rev-parse --short HEAD", returnStdout: true).trim()
+                        def cdate = sh(script: "cd src && git log -1 --pretty=format:'%cd' --date=format:'%Y%m%d'", returnStdout: true).trim()
+                        env.DEPLOY_TAG = "${cdate}-${sha}"
+                        echo "✅ 소스 ${params.SOURCE_REF} @ ${sha} → 이미지 태그 ${env.DEPLOY_TAG}"
+                    }
+                }
+            }
+        }
+
+        stage('Build and Push') {
+            when { expression { params.MODE == 'build-deploy' } }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockhub-credentials',
+                    usernameVariable: 'DOCKER_HUB_USER',
+                    passwordVariable: 'DOCKER_HUB_PASS'
+                )]) {
+                    script {
+                        sh """
+                            cp -f ${CONFIG_DIR}/Dockerfile           src/Dockerfile
+                            cp -f ${CONFIG_DIR}/nginx.conf           src/nginx.conf
+                            cp -f ${CONFIG_DIR}/docker-entrypoint.sh src/docker-entrypoint.sh
+                        """
+                        sh "docker build -t ${DOCKER_REGISTRY_URL}${REPOSITORY}:${DEPLOY_TAG} src"
+                        sh "echo ${DOCKER_HUB_PASS} | docker login ${DOCKER_REGISTRY_URL} -u ${DOCKER_HUB_USER} --password-stdin"
+                        sh "docker push ${DOCKER_REGISTRY_URL}${REPOSITORY}:${DEPLOY_TAG}"
+                    }
+                }
+            }
+            post {
+                success {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_SUCCESS_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 이미지 빌드/푸시 성공 (${env.DEPLOY_TAG})")
+                }
+                failure {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_FAIL_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 이미지 빌드/푸시 실패")
+                }
+            }
+        }
+
+        stage('Verify Image Exists') {
+            when { expression { params.MODE == 'promote' } }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockhub-credentials',
+                    usernameVariable: 'DOCKER_HUB_USER',
+                    passwordVariable: 'DOCKER_HUB_PASS'
+                )]) {
+                    script {
+                        if (!params.PROMOTE_TAG?.trim()) {
+                            error('❌ promote 모드에는 PROMOTE_TAG가 필요합니다.')
+                        }
+                        env.DEPLOY_TAG = params.PROMOTE_TAG.trim()
+                        sh "echo ${DOCKER_HUB_PASS} | docker login ${DOCKER_REGISTRY_URL} -u ${DOCKER_HUB_USER} --password-stdin"
+                        def imageExists = sh(
+                            script: "docker manifest inspect ${DOCKER_REGISTRY_URL}${REPOSITORY}:${DEPLOY_TAG} > /dev/null 2>&1 && echo 'exists' || echo 'not_found'",
+                            returnStdout: true
+                        ).trim()
+                        if (imageExists != 'exists') {
+                            error("❌ 이미지를 찾을 수 없습니다: ${DEPLOY_TAG}")
+                        }
+                        echo "✅ 이미지 확인 완료: ${DEPLOY_TAG}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sshagent(credentials: ['ssh-credentials']) {
+                    script {
+                        def remoteScript = """
+                            cd ${WORKING_DIR} && \
+                            if [ '${params.TARGET_ENV}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
+                            sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}/' .env && \
+                            echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}" && \
+                            docker compose -p gate stop ${SERVICE_NAME} || true && \
+                            docker compose -p gate rm -f ${SERVICE_NAME} || true && \
+                            docker compose -p gate pull ${SERVICE_NAME} && \
+                            docker compose -p gate up -d ${SERVICE_NAME}
+                        """
+                        sh """
+                            ssh -o StrictHostKeyChecking=no -p 22 ${TARGET_USER}@${TARGET_SERVER} '${remoteScript}'
+                        """
+                    }
+                }
+            }
+            post {
+                success {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_SUCCESS_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 배포 성공 (${env.DEPLOY_TAG})")
+                }
+                failure {
+                    slackSend(channel: SLACK_CHANNEL, color: SLACK_FAIL_COLOR,
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 배포 실패")
+                }
+            }
+        }
+    }
+}
