@@ -43,7 +43,8 @@
 - 온프레미스(native) 납품 시 config-server가 마운트하는 `/config-repo` 볼륨의 내용물은 gate-config 레포를 클론하여 준비한다. (모노레포에 있던 config-repo 폴더는 UG-233에서 제거됨 — 스냅샷이 낡은 채 납품되는 사고 방지)
 
 ## CI/CD 파일 수정 규칙
-- Jenkinsfile(파이프라인 로직) 수정 시 dev/stage/master 세 브랜치에 동일 커밋을 cherry-pick 하여 직접 push 한다 (PR 사용 안함). 세 브랜치의 Jenkinsfile은 항상 동일해야 한다.
+- 파이프라인 로직의 단일 진실은 별도 레포 `univs-dcun/gate-jenkins-library`의 `main` 브랜치다 (UG-237). 로직 수정은 library 레포에 직접 커밋 + push 로 완료한다 (gate-config와 동일 방식, PR 사용 안함).
+- 모노레포의 `backend/*/Jenkinsfile`은 서비스 식별 파라미터 선언만 가진다. 이 파일을 수정할 일이 생기면(파라미터 변경 등) 기존처럼 dev/stage/master 세 브랜치에 동일 커밋을 cherry-pick 하여 직접 push 한다 (PR 사용 안함). 세 브랜치의 Jenkinsfile은 항상 동일해야 한다.
 - 배포 타깃 정보(서버 IP/계정/경로)는 master 브랜치의 `infra/ci-cd/deploy-targets/{dev,stage,master}.env` 가 단일 진실이다 (UG-232). 수정은 master에서 직접 push, 다른 브랜치에 이 폴더를 만들지 않는다.
 
 ## 코딩 규칙
