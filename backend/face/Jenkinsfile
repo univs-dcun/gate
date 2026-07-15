@@ -6,5 +6,9 @@ univsServicePipeline(
     serviceName:   'face-service',
     serviceNameKo: '얼굴 서비스',
     envVarName:    'FACE_SERVICE_VERSION',
-    servicePath:   'backend/face'
+    servicePath:   'backend/face',
+    // UG-238: L0 위험 등급 관측 (판별·기록만, 빌드에 영향 없음)
+    gates: [
+        risk: true,
+    ]
 )

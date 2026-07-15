@@ -6,5 +6,9 @@ univsServicePipeline(
     serviceName:   'match-server',
     serviceNameKo: '매처 서버',
     envVarName:    'MATCH_SERVER_VERSION',
-    servicePath:   'backend/match'
+    servicePath:   'backend/match',
+    // UG-238: L0 위험 등급 관측 (판별·기록만, 빌드에 영향 없음)
+    gates: [
+        risk: true,
+    ]
 )
