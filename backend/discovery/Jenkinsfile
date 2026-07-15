@@ -6,5 +6,9 @@ univsServicePipeline(
     serviceName:   'discovery-server',
     serviceNameKo: '디스커버리 서버',
     envVarName:    'DISCOVERY_SERVER_VERSION',
-    servicePath:   'backend/discovery'
+    servicePath:   'backend/discovery',
+    // UG-238: L0 위험 등급 관측 (판별·기록만, 빌드에 영향 없음)
+    gates: [
+        risk: true,
+    ]
 )

@@ -6,5 +6,9 @@ univsServicePipeline(
     serviceName:   'config-server',
     serviceNameKo: '컨피그 서버',
     envVarName:    'CONFIG_SERVER_VERSION',
-    servicePath:   'backend/config'
+    servicePath:   'backend/config',
+    // UG-238: L0 위험 등급 관측 (판별·기록만, 빌드에 영향 없음)
+    gates: [
+        risk: true,
+    ]
 )

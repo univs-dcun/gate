@@ -6,5 +6,9 @@ univsServicePipeline(
     serviceName:   'palm-service',
     serviceNameKo: '팜 서비스',
     envVarName:    'PALM_SERVICE_VERSION',
-    servicePath:   'backend/palm'
+    servicePath:   'backend/palm',
+    // UG-238: L0 위험 등급 관측 (판별·기록만, 빌드에 영향 없음)
+    gates: [
+        risk: true,
+    ]
 )
