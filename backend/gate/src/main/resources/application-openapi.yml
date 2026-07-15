@@ -1,0 +1,65 @@
+# API 계약 스펙 생성 전용 프로파일 (UG-238)
+# ./gradlew generateOpenApiDocs 가 이 프로파일로 앱을 부팅해 /api-docs/gate 에서 스펙을 추출한다.
+# 로컬 PC와 Jenkins agent 어디서든 외부 의존성(DB/config-server/eureka/redis) 없이 부팅되어야 한다.
+server:
+  port: 18099
+
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+  # 명시적 datasource 없음 → classpath의 H2 인메모리로 자동 구성됨
+  flyway:
+    enabled: false   # 마이그레이션 SQL은 PostgreSQL 전용이라 H2에서 실행 불가
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none # 스펙 추출에 스키마 불필요 — 쿼리가 실행될 일이 없다
+
+eureka:
+  client:
+    enabled: false
+
+# --- 이하: 빈 생성에 필요한 앱 설정 (평소엔 config-server가 공급 — 여기선 더미 값으로 충분) ---
+jwt:
+  secret: openapi-profile-dummy-secret-not-used-0000000000000000000000000000
+  create-user-token-expiry: 300000
+
+api-key:
+  prefix: gate_
+  length: 31
+  expiry-days: 365
+
+redis:
+  demo:
+    channel: demo:result
+
+gateway:
+  url: http://localhost:18099
+
+gate:
+  demo:
+    url: http://localhost:18099/demo
+  dashboard:
+    qr-url: http://localhost:18099/demo
+
+springdoc:
+  api-docs:
+    path: /api-docs/gate
+  swagger-ui:
+    path: /swagger-ui.html
+
+file:
+  enable:
+    upload: false
+  api-endpoint:
+    get: /api/v1/file
+  root-path: /tmp/univs-openapi-profile
+  secret-key: openapi-profile-dummy-key-000000
+  algorithm:
+    way: AES
+    mod: AES/ECB/PKCS5Padding
