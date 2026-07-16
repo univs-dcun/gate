@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.11'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springdoc.openapi-gradle-plugin' version '1.9.0'
+    id 'info.solidsoft.pitest' version '1.15.0'
 }
 
 group = 'ai.univs.auth'
@@ -83,6 +85,9 @@ dependencies {
 
     /* DOCS */
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+
+    /* API 계약 스펙 생성용 인메모리 DB (openapi 프로파일 전용, UG-241) */
+    runtimeOnly 'com.h2database:h2'
 }
 
 dependencyManagement {
@@ -93,6 +98,34 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// 뮤테이션 테스트 (UG-241): ./gradlew pitest
+// CI의 L1c 게이트가 변경 클래스만 스코프: ./gradlew pitest -Ppitest.targetClasses='...'
+pitest {
+    pitestVersion = '1.17.2'
+    junit5PluginVersion = '1.2.1'
+    targetClasses = (project.hasProperty('pitest.targetClasses')
+            ? project.property('pitest.targetClasses').toString().split(',').toList()
+            : ['ai.univs.auth.*'])
+    targetTests = ['ai.univs.auth.*']
+    excludedClasses = ['ai.univs.auth.**.Q*']
+    threads = 4
+    outputFormats = ['XML', 'HTML']
+    timestampedReports = false
+    mutationThreshold = 0
+}
+
+// API 계약 스펙 생성 (UG-241): ./gradlew generateOpenApiDocs
+// 생성물은 build/openapi/, 계약 기준선은 api-contract/openapi.json — 의도된 스펙 변경 시에만 기준선 갱신
+openApi {
+    apiDocsUrl = "http://localhost:18098/api-docs/auth"
+    outputDir = file("build/openapi")
+    outputFileName = "openapi.json"
+    waitTimeInSeconds = 90
+    customBootRun {
+        args = ["--spring.profiles.active=openapi"]
+    }
 }
 
 // QueryDSL 설정
