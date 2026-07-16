@@ -86,8 +86,9 @@ dependencies {
     /* DOCS */
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
 
-    /* API 계약 스펙 생성용 인메모리 DB (openapi 프로파일 전용, UG-241) */
-    runtimeOnly 'com.h2database:h2'
+    /* API 계약 스펙 생성용 인메모리 DB (openapi 프로파일 전용, UG-241)
+       developmentOnly: bootRun 계열(generateOpenApiDocs)에는 포함되고 bootJar(배포 이미지)에서는 제외됨 */
+    developmentOnly 'com.h2database:h2'
 }
 
 dependencyManagement {
