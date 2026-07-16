@@ -9,6 +9,7 @@ import ai.univs.auth.application.result.SignupResult;
 import ai.univs.auth.domain.entity.Account;
 import ai.univs.auth.domain.entity.EmailVerification;
 import ai.univs.auth.domain.enums.AccountStatus;
+import ai.univs.auth.domain.enums.EmailVerificationType;
 import ai.univs.auth.domain.repository.AccountRepository;
 import ai.univs.auth.domain.repository.EmailVerificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +34,13 @@ public class SignupUseCase {
 
     @Transactional
     public SignupResult execute(SignupInput input) {
-        // 이메일 인증 요청 정보 조회
+        // 이메일 인증 요청 정보 조회 (SIGNUP 타입으로 한정 — 재설정 인증으로 가입되는 교차 사용 방지)
         EmailVerification verification = emailVerificationRepository
-                .findTopByEmailOrderByCreatedAtDesc(input.email())
+                .findTopByEmailAndTypeOrderByCreatedAtDesc(input.email(), EmailVerificationType.SIGNUP)
                 .orElseThrow(EmailNotVerifiedException::new);
 
-        // 가입 메일 인증 확인
-        if (!verification.isVerified()) {
+        // 가입 메일 인증 확인 (인증 완료 + 인증 후 유효 시간 이내)
+        if (!verification.isUsableForConsumption()) {
             throw new EmailNotVerifiedException();
         }
 
@@ -63,6 +64,9 @@ public class SignupUseCase {
                 .updatedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
         Account savedAccount = accountRepository.save(account);
+
+        // 사용한 인증 레코드 소진 — 동일 인증으로 재가입 불가
+        emailVerificationRepository.deleteByEmailAndType(input.email(), EmailVerificationType.SIGNUP);
 
         // 계정 생성 완료 후 Company init 이벤트 발행
         eventPublisher.publishEvent(new AccountCreatedEvent(savedAccount.getAccountId(), savedAccount.getEmail()));

@@ -8,6 +8,7 @@ import ai.univs.auth.shared.web.ctx.ClientRequestContextHolder;
 import ai.univs.auth.domain.entity.Account;
 import ai.univs.auth.domain.entity.EmailVerification;
 import ai.univs.auth.domain.entity.PasswordHistory;
+import ai.univs.auth.domain.enums.EmailVerificationType;
 import ai.univs.auth.domain.enums.PasswordResetMethod;
 import ai.univs.auth.domain.repository.AccountRepository;
 import ai.univs.auth.domain.repository.EmailVerificationRepository;
@@ -32,11 +33,11 @@ public class PasswordResetUseCase {
     @Transactional(noRollbackFor = InvalidVerificationCodeException.class)
     public void execute(String email, String newPassword, String passwordConfirm) {
         EmailVerification verification = emailVerificationRepository
-                .findTopByEmailOrderByCreatedAtDesc(email)
+                .findTopByEmailAndTypeOrderByCreatedAtDesc(email, EmailVerificationType.PASSWORD_RESET)
                 .orElseThrow(EmailNotVerifiedException::new);
 
-        // 비밀번호 초기화 메일 인증 확인
-        if (!verification.isVerified()) {
+        // 비밀번호 초기화 메일 인증 확인 (인증 완료 + 인증 후 유효 시간 이내)
+        if (!verification.isUsableForConsumption()) {
             throw new EmailNotVerifiedException();
         }
 
@@ -59,5 +60,8 @@ public class PasswordResetUseCase {
         passwordHistoryRepository.save(history);
 
         account.changePassword(passwordEncoder.encode(newPassword));
+
+        // 사용한 인증 레코드 소진 — 동일 인증으로 반복 재설정 불가
+        emailVerificationRepository.deleteByEmailAndType(email, EmailVerificationType.PASSWORD_RESET);
     }
 }
