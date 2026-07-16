@@ -7,8 +7,10 @@ univsServicePipeline(
     serviceNameKo: '유니버스 인증 서비스',
     envVarName:    'AUTH_SERVICE_VERSION',
     servicePath:   'backend/auth',
-    // UG-238: L0 위험 등급 관측 (판별·기록만, 빌드에 영향 없음)
+    // UG-241 검증 게이트 (관측 모드 — 빌드를 실패시키지 않음)
     gates: [
-        risk: true,
+        risk:     true,       // L0: 변경 파일 기반 위험 등급 판별
+        contract: 'observe',  // L1b: API 계약 검사 (breaking 감지 시 Slack 경고만)
+        mutation: 'observe',  // L1c: 뮤테이션 테스트 (킬률 70% 미만 시 Slack 경고만)
     ]
 )
