@@ -20,7 +20,8 @@
         </encoder>
     </appender>
 
-    <springProfile name="local">
+    <!-- openapi: API 계약 스펙 생성용 프로파일 (UG-241) — 부팅 로그를 콘솔로 확인 가능해야 한다 -->
+    <springProfile name="local,openapi">
         <root level="INFO">
             <appender-ref ref="CONSOLE" />
         </root>

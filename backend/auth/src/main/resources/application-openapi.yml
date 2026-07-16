@@ -1,0 +1,57 @@
+# API 계약 스펙 생성 전용 프로파일 (UG-241)
+# ./gradlew generateOpenApiDocs 가 이 프로파일로 앱을 부팅해 /api-docs/auth 에서 스펙을 추출한다.
+# 로컬 PC와 Jenkins agent 어디서든 외부 의존성(DB/config-server/eureka) 없이 부팅되어야 한다.
+server:
+  port: 18098   # gate(18099)와 다른 포트 — agent에서 동시 실행 충돌 방지
+
+spring:
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+  # 명시적 datasource 없음 → classpath의 H2 인메모리로 자동 구성됨
+  flyway:
+    enabled: false   # 마이그레이션 SQL은 PostgreSQL/Oracle 전용이라 H2에서 실행 불가
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none # 스펙 추출에 스키마 불필요
+
+  thymeleaf:
+    prefix: classpath:/templates/mail/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    check-template-location: false
+    cache: true
+
+eureka:
+  client:
+    enabled: false
+
+# --- 이하: 빈 생성에 필요한 앱 설정 (평소엔 config-server가 공급 — 더미 값으로 충분) ---
+jwt:
+  secret: openapi-profile-dummy-secret-not-used-0000000000000000000000000000
+  create-user-token-expiry: 300000
+  access-token-expiry: 900000
+  refresh-token-expiry: 604800000
+
+springdoc:
+  api-docs:
+    path: /api-docs/auth
+  swagger-ui:
+    path: /swagger-ui.html
+
+google:
+  oauth2:
+    email: openapi-dummy@localhost
+    client-id: openapi-dummy
+    client-secret: openapi-dummy
+    refresh-token: openapi-dummy
+    access-token-url: http://localhost:18098/dummy-token
+
+mail:
+  enabled: false

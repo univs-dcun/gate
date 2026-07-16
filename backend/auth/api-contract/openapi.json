@@ -1,0 +1,2349 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Univs Auth API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081"
+    }
+  ],
+  "paths": {
+    "/api/v1/auth/password/change": {
+      "put": {
+        "tags": [
+          "비밀번호"
+        ],
+        "summary": "비밀번호 변경 (세션 있을 때)",
+        "operationId": "passwordChange",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChangeRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "FAILED_WRONG_PASSWORD": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-110",
+                        "type": "FAILED_WRONG_PASSWORD",
+                        "message": "비밀번호가 일치하지 않습니다. 다시 시도해 주세요."
+                      }
+                    }
+                  },
+                  "ALREADY_USED_PASSWORD": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-115",
+                        "type": "ALREADY_USED_PASSWORD",
+                        "message": "새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "FAILED_ACCOUNT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-112",
+                        "type": "FAILED_ACCOUNT_NOT_FOUND",
+                        "message": "계정을 찾을 수 없습니다. 이메일을 확인해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiPasswordChangeResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/token/validate": {
+      "post": {
+        "tags": [
+          "토큰"
+        ],
+        "summary": "Access Token 유효성 검증 (Gateway Server 전용)",
+        "operationId": "validateToken",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenValidationRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_ACCESS_TOKEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-106",
+                        "type": "INVALID_ACCESS_TOKEN",
+                        "message": "액세스 토큰이 유효하지 않습니다."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiTokenValidationResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  },
+                  "EXPIRATION_TOKEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-104",
+                        "type": "EXPIRATION_TOKEN",
+                        "message": "토큰이 만료되었습니다. 다시 로그인해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/token/refresh": {
+      "post": {
+        "tags": [
+          "토큰"
+        ],
+        "summary": "Access Token 재발급",
+        "operationId": "republishAccessToken",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepublishAccessTokenRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_REFRESH_TOKEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-107",
+                        "type": "INVALID_REFRESH_TOKEN",
+                        "message": "리프레시 토큰이 유효하지 않습니다."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiRepublishAccessTokenResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  },
+                  "EXPIRATION_TOKEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-104",
+                        "type": "EXPIRATION_TOKEN",
+                        "message": "토큰이 만료되었습니다. 다시 로그인해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/signup": {
+      "post": {
+        "tags": [
+          "가입 \u0026 로그인"
+        ],
+        "summary": "회원 가입",
+        "operationId": "signup",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_EMAIL_VERIFIED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-123",
+                        "type": "NOT_EMAIL_VERIFIED",
+                        "message": "회원가입 전 이메일 인증이 필요합니다."
+                      }
+                    }
+                  },
+                  "ALREADY_USE_EMAIL": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-101",
+                        "type": "ALREADY_USE_EMAIL",
+                        "message": "이미 사용 중인 이메일입니다."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "FAILED_CONFIRM_PASSWORD": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-113",
+                        "type": "FAILED_CONFIRM_PASSWORD",
+                        "message": "비밀번호와 비밀번호 확인이 일치하지 않습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiSignupResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/signup/verify-code": {
+      "post": {
+        "tags": [
+          "가입 \u0026 로그인"
+        ],
+        "summary": "회원가입 인증 번호 검증",
+        "operationId": "verifyEmailCode",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailCodeRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "EXPIRED_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-118",
+                        "type": "EXPIRED_VERIFICATION",
+                        "message": "인증 코드가 만료되었습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "NOT_FOUND_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-117",
+                        "type": "NOT_FOUND_VERIFICATION",
+                        "message": "인증 기록을 찾을 수 없습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_VERIFICATION_CODE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-120",
+                        "type": "INVALID_VERIFICATION_CODE",
+                        "message": "인증 코드가 올바르지 않습니다."
+                      }
+                    }
+                  },
+                  "TOO_MANY_ATTEMPTS_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-119",
+                        "type": "TOO_MANY_ATTEMPTS_VERIFICATION",
+                        "message": "인증 시도 횟수를 초과했습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiVerifyEmailCodeResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/signup/send-code": {
+      "post": {
+        "tags": [
+          "가입 \u0026 로그인"
+        ],
+        "summary": "회원가입 인증 번호 요청",
+        "operationId": "sendEmailVerificationCode",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailVerificationCodeRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ALREADY_USE_EMAIL": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-101",
+                        "type": "ALREADY_USE_EMAIL",
+                        "message": "이미 사용 중인 이메일입니다."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiSendEmailVerificationCodeResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/reset": {
+      "post": {
+        "tags": [
+          "비밀번호"
+        ],
+        "summary": "비밀번호 재설정 (세션 없을 때)",
+        "operationId": "resetPassword",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetConfirmDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "EXPIRED_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-118",
+                        "type": "EXPIRED_VERIFICATION",
+                        "message": "인증 코드가 만료되었습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  },
+                  "ALREADY_USED_PASSWORD": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-115",
+                        "type": "ALREADY_USED_PASSWORD",
+                        "message": "새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "FAILED_ACCOUNT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-112",
+                        "type": "FAILED_ACCOUNT_NOT_FOUND",
+                        "message": "계정을 찾을 수 없습니다. 이메일을 확인해 주세요."
+                      }
+                    }
+                  },
+                  "NOT_FOUND_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-117",
+                        "type": "NOT_FOUND_VERIFICATION",
+                        "message": "인증 기록을 찾을 수 없습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_VERIFICATION_CODE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-120",
+                        "type": "INVALID_VERIFICATION_CODE",
+                        "message": "인증 코드가 올바르지 않습니다."
+                      }
+                    }
+                  },
+                  "TOO_MANY_ATTEMPTS_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-119",
+                        "type": "TOO_MANY_ATTEMPTS_VERIFICATION",
+                        "message": "인증 시도 횟수를 초과했습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/reset/verify-code": {
+      "post": {
+        "tags": [
+          "비밀번호"
+        ],
+        "summary": "비밀번호 재설정 인증번호 검증 (세션 없을 때)",
+        "operationId": "verifyResetPasswordCode",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyResetPasswordCodeRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "EXPIRED_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-118",
+                        "type": "EXPIRED_VERIFICATION",
+                        "message": "인증 코드가 만료되었습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "NOT_FOUND_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-117",
+                        "type": "NOT_FOUND_VERIFICATION",
+                        "message": "인증 기록을 찾을 수 없습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_VERIFICATION_CODE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-120",
+                        "type": "INVALID_VERIFICATION_CODE",
+                        "message": "인증 코드가 올바르지 않습니다."
+                      }
+                    }
+                  },
+                  "TOO_MANY_ATTEMPTS_VERIFICATION": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-119",
+                        "type": "TOO_MANY_ATTEMPTS_VERIFICATION",
+                        "message": "인증 시도 횟수를 초과했습니다. 새 인증 코드를 요청해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiResetPasswordCodeResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/password/reset/send-code": {
+      "post": {
+        "tags": [
+          "비밀번호"
+        ],
+        "summary": "비밀번호 재설정 인증번호 발송 (세션 없을 때)",
+        "operationId": "requestPasswordReset",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasswordResetRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "FAILED_ACCOUNT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-112",
+                        "type": "FAILED_ACCOUNT_NOT_FOUND",
+                        "message": "계정을 찾을 수 없습니다. 이메일을 확인해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "가입 \u0026 로그인"
+        ],
+        "summary": "로그아웃",
+        "operationId": "logout",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_REFRESH_TOKEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-107",
+                        "type": "INVALID_REFRESH_TOKEN",
+                        "message": "리프레시 토큰이 유효하지 않습니다."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiVoid"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "가입 \u0026 로그인"
+        ],
+        "summary": "로그인",
+        "operationId": "login",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "FAILED_WRONG_PASSWORD": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-110",
+                        "type": "FAILED_WRONG_PASSWORD",
+                        "message": "비밀번호가 일치하지 않습니다. 다시 시도해 주세요."
+                      }
+                    }
+                  },
+                  "FAILED_ACCOUNT_LOCKED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-111",
+                        "type": "FAILED_ACCOUNT_LOCKED",
+                        "message": "계정이 잠겼습니다. 고객센터에 문의해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
+                      }
+                    }
+                  },
+                  "FAILED_ACCOUNT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-112",
+                        "type": "FAILED_ACCOUNT_NOT_FOUND",
+                        "message": "계정을 찾을 수 없습니다. 이메일을 확인해 주세요."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "유니버스 플랫폼에서 오류가 발생하였습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiLoginResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "인증 없이 요청을 시도했습니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "잘못된 접근 요청 정보입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "지원하지 않은 요청입니다. 요청 정보를 다시 확인해 주시기 바랍니다."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Errors": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "실패 코드"
+          },
+          "type": {
+            "type": "string",
+            "description": "실패 타입"
+          },
+          "message": {
+            "type": "string",
+            "description": "실패 메시지"
+          }
+        }
+      },
+      "PasswordChangeRequestDTO": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "계정 식별 번호",
+            "maximum": 9223372036854775807,
+            "minimum": 0
+          },
+          "password": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 비밀번호",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 새로운 비밀번호",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "accountId",
+          "newPassword",
+          "password"
+        ]
+      },
+      "PasswordChangeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "계정 식별 번호"
+          }
+        }
+      },
+      "ResponseApiPasswordChangeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PasswordChangeResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "TokenValidationRequestDTO": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "accessToken"
+        ]
+      },
+      "ResponseApiTokenValidationResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TokenValidationResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "TokenValidationResponseDTO": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "토큰 유효 여부"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "계정 식별 번호"
+          }
+        }
+      },
+      "RepublishAccessTokenRequestDTO": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰 갱신용 리프래시 토큰",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "RepublishAccessTokenResponseDTO": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰"
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "토큰 타입 (Bearer)"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32",
+            "description": "만료 시간 (초)"
+          }
+        }
+      },
+      "ResponseApiRepublishAccessTokenResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/RepublishAccessTokenResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "SignupRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 비밀번호",
+            "minLength": 1
+          },
+          "passwordConfirm": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 비밀번호 확인",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "passwordConfirm"
+        ]
+      },
+      "ResponseApiSignupResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SignupResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "SignupResponseDTO": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "계정 식별 번호"
+          },
+          "email": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 사용자 이메일"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성 일자"
+          }
+        }
+      },
+      "VerifyEmailCodeRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "description": "문자열 타입의 8자리 이메일 인증 코드",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "email"
+        ]
+      },
+      "ResponseApiVerifyEmailCodeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/VerifyEmailCodeResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "VerifyEmailCodeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "verified": {
+            "type": "boolean",
+            "description": "검증 여부"
+          }
+        }
+      },
+      "SendEmailVerificationCodeRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResponseApiSendEmailVerificationCodeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SendEmailVerificationCodeResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "SendEmailVerificationCodeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 사용자 이메일"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "만료 일자"
+          }
+        }
+      },
+      "PasswordResetConfirmDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 새로운 비밀번호",
+            "minLength": 1
+          },
+          "passwordConfirm": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 비밀번호 확인",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email",
+          "newPassword",
+          "passwordConfirm"
+        ]
+      },
+      "ResponseApiVoid": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "VerifyResetPasswordCodeRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "description": "문자열 타입의 8자리 이메일 인증 코드",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "email"
+        ]
+      },
+      "ResetPasswordCodeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "verified": {
+            "type": "boolean",
+            "description": "검증 여부"
+          }
+        }
+      },
+      "ResponseApiResetPasswordCodeResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ResetPasswordCodeResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "RequestPasswordResetRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "LogoutRequestDTO": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰 갱신용 리프래시 토큰",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "LoginRequestDTO": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "1 ~ 255 문자열, 사용자 이메일",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 비밀번호",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AccountResponseDTO": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "계정 식별 번호"
+          },
+          "email": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 사용자 이메일"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "마지막 로그인 일자"
+          }
+        }
+      },
+      "LoginResponseDTO": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰 갱신용 리프래시 토큰"
+          },
+          "tokenType": {
+            "type": "string",
+            "description": "토큰 타입 (Bearer)"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32",
+            "description": "만료 시간 (초)"
+          },
+          "accountResponseDTO": {
+            "$ref": "#/components/schemas/AccountResponseDTO"
+          }
+        }
+      },
+      "ResponseApiLoginResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LoginResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Authentication": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
