@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.10'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.springdoc.openapi-gradle-plugin' version '1.9.0'
+    id 'info.solidsoft.pitest' version '1.15.0'
 }
 
 group = 'ai.univs.gate'
@@ -100,6 +101,24 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// 뮤테이션 테스트 (UG-240): ./gradlew pitest
+// CI의 L1c Mutation Test 게이트가 변경된 클래스만 스코프해서 실행한다:
+//   ./gradlew pitest -Ppitest.targetClasses='ai.univs.gate.foo.BarUseCase,...'
+// 프로퍼티 없이 실행하면 전체 패키지 대상 (로컬 전수 측정용 — 오래 걸림)
+pitest {
+    pitestVersion = '1.17.2'          // Java 21 바이트코드 지원
+    junit5PluginVersion = '1.2.1'
+    targetClasses = (project.hasProperty('pitest.targetClasses')
+            ? project.property('pitest.targetClasses').toString().split(',').toList()
+            : ['ai.univs.gate.*'])
+    targetTests = ['ai.univs.gate.*']
+    excludedClasses = ['ai.univs.gate.**.Q*']   // QueryDSL 생성 클래스 제외
+    threads = 4
+    outputFormats = ['XML', 'HTML']
+    timestampedReports = false
+    mutationThreshold = 0             // 실패 판정은 CI 게이트가 킬률 파싱으로 수행 (observe/enforce 모드)
 }
 
 // API 계약 스펙 생성 (UG-238): ./gradlew generateOpenApiDocs
