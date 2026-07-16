@@ -11,5 +11,6 @@ univsServicePipeline(
     gates: [
         risk:     true,       // L0: 변경 파일 기반 위험 등급 판별
         contract: 'observe',  // L1b: API 계약 검사 (breaking 감지 시 Slack 경고만)
+        mutation: 'observe',  // L1c: 뮤테이션 테스트 (킬률 70% 미만 시 Slack 경고만)
     ]
 )
