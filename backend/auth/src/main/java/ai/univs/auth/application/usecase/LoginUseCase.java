@@ -16,6 +16,7 @@ import ai.univs.auth.domain.repository.AccountRepository;
 import ai.univs.auth.domain.repository.LoginLogRepository;
 import ai.univs.auth.domain.repository.RefreshTokenRepository;
 import ai.univs.auth.shared.web.ctx.ClientRequestContextHolder;
+import ai.univs.auth.support.security.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -81,7 +82,7 @@ public class LoginUseCase {
         RefreshToken refreshToken = RefreshToken.builder()
                 .accountId(account.getAccountId())
                 .jti(refreshTokenResult.jti())
-                .tokenHash(refreshTokenResult.token())
+                .tokenHash(TokenHasher.sha256Hex(refreshTokenResult.token()))
                 .issuedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .expiresAt(refreshTokenResult.expiresAt())
                 .isRevoked(false)

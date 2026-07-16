@@ -91,7 +91,7 @@ class PasswordResetUseCaseTest {
     @DisplayName("재설정 성공 시 기존 해시가 이력으로 저장되고 새 비밀번호가 인코딩되어 반영된다")
     void execute_success() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
                 .willReturn(Optional.of(verifiedVerification));
         given(accountRepository.findByEmail(EMAIL)).willReturn(Optional.of(account));
         given(passwordEncoder.encode(NEW_RAW_PASSWORD)).willReturn(NEW_ENCODED_PASSWORD);
@@ -115,13 +115,32 @@ class PasswordResetUseCaseTest {
         // then: 계정에 인코딩된 새 비밀번호가 반영되어야 한다 (평문 저장 금지)
         assertThat(account.getPassword()).isEqualTo(NEW_ENCODED_PASSWORD);
         assertThat(account.getUpdatedAt()).isBetween(before, after);
+
+        // then: 사용한 인증 레코드가 소진되어야 한다 (동일 인증으로 반복 재설정 방지)
+        verify(emailVerificationRepository).deleteByEmailAndType(EMAIL, EmailVerificationType.PASSWORD_RESET);
+    }
+
+    @Test
+    @DisplayName("인증 완료 후 유효 시간이 지난 인증은 사용할 수 없어 EmailNotVerifiedException이 발생한다")
+    void execute_verificationStale_throwsException() {
+        // given: 인증은 완료했으나 인증 시각이 유효 창(30분)을 벗어남
+        verifiedVerification.setVerifiedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(31));
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
+                .willReturn(Optional.of(verifiedVerification));
+
+        // when & then
+        assertThatThrownBy(() -> passwordResetUseCase.execute(EMAIL, NEW_RAW_PASSWORD, NEW_RAW_PASSWORD))
+                .isInstanceOf(EmailNotVerifiedException.class);
+
+        verify(emailVerificationRepository, never()).deleteByEmailAndType(anyString(), any());
+        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository);
     }
 
     @Test
     @DisplayName("이메일 인증 요청 이력이 없으면 EmailNotVerifiedException이 발생한다")
     void execute_verificationNotFound_throwsException() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -136,7 +155,7 @@ class PasswordResetUseCaseTest {
     void execute_notVerified_throwsException() {
         // given
         verifiedVerification.setVerified(false);
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
                 .willReturn(Optional.of(verifiedVerification));
 
         // when & then
@@ -150,7 +169,7 @@ class PasswordResetUseCaseTest {
     @DisplayName("새 비밀번호와 확인 비밀번호가 다르면 PasswordMismatchException이 발생한다")
     void execute_passwordConfirmMismatch_throwsException() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
                 .willReturn(Optional.of(verifiedVerification));
 
         // when & then
@@ -165,7 +184,7 @@ class PasswordResetUseCaseTest {
     @DisplayName("계정이 존재하지 않으면 AccountNotFoundException이 발생하고 이력이 저장되지 않는다")
     void execute_accountNotFound_throwsException() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
                 .willReturn(Optional.of(verifiedVerification));
         given(accountRepository.findByEmail(EMAIL)).willReturn(Optional.empty());
 

@@ -14,6 +14,7 @@ import ai.univs.auth.application.exception.AccountNotFoundException;
 import ai.univs.auth.application.exception.BadCredentialsException;
 import ai.univs.auth.application.result.LoginResult;
 import ai.univs.auth.application.result.RefreshTokenResult;
+import ai.univs.auth.support.security.TokenHasher;
 import ai.univs.auth.application.service.JwtTokenProvider;
 import ai.univs.auth.domain.entity.Account;
 import ai.univs.auth.domain.entity.LoginLog;
@@ -109,7 +110,9 @@ class LoginUseCaseTest {
         RefreshToken savedToken = tokenCaptor.getValue();
         assertThat(savedToken.getAccountId()).isEqualTo(ACCOUNT_ID);
         assertThat(savedToken.getJti()).isEqualTo(JTI);
-        assertThat(savedToken.getTokenHash()).isEqualTo(REFRESH_TOKEN);
+        // 원문 토큰이 아니라 SHA-256 해시가 저장되어야 한다 (DB 유출 시 세션 탈취 방지)
+        assertThat(savedToken.getTokenHash()).isEqualTo(TokenHasher.sha256Hex(REFRESH_TOKEN));
+        assertThat(savedToken.getTokenHash()).isNotEqualTo(REFRESH_TOKEN);
         assertThat(savedToken.getIssuedAt()).isBetween(before, after);
         assertThat(savedToken.getExpiresAt()).isEqualTo(refreshExpiresAt);
         assertThat(savedToken.getIsRevoked()).isFalse();

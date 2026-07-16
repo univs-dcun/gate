@@ -74,7 +74,7 @@ class SignupUseCaseTest {
     @DisplayName("가입 성공 시 인코딩된 비밀번호로 활성 계정이 생성되고 계정 생성 이벤트가 발행된다")
     void execute_success() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
                 .willReturn(Optional.of(verifiedVerification));
         given(accountRepository.existsByEmail(EMAIL)).willReturn(false);
         given(passwordEncoder.encode(RAW_PASSWORD)).willReturn(ENCODED_PASSWORD);
@@ -107,6 +107,9 @@ class SignupUseCaseTest {
         assertThat(eventCaptor.getValue().accountId()).isEqualTo(ACCOUNT_ID);
         assertThat(eventCaptor.getValue().email()).isEqualTo(EMAIL);
 
+        // then: 사용한 인증 레코드가 소진되어야 한다 (동일 인증 재사용 방지)
+        verify(emailVerificationRepository).deleteByEmailAndType(EMAIL, EmailVerificationType.SIGNUP);
+
         // then: 결과 필드 exact 검증
         assertThat(result.accountId()).isEqualTo(ACCOUNT_ID);
         assertThat(result.email()).isEqualTo(EMAIL);
@@ -114,10 +117,26 @@ class SignupUseCaseTest {
     }
 
     @Test
+    @DisplayName("인증 완료 후 유효 시간이 지난 인증은 사용할 수 없어 EmailNotVerifiedException이 발생한다")
+    void execute_verificationStale_throwsException() {
+        // given: 인증은 완료했으나 인증 시각이 유효 창(30분)을 벗어남
+        verifiedVerification.setVerifiedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(31));
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
+                .willReturn(Optional.of(verifiedVerification));
+
+        // when & then
+        assertThatThrownBy(() -> signupUseCase.execute(input))
+                .isInstanceOf(EmailNotVerifiedException.class);
+
+        verify(emailVerificationRepository, never()).deleteByEmailAndType(anyString(), any());
+        verifyNoInteractions(accountRepository, passwordEncoder, eventPublisher);
+    }
+
+    @Test
     @DisplayName("이메일 인증 요청 이력이 없으면 EmailNotVerifiedException이 발생한다")
     void execute_verificationNotFound_throwsException() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -132,7 +151,7 @@ class SignupUseCaseTest {
     void execute_notVerified_throwsException() {
         // given
         verifiedVerification.setVerified(false);
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
                 .willReturn(Optional.of(verifiedVerification));
 
         // when & then
@@ -147,7 +166,7 @@ class SignupUseCaseTest {
     void execute_passwordMismatch_throwsException() {
         // given
         SignupInput mismatchedInput = new SignupInput(EMAIL, RAW_PASSWORD, "Different1!");
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
                 .willReturn(Optional.of(verifiedVerification));
 
         // when & then
@@ -163,7 +182,7 @@ class SignupUseCaseTest {
     void execute_nullPassword_throwsException() {
         // given
         SignupInput nullPasswordInput = new SignupInput(EMAIL, null, null);
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
                 .willReturn(Optional.of(verifiedVerification));
 
         // when & then
@@ -177,7 +196,7 @@ class SignupUseCaseTest {
     @DisplayName("이미 사용중인 이메일이면 DuplicateEmailException이 발생하고 계정이 생성되지 않는다")
     void execute_duplicateEmail_throwsException() {
         // given
-        given(emailVerificationRepository.findTopByEmailOrderByCreatedAtDesc(EMAIL))
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
                 .willReturn(Optional.of(verifiedVerification));
         given(accountRepository.existsByEmail(EMAIL)).willReturn(true);
 
