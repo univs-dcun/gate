@@ -1,7 +1,6 @@
 package ai.univs.gate.modules.company.api.controller;
 
 import ai.univs.gate.modules.company.api.dto.CompanyResponseDTO;
-import ai.univs.gate.modules.company.api.dto.InitCompanyRequestDTO;
 import ai.univs.gate.modules.company.api.dto.UpsertCompanyRequestDTO;
 import ai.univs.gate.modules.company.application.input.UpsertCompanyInput;
 import ai.univs.gate.modules.company.application.usecase.GetCompanyUseCase;
@@ -11,7 +10,6 @@ import ai.univs.gate.shared.swagger.SwaggerError;
 import ai.univs.gate.shared.swagger.SwaggerErrorExample;
 import ai.univs.gate.shared.web.dto.ResponseApi;
 import ai.univs.gate.shared.web.enums.ErrorType;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -30,18 +28,17 @@ public class CompanyController {
     private final GetCompanyUseCase getCompanyUseCase;
     private final UpsertCompanyUseCase upsertCompanyUseCase;
 
-    @Operation(summary = "회사 정보 조회", description = "사용자의 회사 정보를 조회합니다")
+    @Operation(summary = "회사 정보 조회", description = "사용자의 회사 정보를 조회합니다. 최초 조회 시 빈 회사 정보가 생성됩니다.")
     @SecurityRequirements({
             @SecurityRequirement(name = "Authentication"),
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.COMPANY_NOT_FOUND, status = 400),
     })
     @GetMapping
     public ResponseEntity<ResponseApi<CompanyResponseDTO>> getCompany() {
         UserContext userContext = UserContext.get();
-        var result = getCompanyUseCase.execute(userContext.getAccountIdAsLong());
+        var result = getCompanyUseCase.execute(userContext.getAccountIdAsLong(), userContext.getEmail());
         var response = CompanyResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -68,32 +65,6 @@ public class CompanyController {
                 request.mainService(),
                 request.businessType(),
                 request.employeeCount());
-
-        var result = upsertCompanyUseCase.execute(input);
-        var response = CompanyResponseDTO.from(result);
-        return ResponseEntity.ok(ResponseApi.ok(response));
-    }
-
-    @Hidden
-    @Operation(summary = "회사 정보 등록(초기화)", description = "회원가입 성공시 초기화 진행")
-    @SecurityRequirements({
-            @SecurityRequirement(name = "Authentication"),
-    })
-    @SwaggerErrorExample({
-            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-    })
-    @PostMapping(value = "/internal/init")
-    public ResponseEntity<ResponseApi<CompanyResponseDTO>> upsertCompany(@RequestBody InitCompanyRequestDTO request) {
-        var input = new UpsertCompanyInput(
-                request.accountId(),
-                "",
-                "",
-                request.managerMail(),
-                "",
-                "",
-                "",
-                "",
-                "");
 
         var result = upsertCompanyUseCase.execute(input);
         var response = CompanyResponseDTO.from(result);

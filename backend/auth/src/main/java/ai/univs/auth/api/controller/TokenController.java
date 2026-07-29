@@ -48,8 +48,9 @@ public class TokenController {
 
             // 페이로드 추출
             Long accountId = jwtTokenProvider.getAccountIdFromToken(request.accessToken());
+            String email = jwtTokenProvider.getEmailFromToken(request.accessToken());
 
-            var response = TokenValidationResponseDTO.valid(accountId);
+            var response = TokenValidationResponseDTO.valid(accountId, email);
             return ResponseEntity.ok(ResponseApi.ok(response));
         } catch (CustomAuthException e) {
             log.debug("Token validation failed: {}", e.getMessage());

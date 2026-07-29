@@ -32,18 +32,19 @@ class AuthClientTest {
     }
 
     @Test
-    void 유효한_토큰이면_valid_true와_accountId를_반환한다() throws InterruptedException {
+    void 유효한_토큰이면_valid_true와_accountId_email을_반환한다() throws InterruptedException {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .addHeader("Content-Type", "application/json")
                 .setBody("""
-                        {"success":true,"data":{"valid":true,"accountId":42},"errors":null}
+                        {"success":true,"data":{"valid":true,"accountId":42,"email":"user@univs.ai"},"errors":null}
                         """));
 
         StepVerifier.create(authClient.validateToken("valid-token", "ko"))
                 .assertNext(dto -> {
                     assertThat(dto.isValid()).isTrue();
                     assertThat(dto.getAccountId()).isEqualTo(42L);
+                    assertThat(dto.getEmail()).isEqualTo("user@univs.ai");
                 })
                 .verifyComplete();
 
@@ -66,6 +67,7 @@ class AuthClientTest {
                 .assertNext(dto -> {
                     assertThat(dto.isValid()).isFalse();
                     assertThat(dto.getAccountId()).isNull();
+                    assertThat(dto.getEmail()).isNull();
                 })
                 .verifyComplete();
     }

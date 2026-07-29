@@ -7,14 +7,16 @@ public record TokenValidationResponseDTO(
         @Schema(description = SwaggerDescriptions.VALID)
         boolean valid,
         @Schema(description = SwaggerDescriptions.ACCOUNT_ID)
-        Long accountId
+        Long accountId,
+        @Schema(description = SwaggerDescriptions.EMAIL)
+        String email
 ) {
 
     public static TokenValidationResponseDTO invalid() {
-        return new TokenValidationResponseDTO(false, null);
+        return new TokenValidationResponseDTO(false, null, null);
     }
 
-    public static TokenValidationResponseDTO valid(Long accountId) {
-        return new TokenValidationResponseDTO(true, accountId);
+    public static TokenValidationResponseDTO valid(Long accountId, String email) {
+        return new TokenValidationResponseDTO(true, accountId, email);
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class UserContextInterceptor implements HandlerInterceptor {
 
     private static final String HEADER_ACCOUNT_ID = "X-Account-Id";
+    private static final String HEADER_ACCOUNT_EMAIL = "X-Account-Email";
     private static final String HEADER_API_KEY = "X-Api-Key";
     private static final String HEADER_TIMEZONE = "Accept-TimeZone";
 
@@ -24,6 +25,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
                              Object handler
     ) {
         String accountId = request.getHeader(HEADER_ACCOUNT_ID);
+        String email = request.getHeader(HEADER_ACCOUNT_EMAIL);
         String apiKey = request.getHeader(HEADER_API_KEY);
         String timezone = request.getHeader(HEADER_TIMEZONE);
 
@@ -35,6 +37,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
         UserContext context = UserContext.builder()
                 .accountId(accountId)
+                .email(email)
                 .apiKey(apiKey)
                 .timezone(StringUtils.hasText(timezone) ? timezone : "Asia/Seoul")
                 .build();

@@ -52,7 +52,14 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                         ServerWebExchange mutatedExchange = exchange.mutate()
                                 .request(
                                         exchange.getRequest().mutate()
-                                                .header("X-Account-Id", authResponse.getAccountId().toString())
+                                                .headers(h -> {
+                                                    // 클라이언트가 보낸 값은 신뢰하지 않고 항상 검증 결과로 덮어쓴다
+                                                    h.set("X-Account-Id", authResponse.getAccountId().toString());
+                                                    h.remove("X-Account-Email");
+                                                    if (StringUtils.hasText(authResponse.getEmail())) {
+                                                        h.set("X-Account-Email", authResponse.getEmail());
+                                                    }
+                                                })
                                                 .build()
                                 )
                                 .build();

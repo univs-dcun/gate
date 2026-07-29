@@ -1,6 +1,5 @@
 package ai.univs.auth.application.usecase;
 
-import ai.univs.auth.application.event.AccountCreatedEvent;
 import ai.univs.auth.application.exception.DuplicateEmailException;
 import ai.univs.auth.application.exception.EmailNotVerifiedException;
 import ai.univs.auth.application.exception.PasswordMismatchException;
@@ -14,7 +13,6 @@ import ai.univs.auth.domain.repository.AccountRepository;
 import ai.univs.auth.domain.repository.EmailVerificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +28,6 @@ public class SignupUseCase {
     private final AccountRepository accountRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public SignupResult execute(SignupInput input) {
@@ -68,8 +65,6 @@ public class SignupUseCase {
         // 사용한 인증 레코드 소진 — 동일 인증으로 재가입 불가
         emailVerificationRepository.deleteByEmailAndType(input.email(), EmailVerificationType.SIGNUP);
 
-        // 계정 생성 완료 후 Company init 이벤트 발행
-        eventPublisher.publishEvent(new AccountCreatedEvent(savedAccount.getAccountId(), savedAccount.getEmail()));
         log.info("Account created: accountId={}, email={}", savedAccount.getAccountId(), savedAccount.getEmail());
 
         return SignupResult.of(savedAccount);
