@@ -27,6 +27,8 @@ class InternalPathBlockFilterTest {
             "/api/v1/company/internal/init",
             "/api/v1/company/internal/init/sub",
             "/api/v2/other-service/internal/anything",
+            "/api/v1/company/internal;x=1/init",
+            "/api/v1;v=2/company/internal/init",
     })
     @DisplayName("internal 경로는 downstream으로 전달하지 않고 404를 반환한다")
     void internalPath_blockedWith404(String path) {

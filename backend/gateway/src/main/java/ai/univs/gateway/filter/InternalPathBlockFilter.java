@@ -24,7 +24,9 @@ public class InternalPathBlockFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getPath().pathWithinApplication().value();
+        // 세그먼트별 matrix variable(;a=b)을 제거해 /internal;x=1/ 형태의 우회를 차단
+        String path = exchange.getRequest().getPath().pathWithinApplication().value()
+                .replaceAll(";[^/]*", "");
         if (pathMatcher.match(INTERNAL_PATH_PATTERN, path)) {
             log.warn("Blocked external access to internal path: {}", path);
             exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
