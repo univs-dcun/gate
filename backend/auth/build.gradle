@@ -57,7 +57,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
     /* For Spring cloud loadbalancer warning */
     implementation 'com.github.ben-manes.caffeine:caffeine'

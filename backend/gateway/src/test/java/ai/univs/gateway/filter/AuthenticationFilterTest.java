@@ -86,9 +86,9 @@ class AuthenticationFilterTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void 유효한_토큰이면_X_Account_Id를_세팅하여_downstream에_전달한다() throws InterruptedException {
+    void 유효한_토큰이면_X_Account_Id와_X_Account_Email을_세팅하여_downstream에_전달한다() throws InterruptedException {
         given(authClient.validateToken(anyString(), any()))
-                .willReturn(Mono.just(new AuthResponseDTO(true, 42L)));
+                .willReturn(Mono.just(new AuthResponseDTO(true, 42L, "user@univs.ai")));
 
         downstreamServer.enqueue(new MockResponse().setResponseCode(200));
 
@@ -101,12 +101,53 @@ class AuthenticationFilterTest {
         RecordedRequest downstream = downstreamServer.takeRequest(1, TimeUnit.SECONDS);
         assertThat(downstream).isNotNull();
         assertThat(downstream.getHeader("X-Account-Id")).isEqualTo("42");
+        assertThat(downstream.getHeader("X-Account-Email")).isEqualTo("user@univs.ai");
+    }
+
+    @Test
+    void 클라이언트가_보낸_X_Account_헤더는_검증_결과로_덮어쓴다() throws InterruptedException {
+        given(authClient.validateToken(anyString(), any()))
+                .willReturn(Mono.just(new AuthResponseDTO(true, 42L, "user@univs.ai")));
+
+        downstreamServer.enqueue(new MockResponse().setResponseCode(200));
+
+        webTestClient.get()
+                .uri("/test/hello")
+                .header("Authorization", "Bearer valid-token")
+                .header("X-Account-Id", "999")
+                .header("X-Account-Email", "attacker@evil.com")
+                .exchange()
+                .expectStatus().isOk();
+
+        RecordedRequest downstream = downstreamServer.takeRequest(1, TimeUnit.SECONDS);
+        assertThat(downstream).isNotNull();
+        assertThat(downstream.getHeader("X-Account-Id")).isEqualTo("42");
+        assertThat(downstream.getHeader("X-Account-Email")).isEqualTo("user@univs.ai");
+    }
+
+    @Test
+    void 검증_응답에_email이_없으면_X_Account_Email_헤더를_전달하지_않는다() throws InterruptedException {
+        given(authClient.validateToken(anyString(), any()))
+                .willReturn(Mono.just(new AuthResponseDTO(true, 42L, null)));
+
+        downstreamServer.enqueue(new MockResponse().setResponseCode(200));
+
+        webTestClient.get()
+                .uri("/test/hello")
+                .header("Authorization", "Bearer valid-token")
+                .header("X-Account-Email", "attacker@evil.com")
+                .exchange()
+                .expectStatus().isOk();
+
+        RecordedRequest downstream = downstreamServer.takeRequest(1, TimeUnit.SECONDS);
+        assertThat(downstream).isNotNull();
+        assertThat(downstream.getHeader("X-Account-Email")).isNull();
     }
 
     @Test
     void AcceptLanguage_헤더를_auth_서비스에_전달한다() {
         given(authClient.validateToken("valid-token", "ko-KR"))
-                .willReturn(Mono.just(new AuthResponseDTO(true, 1L)));
+                .willReturn(Mono.just(new AuthResponseDTO(true, 1L, "user@univs.ai")));
 
         downstreamServer.enqueue(new MockResponse().setResponseCode(200));
 
@@ -127,7 +168,7 @@ class AuthenticationFilterTest {
     @Test
     void 유효하지_않은_토큰이면_401을_반환한다() {
         given(authClient.validateToken(anyString(), any()))
-                .willReturn(Mono.just(new AuthResponseDTO(false, null)));
+                .willReturn(Mono.just(new AuthResponseDTO(false, null, null)));
 
         webTestClient.get()
                 .uri("/test/hello")

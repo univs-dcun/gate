@@ -9,7 +9,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import ai.univs.auth.application.event.AccountCreatedEvent;
 import ai.univs.auth.application.exception.DuplicateEmailException;
 import ai.univs.auth.application.exception.EmailNotVerifiedException;
 import ai.univs.auth.application.exception.PasswordMismatchException;
@@ -32,7 +31,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,7 +45,6 @@ class SignupUseCaseTest {
     @Mock private AccountRepository accountRepository;
     @Mock private EmailVerificationRepository emailVerificationRepository;
     @Mock private PasswordEncoder passwordEncoder;
-    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private SignupUseCase signupUseCase;
 
@@ -71,7 +68,7 @@ class SignupUseCaseTest {
     }
 
     @Test
-    @DisplayName("가입 성공 시 인코딩된 비밀번호로 활성 계정이 생성되고 계정 생성 이벤트가 발행된다")
+    @DisplayName("가입 성공 시 인코딩된 비밀번호로 활성 계정이 생성된다")
     void execute_success() {
         // given
         given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.SIGNUP))
@@ -100,13 +97,6 @@ class SignupUseCaseTest {
         assertThat(savedAccount.getCreatedAt()).isBetween(before, after);
         assertThat(savedAccount.getUpdatedAt()).isBetween(before, after);
 
-        // then: 계정 생성 이벤트 필드 검증
-        ArgumentCaptor<AccountCreatedEvent> eventCaptor =
-                ArgumentCaptor.forClass(AccountCreatedEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().accountId()).isEqualTo(ACCOUNT_ID);
-        assertThat(eventCaptor.getValue().email()).isEqualTo(EMAIL);
-
         // then: 사용한 인증 레코드가 소진되어야 한다 (동일 인증 재사용 방지)
         verify(emailVerificationRepository).deleteByEmailAndType(EMAIL, EmailVerificationType.SIGNUP);
 
@@ -129,7 +119,7 @@ class SignupUseCaseTest {
                 .isInstanceOf(EmailNotVerifiedException.class);
 
         verify(emailVerificationRepository, never()).deleteByEmailAndType(anyString(), any());
-        verifyNoInteractions(accountRepository, passwordEncoder, eventPublisher);
+        verifyNoInteractions(accountRepository, passwordEncoder);
     }
 
     @Test
@@ -143,7 +133,7 @@ class SignupUseCaseTest {
         assertThatThrownBy(() -> signupUseCase.execute(input))
                 .isInstanceOf(EmailNotVerifiedException.class);
 
-        verifyNoInteractions(accountRepository, passwordEncoder, eventPublisher);
+        verifyNoInteractions(accountRepository, passwordEncoder);
     }
 
     @Test
@@ -158,7 +148,7 @@ class SignupUseCaseTest {
         assertThatThrownBy(() -> signupUseCase.execute(input))
                 .isInstanceOf(EmailNotVerifiedException.class);
 
-        verifyNoInteractions(accountRepository, passwordEncoder, eventPublisher);
+        verifyNoInteractions(accountRepository, passwordEncoder);
     }
 
     @Test
@@ -174,7 +164,7 @@ class SignupUseCaseTest {
                 .isInstanceOf(PasswordMismatchException.class);
 
         // then: 중복 이메일 확인 전에 차단되어야 한다
-        verifyNoInteractions(accountRepository, passwordEncoder, eventPublisher);
+        verifyNoInteractions(accountRepository, passwordEncoder);
     }
 
     @Test
@@ -189,7 +179,7 @@ class SignupUseCaseTest {
         assertThatThrownBy(() -> signupUseCase.execute(nullPasswordInput))
                 .isInstanceOf(PasswordMismatchException.class);
 
-        verifyNoInteractions(accountRepository, passwordEncoder, eventPublisher);
+        verifyNoInteractions(accountRepository, passwordEncoder);
     }
 
     @Test
@@ -206,6 +196,5 @@ class SignupUseCaseTest {
 
         verify(accountRepository, never()).save(any(Account.class));
         verify(passwordEncoder, never()).encode(anyString());
-        verifyNoInteractions(eventPublisher);
     }
 }
