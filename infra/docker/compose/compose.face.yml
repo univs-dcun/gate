@@ -1,0 +1,77 @@
+# ============================================================
+# 생체인증 역량 모듈 — face 세트 (UG-246)
+# face-service(어댑터/감사이력) + match-server(매칭 엔진) + fxp-preprocess(특징점 추출).
+# 셋은 한 배포 단위 — 제품은 face-service만 호출한다 (match/fxp는 face 내부 의존).
+# ============================================================
+
+services:
+
+  face-service:
+    networks:
+      - platform-net
+    image: ${DOCKHUB_GATE_URL}/face-service:${FACE_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/faces
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/face/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  match-server:
+    networks:
+      - platform-net
+    image: ${DOCKHUB_GATE_URL}/match-server:${MATCH_SERVER_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/match
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/match/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  fxp-preprocess-service:
+    networks:
+      - platform-net
+    ports:
+      - ${FXP_HOST_PORT:-1947}:1947
+    image: ${DOCKHUB_POINT_URL}/univs-platform-preprocess-service:${FXP_PREPROCESS_SERVICE_VERSION}
+    environment:
+      SERVER_PORT: 0
+      SPRING_APPLICATION_NAME: fxp-preprocess-service
+      EUREKA_CLIENT_ENABLED: true
+      EUREKA_INSTANCE_HOSTNAME: fxp-preprocess-service
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka
+      LICENSE_SERVER_HOST: ${LICENSE_SERVER_HOST:-http://192.168.0.20:8080}
+      LD_LIBRARY_PATH: /univs/svr/libs
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}

@@ -1,0 +1,73 @@
+# ============================================================
+# 스캐폴드 core — config, discovery, gateway (UG-246)
+# 모든 배포 조합에 필수. 조합 선택은 .env의 COMPOSE_FILE 참고.
+# ============================================================
+
+services:
+
+  config-server:
+    networks:
+      - platform-net
+    ports:
+      - ${CONFIG_HOST_PORT:-8888}:8888
+    image: ${DOCKHUB_GATE_URL}/config-server:${CONFIG_SERVER_VERSION}
+    volumes:
+      - ../spring-config:/config-repo
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CONFIG_SERVER_PROFILE}
+      GIT_USERNAME: ${GIT_USERNAME}
+      GIT_PASSWORD: ${GIT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  discovery-server:
+    networks:
+      - platform-net
+    ports:
+      - ${DISCOVERY_HOST_PORT:-8761}:8761
+    image: ${DOCKHUB_GATE_URL}/discovery-server:${DISCOVERY_SERVER_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  gateway-server:
+    networks:
+      - platform-net
+    ports:
+      - ${GATEWAY_HOST_PORT:-8080}:8080
+    image: ${DOCKHUB_GATE_URL}/gateway-server:${GATEWAY_SERVER_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}
