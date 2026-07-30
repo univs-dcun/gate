@@ -1,0 +1,23 @@
+# ============================================================
+# 제품 — gate-web (UG-246)
+# gate 제품의 관리 프론트엔드. dev 환경은 미사용 (COMPOSE_FILE에서 제외).
+# ============================================================
+
+services:
+
+  gate-web:
+    networks:
+      - platform-net
+    ports:
+      - ${GATE_WEB_HOST_PORT:-3000}:3000
+    image: ${DOCKHUB_GATE_URL}/gate-web:${GATE_WEB_VERSION}
+    environment:
+      - UNIVS_API_BASE_URL=${GATEWAY_URL}/api
+      - UNIVS_API_GUIDE_URL=https://docs.univsgate.com
+      - UNIVS_MOBILE_BASE_URL=${GATE_DEMO_URL}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}

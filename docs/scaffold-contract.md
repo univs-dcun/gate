@@ -1,6 +1,6 @@
 # 스캐폴드 공개 계약 (Scaffold Contract)
 
-> **버전**: 1.0.0 (2026-07-30)
+> **버전**: 1.1.0 (2026-07-30)
 > **상태**: 확정 — UG-243(auth→gate 결합 제거) dev 배포·검증 완료 시점의 코드 기준
 > **관련 티켓**: UG-243(계약 신설), UG-245(본 문서)
 
@@ -22,6 +22,7 @@
 | 2 | [공통 응답 포맷](#2-공통-응답-포맷) | `ResponseApi{success, data, errors}` + 에러 코드 체계 |
 | 3 | [서비스 디스커버리](#3-서비스-디스커버리eureka-계약) | `spring.application.name`이 곧 주소 체계 |
 | 4 | [설정(config) 계약](#4-설정config-계약) | config-server 파일 네이밍과 진실 저장소 |
+| 5 | [알림(notify) 계약](#5-알림notify-계약) | Redis pub/sub 채널과 WebSocket 중계 규칙 |
 
 ---
 
@@ -173,6 +174,40 @@ DB 접속 정보, JWT_SECRET, OAuth 크리덴셜 등은 yml이 아니라 배포 
 
 ---
 
+## 5. 알림(notify) 계약
+
+notify-service는 범용 모듈이다 — 제품 도메인을 모르며, 제품과의 결합은 **Redis pub/sub 채널 계약**뿐이다.
+
+동작: 제품 서비스가 Redis 채널에 JSON을 publish → notify가 구독하여 WebSocket
+(`/topic/{prefix}/{routing-key값}`)으로 중계한다.
+
+**채널 등록**: notify의 config(`notify-service.yml`)의 `notify.subscriptions`에 선언한다.
+
+```yaml
+notify:
+  subscriptions:
+    - channel: demo:result        # Redis 채널명
+      routing-key: transactionUuid # payload JSON에서 라우팅 키로 쓸 필드
+      topic-prefix: /topic/demo    # WebSocket 토픽 프리픽스
+```
+
+**현행 채널**:
+
+| 채널 | routing-key | WebSocket 토픽 | 발행자 |
+|---|---|---|---|
+| `demo:result` | `transactionUuid` | `/topic/demo/{uuid}` | gate-service (데모 인증 결과, `DemoRedisPublisher`) |
+| `plan:notify` | `accountId` | `/topic/plan/{accountId}` | **미확인** — 구독만 선언됨, 모노레포 내 발행 코드 없음 (정리 후보) |
+
+**규칙**:
+
+- payload는 JSON이어야 하고 routing-key로 선언된 필드를 반드시 포함해야 한다.
+- 채널명 컨벤션: `{도메인}:{이벤트}`. 채널 추가는 config 수정만으로 가능(notify 코드 변경 불필요)
+  — 하위 호환. 채널 제거·routing-key 변경은 비호환 변경이다.
+- notify의 WebSocket 연결 인증은 JWT를 자체 검증한다 → `JWT_SECRET`을 auth와 공유한다
+  (§4.3). 이 공유가 notify가 스캐폴드 배포 단위에 묶이는 이유다.
+
+---
+
 ## 계약 변경 절차
 
 1. 변경이 위 4개 영역에 해당하는지 확인한다. 해당하면 하위 호환 여부를 판단한다.
@@ -186,4 +221,5 @@ DB 접속 정보, JWT_SECRET, OAuth 크리덴셜 등은 yml이 아니라 배포 
 
 | 계약 버전 | 날짜 | 내용 |
 |---|---|---|
+| 1.1.0 | 2026-07-30 | §5 알림(notify) Redis 채널 계약 추가 (UG-246, notify의 범용 모듈 승격) |
 | 1.0.0 | 2026-07-30 | 최초 작성 (UG-245). UG-243으로 확정된 인증 계약 포함 |

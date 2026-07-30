@@ -1,0 +1,40 @@
+# ============================================================
+# 범용 모듈 — notify (UG-246)
+# Redis pub/sub 구독 → WebSocket 알림 중계. 제품 결합은 Redis 채널 계약뿐.
+# 경계 계약: docs/scaffold-contract.md §5
+# ============================================================
+
+services:
+
+  notify-service:
+    networks:
+      - platform-net
+    image: ${DOCKHUB_GATE_URL}/notify-service:${NOTIFY_SERVICE_VERSION}
+    volumes:
+      - ../logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_CREATE_USER_TOKEN_EXPIRY: ${JWT_CREATE_USER_TOKEN_EXPIRY}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY}
+      WEB_SOCKET_ALLOW_ORIGINS: ${WEB_SOCKET_ALLOW_ORIGINS}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/notify/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}
