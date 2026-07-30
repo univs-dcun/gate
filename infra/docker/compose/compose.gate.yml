@@ -10,8 +10,8 @@ services:
       - platform-net
     image: ${DOCKHUB_GATE_URL}/gate-service:${GATE_SERVICE_VERSION}
     volumes:
-      - ../logs:/logs
-      - ../docker-backup/uploads:/var/uploads
+      - ./logs:/logs
+      - ./docker-backup/uploads:/var/uploads
     environment:
       SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
       SPRING_DATASOURCE_URL: ${CORE_DB_URL}/gate
