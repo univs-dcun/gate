@@ -1,6 +1,6 @@
 services:
   gate-web:
-    image: dockhub.univs.ai:9870/univs-gate/gate-web:latest
+    image: dockhub.univs.ai/univs-gate/gate-web:latest
     ports:
       - "3000:3000"
     environment:

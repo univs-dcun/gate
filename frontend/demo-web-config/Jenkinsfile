@@ -32,7 +32,7 @@ pipeline {
         SOURCE_CREDENTIALS_ID  = 'github-credentials'   // 기존 backend용과 동일 (univs-dcun — face-auth-demo 접근 확인됨)
         CONFIG_DIR             = 'frontend/demo-web-config'
 
-        DOCKER_REGISTRY_URL    = 'dockhub.univs.ai:9870'
+        DOCKER_REGISTRY_URL    = 'dockhub.univs.ai'
         SLACK_CHANNEL          = '#devops'
         SLACK_SUCCESS_COLOR    = '#2C953C'
         SLACK_FAIL_COLOR       = '#FF3232'

@@ -8,7 +8,7 @@ set -e
 #   REGISTRY=registry.example.com ./frontend/build-gate-web.sh <버전>
 #
 # 예시:
-#   REGISTRY=dockhub.univs.ai:9870/univs-gate ./frontend/build-gate-web.sh 1.0.0
+#   REGISTRY=dockhub.univs.ai/univs-gate ./frontend/build-gate-web.sh 1.0.0
 # ================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

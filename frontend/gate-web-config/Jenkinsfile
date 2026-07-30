@@ -31,7 +31,7 @@ pipeline {
         SOURCE_CREDENTIALS_ID  = 'bitbucket-credentials'   // Jenkins에 등록된 Bitbucket credential (SSH 키 타입이어야 sshagent 동작)
         CONFIG_DIR             = 'frontend/gate-web-config'
 
-        DOCKER_REGISTRY_URL    = 'dockhub.univs.ai:9870'
+        DOCKER_REGISTRY_URL    = 'dockhub.univs.ai'
         SLACK_CHANNEL          = '#devops'
         SLACK_SUCCESS_COLOR    = '#2C953C'
         SLACK_FAIL_COLOR       = '#FF3232'
