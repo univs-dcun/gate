@@ -11,7 +11,7 @@ services:
       - platform-net
     image: ${DOCKHUB_GATE_URL}/face-service:${FACE_SERVICE_VERSION}
     volumes:
-      - ../logs:/logs
+      - ./logs:/logs
     environment:
       SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
       SPRING_DATASOURCE_URL: ${CORE_DB_URL}/faces
@@ -34,7 +34,7 @@ services:
       - platform-net
     image: ${DOCKHUB_GATE_URL}/match-server:${MATCH_SERVER_VERSION}
     volumes:
-      - ../logs:/logs
+      - ./logs:/logs
     environment:
       SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
       SPRING_DATASOURCE_URL: ${CORE_DB_URL}/match

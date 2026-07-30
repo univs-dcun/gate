@@ -3,10 +3,27 @@
 ```
 infra/docker/
 ├── compose/  ★ 공유 compose 레이어 파일 세트 (UG-246) — 이것이 진실
-├── dev/      개발 서버 192.168.0.135  (/home/univs/platform/docker/config) — .env.example
+├── dev/      개발 서버 192.168.0.135 — .env.example
 ├── stage/    스테이징 서버 192.168.0.136 — .env.example
-└── master/   운영 서버 192.168.79.8   (/home/psh/gate/docker) — .env.example
+└── master/   운영 서버 192.168.79.8 — .env.example
 ```
+
+## 서버 표준 디렉토리 구조 (UG-247)
+
+세 서버 공통 (계정만 환경별로 다름 — 현재 WORKING_DIR은 deploy-targets/{env}.env가 진실):
+
+```
+/home/{계정}/platform/gate/     ← WORKING_DIR (여기서 docker compose 실행)
+├── .env                        ← COMPOSE_FILE 포함 (진실은 서버)
+├── compose.*.yml               ← compose/ 폴더에서 복사 (진실은 레포)
+├── logs/
+├── docker-backup/              ← postgresql_data, redis_data, uploads
+├── spring-config/              ← native 전환 대비 (gate-config 클론으로 준비)
+└── license/                    ← 라이선스 파일류
+```
+
+⚠️ 레이어 compose 파일의 마운트는 `./` 기준 — **반드시 이 표준 구조와 함께** 사용한다.
+(구 중첩 구조 `docker/config`에서는 `../`였음 — 혼용 불가)
 
 ## 레이어 구조 (UG-246, 스캐폴드 분리 준비)
 
