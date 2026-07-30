@@ -18,7 +18,7 @@
 # ================================================================
 set -euo pipefail
 
-REGISTRY="dockhub.univs.ai:9870"
+REGISTRY="dockhub.univs.ai"
 REPO_PREFIX="univs-gate"
 
 TARGET="${1:-}"
