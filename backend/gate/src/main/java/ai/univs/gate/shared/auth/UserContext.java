@@ -11,6 +11,7 @@ public class UserContext {
 
     private String apiKey;
     private String accountId;
+    private String email;
     private String timezone;
 
     private static final ThreadLocal<UserContext> CONTEXT = new ThreadLocal<>();

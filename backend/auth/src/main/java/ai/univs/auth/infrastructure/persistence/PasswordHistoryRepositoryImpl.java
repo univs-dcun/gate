@@ -3,9 +3,10 @@ package ai.univs.auth.infrastructure.persistence;
 import ai.univs.auth.domain.entity.PasswordHistory;
 import ai.univs.auth.domain.repository.PasswordHistoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
@@ -19,7 +20,7 @@ public class PasswordHistoryRepositoryImpl implements PasswordHistoryRepository 
     }
 
     @Override
-    public Optional<PasswordHistory> findTop1ByAccountIdOrderByChangedAtDesc(Long accountId) {
-        return passwordHistoryJpaRepository.findTop1ByAccountIdOrderByChangedAtDesc(accountId);
+    public List<PasswordHistory> findRecentByAccountId(Long accountId, int limit) {
+        return passwordHistoryJpaRepository.findByAccountIdOrderByChangedAtDesc(accountId, PageRequest.of(0, limit));
     }
 }

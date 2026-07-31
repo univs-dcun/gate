@@ -1,0 +1,47 @@
+# ============================================================
+# 제품 — gate (UG-246)
+# e-KYC 제품 백엔드. face/palm 역량 모듈과 notify를 소비한다.
+# ============================================================
+
+services:
+
+  gate-service:
+    networks:
+      - platform-net
+    image: ${DOCKHUB_GATE_URL}/gate-service:${GATE_SERVICE_VERSION}
+    volumes:
+      - ./logs:/logs
+      - ./docker-backup/uploads:/var/uploads
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/gate
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_URL: ${GATEWAY_URL}
+      GATE_DEMO_URL: ${GATE_DEMO_URL}
+      GATE_DASHBOARD_QR-URL: ${GATE_DEMO_URL}
+      FILE_API-ENDPOINT_GET: ${FILE_API_ENDPOINT_GET}
+      FILE_ENABLE_UPLOAD: ${FILE_ENABLE_UPLOAD}
+      FILE_ROOT_PATH: ${FILE_ROOT_PATH}
+      FILE_SECRET_KEY: ${FILE_SECRET_KEY}
+      FILE_ALGORITHM_WAY: ${FILE_ALGORITHM_WAY}
+      FILE_ALGORITHM_MOD: ${FILE_ALGORITHM_MOD}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/gate/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}

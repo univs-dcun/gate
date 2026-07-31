@@ -36,7 +36,7 @@ public class PasswordController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.FAILED_ACCOUNT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.FAILED_WRONG_PASSWORD, status = 400),
+            @SwaggerError(errorType = ErrorType.INVALID_CURRENT_PASSWORD, status = 400),
             @SwaggerError(errorType = ErrorType.ALREADY_USED_PASSWORD, status = 400),
     })
     @PutMapping("/change")

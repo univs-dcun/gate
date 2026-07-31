@@ -5,6 +5,8 @@ import ai.univs.auth.domain.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,5 +23,15 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     @Override
     public Optional<RefreshToken> findByJti(String jti) {
         return refreshTokenJpaRepository.findByJti(jti);
+    }
+
+    @Override
+    public List<RefreshToken> findAllByAccountIdAndIsRevokedFalse(Long accountId) {
+        return refreshTokenJpaRepository.findAllByAccountIdAndIsRevokedFalse(accountId);
+    }
+
+    @Override
+    public boolean revokeIfActive(String jti, LocalDateTime revokedAt) {
+        return refreshTokenJpaRepository.revokeByJtiIfActive(jti, revokedAt) > 0;
     }
 }

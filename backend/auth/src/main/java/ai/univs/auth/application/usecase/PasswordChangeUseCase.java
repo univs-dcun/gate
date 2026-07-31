@@ -40,7 +40,7 @@ public class PasswordChangeUseCase {
         }
 
         // 기존에 사용한 비밀번호와 같은 비밀번호로 변경 시도하는지 확인
-        if (passwordService.isPasswordReused(input.accountId(), input.newPassword())) {
+        if (passwordService.isPasswordReused(account, input.newPassword())) {
             throw new PasswordReusedException();
         }
 

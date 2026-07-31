@@ -1,0 +1,36 @@
+# ============================================================
+# 생체인증 역량 모듈 — palm 세트 (UG-246)
+# palm-service(어댑터/감사이력) → 외부 palm 엔진(PALM_MODULE_URL) 호출.
+# palm 미포함 납품은 이 파일을 COMPOSE_FILE에서 제외한다.
+# ============================================================
+
+services:
+
+  palm-service:
+    networks:
+      - platform-net
+    image: ${DOCKHUB_GATE_URL}/palm-service:${PALM_SERVICE_VERSION}
+    volumes:
+      - ./logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/palm
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      PALM_MODULE_URL: ${PALM_MODULE_URL}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/palm/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}
