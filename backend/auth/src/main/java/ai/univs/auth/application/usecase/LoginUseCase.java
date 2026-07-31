@@ -2,7 +2,6 @@ package ai.univs.auth.application.usecase;
 
 import ai.univs.auth.application.exception.AccountInactiveException;
 import ai.univs.auth.application.exception.AccountLockedException;
-import ai.univs.auth.application.exception.AccountNotFoundException;
 import ai.univs.auth.application.exception.BadCredentialsException;
 import ai.univs.auth.application.result.AccountResult;
 import ai.univs.auth.application.result.LoginResult;
@@ -31,6 +30,10 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class LoginUseCase {
 
+    // 계정 부재 시에도 동일 비용의 해시 비교를 수행해 응답 시간으로 계정 존재를 추정하지 못하게 한다
+    private static final String TIMING_EQUALIZER_HASH =
+            "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+
     private final AccountRepository accountRepository;
     private final LoginLogRepository loginLogRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -38,16 +41,17 @@ public class LoginUseCase {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(noRollbackFor = {
-            AccountNotFoundException.class,
             AccountLockedException.class,
             AccountInactiveException.class,
             BadCredentialsException.class
     })
     public LoginResult execute(String email, String password) {
+        // 계정 존재 여부는 응답으로 노출하지 않음 (계정 열거 방지) — 로그로만 구분
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> {
+                    passwordEncoder.matches(password, TIMING_EQUALIZER_HASH);
                     logLoginAttempt(null, email, LoginStatus.FAILED_ACCOUNT_NOT_FOUND);
-                    return new AccountNotFoundException();
+                    return new BadCredentialsException();
                 });
 
         // 잠김 계정 확인
@@ -58,7 +62,7 @@ public class LoginUseCase {
 
         // 계정 활성화 여부 확인
         if (!account.isActive()) {
-            logLoginAttempt(account.getAccountId(), email, LoginStatus.FAILED_ACCOUNT_LOCKED);
+            logLoginAttempt(account.getAccountId(), email, LoginStatus.FAILED_ACCOUNT_INACTIVE);
             throw new AccountInactiveException();
         }
 

@@ -1,11 +1,12 @@
 package ai.univs.auth.infrastructure.persistence;
 
 import ai.univs.auth.domain.entity.PasswordHistory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface PasswordHistoryJpaRepository extends JpaRepository<PasswordHistory, Long> {
 
-    Optional<PasswordHistory> findTop1ByAccountIdOrderByChangedAtDesc(Long accountId);
+    List<PasswordHistory> findByAccountIdOrderByChangedAtDesc(Long accountId, Pageable pageable);
 }

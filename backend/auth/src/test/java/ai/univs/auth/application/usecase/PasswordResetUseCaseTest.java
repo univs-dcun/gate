@@ -12,6 +12,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import ai.univs.auth.application.exception.AccountNotFoundException;
 import ai.univs.auth.application.exception.EmailNotVerifiedException;
 import ai.univs.auth.application.exception.PasswordMismatchException;
+import ai.univs.auth.application.exception.PasswordReusedException;
+import ai.univs.auth.application.service.PasswordService;
 import ai.univs.auth.domain.entity.Account;
 import ai.univs.auth.domain.entity.EmailVerification;
 import ai.univs.auth.domain.entity.PasswordHistory;
@@ -52,6 +54,7 @@ class PasswordResetUseCaseTest {
     @Mock private AccountRepository accountRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private PasswordHistoryRepository passwordHistoryRepository;
+    @Mock private PasswordService passwordService;
 
     @InjectMocks private PasswordResetUseCase passwordResetUseCase;
 
@@ -88,12 +91,13 @@ class PasswordResetUseCaseTest {
     }
 
     @Test
-    @DisplayName("재설정 성공 시 기존 해시가 이력으로 저장되고 새 비밀번호가 인코딩되어 반영된다")
+    @DisplayName("재설정 성공 시 새 비밀번호가 인코딩되어 반영되고 새 해시가 이력으로 저장된다 (변경 경로와 동일 규약)")
     void execute_success() {
         // given
         given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
                 .willReturn(Optional.of(verifiedVerification));
         given(accountRepository.findByEmail(EMAIL)).willReturn(Optional.of(account));
+        given(passwordService.isPasswordReused(account, NEW_RAW_PASSWORD)).willReturn(false);
         given(passwordEncoder.encode(NEW_RAW_PASSWORD)).willReturn(NEW_ENCODED_PASSWORD);
 
         // when
@@ -101,12 +105,12 @@ class PasswordResetUseCaseTest {
         passwordResetUseCase.execute(EMAIL, NEW_RAW_PASSWORD, NEW_RAW_PASSWORD);
         LocalDateTime after = LocalDateTime.now(ZoneOffset.UTC);
 
-        // then: 이력에는 변경 전(기존) 해시가 저장되어야 한다
+        // then: 이력에는 변경으로 적용된 새 해시가 저장되어야 한다
         ArgumentCaptor<PasswordHistory> historyCaptor = ArgumentCaptor.forClass(PasswordHistory.class);
         verify(passwordHistoryRepository).save(historyCaptor.capture());
         PasswordHistory savedHistory = historyCaptor.getValue();
         assertThat(savedHistory.getAccountId()).isEqualTo(ACCOUNT_ID);
-        assertThat(savedHistory.getPasswordHash()).isEqualTo(OLD_ENCODED_PASSWORD);
+        assertThat(savedHistory.getPasswordHash()).isEqualTo(NEW_ENCODED_PASSWORD);
         assertThat(savedHistory.getPasswordResetMethod()).isEqualTo(PasswordResetMethod.EMAIL_RESET);
         assertThat(savedHistory.getChangedAt()).isBetween(before, after);
         assertThat(savedHistory.getIpAddress()).isEqualTo(IP_ADDRESS);
@@ -133,7 +137,7 @@ class PasswordResetUseCaseTest {
                 .isInstanceOf(EmailNotVerifiedException.class);
 
         verify(emailVerificationRepository, never()).deleteByEmailAndType(anyString(), any());
-        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository);
+        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository, passwordService);
     }
 
     @Test
@@ -147,7 +151,7 @@ class PasswordResetUseCaseTest {
         assertThatThrownBy(() -> passwordResetUseCase.execute(EMAIL, NEW_RAW_PASSWORD, NEW_RAW_PASSWORD))
                 .isInstanceOf(EmailNotVerifiedException.class);
 
-        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository);
+        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository, passwordService);
     }
 
     @Test
@@ -162,7 +166,7 @@ class PasswordResetUseCaseTest {
         assertThatThrownBy(() -> passwordResetUseCase.execute(EMAIL, NEW_RAW_PASSWORD, NEW_RAW_PASSWORD))
                 .isInstanceOf(EmailNotVerifiedException.class);
 
-        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository);
+        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository, passwordService);
     }
 
     @Test
@@ -177,7 +181,27 @@ class PasswordResetUseCaseTest {
                 .isInstanceOf(PasswordMismatchException.class);
 
         // then: 계정 조회 전에 차단되어야 한다
-        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository);
+        verifyNoInteractions(accountRepository, passwordEncoder, passwordHistoryRepository, passwordService);
+    }
+
+    @Test
+    @DisplayName("최근에 사용한 비밀번호로 재설정 시도하면 PasswordReusedException이 발생한다")
+    void execute_reusedPassword_throwsException() {
+        // given
+        given(emailVerificationRepository.findTopByEmailAndTypeOrderByCreatedAtDesc(EMAIL, EmailVerificationType.PASSWORD_RESET))
+                .willReturn(Optional.of(verifiedVerification));
+        given(accountRepository.findByEmail(EMAIL)).willReturn(Optional.of(account));
+        given(passwordService.isPasswordReused(account, NEW_RAW_PASSWORD)).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> passwordResetUseCase.execute(EMAIL, NEW_RAW_PASSWORD, NEW_RAW_PASSWORD))
+                .isInstanceOf(PasswordReusedException.class);
+
+        // then: 비밀번호 변경/이력 저장/인증 소진이 일어나지 않아야 한다
+        assertThat(account.getPassword()).isEqualTo(OLD_ENCODED_PASSWORD);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(passwordHistoryRepository, never()).save(any(PasswordHistory.class));
+        verify(emailVerificationRepository, never()).deleteByEmailAndType(anyString(), any());
     }
 
     @Test

@@ -83,7 +83,7 @@ class PasswordChangeUseCaseTest {
         // given
         given(accountRepository.findById(ACCOUNT_ID)).willReturn(Optional.of(account));
         given(passwordEncoder.matches(CURRENT_RAW_PASSWORD, CURRENT_ENCODED_PASSWORD)).willReturn(true);
-        given(passwordService.isPasswordReused(ACCOUNT_ID, NEW_RAW_PASSWORD)).willReturn(false);
+        given(passwordService.isPasswordReused(account, NEW_RAW_PASSWORD)).willReturn(false);
         given(passwordEncoder.encode(NEW_RAW_PASSWORD)).willReturn(NEW_ENCODED_PASSWORD);
 
         // when
@@ -146,7 +146,7 @@ class PasswordChangeUseCaseTest {
         // given
         given(accountRepository.findById(ACCOUNT_ID)).willReturn(Optional.of(account));
         given(passwordEncoder.matches(CURRENT_RAW_PASSWORD, CURRENT_ENCODED_PASSWORD)).willReturn(true);
-        given(passwordService.isPasswordReused(ACCOUNT_ID, NEW_RAW_PASSWORD)).willReturn(true);
+        given(passwordService.isPasswordReused(account, NEW_RAW_PASSWORD)).willReturn(true);
 
         // when & then
         assertThatThrownBy(() -> passwordChangeUseCase.execute(input))
