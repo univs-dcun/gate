@@ -3,6 +3,8 @@ package ai.univs.auth.application.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -154,7 +156,10 @@ class LoginUseCaseTest {
         assertThat(savedLog.getLoginStatus()).isEqualTo(LoginStatus.FAILED_ACCOUNT_NOT_FOUND);
 
         // then: 토큰 발급/저장이 일어나지 않아야 한다
-        verifyNoInteractions(passwordEncoder, jwtTokenProvider, refreshTokenRepository);
+        verifyNoInteractions(jwtTokenProvider, refreshTokenRepository);
+
+        // then: 타이밍 채널 차단 — 계정이 없어도 해시 비교 1회는 수행되어야 한다
+        verify(passwordEncoder).matches(eq(RAW_PASSWORD), anyString());
     }
 
     @Test

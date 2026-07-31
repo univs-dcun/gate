@@ -3,7 +3,9 @@ package ai.univs.auth.application.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
@@ -84,21 +86,19 @@ class RepublishAccessTokenUseCaseTest {
         given(jwtTokenProvider.getAccountIdFromToken(REFRESH_TOKEN_VALUE)).willReturn(ACCOUNT_ID);
         given(refreshTokenRepository.findByJti(JTI)).willReturn(Optional.of(storedToken));
         given(accountRepository.findById(ACCOUNT_ID)).willReturn(Optional.of(account));
+        given(refreshTokenRepository.revokeIfActive(eq(JTI), any(LocalDateTime.class))).willReturn(true);
         given(jwtTokenProvider.createAccessToken(account)).willReturn(NEW_ACCESS_TOKEN);
         given(jwtTokenProvider.createRefreshToken(ACCOUNT_ID))
                 .willReturn(new RefreshTokenResult(NEW_REFRESH_TOKEN, NEW_JTI, newExpiresAt));
 
         // when
-        LocalDateTime before = LocalDateTime.now(ZoneOffset.UTC);
         TokenResult result = republishAccessTokenUseCase.execute(REFRESH_TOKEN_VALUE);
-        LocalDateTime after = LocalDateTime.now(ZoneOffset.UTC);
 
         // then: 서명/타입 검증이 반드시 호출되어야 한다
         verify(jwtTokenProvider).validateRefreshToken(REFRESH_TOKEN_VALUE);
 
-        // then: 사용한 토큰은 폐기(회전)되어야 한다
-        assertThat(storedToken.getIsRevoked()).isTrue();
-        assertThat(storedToken.getRevokedAt()).isBetween(before, after);
+        // then: 사용한 토큰은 조건부 UPDATE로 폐기(회전)되어야 한다
+        verify(refreshTokenRepository).revokeIfActive(eq(JTI), any(LocalDateTime.class));
 
         // then: 새 리프레시 토큰이 해시로 저장되어야 한다
         ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
@@ -163,10 +163,11 @@ class RepublishAccessTokenUseCaseTest {
     }
 
     @Test
-    @DisplayName("폐기된 토큰 재제시(재사용 탐지) 시 계정의 활성 토큰이 전부 폐기된다")
+    @DisplayName("유예 창을 지난 폐기 토큰 재제시(재사용 탐지) 시 계정의 활성 토큰이 전부 폐기된다")
     void execute_revokedTokenReuse_revokesAllActiveTokens() {
-        // given: 이미 회전으로 폐기된 토큰 + 계정에 남아있는 활성 토큰 2개
+        // given: 유예 창(30초)을 훨씬 지난 시점에 폐기된 토큰 + 계정에 남아있는 활성 토큰 2개
         storedToken.setIsRevoked(true);
+        storedToken.setRevokedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5));
         RefreshToken activeToken1 = RefreshToken.builder()
                 .tokenId(2L).accountId(ACCOUNT_ID).jti("jti-2")
                 .issuedAt(LocalDateTime.now(ZoneOffset.UTC))
@@ -194,6 +195,45 @@ class RepublishAccessTokenUseCaseTest {
         verifyNoInteractions(accountRepository);
         verify(jwtTokenProvider, never()).createAccessToken(any(Account.class));
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("유예 창(30초) 이내에 폐기된 토큰 재제시는 경쟁으로 보고 전체 폐기 없이 거절한다")
+    void execute_revokedWithinGrace_rejectsWithoutRevokeAll() {
+        // given: 방금(유예 창 이내) 다른 요청의 회전으로 폐기된 토큰 — 멀티탭 동시 갱신 시나리오
+        storedToken.setIsRevoked(true);
+        storedToken.setRevokedAt(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(5));
+        given(jwtTokenProvider.getJtiFromToken(REFRESH_TOKEN_VALUE)).willReturn(JTI);
+        given(jwtTokenProvider.getAccountIdFromToken(REFRESH_TOKEN_VALUE)).willReturn(ACCOUNT_ID);
+        given(refreshTokenRepository.findByJti(JTI)).willReturn(Optional.of(storedToken));
+
+        // when & then
+        assertThatThrownBy(() -> republishAccessTokenUseCase.execute(REFRESH_TOKEN_VALUE))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        // then: 오탐 완화 — 계정 전체 토큰 폐기가 일어나지 않아야 한다
+        verify(refreshTokenRepository, never()).findAllByAccountIdAndIsRevokedFalse(anyLong());
+        verifyNoInteractions(accountRepository);
+    }
+
+    @Test
+    @DisplayName("조회 후 다른 요청이 먼저 회전하면(조건부 UPDATE 실패) 전체 폐기 없이 거절한다")
+    void execute_concurrentRotation_rejectsWithoutRevokeAll() {
+        // given: findByJti 시점에는 활성이었으나 revokeIfActive 시점에 이미 다른 요청이 회전함
+        given(jwtTokenProvider.getJtiFromToken(REFRESH_TOKEN_VALUE)).willReturn(JTI);
+        given(jwtTokenProvider.getAccountIdFromToken(REFRESH_TOKEN_VALUE)).willReturn(ACCOUNT_ID);
+        given(refreshTokenRepository.findByJti(JTI)).willReturn(Optional.of(storedToken));
+        given(accountRepository.findById(ACCOUNT_ID)).willReturn(Optional.of(account));
+        given(refreshTokenRepository.revokeIfActive(eq(JTI), any(LocalDateTime.class))).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> republishAccessTokenUseCase.execute(REFRESH_TOKEN_VALUE))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        // then: 같은 토큰으로 새 토큰이 2개 발급되지 않아야 한다
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+        verify(refreshTokenRepository, never()).findAllByAccountIdAndIsRevokedFalse(anyLong());
+        verify(jwtTokenProvider, never()).createAccessToken(any(Account.class));
     }
 
     @Test
@@ -229,7 +269,7 @@ class RepublishAccessTokenUseCaseTest {
                 .isInstanceOf(AccountNotFoundException.class);
 
         // then: 계정 확인 전에는 기존 토큰을 폐기하지 않는다
-        assertThat(storedToken.getIsRevoked()).isFalse();
+        verify(refreshTokenRepository, never()).revokeIfActive(anyString(), any(LocalDateTime.class));
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
         verify(jwtTokenProvider, never()).createAccessToken(any(Account.class));
     }
