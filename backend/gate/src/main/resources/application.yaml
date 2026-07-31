@@ -35,11 +35,6 @@ spring:
         format_sql: true
         use_sql_comments: true
 
-# Json Web Token
-jwt:
-  secret: ${JWT_SECRET:357638792F423F4428472B4B6250655368566D597133743677397A2443264629}
-  create-user-token-expiry: 300000
-
 # Api Key
 api-key:
   prefix: gate_

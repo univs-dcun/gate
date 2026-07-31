@@ -1,0 +1,21 @@
+# ============================================================
+# 제품 — demo-web (UG-246)
+# gate 제품의 데모 프론트엔드.
+# ============================================================
+
+services:
+
+  demo-web:
+    networks:
+      - platform-net
+    ports:
+      - ${DEMO_WEB_HOST_PORT:-3001}:3000
+    image: ${DOCKHUB_GATE_URL}/demo-web:${DEMO_WEB_VERSION}
+    environment:
+      - UNIVS_API_BASE_URL=${GATEWAY_URL}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}

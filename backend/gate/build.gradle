@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.10'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springdoc.openapi-gradle-plugin' version '1.9.0'
+    id 'info.solidsoft.pitest' version '1.15.0'
 }
 
 group = 'ai.univs.gate'
@@ -86,6 +88,10 @@ dependencies {
 
     /* DOCS */
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
+
+    /* API 계약 스펙 생성용 인메모리 DB (openapi 프로파일 전용, UG-238)
+       developmentOnly: bootRun 계열(generateOpenApiDocs)에는 포함되고 bootJar(배포 이미지)에서는 제외됨 */
+    developmentOnly 'com.h2database:h2'
 }
 
 dependencyManagement {
@@ -96,6 +102,38 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// 뮤테이션 테스트 (UG-240): ./gradlew pitest
+// CI의 L1c Mutation Test 게이트가 변경된 클래스만 스코프해서 실행한다:
+//   ./gradlew pitest -Ppitest.targetClasses='ai.univs.gate.foo.BarUseCase,...'
+// 프로퍼티 없이 실행하면 전체 패키지 대상 (로컬 전수 측정용 — 오래 걸림)
+pitest {
+    pitestVersion = '1.17.2'          // Java 21 바이트코드 지원
+    junit5PluginVersion = '1.2.1'
+    targetClasses = (project.hasProperty('pitest.targetClasses')
+            ? project.property('pitest.targetClasses').toString().split(',').toList()
+            : ['ai.univs.gate.*'])
+    targetTests = ['ai.univs.gate.*']
+    excludedClasses = ['ai.univs.gate.**.Q*']   // QueryDSL 생성 클래스 제외
+    threads = 4
+    outputFormats = ['XML', 'HTML']
+    timestampedReports = false
+    mutationThreshold = 0             // 실패 판정은 CI 게이트가 킬률 파싱으로 수행 (observe/enforce 모드)
+}
+
+// API 계약 스펙 생성 (UG-238): ./gradlew generateOpenApiDocs
+// openapi 프로파일로 앱을 잠깐 띄워 스펙을 뽑는다 — DB/config-server/eureka 불필요
+// 생성물은 build/openapi/ 에 떨어지며, 계약 기준선(api-contract/openapi.json)과
+// CI(L1b Contract Check)에서 비교된다. 의도된 스펙 변경 시에만 생성물을 기준선으로 복사해 커밋한다.
+openApi {
+    apiDocsUrl = "http://localhost:18099/api-docs/gate"
+    outputDir = file("build/openapi")
+    outputFileName = "openapi.json"
+    waitTimeInSeconds = 90
+    customBootRun {
+        args = ["--spring.profiles.active=openapi"]
+    }
 }
 
 // Querydsl 설정부 (수정 제안)

@@ -1,0 +1,44 @@
+# ============================================================
+# 범용 모듈 — auth (UG-246)
+# 계정/토큰 관리. 도메인 무관 — 어떤 제품 조합에도 그대로 사용.
+# 경계 계약: docs/scaffold-contract.md §1
+# ============================================================
+
+services:
+
+  auth-service:
+    networks:
+      - platform-net
+    image: ${DOCKHUB_GATE_URL}/auth-service:${AUTH_SERVICE_VERSION}
+    volumes:
+      - ./logs:/logs
+    environment:
+      SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/auth
+      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      GOOGLE_OAUTH2_EMAIL: ${GOOGLE_OAUTH2_EMAIL}
+      GOOGLE_OAUTH2_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
+      GOOGLE_OAUTH2_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
+      GOOGLE_OAUTH2_REFRESH_TOKEN: ${GOOGLE_OAUTH2_REFRESH_TOKEN}
+      GOOGLE_OAUTH2_ACCESS_TOKEN_URL: ${GOOGLE_OAUTH2_ACCESS_TOKEN_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_CREATE_USER_TOKEN_EXPIRY: ${JWT_CREATE_USER_TOKEN_EXPIRY}
+      JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY}
+      JWT_REFRESH_TOKEN_EXPIRY: ${JWT_REFRESH_TOKEN_EXPIRY}
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9001/auth/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  platform-net:
+    external: true
+    name: ${DOCKER_NETWORK:-platform-net}

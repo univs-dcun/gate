@@ -11,4 +11,5 @@ public class AuthResponseDTO {
 
     private boolean valid;
     private Long accountId;
+    private String email;
 }
