@@ -4,6 +4,8 @@ import ai.univs.auth.application.exception.AccountNotFoundException;
 import ai.univs.auth.application.exception.EmailNotVerifiedException;
 import ai.univs.auth.application.exception.InvalidVerificationCodeException;
 import ai.univs.auth.application.exception.PasswordMismatchException;
+import ai.univs.auth.application.exception.PasswordReusedException;
+import ai.univs.auth.application.service.PasswordService;
 import ai.univs.auth.shared.web.ctx.ClientRequestContextHolder;
 import ai.univs.auth.domain.entity.Account;
 import ai.univs.auth.domain.entity.EmailVerification;
@@ -29,6 +31,7 @@ public class PasswordResetUseCase {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordHistoryRepository passwordHistoryRepository;
+    private final PasswordService passwordService;
 
     @Transactional(noRollbackFor = InvalidVerificationCodeException.class)
     public void execute(String email, String newPassword, String passwordConfirm) {
@@ -49,9 +52,16 @@ public class PasswordResetUseCase {
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(AccountNotFoundException::new);
 
+        // 기존에 사용한 비밀번호와 같은 비밀번호로 재설정 시도하는지 확인
+        if (passwordService.isPasswordReused(account, newPassword)) {
+            throw new PasswordReusedException();
+        }
+
+        // 이력에는 변경으로 적용되는 새 비밀번호 해시를 저장 (변경 경로와 동일 규약)
+        String encodedPassword = passwordEncoder.encode(newPassword);
         PasswordHistory history = PasswordHistory.builder()
                 .accountId(account.getAccountId())
-                .passwordHash(account.getPassword())
+                .passwordHash(encodedPassword)
                 .passwordResetMethod(PasswordResetMethod.EMAIL_RESET)
                 .changedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .ipAddress(ClientRequestContextHolder.getIpAddress())
@@ -59,7 +69,7 @@ public class PasswordResetUseCase {
                 .build();
         passwordHistoryRepository.save(history);
 
-        account.changePassword(passwordEncoder.encode(newPassword));
+        account.changePassword(encodedPassword);
 
         // 사용한 인증 레코드 소진 — 동일 인증으로 반복 재설정 불가
         emailVerificationRepository.deleteByEmailAndType(email, EmailVerificationType.PASSWORD_RESET);

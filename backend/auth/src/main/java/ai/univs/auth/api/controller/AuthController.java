@@ -79,7 +79,6 @@ public class AuthController {
     @Operation(summary = "로그인")
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.FAILED_ACCOUNT_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.FAILED_ACCOUNT_LOCKED, status = 400),
             @SwaggerError(errorType = ErrorType.FAILED_WRONG_PASSWORD, status = 400),
     })

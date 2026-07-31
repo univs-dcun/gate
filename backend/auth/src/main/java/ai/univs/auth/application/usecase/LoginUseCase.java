@@ -2,7 +2,6 @@ package ai.univs.auth.application.usecase;
 
 import ai.univs.auth.application.exception.AccountInactiveException;
 import ai.univs.auth.application.exception.AccountLockedException;
-import ai.univs.auth.application.exception.AccountNotFoundException;
 import ai.univs.auth.application.exception.BadCredentialsException;
 import ai.univs.auth.application.result.AccountResult;
 import ai.univs.auth.application.result.LoginResult;
@@ -38,16 +37,16 @@ public class LoginUseCase {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(noRollbackFor = {
-            AccountNotFoundException.class,
             AccountLockedException.class,
             AccountInactiveException.class,
             BadCredentialsException.class
     })
     public LoginResult execute(String email, String password) {
+        // 계정 존재 여부는 응답으로 노출하지 않음 (계정 열거 방지) — 로그로만 구분
         Account account = accountRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     logLoginAttempt(null, email, LoginStatus.FAILED_ACCOUNT_NOT_FOUND);
-                    return new AccountNotFoundException();
+                    return new BadCredentialsException();
                 });
 
         // 잠김 계정 확인
@@ -58,7 +57,7 @@ public class LoginUseCase {
 
         // 계정 활성화 여부 확인
         if (!account.isActive()) {
-            logLoginAttempt(account.getAccountId(), email, LoginStatus.FAILED_ACCOUNT_LOCKED);
+            logLoginAttempt(account.getAccountId(), email, LoginStatus.FAILED_ACCOUNT_INACTIVE);
             throw new AccountInactiveException();
         }
 

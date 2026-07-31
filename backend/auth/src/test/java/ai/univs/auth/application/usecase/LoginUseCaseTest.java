@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import ai.univs.auth.application.exception.AccountInactiveException;
 import ai.univs.auth.application.exception.AccountLockedException;
-import ai.univs.auth.application.exception.AccountNotFoundException;
 import ai.univs.auth.application.exception.BadCredentialsException;
 import ai.univs.auth.application.result.LoginResult;
 import ai.univs.auth.application.result.RefreshTokenResult;
@@ -139,14 +138,14 @@ class LoginUseCaseTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 계정이면 AccountNotFoundException이 발생하고 accountId 없는 실패 이력이 저장된다")
+    @DisplayName("존재하지 않는 계정도 BadCredentialsException으로 응답한다 (계정 열거 방지) — 실패 이력은 구분 저장")
     void execute_accountNotFound_throwsException() {
         // given
         given(accountRepository.findByEmail(EMAIL)).willReturn(Optional.empty());
 
-        // when & then
+        // when & then: 비밀번호 불일치와 동일한 예외 — 응답만으로 계정 존재를 알 수 없어야 한다
         assertThatThrownBy(() -> loginUseCase.execute(EMAIL, RAW_PASSWORD))
-                .isInstanceOf(AccountNotFoundException.class);
+                .isInstanceOf(BadCredentialsException.class);
 
         // then: 실패 이력 검증 (계정을 못 찾았으므로 accountId는 null)
         LoginLog savedLog = captureSingleLoginLog();
@@ -218,10 +217,10 @@ class LoginUseCaseTest {
         assertThatThrownBy(() -> loginUseCase.execute(EMAIL, RAW_PASSWORD))
                 .isInstanceOf(AccountInactiveException.class);
 
-        // then: 비활성 계정도 FAILED_ACCOUNT_LOCKED 상태로 이력이 남는다
+        // then: 비활성 계정은 전용 상태로 이력이 남는다
         LoginLog savedLog = captureSingleLoginLog();
         assertThat(savedLog.getAccountId()).isEqualTo(ACCOUNT_ID);
-        assertThat(savedLog.getLoginStatus()).isEqualTo(LoginStatus.FAILED_ACCOUNT_LOCKED);
+        assertThat(savedLog.getLoginStatus()).isEqualTo(LoginStatus.FAILED_ACCOUNT_INACTIVE);
 
         verifyNoInteractions(passwordEncoder, jwtTokenProvider, refreshTokenRepository);
     }

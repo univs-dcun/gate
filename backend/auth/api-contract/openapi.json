@@ -48,23 +48,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FAILED_WRONG_PASSWORD": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "AUTH-110",
-                        "type": "FAILED_WRONG_PASSWORD",
-                        "message": "비밀번호가 일치하지 않습니다. 다시 시도해 주세요."
-                      }
-                    }
-                  },
                   "ALREADY_USED_PASSWORD": {
                     "value": {
                       "success": false,
                       "errors": {
                         "code": "AUTH-115",
                         "type": "ALREADY_USED_PASSWORD",
-                        "message": "새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요."
+                        "message": "최근에 사용한 비밀번호로는 변경할 수 없습니다. 다른 비밀번호를 사용해 주세요."
                       }
                     }
                   },
@@ -85,6 +75,16 @@
                         "code": "AUTH-112",
                         "type": "FAILED_ACCOUNT_NOT_FOUND",
                         "message": "계정을 찾을 수 없습니다. 이메일을 확인해 주세요."
+                      }
+                    }
+                  },
+                  "INVALID_CURRENT_PASSWORD": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "AUTH-130",
+                        "type": "INVALID_CURRENT_PASSWORD",
+                        "message": "현재 비밀번호가 일치하지 않습니다. 다시 시도해 주세요."
                       }
                     }
                   }
@@ -1041,7 +1041,7 @@
                       "errors": {
                         "code": "AUTH-115",
                         "type": "ALREADY_USED_PASSWORD",
-                        "message": "새 비밀번호는 현재 비밀번호와 다르게 설정해 주세요."
+                        "message": "최근에 사용한 비밀번호로는 변경할 수 없습니다. 다른 비밀번호를 사용해 주세요."
                       }
                     }
                   },
@@ -1699,7 +1699,7 @@
                       "errors": {
                         "code": "AUTH-110",
                         "type": "FAILED_WRONG_PASSWORD",
-                        "message": "비밀번호가 일치하지 않습니다. 다시 시도해 주세요."
+                        "message": "이메일 또는 비밀번호가 올바르지 않습니다."
                       }
                     }
                   },
@@ -1720,16 +1720,6 @@
                         "code": "PJ-101",
                         "type": "INVALID_INPUT",
                         "message": "유효하지 않은 값이 포함된 사용자의 요청입니다."
-                      }
-                    }
-                  },
-                  "FAILED_ACCOUNT_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "AUTH-112",
-                        "type": "FAILED_ACCOUNT_NOT_FOUND",
-                        "message": "계정을 찾을 수 없습니다. 이메일을 확인해 주세요."
                       }
                     }
                   }
@@ -1937,6 +1927,10 @@
             "type": "integer",
             "format": "int64",
             "description": "계정 식별 번호"
+          },
+          "email": {
+            "type": "string",
+            "description": "1 ~ 255 문자열, 사용자 이메일"
           }
         }
       },
@@ -1959,6 +1953,10 @@
           "accessToken": {
             "type": "string",
             "description": "서비스 접근 토큰"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "서비스 접근 토큰 갱신용 리프래시 토큰"
           },
           "tokenType": {
             "type": "string",
