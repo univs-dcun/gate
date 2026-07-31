@@ -25,10 +25,6 @@ eureka:
     enabled: false
 
 # --- 이하: 빈 생성에 필요한 앱 설정 (평소엔 config-server가 공급 — 여기선 더미 값으로 충분) ---
-jwt:
-  secret: openapi-profile-dummy-secret-not-used-0000000000000000000000000000
-  create-user-token-expiry: 300000
-
 api-key:
   prefix: gate_
   length: 31
