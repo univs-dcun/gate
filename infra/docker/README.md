@@ -48,9 +48,10 @@ compose가 소유권 경계대로 분해되어 있다. 조합은 각 서버 `.en
 docker compose -p gate up -d <service>
 ```
 
-환경 간 차이(네트워크명, 호스트 포트, URL)는 전부 `.env` 변수로 이동했다 — compose 파일 세트는
-세 환경이 **동일한 파일**을 쓴다. 기본값은 dev 기준이고 master가 `.env`에서 오버라이드한다
-(`DOCKER_NETWORK=gate-net`, `*_HOST_PORT=7xxx`).
+환경 간 차이(호스트 포트, URL)는 전부 `.env` 변수로 이동했다 — compose 파일 세트는
+세 환경이 **동일한 파일**을 쓴다. 기본값은 dev 기준이고 master가 `.env`에서 포트만
+오버라이드한다(`*_HOST_PORT=7xxx`). 네트워크는 세 환경 모두 `platform-net`으로 통일됨
+(UG-247에서 운영의 gate-net 폐기 — `DOCKER_NETWORK` 변수는 특수 배포용으로만 남아 있음).
 
 ## 규칙
 
@@ -67,17 +68,14 @@ docker compose -p gate up -d <service>
 1. `compose/*.yml` 전체를 서버 작업 디렉토리로 복사
 2. 해당 환경의 `.env.example`을 `.env`로 복사 후 `<SECRET>` 값 채우기
 3. `*_VERSION`을 마지막 배포 버전으로 갱신 (레지스트리 태그 목록 또는 Slack 배포 알림 참고)
-4. `docker network create <네트워크명>` (dev/stage: `platform-net`, master: `gate-net`) 후
-   `docker compose -p gate up -d`
+4. `docker network create platform-net` 후 `docker compose -p gate up -d`
 
-## 구(舊) 단일 compose 파일
+## 참고
 
-`{dev,stage,master}/docker-compose.yml`은 서버 전환 완료 전까지 유지하는 구 구성이다.
-세 서버 모두 레이어 구성으로 전환 확인 후 제거 예정 (UG-246).
-
-- 전환 시 master 주의사항: postgres 서비스명이 `postgresql` → `platform-postgresql`로
-  통일되므로 `.env`의 `CORE_DB_URL` 호스트도 함께 변경, postgres 컨테이너는 재생성됨
-  (데이터는 bind mount라 유지).
-- config-server는 git 모드로 동작 중이지만 세 서버 모두 `../spring-config:/config-repo` 볼륨을
+- 세 서버 모두 2026-07-30에 레이어 구성 + 표준 디렉토리로 전환 완료 (UG-246/247).
+  구 단일 docker-compose.yml 3벌은 제거됨 — 필요 시 git 이력에서 복구 가능.
+- 전환 과정에서 postgres 서비스명(`platform-postgresql`)과 네트워크명(`platform-net`)이
+  세 환경 공통으로 통일됨.
+- config-server는 git 모드로 동작 중이지만 세 서버 모두 `./spring-config:/config-repo` 볼륨을
   마운트하고 있음 (native 전환 대비용, 현재는 읽히지 않음 — 내용물이 낡았을 수 있으니 native
   전환 시 반드시 gate-config 최신본으로 교체).
