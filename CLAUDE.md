@@ -26,6 +26,7 @@
 - 모든 API는 Gateway를 통해 라우팅
 - 서비스간 통신은 REST (향후 Kafka 고려)
 - 인증은 service-auth에서 JWT 발급, Gateway에서 검증
+- **스캐폴드 서비스(discovery/config/gateway/auth)는 별도 레포 `univs-dcun/msa-scaffold`로 분리됨** (UG-249, 이력 포함 이관). 스캐폴드↔제품 경계면 계약은 msa-scaffold의 `docs/scaffold-contract.md`가 단일 진실 (모노레포 docs/에는 포인터만 있음)
 
 ## API 설계 규칙
 - RESTful 원칙 준수
