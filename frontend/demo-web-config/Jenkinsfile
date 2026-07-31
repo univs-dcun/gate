@@ -100,6 +100,8 @@ pipeline {
                             cp -f  ${CONFIG_DIR}/docker-entrypoint.sh  src/docker-entrypoint.sh
                             cp -f  ${CONFIG_DIR}/docker-compose.yml    src/docker-compose.yml
                             cp -rf frontend/Reference                  src/Reference
+                            mkdir -p src/public/dot-assets
+                            cp -rf ${CONFIG_DIR}/dot-assets/.          src/public/dot-assets/
                         """
                         sh "docker build -t ${DOCKER_REGISTRY_URL}${REPOSITORY}:${DEPLOY_TAG} src"
                         sh "echo ${DOCKER_HUB_PASS} | docker login ${DOCKER_REGISTRY_URL} -u ${DOCKER_HUB_USER} --password-stdin"

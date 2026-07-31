@@ -1,0 +1,35 @@
+{
+    "version": "2.1",
+    "contract": {
+        "customer": "UNIVERSEAI_demo license",
+        "expiration": {
+            "day": 6,
+            "month": 8,
+            "year": 2027
+        },
+        "hwids": [
+            "WsXqO9WtdYKt5KID",
+            "WCLTbUhUxaa+boID",
+            "WWMMpgZzGKQBmDID",
+            "WxQRx+nfQbK8MBID",
+            "WJI4BY3ix7UTvxID"
+        ],
+        "products": [
+            "iface"
+        ],
+        "idkit": {
+            "database_size": 0,
+            "max_client_connections": 0
+        },
+        "dot": {
+            "web": {
+                "enabled": true,
+                "features": {
+                    "realTimeTransactionReportingEnabled": false,
+                    "realTimeAnalyticsReportingEnabled": true
+                }
+            }
+        }
+    },
+    "contract_signature": "XdtJjqdPZbzAeHKI+GoRNDjb2Dvpj9UxvO/hW+ZDxK4rXmK4egDekLKwsOzI+/qPDiJPSDeeeeyuPD9yd665nTiWMP5urr6l6G2+8jpaPXBTHLn/eLdaGKdGP0Av8XNlL1xuX3vt+mXGVIhiZTaQMuBF30L9fMITDybKNKCcAvA="
+}
