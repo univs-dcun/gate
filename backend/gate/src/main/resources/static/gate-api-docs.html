@@ -138,47 +138,47 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-auth')">AUTH <span class="sb-arr open" id="arr-g-auth">▶</span></div>
     <ul class="sb-list" id="g-auth">
-      <li class="sb-item" onclick="show('auth-login',this)"><span class="mb-sm mb-post-sm">POST</span>로그인</li>
-      <li class="sb-item" onclick="show('auth-refresh',this)"><span class="mb-sm mb-post-sm">POST</span>토큰 재발급</li>
+      <li class="sb-item" onclick="show('auth-login',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-login">로그인</span></li>
+      <li class="sb-item" onclick="show('auth-refresh',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-token-refresh">토큰 재발급</span></li>
     </ul>
   </div>
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-face-feature')">FACE FEATURE <span class="sb-arr open" id="arr-g-face-feature">▶</span></div>
     <ul class="sb-list" id="g-face-feature">
-      <li class="sb-item" onclick="show('face-feature-create',this)"><span class="mb-sm mb-post-sm">POST</span>얼굴 특징점 등록</li>
-      <li class="sb-item" onclick="show('face-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span>얼굴 특징점 수정</li>
-      <li class="sb-item" onclick="show('face-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span>얼굴 특징점 삭제</li>
-      <li class="sb-item" onclick="show('face-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span>단건 조회</li>
-      <li class="sb-item" onclick="show('face-feature-get-by-faceid',this)"><span class="mb-sm mb-get-sm">GET</span>FaceID 조회</li>
-      <li class="sb-item" onclick="show('face-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span>목록 조회</li>
+      <li class="sb-item" onclick="show('face-feature-create',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-feature-create">얼굴 특징점 등록</span></li>
+      <li class="sb-item" onclick="show('face-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span><span data-i18n="nav-face-feature-update">얼굴 특징점 수정</span></li>
+      <li class="sb-item" onclick="show('face-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span><span data-i18n="nav-face-feature-delete">얼굴 특징점 삭제</span></li>
+      <li class="sb-item" onclick="show('face-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-get">단건 조회</span></li>
+      <li class="sb-item" onclick="show('face-feature-get-by-faceid',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-get-by-faceid">FaceID 조회</span></li>
+      <li class="sb-item" onclick="show('face-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-list">목록 조회</span></li>
     </ul>
   </div>
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-face-match')">FACE MATCH <span class="sb-arr open" id="arr-g-face-match">▶</span></div>
     <ul class="sb-list" id="g-face-match">
-      <li class="sb-item" onclick="show('face-match-extract',this)"><span class="mb-sm mb-post-sm">POST</span>특징점 추출</li>
-      <li class="sb-item" onclick="show('face-match-verify-id',this)"><span class="mb-sm mb-post-sm">POST</span>1:1 확인 (featureId)</li>
-      <li class="sb-item" onclick="show('face-match-verify-image',this)"><span class="mb-sm mb-post-sm">POST</span>1:1 확인 (image)</li>
-      <li class="sb-item" onclick="show('face-match-verify-descriptor',this)"><span class="mb-sm mb-post-sm">POST</span>1:1 확인 (특징점)</li>
-      <li class="sb-item" onclick="show('face-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span>1:N 매칭</li>
-      <li class="sb-item" onclick="show('face-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span>라이브니스</li>
+      <li class="sb-item" onclick="show('face-match-extract',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-extract">특징점 추출</span></li>
+      <li class="sb-item" onclick="show('face-match-verify-id',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-verify-id">1:1 확인 (featureId)</span></li>
+      <li class="sb-item" onclick="show('face-match-verify-image',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-verify-image">1:1 확인 (image)</span></li>
+      <li class="sb-item" onclick="show('face-match-verify-descriptor',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-verify-descriptor">1:1 확인 (특징점)</span></li>
+      <li class="sb-item" onclick="show('face-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-identify">1:N 매칭</span></li>
+      <li class="sb-item" onclick="show('face-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-liveness">라이브니스</span></li>
     </ul>
   </div>
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-palm-feature')">PALM FEATURE <span class="sb-arr open" id="arr-g-palm-feature">▶</span></div>
     <ul class="sb-list" id="g-palm-feature">
-      <li class="sb-item" onclick="show('palm-feature-create',this)"><span class="mb-sm mb-post-sm">POST</span>팜 특징점 등록</li>
-      <li class="sb-item" onclick="show('palm-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span>팜 특징점 수정</li>
-      <li class="sb-item" onclick="show('palm-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span>팜 특징점 삭제</li>
-      <li class="sb-item" onclick="show('palm-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span>단건 조회</li>
-      <li class="sb-item" onclick="show('palm-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span>목록 조회</li>
+      <li class="sb-item" onclick="show('palm-feature-create',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-palm-feature-create">팜 특징점 등록</span></li>
+      <li class="sb-item" onclick="show('palm-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span><span data-i18n="nav-palm-feature-update">팜 특징점 수정</span></li>
+      <li class="sb-item" onclick="show('palm-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span><span data-i18n="nav-palm-feature-delete">팜 특징점 삭제</span></li>
+      <li class="sb-item" onclick="show('palm-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-palm-feature-get">단건 조회</span></li>
+      <li class="sb-item" onclick="show('palm-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-palm-feature-list">목록 조회</span></li>
     </ul>
   </div>
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-palm-match')">PALM MATCH <span class="sb-arr open" id="arr-g-palm-match">▶</span></div>
     <ul class="sb-list" id="g-palm-match">
-      <li class="sb-item" onclick="show('palm-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span>팜 1:N 매칭</li>
-      <li class="sb-item" onclick="show('palm-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span>팜 라이브니스</li>
+      <li class="sb-item" onclick="show('palm-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-palm-match-identify">팜 1:N 매칭</span></li>
+      <li class="sb-item" onclick="show('palm-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-palm-match-liveness">팜 라이브니스</span></li>
     </ul>
   </div>
   <div class="lang-wrap">
@@ -523,7 +523,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -610,7 +610,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동 (수정됨)"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description (updated)"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"new-abc123-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/new.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">false</span>,
@@ -654,7 +654,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <div class="rs"><span class="st st204">204</span><span class="st-desc">삭제 성공 (No Content)</span></div>
         <div class="cblk">
           <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">No Body</span></div>
-          <pre><span class="jnu">// 응답 본문 없음</span></pre>
+          <pre><span class="jnu">// No contents</span></pre>
         </div>
         <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">특징점을 찾을 수 없음</span></div>
         <div class="cblk">
@@ -721,7 +721,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -784,7 +784,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -853,7 +853,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"faceFeatures"</span>: [
       {
         <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
-        <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+        <span class="jk">"description"</span>: <span class="js">"description"</span>,
         <span class="jk">"featureId"</span>: <span class="js">"abc123-..."</span>,
         <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
         <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -1007,7 +1007,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"similarity"</span>: <span class="jn">0.98</span>,
     <span class="jk">"matchingFeatureId"</span>: <span class="jnu">null</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
@@ -1254,7 +1254,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"similarity"</span>: <span class="jn">0.97</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/img.jpg"</span>,
@@ -1412,7 +1412,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -1499,7 +1499,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동 (수정됨)"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description (updated)"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/new.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">false</span>,
@@ -1543,7 +1543,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <div class="rs"><span class="st st204">204</span><span class="st-desc">삭제 성공 (No Content)</span></div>
         <div class="cblk">
           <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">No Body</span></div>
-          <pre><span class="jnu">// 응답 본문 없음</span></pre>
+          <pre><span class="jnu">// No contents</span></pre>
         </div>
       </div>
     </div>
@@ -1598,7 +1598,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -1667,7 +1667,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"palmFeatures"</span>: [
       {
         <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-        <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+        <span class="jk">"description"</span>: <span class="js">"description"</span>,
         <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
         <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
         <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
@@ -1757,7 +1757,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
     <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
-    <span class="jk">"description"</span>: <span class="js">"홍길동"</span>,
+    <span class="jk">"description"</span>: <span class="js">"description"</span>,
     <span class="jk">"similarity"</span>: <span class="jn">0.93</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/palm.jpg"</span>,
@@ -1892,14 +1892,52 @@ var currentLang = 'ko';
 
 var T = {
   ko: {
-    'nav-overview':      'Overview',
-    'nav-login':         '로그인',
-    'nav-token-refresh': '토큰 재발급'
+    'nav-overview': 'Overview',
+    'nav-login': '로그인',
+    'nav-token-refresh': '토큰 재발급',
+    'nav-face-feature-create': '얼굴 특징점 등록',
+    'nav-face-feature-update': '얼굴 특징점 수정',
+    'nav-face-feature-delete': '얼굴 특징점 삭제',
+    'nav-face-feature-get': '단건 조회',
+    'nav-face-feature-get-by-faceid': 'FaceID 조회',
+    'nav-face-feature-list': '목록 조회',
+    'nav-face-match-extract': '특징점 추출',
+    'nav-face-match-verify-id': '1:1 확인 (featureId)',
+    'nav-face-match-verify-image': '1:1 확인 (image)',
+    'nav-face-match-verify-descriptor': '1:1 확인 (특징점)',
+    'nav-face-match-identify': '1:N 매칭',
+    'nav-face-match-liveness': '라이브니스',
+    'nav-palm-feature-create': '팜 특징점 등록',
+    'nav-palm-feature-update': '팜 특징점 수정',
+    'nav-palm-feature-delete': '팜 특징점 삭제',
+    'nav-palm-feature-get': '단건 조회',
+    'nav-palm-feature-list': '목록 조회',
+    'nav-palm-match-identify': '팜 1:N 매칭',
+    'nav-palm-match-liveness': '팜 라이브니스'
   },
   en: {
-    'nav-overview':      'Overview',
-    'nav-login':         'Login',
-    'nav-token-refresh': 'Token Refresh'
+    'nav-overview': 'Overview',
+    'nav-login': 'Login',
+    'nav-token-refresh': 'Token Refresh',
+    'nav-face-feature-create': 'Register Face Feature',
+    'nav-face-feature-update': 'Update Face Feature',
+    'nav-face-feature-delete': 'Delete Face Feature',
+    'nav-face-feature-get': 'Get by ID',
+    'nav-face-feature-get-by-faceid': 'Get by FaceID',
+    'nav-face-feature-list': 'List',
+    'nav-face-match-extract': 'Extract',
+    'nav-face-match-verify-id': '1:1 Verify (featureId)',
+    'nav-face-match-verify-image': '1:1 Verify (image)',
+    'nav-face-match-verify-descriptor': '1:1 Verify (descriptor)',
+    'nav-face-match-identify': '1:N Identify',
+    'nav-face-match-liveness': 'Liveness',
+    'nav-palm-feature-create': 'Register Palm Feature',
+    'nav-palm-feature-update': 'Update Palm Feature',
+    'nav-palm-feature-delete': 'Delete Palm Feature',
+    'nav-palm-feature-get': 'Get by ID',
+    'nav-palm-feature-list': 'List',
+    'nav-palm-match-identify': 'Palm 1:N Identify',
+    'nav-palm-match-liveness': 'Palm Liveness'
   }
 };
 
@@ -1914,22 +1952,562 @@ var TH = {
   }
 };
 
+var CODE_MSGS = {
+  '이메일 또는 비밀번호가 올바르지 않습니다.': 'Invalid email or password.',
+  '유효하지 않은 리프레시 토큰입니다.':        'Invalid refresh token.',
+  '토큰이 만료되었습니다.':                    'Token has expired.',
+  '업로드된 파일이 유효하지 않습니다.':          'The uploaded file is invalid.',
+  '사용자 정보가 유효하지 않습니다.':            'Invalid user information.',
+  '이미지에서 얼굴을 찾을 수 없습니다.':         'No face detected in the image.',
+  '얼굴이 일치하지 않습니다.':                  'Face does not match.',
+  '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
+  '이미 등록된 팜 사용자입니다.':               'Palm user is already registered.',
+  '팜이 일치하지 않습니다.':                   'Palm does not match.',
+  '실제 손바닥이 아닌 것으로 감지되었습니다.':    'Detected as non-live palm image.'
+};
+var CODE_MSGS_REV = {};
+Object.keys(CODE_MSGS).forEach(function(k) { CODE_MSGS_REV[CODE_MSGS[k]] = k; });
+
+var INTRO = {
+  ko: {
+    heroDesc: '얼굴 인식 및 팜 정맥 인식 기반 e-KYC 게이트 서비스의 공식 API 레퍼런스입니다. 얼굴·팜 특징점 관리, 1:1 확인, 1:N 매칭, 라이브니스 감지 기능을 REST API로 제공합니다.',
+    h2: ['소개', '지원 생체인증 모듈', 'Base URL', '인증 방식', '응답 구조', '타임존 처리', '다국어 처리'],
+    secP: [
+      [
+        'UnivsGate API는 프로젝트별 API Key를 기반으로 얼굴 인식 및 팜 정맥 인식 기반 e-KYC 기능을 외부 서비스에 통합할 수 있는 RESTful API입니다. JWT 인증과 API Key 인증을 함께 사용하며, 파일 업로드가 필요한 엔드포인트는 <code>multipart/form-data</code> 형식을 사용합니다.',
+        'API를 사용하기 전에 <a href="https://univsgate.com" target="_blank" style="color:var(--accent)">관리 페이지</a>에서 회원가입 및 로그인 후 프로젝트를 생성하고 API Key를 발급받으세요. API Key는 모든 e-KYC 요청에 필수 인증 수단입니다.',
+        '모든 API 응답은 <code>{"success": boolean, "data": ..., "errors": ...}</code> 형식의 통일된 구조로 반환됩니다.'
+      ],
+      [],
+      [],
+      ['특징점 관리 및 매칭 API는 두 가지 인증 헤더가 모두 필요합니다. 로그인 API는 인증이 불필요합니다.'],
+      ['성공/실패 모두 HTTP 200으로 응답합니다. <code>success</code> 필드로 처리 결과를 구분합니다.'],
+      ['응답의 날짜/시간 필드는 기본적으로 UTC 기준입니다. <code>Accept-TimeZone</code> 헤더로 원하는 타임존을 지정하면 자동 변환됩니다.'],
+      ['한국어/영어를 지원합니다. <code>Accept-Language</code> 헤더로 원하는 언어를 지정하면 자동 변환됩니다.']
+    ],
+    cards: [
+      { h3: '<span class="iico" style="background:#EBF4FF">👤</span>얼굴 인식 (Face)', p: '얼굴 특징점 등록/관리 및 매칭(1:1 확인, 1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/face</code>' },
+      { h3: '<span class="iico" style="background:#f0fdf4">✋</span>팜 정맥 인식 (Palm)', p: '팜 정맥 특징점 등록/관리 및 매칭(1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/palm</code>' },
+      { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: '로그인 후 발급된 accessToken을 Authorization 헤더에 포함합니다.<br><br><code>Authorization: Bearer {accessToken}</code>' },
+      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다.<br><br><code>X-Api-Key: {apiKey}</code>' },
+      { h3: '✅ 성공 응답', p: null },
+      { h3: '❌ 오류 응답', p: null }
+    ]
+  },
+  en: {
+    heroDesc: 'The official API reference for the e-KYC gate service based on facial recognition and palm vein recognition. Provides face and palm feature management, 1:1 verification, 1:N matching, and liveness detection via REST API.',
+    h2: ['Introduction', 'Supported Biometric Modules', 'Base URL', 'Authentication', 'Response Structure', 'Timezone Handling', 'Internationalization'],
+    secP: [
+      [
+        'UnivsGate API is a RESTful API that integrates face recognition and palm vein recognition-based e-KYC functions into external services using a project-specific API Key. Both JWT and API Key authentication are required, and endpoints that need file uploads use <code>multipart/form-data</code>.',
+        'Before using the API, sign up and log in at the <a href="https://univsgate.com" target="_blank" style="color:var(--accent)">management page</a>, create a project, and issue an API Key. The API Key is mandatory for all e-KYC requests.',
+        'All API responses return a unified structure in the format <code>{"success": boolean, "data": ..., "errors": ...}</code>.'
+      ],
+      [],
+      [],
+      ['Feature management and matching APIs require both authentication headers. The login API does not require authentication.'],
+      ['Both success and failure return HTTP 200. Use the <code>success</code> field to determine the result.'],
+      ['Date/time fields in responses default to UTC. Specify your preferred timezone using the <code>Accept-TimeZone</code> header for automatic conversion.'],
+      ['Korean and English are supported. Specify your preferred language using the <code>Accept-Language</code> header for automatic conversion.']
+    ],
+    cards: [
+      { h3: '<span class="iico" style="background:#EBF4FF">👤</span>Face Recognition', p: 'Supports face feature registration/management and matching (1:1 verification, 1:N matching, liveness).<br><br>Base: <code>/api/v1/feature/face</code>' },
+      { h3: '<span class="iico" style="background:#f0fdf4">✋</span>Palm Vein Recognition', p: 'Supports palm vein feature registration/management and matching (1:N matching, liveness).<br><br>Base: <code>/api/v1/feature/palm</code>' },
+      { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: 'Include the accessToken issued after login in the Authorization header.<br><br><code>Authorization: Bearer {accessToken}</code>' },
+      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: 'Include the project-specific API Key in the X-Api-Key header.<br><br><code>X-Api-Key: {apiKey}</code>' },
+      { h3: '✅ Success Response', p: null },
+      { h3: '❌ Error Response', p: null }
+    ]
+  }
+};
+
 var PAGES = {
   'p-auth-login': {
     crumb: { ko: '<span>Auth</span> › 로그인', en: '<span>Auth</span> › Login' },
     title: { ko: '로그인', en: 'Login' },
-    desc:  {
+    desc: {
       ko: '이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다.',
       en: 'Log in with email and password to receive a JWT access token. The issued <code>accessToken</code> is used in all API requests that require authentication.'
-    }
+    },
+    pdsc: [
+      { ko: '로그인 이메일 주소 (최대 255자)', en: 'Login email address (max 255 chars)' },
+      { ko: '로그인 비밀번호 (최대 255자)', en: 'Login password (max 255 chars)' },
+      { ko: 'API 요청에 사용할 JWT 액세스 토큰', en: 'JWT access token for API requests' },
+      { ko: '액세스 토큰 갱신용 리프레시 토큰', en: 'Refresh token for renewing the access token' },
+      { ko: '토큰 타입 — <code>Bearer</code>', en: 'Token type — <code>Bearer</code>' },
+      { ko: '토큰 만료 시간 (초 단위)', en: 'Token expiry time (in seconds)' },
+      { ko: '로그인 계정 정보 객체', en: 'Logged-in account information object' },
+      { ko: '계정 식별 ID', en: 'Account identifier' },
+      { ko: '계정 이메일', en: 'Account email' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' },
+      { ko: '잘못된 이메일 또는 비밀번호', en: 'Invalid email or password' }
+    ]
   },
   'p-auth-refresh': {
     crumb: { ko: '<span>Auth</span> › 토큰 재발급', en: '<span>Auth</span> › Token Refresh' },
     title: { ko: 'Access Token 재발급', en: 'Refresh Access Token' },
-    desc:  {
+    desc: {
       ko: '만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 리프레시 토큰은 로그인 시 발급되며, 유효한 경우 새로운 <code>accessToken</code>이 반환됩니다.',
       en: 'Issue a new access token using a refresh token. The refresh token is provided at login and a new <code>accessToken</code> is returned if it is still valid.'
-    }
+    },
+    pdsc: [
+      { ko: '로그인 시 발급받은 리프레시 토큰 (최대 255자)', en: 'Refresh token issued at login (max 255 chars)' },
+      { ko: '새로 발급된 JWT 액세스 토큰', en: 'Newly issued JWT access token' },
+      { ko: '토큰 타입 — <code>Bearer</code>', en: 'Token type — <code>Bearer</code>' },
+      { ko: '토큰 만료 시간 (초 단위)', en: 'Token expiry time (in seconds)' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' },
+      { ko: '유효하지 않은 리프레시 토큰', en: 'Invalid refresh token' },
+      { ko: '만료된 리프레시 토큰', en: 'Expired refresh token' }
+    ]
+  },
+  'p-face-feature-create': {
+    crumb: { ko: '<span>Face Feature</span> › 얼굴 특징점 등록', en: '<span>Face Feature</span> › Register Face Feature' },
+    title: { ko: '얼굴 특징점 등록', en: 'Register Face Feature' },
+    desc: {
+      ko: '얼굴 이미지를 업로드하여 프로젝트에 얼굴 특징점을 등록합니다. 프로젝트 설정에 따라 라이브니스 검사가 함께 수행될 수 있습니다.',
+      en: 'Upload a face image to register a face feature in the project. A liveness check may be performed depending on project settings.'
+    },
+    pdsc: [
+      { ko: '<code>Bearer {accessToken}</code>', en: '<code>Bearer {accessToken}</code>' },
+      { ko: '프로젝트 API Key (최대 36자)', en: 'Project API Key (max 36 chars)' },
+      { ko: '얼굴 이미지 (jpg, jpeg, png)', en: 'Face image (jpg, jpeg, png)' },
+      { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
+      { ko: '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)', en: 'Request UUID (auto-generated if not provided, max 36 chars)' },
+      { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버에서 발급된 특징점 식별 ID', en: 'Feature identifier issued by the AI server' },
+      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '등록 일시', en: 'Registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: '등록 성공', en: 'Registration successful' },
+      { ko: '유효하지 않은 이미지 또는 라이브니스 실패', en: 'Invalid image or liveness failed' }
+    ]
+  },
+  'p-face-feature-update': {
+    crumb: { ko: '<span>Face Feature</span> › 얼굴 특징점 수정', en: '<span>Face Feature</span> › Update Face Feature' },
+    title: { ko: '얼굴 특징점 수정', en: 'Update Face Feature' },
+    desc: {
+      ko: '등록된 얼굴 특징점의 이미지 또는 설명을 수정합니다. 이미지를 교체하면 AI 서버에서 새로운 특징점이 추출됩니다.',
+      en: 'Update the image or description of a registered face feature. Replacing the image triggers new feature extraction on the AI server.'
+    },
+    pdsc: [
+      { ko: '수정할 얼굴 특징점 ID', en: 'ID of the face feature to update' },
+      { ko: '교체할 얼굴 이미지 (jpg, jpeg, png)', en: 'Replacement face image (jpg, jpeg, png)' },
+      { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버에서 발급된 특징점 식별 ID', en: 'Feature identifier issued by the AI server' },
+      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '최초 등록 일시', en: 'Initial registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: '수정 성공', en: 'Update successful' }
+    ]
+  },
+  'p-face-feature-delete': {
+    crumb: { ko: '<span>Face Feature</span> › 얼굴 특징점 삭제', en: '<span>Face Feature</span> › Delete Face Feature' },
+    title: { ko: '얼굴 특징점 삭제', en: 'Delete Face Feature' },
+    desc: {
+      ko: '등록된 얼굴 특징점을 소프트 삭제합니다. 삭제된 특징점은 매칭에서 제외됩니다.',
+      en: 'Soft-delete a registered face feature. Deleted features are excluded from matching.'
+    },
+    pdsc: [
+      { ko: '삭제할 얼굴 특징점 ID', en: 'ID of the face feature to delete' }
+    ],
+    stDesc: [
+      { ko: '삭제 성공 (No Content)', en: 'Deleted (No Content)' },
+      { ko: '특징점을 찾을 수 없음', en: 'Feature not found' }
+    ]
+  },
+  'p-face-feature-get': {
+    crumb: { ko: '<span>Face Feature</span> › 단건 조회', en: '<span>Face Feature</span> › Get by ID' },
+    title: { ko: '얼굴 특징점 단건 조회', en: 'Get Face Feature by ID' },
+    desc: {
+      ko: 'ID로 특정 얼굴 특징점 정보를 조회합니다.',
+      en: 'Retrieve a specific face feature by its ID.'
+    },
+    pdsc: [
+      { ko: '조회할 얼굴 특징점 ID', en: 'ID of the face feature to retrieve' },
+      { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
+      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '등록 일시', en: 'Registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' }
+    ]
+  },
+  'p-face-feature-get-by-faceid': {
+    crumb: { ko: '<span>Face Feature</span> › FaceID 조회', en: '<span>Face Feature</span> › Get by FaceID' },
+    title: { ko: 'FaceID 기반 얼굴 특징점 조회', en: 'Get Face Feature by FaceID' },
+    desc: {
+      ko: 'AI 서버에서 발급된 <code>featureId</code>(faceId)를 기반으로 얼굴 특징점 정보를 조회합니다.',
+      en: 'Retrieve a face feature using the <code>featureId</code> (faceId) issued by the AI server.'
+    },
+    pdsc: [
+      { ko: 'AI 서버 특징점 식별 ID (featureId)', en: 'AI server feature identifier (featureId)' },
+      { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
+      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '등록 일시', en: 'Registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' }
+    ]
+  },
+  'p-face-feature-list': {
+    crumb: { ko: '<span>Face Feature</span> › 목록 조회', en: '<span>Face Feature</span> › List' },
+    title: { ko: '얼굴 특징점 목록 조회', en: 'List Face Features' },
+    desc: {
+      ko: '프로젝트에 등록된 얼굴 특징점 목록을 페이지네이션으로 조회합니다.',
+      en: 'Retrieve a paginated list of face features registered in the project.'
+    },
+    pdsc: [
+      { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
+      { ko: '페이지 크기 (기본값: 10, 범위: 1~1000)', en: 'Page size (default: 10, range: 1–1000)' },
+      { ko: '설명(description) 검색 키워드', en: 'Keyword to search in description' },
+      { ko: '삭제 여부 필터 (미입력 시 미삭제 기준)', en: 'Deleted filter (defaults to non-deleted if omitted)' },
+      { ko: '조회 시작일 (yyyy-MM-dd)', en: 'Start date (yyyy-MM-dd)' },
+      { ko: '조회 종료일 (yyyy-MM-dd)', en: 'End date (yyyy-MM-dd)' },
+      { ko: '얼굴 특징점 목록', en: 'List of face features' },
+      { ko: '페이지네이션 정보', en: 'Pagination info' },
+      { ko: '현재 페이지 번호', en: 'Current page number' },
+      { ko: '페이지 크기', en: 'Page size' },
+      { ko: '전체 데이터 수', en: 'Total element count' },
+      { ko: '전체 페이지 수', en: 'Total page count' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' }
+    ]
+  },
+  'p-face-match-extract': {
+    crumb: { ko: '<span>Face Match</span> › 특징점 추출', en: '<span>Face Match</span> › Extract' },
+    title: { ko: '특징점 추출 (Extract)', en: 'Extract Feature' },
+    desc: {
+      ko: '얼굴 이미지에서 특징점 디스크립터(descriptor)를 추출합니다. 추출된 디스크립터는 <code>verify/descriptor</code> API에서 사용할 수 있습니다.',
+      en: 'Extract a feature descriptor from a face image. The extracted descriptor can be used in the <code>verify/descriptor</code> API.'
+    },
+    pdsc: [
+      { ko: '특징점 추출할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for feature extraction (jpg, jpeg, png)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '추출된 얼굴 특징점 디스크립터 (Base64 인코딩된 벡터)', en: 'Extracted face feature descriptor (Base64-encoded vector)' }
+    ],
+    stDesc: [
+      { ko: '추출 성공', en: 'Extraction successful' },
+      { ko: '얼굴 감지 실패', en: 'Face detection failed' }
+    ]
+  },
+  'p-face-match-verify-id': {
+    crumb: { ko: '<span>Face Match</span> › 1:1 확인 (featureId)', en: '<span>Face Match</span> › 1:1 Verify (featureId)' },
+    title: { ko: '1:1 확인 — featureId 기반', en: '1:1 Verify — featureId' },
+    desc: {
+      ko: '등록된 특징점의 <code>featureId</code>와 제출된 얼굴 이미지를 1:1로 비교합니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.',
+      en: 'Compare a registered feature by <code>featureId</code> against a submitted face image (1:1). A liveness check may be performed depending on project settings.'
+    },
+    pdsc: [
+      { ko: '비교 대상 featureId (최대 100자)', en: 'Target featureId to compare (max 100 chars)' },
+      { ko: '확인할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image to verify (jpg, jpeg, png)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '매칭 이력 ID', en: 'Match history ID' },
+      { ko: '프로젝트 ID', en: 'Project ID' },
+      { ko: '매칭 유형 — <code>VERIFY</code>', en: 'Match type — <code>VERIFY</code>' },
+      { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '확인 성공 여부', en: 'Whether verification succeeded' },
+      { ko: '매칭된 특징점 featureId', en: 'Matched feature featureId' },
+      { ko: '매칭된 특징점 설명', en: 'Matched feature description' },
+      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '매칭 요청에 사용된 특징점 ID', en: 'Feature ID used in the match request' },
+      { ko: '등록된 특징점 이미지 경로', en: 'Registered feature image path' },
+      { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
+      { ko: '실패 코드 (MISMATCH 등, 성공 시 null)', en: 'Failure code (MISMATCH etc., null on success)' },
+      { ko: '실패 원인 메시지', en: 'Failure reason message' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
+    ],
+    stDesc: [
+      { ko: '확인 성공', en: 'Verification successful' },
+      { ko: '확인 실패 (불일치)', en: 'Verification failed (mismatch)' }
+    ]
+  },
+  'p-face-match-verify-image': {
+    crumb: { ko: '<span>Face Match</span> › 1:1 확인 (image)', en: '<span>Face Match</span> › 1:1 Verify (image)' },
+    title: { ko: '1:1 확인 — 이미지 기반', en: '1:1 Verify — Image' },
+    desc: {
+      ko: '두 장의 얼굴 이미지를 직접 비교합니다. 등록 없이도 신분증 사진과 실물 얼굴을 비교하는 데 활용할 수 있습니다.',
+      en: 'Directly compare two face images. Can be used to compare an ID photo against a live face without prior registration.'
+    },
+    pdsc: [
+      { ko: '기준 얼굴 이미지 (예: 신분증 사진)', en: 'Reference face image (e.g. ID photo)' },
+      { ko: '비교할 얼굴 이미지 (예: 실시간 촬영)', en: 'Comparison face image (e.g. live capture)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '매칭 이력 ID', en: 'Match history ID' },
+      { ko: '프로젝트 ID', en: 'Project ID' },
+      { ko: '매칭 유형 — <code>VERIFY</code>', en: 'Match type — <code>VERIFY</code>' },
+      { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '확인 성공 여부', en: 'Whether verification succeeded' },
+      { ko: '기준 이미지 특징점 ID', en: 'Reference image feature ID' },
+      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '제출된 비교 이미지 경로', en: 'Submitted comparison image path' },
+      { ko: '기준 이미지 경로', en: 'Reference image path' },
+      { ko: '실패 코드 (성공 시 null)', en: 'Failure code (null on success)' },
+      { ko: '실패 원인 메시지', en: 'Failure reason message' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
+    ],
+    stDesc: [
+      { ko: '확인 성공', en: 'Verification successful' }
+    ]
+  },
+  'p-face-match-verify-descriptor': {
+    crumb: { ko: '<span>Face Match</span> › 1:1 확인 (특징점)', en: '<span>Face Match</span> › 1:1 Verify (descriptor)' },
+    title: { ko: '1:1 확인 — 디스크립터 기반', en: '1:1 Verify — Descriptor' },
+    desc: {
+      ko: '두 개의 특징점 디스크립터를 직접 비교합니다. 이미지 없이 이전에 추출한 디스크립터만으로 유사도를 계산합니다.',
+      en: 'Directly compare two feature descriptors. Calculates similarity using previously extracted descriptors without any image.'
+    },
+    pdsc: [
+      { ko: '비교 기준 특징점 디스크립터', en: 'Reference feature descriptor' },
+      { ko: '비교 대상 특징점 디스크립터', en: 'Target feature descriptor' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '유사도 점수', en: 'Similarity score' },
+      { ko: '임계값 기준 매칭 여부', en: 'Whether match threshold was met' }
+    ],
+    stDesc: [
+      { ko: '비교 완료', en: 'Comparison complete' }
+    ]
+  },
+  'p-face-match-identify': {
+    crumb: { ko: '<span>Face Match</span> › 1:N 매칭', en: '<span>Face Match</span> › 1:N Identify' },
+    title: { ko: '얼굴 1:N 매칭 (Identify)', en: 'Face 1:N Matching (Identify)' },
+    desc: {
+      ko: '제출된 얼굴 이미지를 프로젝트에 등록된 전체 특징점과 비교하여 가장 유사한 특징점을 찾습니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.',
+      en: 'Compare a submitted face image against all registered features in the project to find the most similar match. A liveness check may be performed depending on project settings.'
+    },
+    pdsc: [
+      { ko: '매칭할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image to match (jpg, jpeg, png)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '매칭 이력 ID', en: 'Match history ID' },
+      { ko: '프로젝트 ID', en: 'Project ID' },
+      { ko: '매칭 유형 — <code>IDENTIFY</code>', en: 'Match type — <code>IDENTIFY</code>' },
+      { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '매칭 성공 여부', en: 'Whether matching succeeded' },
+      { ko: '매칭된 특징점 featureId (성공 시)', en: 'Matched feature featureId (on success)' },
+      { ko: '매칭된 특징점 설명 (성공 시)', en: 'Matched feature description (on success)' },
+      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '등록된 특징점 이미지 경로 (성공 시)', en: 'Registered feature image path (on success)' },
+      { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
+      { ko: '실패 코드 (NOT_MATCH 등, 성공 시 null)', en: 'Failure code (NOT_MATCH etc., null on success)' },
+      { ko: '실패 원인 메시지', en: 'Failure reason message' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
+    ],
+    stDesc: [
+      { ko: '매칭 성공', en: 'Match successful' },
+      { ko: '매칭 실패 (미인식)', en: 'Match failed (not recognized)' }
+    ]
+  },
+  'p-face-match-liveness': {
+    crumb: { ko: '<span>Face Match</span> › 라이브니스', en: '<span>Face Match</span> › Liveness' },
+    title: { ko: '얼굴 라이브니스 (Liveness)', en: 'Face Liveness' },
+    desc: {
+      ko: '제출된 얼굴 이미지가 실제 생체인지 감지합니다. 사진, 영상, 마스크 등을 이용한 스푸핑 시도를 방지합니다.',
+      en: 'Detect whether a submitted face image is a real live person. Prevents spoofing attempts using photos, videos, or masks.'
+    },
+    pdsc: [
+      { ko: '라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for liveness check (jpg, jpeg, png)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '라이브니스 통과 여부', en: 'Whether liveness check passed' },
+      { ko: '실패 원인 메시지 (성공 시 null)', en: 'Failure reason message (null on success)' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
+    ],
+    stDesc: [
+      { ko: '라이브니스 통과', en: 'Liveness passed' },
+      { ko: '라이브니스 실패', en: 'Liveness failed' }
+    ]
+  },
+  'p-palm-feature-create': {
+    crumb: { ko: '<span>Palm Feature</span> › 팜 특징점 등록', en: '<span>Palm Feature</span> › Register Palm Feature' },
+    title: { ko: '팜 특징점 등록', en: 'Register Palm Feature' },
+    desc: {
+      ko: '팜 이미지를 업로드하여 프로젝트에 팜 정맥 특징점을 등록합니다. 프로젝트 설정에 따라 중복 등록 방지 및 라이브니스 검사가 수행될 수 있습니다.',
+      en: 'Upload a palm image to register a palm vein feature in the project. Duplicate registration prevention and liveness check may be performed depending on project settings.'
+    },
+    pdsc: [
+      { ko: '팜 이미지 (jpg, jpeg, png)', en: 'Palm image (jpg, jpeg, png)' },
+      { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '외부 시스템 연동 키 (최대 255자)', en: 'External system integration key (max 255 chars)' },
+      { ko: '팜 특징점 ID', en: 'Palm feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버에서 발급된 팜 특징점 식별 ID', en: 'Palm feature identifier issued by the AI server' },
+      { ko: '저장된 팜 이미지 경로', en: 'Stored palm image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '등록 일시', en: 'Registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: '등록 성공', en: 'Registration successful' },
+      { ko: '중복 등록 또는 라이브니스 실패', en: 'Duplicate registration or liveness failed' }
+    ]
+  },
+  'p-palm-feature-update': {
+    crumb: { ko: '<span>Palm Feature</span> › 팜 특징점 수정', en: '<span>Palm Feature</span> › Update Palm Feature' },
+    title: { ko: '팜 특징점 수정', en: 'Update Palm Feature' },
+    desc: {
+      ko: '등록된 팜 특징점의 이미지 또는 설명을 수정합니다.',
+      en: 'Update the image or description of a registered palm feature.'
+    },
+    pdsc: [
+      { ko: '수정할 팜 특징점 ID', en: 'ID of the palm feature to update' },
+      { ko: '교체할 팜 이미지 (jpg, jpeg, png)', en: 'Replacement palm image (jpg, jpeg, png)' },
+      { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '팜 특징점 ID', en: 'Palm feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
+      { ko: '저장된 팜 이미지 경로', en: 'Stored palm image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '최초 등록 일시', en: 'Initial registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: '수정 성공', en: 'Update successful' }
+    ]
+  },
+  'p-palm-feature-delete': {
+    crumb: { ko: '<span>Palm Feature</span> › 팜 특징점 삭제', en: '<span>Palm Feature</span> › Delete Palm Feature' },
+    title: { ko: '팜 특징점 삭제', en: 'Delete Palm Feature' },
+    desc: {
+      ko: '등록된 팜 특징점을 소프트 삭제합니다. 삭제된 특징점은 매칭에서 제외됩니다.',
+      en: 'Soft-delete a registered palm feature. Deleted features are excluded from matching.'
+    },
+    pdsc: [
+      { ko: '삭제할 팜 특징점 ID', en: 'ID of the palm feature to delete' }
+    ],
+    stDesc: [
+      { ko: '삭제 성공 (No Content)', en: 'Deleted (No Content)' }
+    ]
+  },
+  'p-palm-feature-get': {
+    crumb: { ko: '<span>Palm Feature</span> › 단건 조회', en: '<span>Palm Feature</span> › Get by ID' },
+    title: { ko: '팜 특징점 단건 조회', en: 'Get Palm Feature by ID' },
+    desc: {
+      ko: 'ID로 특정 팜 특징점 정보를 조회합니다.',
+      en: 'Retrieve a specific palm feature by its ID.'
+    },
+    pdsc: [
+      { ko: '조회할 팜 특징점 ID', en: 'ID of the palm feature to retrieve' },
+      { ko: '팜 특징점 ID', en: 'Palm feature ID' },
+      { ko: '특징점 설명', en: 'Feature description' },
+      { ko: 'AI 서버 팜 특징점 식별 ID', en: 'Palm feature identifier on the AI server' },
+      { ko: '저장된 팜 이미지 경로', en: 'Stored palm image path' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '등록 일시', en: 'Registration timestamp' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' }
+    ]
+  },
+  'p-palm-feature-list': {
+    crumb: { ko: '<span>Palm Feature</span> › 목록 조회', en: '<span>Palm Feature</span> › List' },
+    title: { ko: '팜 특징점 목록 조회', en: 'List Palm Features' },
+    desc: {
+      ko: '프로젝트에 등록된 팜 특징점 목록을 페이지네이션으로 조회합니다.',
+      en: 'Retrieve a paginated list of palm features registered in the project.'
+    },
+    pdsc: [
+      { ko: '페이지 번호 (기본값: 1)', en: 'Page number (default: 1)' },
+      { ko: '페이지 크기 (기본값: 20)', en: 'Page size (default: 20)' },
+      { ko: '설명(description) 검색 키워드', en: 'Keyword to search in description' },
+      { ko: '삭제 여부 필터', en: 'Deleted filter' },
+      { ko: '조회 시작일 (yyyy-MM-dd)', en: 'Start date (yyyy-MM-dd)' },
+      { ko: '조회 종료일 (yyyy-MM-dd)', en: 'End date (yyyy-MM-dd)' },
+      { ko: '팜 특징점 목록', en: 'List of palm features' },
+      { ko: '페이지네이션 정보', en: 'Pagination info' },
+      { ko: '현재 페이지 번호', en: 'Current page number' },
+      { ko: '페이지 크기', en: 'Page size' },
+      { ko: '전체 데이터 수', en: 'Total element count' },
+      { ko: '전체 페이지 수', en: 'Total page count' }
+    ],
+    stDesc: [
+      { ko: 'OK', en: 'OK' }
+    ]
+  },
+  'p-palm-match-identify': {
+    crumb: { ko: '<span>Palm Match</span> › 팜 1:N 매칭', en: '<span>Palm Match</span> › Palm 1:N Identify' },
+    title: { ko: '팜 1:N 매칭 (Identify)', en: 'Palm 1:N Matching (Identify)' },
+    desc: {
+      ko: '제출된 팜 이미지를 프로젝트에 등록된 전체 팜 특징점과 비교하여 가장 유사한 특징점을 찾습니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.',
+      en: 'Compare a submitted palm image against all registered palm features in the project to find the closest match. A liveness check may be performed depending on project settings.'
+    },
+    pdsc: [
+      { ko: '매칭할 팜 이미지 (jpg, jpeg, png)', en: 'Palm image to match (jpg, jpeg, png)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '매칭 이력 ID', en: 'Match history ID' },
+      { ko: '프로젝트 ID', en: 'Project ID' },
+      { ko: '매칭 유형 — <code>IDENTIFY</code>', en: 'Match type — <code>IDENTIFY</code>' },
+      { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
+      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
+      { ko: '매칭 성공 여부', en: 'Whether matching succeeded' },
+      { ko: '매칭된 팜 특징점 ID (성공 시)', en: 'Matched palm feature ID (on success)' },
+      { ko: '매칭된 팜 특징점 featureId (성공 시)', en: 'Matched palm feature featureId (on success)' },
+      { ko: '매칭된 특징점 설명 (성공 시)', en: 'Matched feature description (on success)' },
+      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '등록된 팜 이미지 경로 (성공 시)', en: 'Registered palm image path (on success)' },
+      { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
+      { ko: '매칭 임계값', en: 'Match threshold' },
+      { ko: '실패 코드 (PALM_NOT_MATCH 등, 성공 시 null)', en: 'Failure code (PALM_NOT_MATCH etc., null on success)' },
+      { ko: '실패 원인 메시지', en: 'Failure reason message' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
+    ],
+    stDesc: [
+      { ko: '매칭 성공', en: 'Match successful' },
+      { ko: '매칭 실패', en: 'Match failed' }
+    ]
+  },
+  'p-palm-match-liveness': {
+    crumb: { ko: '<span>Palm Match</span> › 팜 라이브니스', en: '<span>Palm Match</span> › Palm Liveness' },
+    title: { ko: '팜 라이브니스 (Liveness)', en: 'Palm Liveness' },
+    desc: {
+      ko: '제출된 팜 이미지가 실제 생체 손바닥인지 감지합니다. 사진이나 가짜 손바닥 이미지를 이용한 스푸핑 시도를 방지합니다.',
+      en: 'Detect whether a submitted palm image is a real live palm. Prevents spoofing attempts using photos or fake palm images.'
+    },
+    pdsc: [
+      { ko: '라이브니스 검사할 팜 이미지 (jpg, jpeg, png)', en: 'Palm image for liveness check (jpg, jpeg, png)' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '라이브니스 통과 여부', en: 'Whether liveness check passed' },
+      { ko: '라이브니스 점수', en: 'Liveness score' },
+      { ko: '라이브니스 임계값', en: 'Liveness threshold' },
+      { ko: '실패 원인 메시지 (성공 시 null)', en: 'Failure reason message (null on success)' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: '라이브니스 통과', en: 'Liveness passed' },
+      { ko: '라이브니스 실패', en: 'Liveness failed' }
+    ]
   }
 };
 
@@ -1942,6 +2520,12 @@ function setLang(lang) {
     var key = el.dataset.i18nHtml;
     if (TH[lang][key] !== undefined) el.innerHTML = TH[lang][key];
   });
+  document.querySelectorAll('.auth-none').forEach(function(el) {
+    el.innerHTML = TH[lang]['auth-none'];
+  });
+  document.querySelectorAll('.auth-req').forEach(function(el) {
+    el.innerHTML = TH[lang]['auth-req-both'];
+  });
   Object.keys(PAGES).forEach(function(pageId) {
     var page = document.getElementById(pageId);
     if (!page) return;
@@ -1952,6 +2536,46 @@ function setLang(lang) {
     if (titleEl && c.title) titleEl.textContent = c.title[lang];
     var descEl = page.querySelector('.ep-desc');
     if (descEl && c.desc) descEl.innerHTML = c.desc[lang];
+    var pdscs = page.querySelectorAll('.pdsc');
+    if (c.pdsc) pdscs.forEach(function(el, i) {
+      if (c.pdsc[i] !== undefined) el.innerHTML = c.pdsc[i][lang];
+    });
+    var stDescs = page.querySelectorAll('.st-desc');
+    if (c.stDesc) stDescs.forEach(function(el, i) {
+      if (c.stDesc[i] !== undefined) el.textContent = c.stDesc[i][lang];
+    });
+  });
+  var intro = document.getElementById('p-intro');
+  if (intro && INTRO[lang]) {
+    var heroP = intro.querySelector('.hero > p');
+    if (heroP) heroP.textContent = INTRO[lang].heroDesc;
+    var secs = intro.querySelectorAll('.intro-sec');
+    var h2s = intro.querySelectorAll('.intro-sec h2');
+    INTRO[lang].h2.forEach(function(t, i) { if (h2s[i]) h2s[i].textContent = t; });
+    if (INTRO[lang].secP) {
+      INTRO[lang].secP.forEach(function(pArr, secIdx) {
+        if (!secs[secIdx] || !pArr.length) return;
+        var ps = secs[secIdx].querySelectorAll('p');
+        pArr.forEach(function(html, pIdx) { if (ps[pIdx]) ps[pIdx].innerHTML = html; });
+      });
+    }
+    var cards = intro.querySelectorAll('.info-card');
+    INTRO[lang].cards.forEach(function(c, i) {
+      if (!cards[i]) return;
+      var h3 = cards[i].querySelector('h3');
+      var p = cards[i].querySelector('p');
+      if (h3 && c.h3) h3.innerHTML = c.h3;
+      if (p && c.p !== null) p.innerHTML = c.p;
+    });
+  }
+  document.querySelectorAll('.js').forEach(function(el) {
+    var raw = el.textContent;
+    var inner = raw.slice(1, -1);
+    if (lang === 'en' && /[가-힣]/.test(inner) && CODE_MSGS[inner]) {
+      el.textContent = '"' + CODE_MSGS[inner] + '"';
+    } else if (lang === 'ko' && CODE_MSGS_REV[inner]) {
+      el.textContent = '"' + CODE_MSGS_REV[inner] + '"';
+    }
   });
   currentLang = lang;
   var labelEl = document.getElementById('lang-label');
