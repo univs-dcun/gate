@@ -80,10 +80,13 @@ for svc_path in $(git ls-tree --name-only "$SOURCE_REF" backend/); do
   fi
 
   # 파이프라인과 동일한 서비스 스코프 태그 계산 (변경 감지 필터와 동일하게 Jenkinsfile/md 제외)
+  # UG-264: --full-history 필수 — 경로 지정 시 git이 히스토리를 단순화해
+  # 머지가 한쪽 부모와 TREESAME이면 다른 부모를 걷지 않는다. 승격 머지가 대상
+  # 브랜치 트리를 바꾸지 않는 경우 옛 태그가 나와 파이프라인과 어긋난다.
   # UG-258: %h(축약)는 저장소 오브젝트 수에 따라 길이가 변해 파이프라인과 어긋난다.
   # 라이브러리와 동일하게 %H를 7자로 고정한다.
-  hash=$(git log --no-merges -1 --pretty=format:'%H' "$SOURCE_REF" -- "$svc_path" ":!$svc_path/Jenkinsfile" ":!$svc_path/*.md" | cut -c1-7)
-  cdate=$(git log --no-merges -1 --pretty=format:'%cd' --date=format:'%Y%m%d' "$SOURCE_REF" -- "$svc_path" ":!$svc_path/Jenkinsfile" ":!$svc_path/*.md")
+  hash=$(git log --no-merges --full-history -1 --pretty=format:'%H' "$SOURCE_REF" -- "$svc_path" ":!$svc_path/Jenkinsfile" ":!$svc_path/*.md" | cut -c1-7)
+  cdate=$(git log --no-merges --full-history -1 --pretty=format:'%cd' --date=format:'%Y%m%d' "$SOURCE_REF" -- "$svc_path" ":!$svc_path/Jenkinsfile" ":!$svc_path/*.md")
   tag="$cdate-$hash"
   image="$REGISTRY/$REPO_PREFIX/$service_name:$tag"
 
