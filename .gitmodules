@@ -1,3 +1,0 @@
-[submodule "frontend/demo-web"]
-	path = frontend/demo-web
-	url = https://github.com/hjkim-univsai/face-auth-demo.git
