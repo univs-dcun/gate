@@ -108,7 +108,10 @@ for svc_path in $(git ls-tree --name-only "$SOURCE_REF" backend/); do
   if [ -n "$migrations" ]; then
     MIGRATION_FOUND=$((MIGRATION_FOUND + 1))
     echo "$migrations" | while IFS=$'\t' read -r st f1 f2; do
-      fname="${f2:-$f1}"; fname="${fname##*/}"
+      # oracle/postgresql 두 방언이 같은 파일명을 쓰므로 방언 디렉토리까지 표시한다
+      # (안 그러면 동일한 줄이 두 번 찍혀 중복 출력처럼 보인다)
+      path="${f2:-$f1}"
+      fname="$(basename "$(dirname "$path")")/${path##*/}"
       case "$st" in
         A*) label="신규" ;;
         M*) label="수정 ⚠️ (적용된 환경은 checksum 오류 위험)" ;;
