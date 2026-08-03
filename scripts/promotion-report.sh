@@ -58,17 +58,26 @@ echo ""
 echo "📦 재배포 대상 서비스"
 echo "----------------------------------------------------------------"
 
-for dir in backend/*/; do
-  svc_path="${dir%/}"
-  jenkinsfile="$svc_path/Jenkinsfile"
-  [ -f "$jenkinsfile" ] || continue
+# 서비스 목록·Jenkinsfile은 워킹트리가 아니라 SOURCE_REF 기준으로 읽는다.
+# (체크아웃된 브랜치의 backend 구성이 달라도 리포트가 어긋나지 않도록)
+for svc_path in $(git ls-tree --name-only "$SOURCE_REF" backend/); do
+  git cat-file -e "$SOURCE_REF:$svc_path/Jenkinsfile" 2>/dev/null || continue
 
   # 파이프라인의 변경 감지 필터와 동일 규칙 (Jenkinsfile, *.md 제외)
   relevant=$(echo "$CHANGED_FILES" | grep "^$svc_path/" | grep -v 'Jenkinsfile$' | grep -v '\.md$' || true)
   [ -z "$relevant" ] && continue
 
   DEPLOY_COUNT=$((DEPLOY_COUNT + 1))
-  service_name=$(grep -o "SERVICE_NAME[[:space:]]*=[[:space:]]*'[^']*'" "$jenkinsfile" | head -1 | sed "s/.*'\(.*\)'/\1/")
+
+  # UG-237 이후 Jenkinsfile은 라이브러리 호출 형식이다: serviceName: 'gate-service'
+  # 형식이 또 바뀌어도 set -e로 조용히 죽지 않도록 || true + 빈 값 검사로 드러낸다.
+  service_name=$(git show "$SOURCE_REF:$svc_path/Jenkinsfile" \
+    | grep -o "serviceName[[:space:]]*:[[:space:]]*'[^']*'" | head -1 | sed "s/.*'\(.*\)'/\1/" || true)
+  name_ok=1
+  if [ -z "$service_name" ]; then
+    name_ok=0
+    service_name="(serviceName 파싱 실패)"
+  fi
 
   # 파이프라인과 동일한 서비스 스코프 태그 계산 (변경 감지 필터와 동일하게 Jenkinsfile/md 제외)
   hash=$(git log --no-merges -1 --pretty=format:'%h' "$SOURCE_REF" -- "$svc_path" ":!$svc_path/Jenkinsfile" ":!$svc_path/*.md")
@@ -77,7 +86,9 @@ for dir in backend/*/; do
   image="$REGISTRY/$REPO_PREFIX/$service_name:$tag"
 
   # 레지스트리에 이미지 존재 확인
-  if command -v docker >/dev/null 2>&1; then
+  if [ "$name_ok" -eq 0 ]; then
+    img_status="❌ Jenkinsfile에서 serviceName을 찾지 못함 — 스크립트 갱신 필요"
+  elif command -v docker >/dev/null 2>&1; then
     if err=$(docker manifest inspect "$image" 2>&1 >/dev/null); then
       img_status="✅ 이미지 존재"
     elif echo "$err" | grep -qi "manifest unknown\|not found\|no such manifest"; then
