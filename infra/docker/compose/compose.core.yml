@@ -56,6 +56,15 @@ services:
       - ./logs:/logs
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      # UG-252: auth 미인증 엔드포인트 rate limit(RequestRateLimiter)이 쓰는 Redis.
+      # 민감정보는 yml이 아니라 여기서 주입한다 (스캐폴드 계약 §4.3).
+      # 누락되면 rate limit이 조용히 꺼진다 — RedisRateLimiter는 오류 시 요청을
+      # 통과시키므로(fail-open) 기동 로그의 경고로만 드러난다.
+      # 기본값을 둔다 — .env에 REDIS_HOST가 없으면 compose가 '빈 문자열' 환경변수를
+      # 주입하고, 빈 문자열도 존재하는 값이라 yml의 ${REDIS_HOST:redis} 안전망을 덮어쓴다.
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
     depends_on:
       discovery-server:
         condition: service_healthy
