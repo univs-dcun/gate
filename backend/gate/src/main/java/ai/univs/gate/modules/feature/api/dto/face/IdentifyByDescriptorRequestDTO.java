@@ -3,6 +3,7 @@ package ai.univs.gate.modules.feature.api.dto.face;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyByDescriptorInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.TransactionUtil;
+import ai.univs.gate.shared.utils.DescriptorValidator;
 import ai.univs.gate.shared.utils.ValidDescriptor;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.hibernate.validator.constraints.Length;
@@ -13,7 +14,8 @@ import org.hibernate.validator.constraints.Length;
  * <p>이미지 기반인 {@link IdentifyRequestDTO} 와 분리했다.
  */
 public record IdentifyByDescriptorRequestDTO(
-        @Schema(description = SwaggerDescriptions.DESCRIPTOR, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.DESCRIPTOR, requiredMode = Schema.RequiredMode.REQUIRED,
+                minLength = DescriptorValidator.ENCODED_LENGTH, maxLength = DescriptorValidator.ENCODED_LENGTH)
         @ValidDescriptor(message = "INVALID_DESCRIPTOR")
         String descriptor,
 

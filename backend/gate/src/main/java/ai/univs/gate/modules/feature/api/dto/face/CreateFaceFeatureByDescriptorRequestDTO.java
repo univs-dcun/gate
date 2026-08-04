@@ -3,6 +3,7 @@ package ai.univs.gate.modules.feature.api.dto.face;
 import ai.univs.gate.modules.feature.application.input.face.CreateFaceFeatureByDescriptorInput;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import ai.univs.gate.shared.utils.TransactionUtil;
+import ai.univs.gate.shared.utils.DescriptorValidator;
 import ai.univs.gate.shared.utils.ValidDescriptor;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.hibernate.validator.constraints.Length;
@@ -14,7 +15,8 @@ import org.hibernate.validator.constraints.Length;
  * 않는다.
  */
 public record CreateFaceFeatureByDescriptorRequestDTO(
-        @Schema(description = SwaggerDescriptions.DESCRIPTOR, requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = SwaggerDescriptions.DESCRIPTOR, requiredMode = Schema.RequiredMode.REQUIRED,
+                minLength = DescriptorValidator.ENCODED_LENGTH, maxLength = DescriptorValidator.ENCODED_LENGTH)
         @ValidDescriptor(message = "INVALID_DESCRIPTOR")
         String descriptor,
 

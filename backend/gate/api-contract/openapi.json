@@ -10657,12 +10657,14 @@
           "descriptor": {
             "type": "string",
             "description": "특징점",
-            "minLength": 1
+            "maxLength": 696,
+            "minLength": 696
           },
           "targetDescriptor": {
             "type": "string",
             "description": "매칭 대상 특징점",
-            "minLength": 1
+            "maxLength": 696,
+            "minLength": 696
           },
           "transactionUuid": {
             "type": "string",
@@ -10879,7 +10881,9 @@
         "properties": {
           "descriptor": {
             "type": "string",
-            "description": "특징점"
+            "description": "특징점",
+            "maxLength": 696,
+            "minLength": 696
           },
           "transactionUuid": {
             "type": "string",
@@ -11012,7 +11016,9 @@
         "properties": {
           "descriptor": {
             "type": "string",
-            "description": "특징점"
+            "description": "특징점",
+            "maxLength": 696,
+            "minLength": 696
           },
           "transactionUuid": {
             "type": "string",

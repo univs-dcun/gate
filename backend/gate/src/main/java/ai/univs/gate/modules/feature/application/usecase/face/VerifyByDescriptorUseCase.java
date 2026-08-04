@@ -8,13 +8,12 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignRequestDTO;
+import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
-import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceService;
-import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -43,7 +42,6 @@ public class VerifyByDescriptorUseCase {
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
     private final MatchHistoryRepository matchHistoryRepository;
-    private final ProjectSettingsService projectSettingsService;
 
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
@@ -53,8 +51,17 @@ public class VerifyByDescriptorUseCase {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
         Project project = findApiKey.getProject();
 
-        ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
-
+        // UG-279: consentSnapshot 을 채우려고 projectSettingsService.findByProject 를 부르지
+        // 않는다. 그 메서드는 project_settings 행이 없으면 SETTINGS_NOT_FOUND(PJ-106) 를 던지고,
+        // 이 엔드포인트는 이력 저장을 추가하기 전까지 api_key 조회만 했다. 즉 호출을 넣는 순간
+        // 지금까지 200 을 받던 요청이 400 이 될 수 있는 새 실패 지점이 생긴다 — 정상 생성 경로
+        // (CreateProjectUseCase)는 항상 settings 를 만들지만, 마이그레이션에 백필이 없어
+        // 외부에서 만들어진 프로젝트나 부분 복구된 DB 에서는 행이 없을 수 있다.
+        //
+        // 얻는 것이 nullable boolean 하나뿐인데 대가가 프로덕션 엔드포인트의 하드 실패라 남는
+        // 장사가 아니다. 게다가 동의(consent)는 "이미지를 보관해도 되는가" 를 뜻하는데 descriptor
+        // 경로는 이미지를 저장하지 않으므로 스냅샷할 대상 자체가 없다. NULL 이 "해당 없음" 을
+        // 정확히 표현한다 (consent_snapshot 은 nullable).
         MatchHistory matchHistory = MatchHistory.builder()
                 .project(project)
                 .matchType(MatchType.VERIFY_DESCRIPTOR)
@@ -63,7 +70,6 @@ public class VerifyByDescriptorUseCase {
                 .checkLiveness(false)
                 .success(false)
                 .transactionUuid(input.transactionUuid())
-                .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
         matchHistoryRepository.save(matchHistory);
 
@@ -73,14 +79,26 @@ public class VerifyByDescriptorUseCase {
                 input.transactionUuid(),
                 input.accountId().toString());
 
-        var response = faceService.verifyDescriptor(feignRequest);
+        VerifyFaceByDescriptorFeignResponseDTO response;
+        try {
+            response = faceService.verifyDescriptor(feignRequest);
+        } catch (CustomFeignException e) {
+            // noRollbackFor 덕에 이력 행은 커밋되지만, 여기서 실패 사유를 남기지 않으면
+            // failure_type 이 NULL 로 남아 "미완료 요청" 과 구분되지 않는다.
+            // 같은 기능의 IdentifyByDescriptorUseCase / FaceFeatureService 와 동일한 처리다.
+            matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        }
 
         BigDecimal similarity = toSimilarity(response.getSimilarity());
         if (response.isResult()) {
             // 1:1 확인은 성공해도 등록된 사용자 정보를 특정하지 않는다 (이미지 기반과 동일).
             matchHistory.success(similarity);
         } else {
-            matchHistory.fail(similarity, ErrorType.NOT_MATCH.name());
+            // 이미지 기반 1:1 두 경로(FaceVerifyByFeatureIdUseCase, FaceVerifyByFeatureImageUseCase)
+            // 가 쓰는 코드와 같아야 한다. NOT_MATCH 는 1:N 전용이다 — 섞이면 운영자가
+            // "1:1 불일치" 를 한 조건으로 집계할 수 없다.
+            matchHistory.fail(similarity, ErrorType.MISMATCH.name());
         }
 
         return new VerifyByDescriptorResult(

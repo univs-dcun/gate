@@ -689,7 +689,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">등록할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64, 최대 4096자)</td></tr>
+            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">등록할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1083,7 +1083,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Face Match</span> › 특징점 추출</div>
     <div class="ep-title">특징점 추출 (Extract)</div>
-    <div class="ep-desc">얼굴 이미지에서 특징점 디스크립터(descriptor)를 추출합니다. 추출된 디스크립터는 <code>verify/descriptor</code> API에서 사용할 수 있습니다.</div>
+    <div class="ep-desc">얼굴 이미지에서 특징점 디스크립터(descriptor)를 추출합니다. 추출된 디스크립터는 <code>verify/descriptor</code>(1:1 확인), <code>descriptor</code>(등록), <code>identify/descriptor</code>(1:N 매칭) API에서 사용할 수 있습니다.</div>
     <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/feature/face/extract</span></div>
   </div>
   <div class="ep-body">
@@ -1182,7 +1182,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">확인 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 featureId</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 설명</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
             <tr><td><span class="pname">matchingFeatureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 요청에 사용된 특징점 ID</td></tr>
             <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로</td></tr>
             <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로</td></tr>
@@ -1211,7 +1211,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
     <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.98</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">98.00</span>,
     <span class="jk">"matchingFeatureId"</span>: <span class="jnu">null</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/img.jpg"</span>,
@@ -1231,7 +1231,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: {
     <span class="jk">"matchingHistoryId"</span>: <span class="jn">101</span>,
     <span class="jk">"success"</span>: <span class="jb">false</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.42</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">42.00</span>,
     <span class="jk">"failureType"</span>: <span class="js">"MISMATCH"</span>,
     <span class="jk">"failureReason"</span>: <span class="js">"얼굴이 일치하지 않습니다."</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
@@ -1281,7 +1281,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">확인 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">기준 이미지 특징점 ID</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
             <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 비교 이미지 경로</td></tr>
             <tr><td><span class="pname">targetMatchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">기준 이미지 경로</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (성공 시 null)</td></tr>
@@ -1308,7 +1308,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"checkLiveness"</span>: <span class="jb">false</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"featureId"</span>: <span class="jnu">null</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.95</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">95.00</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/live.jpg"</span>,
     <span class="jk">"targetMatchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/doc.jpg"</span>,
     <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
@@ -1328,7 +1328,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Face Match</span> › 1:1 확인 (특징점)</div>
     <div class="ep-title">1:1 확인 — 디스크립터 기반</div>
-    <div class="ep-desc">두 개의 특징점 디스크립터를 직접 비교합니다. 이미지 없이 이전에 추출한 디스크립터만으로 유사도를 계산합니다.</div>
+    <div class="ep-desc">두 개의 특징점 디스크립터를 직접 비교합니다. 이미지 없이 이전에 추출한 디스크립터만으로 유사도를 계산합니다.<br><br>이 호출은 <b>매칭 이력에 기록됩니다</b> (<code>matchType: VERIFY_DESCRIPTOR</code>). 이력 목록 조회 시 이 타입으로 검색할 수 있습니다.</div>
     <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/feature/face/verify/descriptor</span></div>
   </div>
   <div class="ep-body">
@@ -1343,8 +1343,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 기준 특징점 디스크립터</td></tr>
-            <tr><td><span class="pname">targetDescriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 대상 특징점 디스크립터</td></tr>
+            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 기준 특징점 디스크립터 (base64 696자 고정 = 520바이트)</td></tr>
+            <tr><td><span class="pname">targetDescriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 대상 특징점 디스크립터 (base64 696자 고정 = 520바이트)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1430,7 +1430,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 featureId (성공 시)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 설명 (성공 시)</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
             <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로 (성공 시)</td></tr>
             <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (NOT_MATCH 등, 성공 시 null)</td></tr>
@@ -1458,7 +1458,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
     <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.97</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">97.00</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/img.jpg"</span>,
     <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
@@ -1509,7 +1509,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64, 최대 4096자)</td></tr>
+            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1525,7 +1525,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 featureId (성공 시)</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (NOT_MATCH 등, 성공 시 빈 문자열)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -1558,7 +1558,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.97</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">97.00</span>,
     <span class="jk">"failureType"</span>: <span class="js">""</span>,
     <span class="jk">"failureReason"</span>: <span class="js">""</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
@@ -1584,6 +1584,18 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">유효하지 않은 디스크립터</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"PJ-101"</span>,
+    <span class="jk">"message"</span>: <span class="js">"특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다."</span>
+  }
 }</pre>
         </div>
       </div>
@@ -2034,7 +2046,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭된 팜 특징점 ID (성공 시)</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 팜 특징점 featureId (성공 시)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 설명 (성공 시)</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.0 ~ 1.0)</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
             <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 팜 이미지 경로 (성공 시)</td></tr>
             <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로</td></tr>
             <tr><td><span class="pname">threshold</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 임계값</td></tr>
@@ -2064,7 +2076,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
     <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
     <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.93</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">93.00</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/palm.jpg"</span>,
     <span class="jk">"threshold"</span>: <span class="js">"0.80"</span>,
@@ -2239,7 +2251,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <span class="jk">"featureId"</span>: <span class="js">"abc123-..."</span>,
         <span class="jk">"featureSeq"</span>: <span class="jn">1</span>,
         <span class="jk">"description"</span>: <span class="js">"description"</span>,
-        <span class="jk">"similarity"</span>: <span class="jn">0.98</span>,
+        <span class="jk">"similarity"</span>: <span class="jn">98.00</span>,
         <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
         <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/f/match.jpg"</span>,
         <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
@@ -2333,7 +2345,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"featureId"</span>: <span class="js">"abc123-..."</span>,
     <span class="jk">"featureSeq"</span>: <span class="jn">1</span>,
     <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.98</span>,
+    <span class="jk">"similarity"</span>: <span class="jn">98.00</span>,
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/f/match.jpg"</span>,
     <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
@@ -2456,6 +2468,8 @@ var CODE_MSGS = {
   '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
   '이미 등록된 팜 사용자입니다.':               'Palm user is already registered.',
   '팜이 일치하지 않습니다.':                   'Palm does not match.',
+  '특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다.':
+      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.',
   '실제 손바닥이 아닌 것으로 감지되었습니다.':    'Detected as non-live palm image.'
 };
 var CODE_MSGS_REV = {};
@@ -2627,7 +2641,7 @@ var PAGES = {
     pdsc: [
       { ko: '<code>Bearer {accessToken}</code>', en: '<code>Bearer {accessToken}</code>' },
       { ko: '프로젝트 API Key (최대 36자)', en: 'Project API Key (max 36 chars)' },
-      { ko: '등록할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64, 최대 4096자)', en: 'Feature descriptor to register. Pass the <code>Extract</code> API response verbatim (base64, max 4096 chars)' },
+      { ko: '등록할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)', en: 'Feature descriptor to register. Pass the <code>Extract</code> API response verbatim (fixed 696 base64 chars = 520 bytes)' },
       { ko: '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)', en: 'Request UUID (auto-generated if not provided, max 36 chars)' },
       { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
       { ko: 'AI 서버에서 발급된 특징점 식별 ID', en: 'Feature identifier issued by the AI server' },
@@ -2750,8 +2764,8 @@ var PAGES = {
     crumb: { ko: '<span>Face Match</span> › 특징점 추출', en: '<span>Face Match</span> › Extract' },
     title: { ko: '특징점 추출 (Extract)', en: 'Extract Feature' },
     desc: {
-      ko: '얼굴 이미지에서 특징점 디스크립터(descriptor)를 추출합니다. 추출된 디스크립터는 <code>verify/descriptor</code> API에서 사용할 수 있습니다.',
-      en: 'Extract a feature descriptor from a face image. The extracted descriptor can be used in the <code>verify/descriptor</code> API.'
+      ko: '얼굴 이미지에서 특징점 디스크립터(descriptor)를 추출합니다. 추출된 디스크립터는 <code>verify/descriptor</code>(1:1 확인), <code>descriptor</code>(등록), <code>identify/descriptor</code>(1:N 매칭) API에서 사용할 수 있습니다.',
+      en: 'Extract a feature descriptor from a face image. The extracted descriptor can be used in the <code>verify/descriptor</code> (1:1 verify), <code>descriptor</code> (register), and <code>identify/descriptor</code> (1:N identify) APIs.'
     },
     pdsc: [
       { ko: '특징점 추출할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for feature extraction (jpg, jpeg, png)' },
@@ -2782,7 +2796,7 @@ var PAGES = {
       { ko: '확인 성공 여부', en: 'Whether verification succeeded' },
       { ko: '매칭된 특징점 featureId', en: 'Matched feature featureId' },
       { ko: '매칭된 특징점 설명', en: 'Matched feature description' },
-      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
       { ko: '매칭 요청에 사용된 특징점 ID', en: 'Feature ID used in the match request' },
       { ko: '등록된 특징점 이미지 경로', en: 'Registered feature image path' },
       { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
@@ -2814,7 +2828,7 @@ var PAGES = {
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '확인 성공 여부', en: 'Whether verification succeeded' },
       { ko: '기준 이미지 특징점 ID', en: 'Reference image feature ID' },
-      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
       { ko: '제출된 비교 이미지 경로', en: 'Submitted comparison image path' },
       { ko: '기준 이미지 경로', en: 'Reference image path' },
       { ko: '실패 코드 (성공 시 null)', en: 'Failure code (null on success)' },
@@ -2830,12 +2844,12 @@ var PAGES = {
     crumb: { ko: '<span>Face Match</span> › 1:1 확인 (특징점)', en: '<span>Face Match</span> › 1:1 Verify (descriptor)' },
     title: { ko: '1:1 확인 — 디스크립터 기반', en: '1:1 Verify — Descriptor' },
     desc: {
-      ko: '두 개의 특징점 디스크립터를 직접 비교합니다. 이미지 없이 이전에 추출한 디스크립터만으로 유사도를 계산합니다.',
-      en: 'Directly compare two feature descriptors. Calculates similarity using previously extracted descriptors without any image.'
+      ko: '두 개의 특징점 디스크립터를 직접 비교합니다. 이미지 없이 이전에 추출한 디스크립터만으로 유사도를 계산합니다.<br><br>이 호출은 <b>매칭 이력에 기록됩니다</b> (<code>matchType: VERIFY_DESCRIPTOR</code>). 이력 목록 조회 시 이 타입으로 검색할 수 있습니다.',
+      en: 'Directly compare two feature descriptors. Calculates similarity using previously extracted descriptors without any image.<br><br>This call is <b>recorded in the match history</b> (<code>matchType: VERIFY_DESCRIPTOR</code>) and can be filtered by that type when listing history.'
     },
     pdsc: [
-      { ko: '비교 기준 특징점 디스크립터', en: 'Reference feature descriptor' },
-      { ko: '비교 대상 특징점 디스크립터', en: 'Target feature descriptor' },
+      { ko: '비교 기준 특징점 디스크립터 (base64 696자 고정 = 520바이트)', en: 'Reference feature descriptor (fixed 696 base64 chars = 520 bytes)' },
+      { ko: '비교 대상 특징점 디스크립터 (base64 696자 고정 = 520바이트)', en: 'Target feature descriptor (fixed 696 base64 chars = 520 bytes)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
       { ko: '유사도 점수', en: 'Similarity score' },
@@ -2863,7 +2877,7 @@ var PAGES = {
       { ko: '매칭 성공 여부', en: 'Whether matching succeeded' },
       { ko: '매칭된 특징점 featureId (성공 시)', en: 'Matched feature featureId (on success)' },
       { ko: '매칭된 특징점 설명 (성공 시)', en: 'Matched feature description (on success)' },
-      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
       { ko: '등록된 특징점 이미지 경로 (성공 시)', en: 'Registered feature image path (on success)' },
       { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
       { ko: '실패 코드 (NOT_MATCH 등, 성공 시 null)', en: 'Failure code (NOT_MATCH etc., null on success)' },
@@ -2884,7 +2898,7 @@ var PAGES = {
       en: 'Compare the descriptor returned by the <code>Extract</code> API — instead of an image — against all registered features in the project to find the most similar match. No liveness check is performed, for the same reason as the descriptor-based registration API. There is no image file, so the response contains no image path or feature description.'
     },
     pdsc: [
-      { ko: '매칭할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64, 최대 4096자)', en: 'Feature descriptor to match. Pass the <code>Extract</code> API response verbatim (base64, max 4096 chars)' },
+      { ko: '매칭할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)', en: 'Feature descriptor to match. Pass the <code>Extract</code> API response verbatim (fixed 696 base64 chars = 520 bytes)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
@@ -2892,14 +2906,15 @@ var PAGES = {
       { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
       { ko: '매칭 성공 여부', en: 'Whether matching succeeded' },
       { ko: '매칭된 특징점 featureId (성공 시)', en: 'Matched feature featureId (on success)' },
-      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
       { ko: '실패 코드 (NOT_MATCH 등, 성공 시 빈 문자열)', en: 'Failure code (NOT_MATCH etc., empty string on success)' },
       { ko: '실패 원인 메시지', en: 'Failure reason message' },
       { ko: '요청 식별 UUID', en: 'Request UUID' }
     ],
     stDesc: [
       { ko: '매칭 성공', en: 'Match successful' },
-      { ko: '매칭 실패 (미인식)', en: 'Match failed (not recognized)' }
+      { ko: '매칭 실패 (미인식)', en: 'Match failed (not recognized)' },
+      { ko: '유효하지 않은 디스크립터', en: 'Invalid descriptor' }
     ]
   },
   'p-face-match-liveness': {
@@ -3051,7 +3066,7 @@ var PAGES = {
       { ko: '매칭된 팜 특징점 ID (성공 시)', en: 'Matched palm feature ID (on success)' },
       { ko: '매칭된 팜 특징점 featureId (성공 시)', en: 'Matched palm feature featureId (on success)' },
       { ko: '매칭된 특징점 설명 (성공 시)', en: 'Matched feature description (on success)' },
-      { ko: '유사도 점수 (0.0 ~ 1.0)', en: 'Similarity score (0.0 – 1.0)' },
+      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
       { ko: '등록된 팜 이미지 경로 (성공 시)', en: 'Registered palm image path (on success)' },
       { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
       { ko: '매칭 임계값', en: 'Match threshold' },
