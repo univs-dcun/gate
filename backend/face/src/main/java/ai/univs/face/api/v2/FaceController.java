@@ -1,9 +1,12 @@
 package ai.univs.face.api.v2;
 
 import ai.univs.face.api.v1.dto.FaceResponseDTO;
+import ai.univs.face.api.v1.dto.IdentifyResponseDTO;
 import ai.univs.face.api.v2.dto.*;
 import ai.univs.face.application.usecase.ExtractUseCase;
+import ai.univs.face.application.usecase.IdentifyByDescriptorUseCase;
 import ai.univs.face.application.usecase.LivenessUseCase;
+import ai.univs.face.application.usecase.RegisterByDescriptorUseCase;
 import ai.univs.face.application.usecase.RegisterUseCase;
 import ai.univs.face.shared.swagger.SwaggerError;
 import ai.univs.face.shared.swagger.SwaggerErrorExample;
@@ -17,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,6 +33,8 @@ public class FaceController {
     private final RegisterUseCase registerUseCase;
     private final LivenessUseCase livenessUseCase;
     private final ExtractUseCase extractUseCase;
+    private final RegisterByDescriptorUseCase registerByDescriptorUseCase;
+    private final IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
 
     @Operation(summary = "사용자 얼굴 등록 V2 - faceId 서버 측에서 관리")
     @SwaggerErrorExample({
@@ -44,6 +50,34 @@ public class FaceController {
         var input = request.toV2RegisterInput();
         var result = registerUseCase.execute(input);
         var response = FaceResponseDTO.from(result);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "사용자 얼굴 등록 (특징점 기반) - 라이브니스/다중 얼굴 검사 없음")
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<FaceResponseDTO>> registerByDescriptor(
+            @RequestBody @Valid RegisterByDescriptorRequestDTO request
+    ) {
+        var input = request.toRegisterByDescriptorInput();
+        var result = registerByDescriptorUseCase.execute(input);
+        var response = FaceResponseDTO.from(result);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "1:N 사용자 얼굴 매칭 (특징점 기반) - 라이브니스/다중 얼굴 검사 없음")
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/identify/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identifyByDescriptor(
+            @RequestBody @Valid IdentifyByDescriptorRequestDTO request
+    ) {
+        var input = request.toIdentifyByDescriptorInput();
+        var result = identifyByDescriptorUseCase.execute(input);
+        var response = IdentifyResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 

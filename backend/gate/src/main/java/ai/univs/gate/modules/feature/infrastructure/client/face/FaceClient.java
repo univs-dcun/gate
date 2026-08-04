@@ -40,6 +40,13 @@ public interface FaceClient {
     @PostMapping(value = "/api/v1/face/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<MatchFaceFeignResponseDTO> identify(@ModelAttribute IdentifyFaceFeignRequestDTO request);
 
+    // UG-279: descriptor 기반. 이미지가 없으므로 multipart 가 아니라 JSON 이다.
+    @PostMapping(value = "/api/v2/face/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    FeignResponseApi<FaceFeignResponseDTO> createByDescriptor(@RequestBody CreateFaceByDescriptorFeignRequestDTO request);
+
+    @PostMapping(value = "/api/v2/face/identify/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    FeignResponseApi<MatchFaceFeignResponseDTO> identifyByDescriptor(@RequestBody IdentifyFaceByDescriptorFeignRequestDTO request);
+
     @PostMapping(value = "/api/v2/face/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<LivenessFaceFeignResponseDTO> liveness(@ModelAttribute LivenessFaceFeignRequestDTO request);
 }
