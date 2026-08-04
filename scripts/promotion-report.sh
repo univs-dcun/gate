@@ -36,7 +36,12 @@ cd "$(git rev-parse --show-toplevel)"
 git fetch origin --quiet
 
 MERGE_BASE=$(git merge-base "$TARGET_REF" "$SOURCE_REF")
-CHANGED_FILES=$(git diff --name-only "$MERGE_BASE" "$SOURCE_REF")
+# UG-266: --no-renames 필수. git diff는 기본으로 rename을 탐지해 이동을 '새 경로 하나'로
+# 합쳐 보고한다(diff.renames, git 2.9+ 기본 true). 그러면 서비스 경로 밖으로 파일을 옮길 때
+# 삭제된 원본 경로가 목록에 안 나와 아래 grep "^$svc_path/" 필터에 걸리지 않고, 태그 계산
+# (git log는 경로 제한에 rename 탐지를 하지 않음)만 홀로 올라간다. 이 스크립트가 승격 전에
+# 잡으려는 바로 그 desync를 스스로 놓치게 된다. 파이프라인 라이브러리와 동일 규칙.
+CHANGED_FILES=$(git diff --name-only --no-renames "$MERGE_BASE" "$SOURCE_REF")
 
 echo ""
 echo "================================================================"
