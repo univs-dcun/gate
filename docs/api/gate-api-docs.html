@@ -1083,7 +1083,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <tbody>
             <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 ID</td></tr>
             <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 ID</td></tr>
-            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>VERIFY</code></td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>VERIFY_ID</code></td></tr>
             <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">확인 성공 여부</td></tr>
@@ -1112,7 +1112,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: {
     <span class="jk">"matchingHistoryId"</span>: <span class="jn">100</span>,
     <span class="jk">"projectId"</span>: <span class="jn">5</span>,
-    <span class="jk">"matchType"</span>: <span class="js">"VERIFY"</span>,
+    <span class="jk">"matchType"</span>: <span class="js">"VERIFY_ID"</span>,
     <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
@@ -1183,7 +1183,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <tbody>
             <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 ID</td></tr>
             <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 ID</td></tr>
-            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>VERIFY</code></td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>VERIFY_IMAGE</code></td></tr>
             <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">확인 성공 여부</td></tr>
@@ -1210,11 +1210,11 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: {
     <span class="jk">"matchingHistoryId"</span>: <span class="jn">200</span>,
     <span class="jk">"projectId"</span>: <span class="jn">5</span>,
-    <span class="jk">"matchType"</span>: <span class="js">"VERIFY"</span>,
+    <span class="jk">"matchType"</span>: <span class="js">"VERIFY_IMAGE"</span>,
     <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">false</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
-    <span class="jk">"featureId"</span>: <span class="js">"tmp-feature-id"</span>,
+    <span class="jk">"featureId"</span>: <span class="jnu">null</span>,
     <span class="jk">"similarity"</span>: <span class="jn">0.95</span>,
     <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/live.jpg"</span>,
     <span class="jk">"targetMatchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/doc.jpg"</span>,
@@ -2556,7 +2556,7 @@ var PAGES = {
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
-      { ko: '매칭 유형 — <code>VERIFY</code>', en: 'Match type — <code>VERIFY</code>' },
+      { ko: '매칭 유형 — <code>VERIFY_ID</code>', en: 'Match type — <code>VERIFY_ID</code>' },
       { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '확인 성공 여부', en: 'Whether verification succeeded' },
@@ -2589,7 +2589,7 @@ var PAGES = {
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
-      { ko: '매칭 유형 — <code>VERIFY</code>', en: 'Match type — <code>VERIFY</code>' },
+      { ko: '매칭 유형 — <code>VERIFY_IMAGE</code>', en: 'Match type — <code>VERIFY_IMAGE</code>' },
       { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '확인 성공 여부', en: 'Whether verification succeeded' },

@@ -204,7 +204,11 @@ public class DemoController {
     ) {
         var input = request.toLivenessInput();
         var result = livenessFaceUseCase.execute(input);
-        String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
+        // UG-274: 성공 시 prdioctionDesc 가 "REAL" 이라 그대로 변환하면 failureReason 에
+        // "REAL" 이 실린다. 상세는 FaceController.liveness 주석 참고.
+        String failureReason = result.success()
+                ? ""
+                : messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
