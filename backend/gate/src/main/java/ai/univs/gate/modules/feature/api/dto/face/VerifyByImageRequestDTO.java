@@ -26,11 +26,14 @@ public record VerifyByImageRequestDTO(
         String transactionUuid
 ) {
 
-        public VerifyByImageInput toVerifyByImageInput(Long accountId, String timezone) {
+        // UG-274: 두 번째 파라미터는 VerifyByImageInput.apiKey 로 들어간다. 이름이 timezone 으로
+        // 잘못 선언돼 있어 호출 측(FaceController)이 ctx.getTimezone() 을 넘기도록 유도했고,
+        // 그 결과 findByApiKey("Asia/Seoul") 로 API_KEY_NOT_FOUND 가 상시 발생했다.
+        public VerifyByImageInput toVerifyByImageInput(Long accountId, String apiKey) {
                 return new VerifyByImageInput(
                         CallerType.API,
                         accountId,
-                        timezone,
+                        apiKey,
                         documentImage,
                         matchingFeatureImage,
                         TransactionUtil.useOrCreate(transactionUuid));

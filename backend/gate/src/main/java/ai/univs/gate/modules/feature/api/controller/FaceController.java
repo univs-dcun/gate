@@ -229,7 +229,7 @@ public class FaceController {
             @ModelAttribute @Valid VerifyByImageRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
-        var input = request.toVerifyByImageInput(ctx.getAccountIdAsLong(), ctx.getTimezone());
+        var input = request.toVerifyByImageInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = faceVerifyByFeatureImageUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = VerifyByImageResponseDTO.from(result, failureReason, ctx.getTimezone());
@@ -290,7 +290,7 @@ public class FaceController {
             @ModelAttribute @Valid LivenessRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
-        var input = request.toLivenessInput(ctx.getAccountIdAsLong(), ctx.getTimezone());
+        var input = request.toLivenessInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = livenessFaceUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
