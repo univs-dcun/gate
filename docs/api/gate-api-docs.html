@@ -497,8 +497,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <tbody>
             <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 타입 필터 (FACE | PALM | ALL, 기본값: ALL)</td></tr>
             <tr><td><span class="pname">keyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">검색 키워드 (featureId 또는 메모)</td></tr>
-            <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1)</td></tr>
-            <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 10)</td></tr>
+            <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1, 범위: 1~1000)</td></tr>
+            <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 10, 범위: 1~1000)</td></tr>
             <tr><td><span class="pname">isDeleted</span></td><td><span class="ptyp">boolean</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">삭제 여부 필터 (미입력 시 미삭제 기준)</td></tr>
             <tr><td><span class="pname">startDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 시작일 (yyyy-MM-dd)</td></tr>
             <tr><td><span class="pname">endDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 종료일 (yyyy-MM-dd)</td></tr>
@@ -1741,8 +1741,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1)</td></tr>
-            <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 20)</td></tr>
+            <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1, 범위: 1~1000)</td></tr>
+            <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 20, 범위: 1~1000)</td></tr>
             <tr><td><span class="pname">userKeyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">설명(description) 검색 키워드</td></tr>
             <tr><td><span class="pname">isDeleted</span></td><td><span class="ptyp">boolean</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">삭제 여부 필터</td></tr>
             <tr><td><span class="pname">startDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 시작일 (yyyy-MM-dd)</td></tr>
@@ -2370,8 +2370,8 @@ var PAGES = {
     pdsc: [
       { ko: '특징점 타입 필터 (FACE | PALM | ALL, 기본값: ALL)', en: 'Feature type filter (FACE | PALM | ALL, default: ALL)' },
       { ko: '검색 키워드 (featureId 또는 메모)', en: 'Search keyword (featureId or description)' },
-      { ko: '페이지 번호 (기본값: 1)', en: 'Page number (default: 1)' },
-      { ko: '페이지 크기 (기본값: 10)', en: 'Page size (default: 10)' },
+      { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
+      { ko: '페이지 크기 (기본값: 10, 범위: 1~1000)', en: 'Page size (default: 10, range: 1–1000)' },
       { ko: '삭제 여부 필터 (미입력 시 미삭제 기준)', en: 'Deleted filter (defaults to non-deleted if omitted)' },
       { ko: '조회 시작일 (yyyy-MM-dd)', en: 'Start date (yyyy-MM-dd)' },
       { ko: '조회 종료일 (yyyy-MM-dd)', en: 'End date (yyyy-MM-dd)' },
@@ -2768,8 +2768,8 @@ var PAGES = {
       en: 'Retrieve a paginated list of palm features registered in the project.'
     },
     pdsc: [
-      { ko: '페이지 번호 (기본값: 1)', en: 'Page number (default: 1)' },
-      { ko: '페이지 크기 (기본값: 20)', en: 'Page size (default: 20)' },
+      { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
+      { ko: '페이지 크기 (기본값: 20, 범위: 1~1000)', en: 'Page size (default: 20, range: 1–1000)' },
       { ko: '설명(description) 검색 키워드', en: 'Keyword to search in description' },
       { ko: '삭제 여부 필터', en: 'Deleted filter' },
       { ko: '조회 시작일 (yyyy-MM-dd)', en: 'Start date (yyyy-MM-dd)' },

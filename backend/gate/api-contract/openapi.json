@@ -2489,7 +2489,7 @@
           "기업 정보"
         ],
         "summary": "회사 정보 조회",
-        "description": "사용자의 회사 정보를 조회합니다",
+        "description": "사용자의 회사 정보를 조회합니다. 최초 조회 시 빈 회사 정보가 생성됩니다.",
         "operationId": "getCompany",
         "parameters": [
           {
@@ -2512,16 +2512,6 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "COMPANY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-108",
-                        "type": "COMPANY_NOT_FOUND",
-                        "message": "Company information not found."
-                      }
-                    }
-                  },
                   "INVALID_INPUT": {
                     "value": {
                       "success": false,
@@ -3369,7 +3359,9 @@
               "type": "integer",
               "format": "int32",
               "default": 1,
-              "description": "1 ~ n, 페이지 번호, 기본 값 1"
+              "description": "1 ~ n, 페이지 번호, 기본 값 1",
+              "maximum": 1000,
+              "minimum": 1
             }
           },
           {
@@ -3381,7 +3373,9 @@
               "type": "integer",
               "format": "int32",
               "default": 20,
-              "description": "1 ~ n, 한 페이지에 보여줄 컨텐츠 수, 기본 값 10"
+              "description": "1 ~ n, 한 페이지에 보여줄 컨텐츠 수, 기본 값 10",
+              "maximum": 1000,
+              "minimum": 1
             }
           },
           {
@@ -7672,7 +7666,9 @@
               "type": "integer",
               "format": "int32",
               "default": 1,
-              "description": "1 ~ n, 페이지 번호, 기본 값 1"
+              "description": "1 ~ n, 페이지 번호, 기본 값 1",
+              "maximum": 1000,
+              "minimum": 1
             }
           },
           {
@@ -7684,7 +7680,9 @@
               "type": "integer",
               "format": "int32",
               "default": 10,
-              "description": "1 ~ n, 한 페이지에 보여줄 컨텐츠 수, 기본 값 10"
+              "description": "1 ~ n, 한 페이지에 보여줄 컨텐츠 수, 기본 값 10",
+              "maximum": 1000,
+              "minimum": 1
             }
           },
           {
