@@ -16,9 +16,14 @@ public record FeatureSelectCondition(
         @Schema(description = SwaggerDescriptions.FEATURE_KEYWORD)
         String keyword,
 
-        // UG-268: 상한이 없으면 featureType=ALL 경로가 face/palm 양쪽에서 offset+pageSize 행을
-        // 모두 읽어 메모리에서 병합한다(GetFeatureListUseCase#buildAllResult). page 하한도 필요하다
-        // — page=0 이면 offset 이 음수가 되어 그대로 querydsl 로 넘어간다.
+        // UG-268: 다른 조건 DTO(Face/Match/Project)와 동일한 1~1000 제약을 맞춘다.
+        // 하한이 필요한 이유는 page=0 이면 GetFeatureListUseCase 의 offset 이 음수가 되어
+        // 그대로 querydsl 로 넘어가기 때문이다. 상한은 int 오버플로(page*pageSize)를 막는다.
+        //
+        // 주의: 상한 1000 이 featureType=ALL 경로의 메모리 문제를 해결하지는 못한다.
+        // buildAllResult 는 offset+pageSize 행을 face/palm 양쪽에서 각각 읽어 메모리에서
+        // 병합하므로, 제약 안에서도 page=1000&pageSize=1000 이면 최대 200만 행을 적재한다.
+        // 근본 해결(keyset 페이징 등)은 UG-269 로 분리했다.
         @Schema(description = SwaggerDescriptions.PAGE, defaultValue = "1")
         @Min(value = 1, message = "INVALID_PAGE_COUNT")
         @Max(value = 1000, message = "INVALID_PAGE_COUNT")
