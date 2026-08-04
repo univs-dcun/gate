@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +44,7 @@ public class FeatureController {
     })
     @GetMapping
     public ResponseEntity<ResponseApi<FeatureListResponse>> list(
-            @ParameterObject @ModelAttribute FeatureSelectCondition condition
+            @ParameterObject @ModelAttribute @Valid FeatureSelectCondition condition
     ) {
         UserContext ctx = UserContext.get();
         var query = condition.toQuery(ctx.getAccountIdAsLong(), ctx.getApiKey(), ctx.getTimezone());
