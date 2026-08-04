@@ -292,7 +292,13 @@ public class FaceController {
         UserContext ctx = UserContext.get();
         var input = request.toLivenessInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = livenessFaceUseCase.execute(input);
-        String failureReason = messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
+        // UG-274: prdioctionDesc 는 성공 시 "REAL" 이다. 성공/실패를 가리지 않고 메시지 변환에
+        // 넘기면 messages_{ko,en}.properties 에 REAL 키가 없어 setUseCodeAsDefaultMessage(true)
+        // 때문에 코드 문자열 "REAL" 이 그대로 failureReason 으로 나간다. 문서는 성공 시 null 을
+        // 공표한다. Palm 라이브니스는 이미 같은 방식으로 막고 있다 (PalmController).
+        String failureReason = result.success()
+                ? ""
+                : messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }

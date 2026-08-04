@@ -1,5 +1,12 @@
 package ai.univs.gate.modules.feature.api.controller;
 
+import ai.univs.gate.facade.dashboard.api.dto.DashboardDailyStatsRequest;
+import ai.univs.gate.facade.dashboard.api.dto.DashboardPeriodRequest;
+import ai.univs.gate.facade.dashboard.api.dto.DashboardTrendRequest;
+import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardDailyStatsUseCase;
+import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardRatiosUseCase;
+import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardSummaryUseCase;
+import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardTrendUseCase;
 import ai.univs.gate.facade.feature.api.dto.FeatureSelectCondition;
 import ai.univs.gate.facade.feature.application.usecase.GetFeatureListUseCase;
 import ai.univs.gate.modules.feature.api.dto.CreateFeatureRequestDTO;
@@ -53,11 +60,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.RecordComponent;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 
@@ -114,12 +123,18 @@ class ApiKeyPropagationTest {
 
     @Mock private GetFeatureListUseCase getFeatureListUseCase;
 
+    @Mock private GetDashboardSummaryUseCase getDashboardSummaryUseCase;
+    @Mock private GetDashboardTrendUseCase getDashboardTrendUseCase;
+    @Mock private GetDashboardRatiosUseCase getDashboardRatiosUseCase;
+    @Mock private GetDashboardDailyStatsUseCase getDashboardDailyStatsUseCase;
+
     @Mock private MessageService messageService;
 
     @InjectMocks private FaceController faceController;
     @InjectMocks private PalmController palmController;
     @InjectMocks private MatchController matchController;
     @InjectMocks private ai.univs.gate.facade.feature.api.controller.FeatureController featureController;
+    @InjectMocks private ai.univs.gate.facade.dashboard.api.controller.DashboardController dashboardController;
 
     @BeforeEach
     void 컨텍스트_설정() {
@@ -320,7 +335,53 @@ class ApiKeyPropagationTest {
         void 통합목록() {
             given(getFeatureListUseCase.execute(any())).willAnswer(captureFirstArg());
             var condition = new FeatureSelectCondition(null, null, 1, 10, null, null, null);
-            assertApiKeyPropagated(capture(() -> featureController.list(condition)));
+            Object query = capture(() -> featureController.list(condition));
+            assertApiKeyPropagated(query);
+            // 이 경로만 apiKey 와 timezone 을 나란히 넘긴다. 두 값이 서로 자리를 바꿔도 컴파일이
+            // 되고, 그 경우 DateTimeUtil 이 apiKey 를 타임존으로 해석해 날짜 필터가 조용히
+            // 망가진다(예외 없이 잘못된 결과). 그래서 timezone 자리도 함께 못 박는다.
+            assertComponentEquals(query, "timezone", TIMEZONE);
+        }
+    }
+
+    @Nested
+    @DisplayName("Dashboard — apiKey 를 String 첫 인자로 직접 넘기는 경로")
+    class Dashboard {
+
+        @Test
+        @DisplayName("요약 조회")
+        void 요약() {
+            given(getDashboardSummaryUseCase.execute(any(), any(), any()))
+                    .willAnswer(captureFirstArg());
+            var request = new DashboardPeriodRequest(null, null);
+            assertApiKeyPropagated(capture(() -> dashboardController.getSummary(request)));
+        }
+
+        @Test
+        @DisplayName("사용량 추이 조회")
+        void 추이() {
+            given(getDashboardTrendUseCase.execute(any(), any(), any()))
+                    .willAnswer(captureFirstArg());
+            var request = new DashboardTrendRequest(null, null);
+            assertApiKeyPropagated(capture(() -> dashboardController.getTrend(request)));
+        }
+
+        @Test
+        @DisplayName("비율 통계 조회")
+        void 비율() {
+            given(getDashboardRatiosUseCase.execute(any(), any(), any()))
+                    .willAnswer(captureFirstArg());
+            var request = new DashboardPeriodRequest(null, null);
+            assertApiKeyPropagated(capture(() -> dashboardController.getRatios(request)));
+        }
+
+        @Test
+        @DisplayName("일일 통계 조회")
+        void 일일() {
+            given(getDashboardDailyStatsUseCase.execute(any(), anyInt(), anyInt(), any()))
+                    .willAnswer(captureFirstArg());
+            var request = new DashboardDailyStatsRequest(1, 10, null);
+            assertApiKeyPropagated(capture(() -> dashboardController.getDailyStats(request)));
         }
     }
 
@@ -358,6 +419,38 @@ class ApiKeyPropagationTest {
                 "%s 의 apiKey 가 UserContext 의 apiKey 가 아니다 (실제: %s). "
                         + "컨트롤러가 apiKey 자리에 다른 값을 넘기고 있다 — UG-274 회귀.",
                 captured.getClass().getSimpleName(), actual));
+
+        // accountId 도 함께 못 박는다. accountId 와 리소스 ID(faceFeatureId 등)는 둘 다 Long 이라
+        // 자리를 바꿔도 컴파일이 통과하고, 그 경우 남의 테넌트 데이터에 접근하는 결함이 된다.
+        // 테스트는 accountId=42, 리소스 ID=1 로 서로 다른 값을 써서 이 교체를 드러낸다.
+        if (componentOf(captured, "accountId").isPresent()) {
+            assertComponentEquals(captured, "accountId", ACCOUNT_ID);
+        }
+    }
+
+    private static void assertComponentEquals(Object captured, String name, Object expected) {
+        Object actual = componentOf(captured, name).orElseThrow(() -> new AssertionError(
+                captured.getClass().getSimpleName() + " 에 " + name + " 컴포넌트가 없다 — 테스트를 갱신할 것"));
+        assertEquals(expected, actual, () -> String.format(
+                "%s 의 %s 가 UserContext 의 값과 다르다 (실제: %s). 인자 자리가 바뀐 것으로 보인다.",
+                captured.getClass().getSimpleName(), name, actual));
+    }
+
+    private static Optional<Object> componentOf(Object captured, String name) {
+        RecordComponent[] components = captured.getClass().getRecordComponents();
+        if (components == null) {
+            return Optional.empty();
+        }
+        for (RecordComponent component : components) {
+            if (name.equals(component.getName())) {
+                try {
+                    return Optional.ofNullable(component.getAccessor().invoke(captured));
+                } catch (ReflectiveOperationException e) {
+                    throw new AssertionError(name + " 접근자 호출 실패", e);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     /** 캡처한 객체에서 apiKey 를 꺼낸다. Input/Query 는 모두 record 이고, String 을 직접 받는 UseCase 도 있다. */

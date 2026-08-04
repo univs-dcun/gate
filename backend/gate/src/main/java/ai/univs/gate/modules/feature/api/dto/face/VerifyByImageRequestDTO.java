@@ -26,9 +26,13 @@ public record VerifyByImageRequestDTO(
         String transactionUuid
 ) {
 
-        // UG-274: 두 번째 파라미터는 VerifyByImageInput.apiKey 로 들어간다. 이름이 timezone 으로
-        // 잘못 선언돼 있어 호출 측(FaceController)이 ctx.getTimezone() 을 넘기도록 유도했고,
-        // 그 결과 findByApiKey("Asia/Seoul") 로 API_KEY_NOT_FOUND 가 상시 발생했다.
+        // UG-274: 두 번째 파라미터는 VerifyByImageInput.apiKey 로 들어가는데 이름이 timezone 으로
+        // 잘못 선언돼 있었다. 이름을 맞춰 두어야 다음 사람이 호출부에 무엇을 넘겨야 하는지 알 수 있다.
+        //
+        // 다만 이 오기가 버그의 원인은 아니다. 같은 결함이 있던 LivenessRequestDTO 는 처음부터
+        // apiKey 로 올바르게 선언돼 있었는데도 호출부가 ctx.getTimezone() 을 넘겼다. 실제 원인은
+        // apiKey 와 timezone 이 둘 다 String 이라 인자를 바꿔 넣어도 컴파일이 통과한다는 것이고,
+        // 그래서 재발 방지 장치는 이름 정정이 아니라 ApiKeyPropagationTest 다.
         public VerifyByImageInput toVerifyByImageInput(Long accountId, String apiKey) {
                 return new VerifyByImageInput(
                         CallerType.API,
