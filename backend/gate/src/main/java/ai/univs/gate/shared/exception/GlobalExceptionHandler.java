@@ -57,7 +57,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RemoteCallException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseApi<?> handleRemoteCallException(RemoteCallException ex) {
-        log.error("하위 서비스 호출 실패 — upstreamStatus={}", ex.getUpstreamStatus());
+        log.error("하위 서비스 호출 실패 — operation={}, upstreamStatus={}{}",
+                ex.getOperation(),
+                ex.getUpstreamStatus(),
+                ex.isNoResponse() ? " (응답 없음 — 연결 거부·타임아웃)" : "");
 
         return getExceptionResponse(ex.getErrorType());
     }

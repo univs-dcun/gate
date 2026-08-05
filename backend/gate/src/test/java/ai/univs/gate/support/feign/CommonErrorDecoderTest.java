@@ -115,4 +115,30 @@ class CommonErrorDecoderTest {
                     .isEqualTo(404);
         }
     }
+
+    @Nested
+    @DisplayName("4xx 인데 본문에 errors 가 없는 경우 (UG-280 반박 리뷰)")
+    class MissingErrors {
+
+        @Test
+        @DisplayName("우리 envelope 모양이지만 errors 가 비면 RemoteCallException 이다 — NPE 로 이력이 사라지지 않는다")
+        void errors_없으면_RemoteCallException() {
+            // 프록시·사이드카가 같은 포맷으로 {"success":false,"data":null} 만 반환하는 경우.
+            // 알려진 필드만 있어 파싱은 성공하지만 errors 가 null 이라 예전에는 여기서 NPE 가 났고,
+            // NPE 는 noRollbackFor 에 걸리지 않아 매칭 이력 행이 롤백됐다.
+            Exception result = decoder.decode("x", response(403, "{\"success\":false,\"data\":null}"));
+
+            assertThat(result).isInstanceOf(RemoteCallException.class);
+            assertThat(((RemoteCallException) result).getUpstreamStatus()).isEqualTo(403);
+        }
+
+        @Test
+        @DisplayName("methodKey 를 보존한다 — 상태 코드만으로는 어느 하위 서비스인지 알 수 없다")
+        void methodKey_보존() {
+            RemoteCallException e =
+                    (RemoteCallException) decoder.decode("PalmClient#identify()", response(502, ""));
+
+            assertThat(e.getOperation()).isEqualTo("PalmClient#identify()");
+        }
+    }
 }

@@ -2,6 +2,7 @@ package ai.univs.gate.support.feature.face;
 
 import ai.univs.gate.modules.feature.infrastructure.client.face.FaceClient;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.*;
+import ai.univs.gate.support.feign.RemoteCalls;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,58 +12,57 @@ public class FaceService {
 
     private final FaceClient faceClient;
 
+    /*
+     * UG-280 반박 리뷰: 모든 호출을 RemoteCalls 로 감싼다.
+     *
+     * CommonErrorDecoder 는 상태 코드 300 이상의 "응답이 도착했을 때만" 불린다. 연결 거부·읽기
+     * 타임아웃·연결 리셋은 응답이 없어 Feign 이 RetryableException 을 던지고, 이 프로젝트에는
+     * Retryer 빈이 없으므로(기본값 NEVER_RETRY) 그대로 올라온다. 그 예외는 BusinessException
+     * 계열이 아니라 매칭 UseCase 의 noRollbackFor 에 걸리지 않으므로, UG-280 이 고치려던 증상이
+     * 가장 흔한 장애 형태(과부하로 응답하지 못하는 경우)에서 그대로 남아 있었다.
+     */
+
     public String createFace(CreateFaceFeignRequestDTO request) {
-        return faceClient.create(request)
-                .getData()
-                .getFaceId();
+        return RemoteCalls.of("face.createFace", () -> faceClient.create(request).getData().getFaceId());
     }
 
     public void updateFace(UpdateFaceFeignRequestDTO request) {
-        faceClient.update(request);
+        RemoteCalls.run("face.updateFace", () -> faceClient.update(request));
     }
 
     public void deleteFace(DeleteFaceFeignRequestDTO request) {
-        faceClient.delete(request);
+        RemoteCalls.run("face.deleteFace", () -> faceClient.delete(request));
     }
 
     public MatchFaceFeignResponseDTO identify(IdentifyFaceFeignRequestDTO feignRequest) {
-        return faceClient.identify(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.identify", () -> faceClient.identify(feignRequest).getData());
     }
 
     public String createFaceByDescriptor(CreateFaceByDescriptorFeignRequestDTO request) {
-        return faceClient.createByDescriptor(request)
-                .getData()
-                .getFaceId();
+        return RemoteCalls.of("face.createFaceByDescriptor", () -> faceClient.createByDescriptor(request).getData().getFaceId());
     }
 
     public MatchFaceFeignResponseDTO identifyByDescriptor(IdentifyFaceByDescriptorFeignRequestDTO feignRequest) {
-        return faceClient.identifyByDescriptor(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.identifyByDescriptor", () -> faceClient.identifyByDescriptor(feignRequest).getData());
     }
 
     public MatchFaceFeignResponseDTO verifyByFaceId(VerifyFaceByFaceIdFeignRequestDTO feignRequest) {
-        return faceClient.verifyByFaceId(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.verifyByFaceId", () -> faceClient.verifyByFaceId(feignRequest).getData());
     }
 
     public MatchFaceFeignResponseDTO verifyByImage(VerifyFaceByImageFeignRequestDTO feignRequest) {
-        return faceClient.verifyByImage(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.verifyByImage", () -> faceClient.verifyByImage(feignRequest).getData());
     }
 
     public LivenessFaceFeignResponseDTO liveness(LivenessFaceFeignRequestDTO feignRequest) {
-        return faceClient.liveness(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.liveness", () -> faceClient.liveness(feignRequest).getData());
     }
 
     public ExtractFaceFeignResponseDTO extract(ExtractFaceFeignRequestDTO feignRequest) {
-        return faceClient.extract(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.extract", () -> faceClient.extract(feignRequest).getData());
     }
 
     public VerifyFaceByDescriptorFeignResponseDTO verifyDescriptor(VerifyFaceByDescriptorFeignRequestDTO feignRequest) {
-        return faceClient.verifyDescriptor(feignRequest)
-                .getData();
+        return RemoteCalls.of("face.verifyDescriptor", () -> faceClient.verifyDescriptor(feignRequest).getData());
     }
 }
