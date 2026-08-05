@@ -18,7 +18,8 @@ public record MatchingHistorySelectCondition(
         String matchingKeyword,
 
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_TYPE, defaultValue = "ALL")
-        @Pattern(regexp = "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
+        // UG-279: VERIFY_DESCRIPTOR 를 넣지 않으면 새로 쌓이는 특징점 1:1 이력을 조회할 방법이 없다.
+        @Pattern(regexp = "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|VERIFY_DESCRIPTOR|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
         String matchType,
 
         @Schema(description = SwaggerDescriptions.FEATURE_TYPE_ALL, defaultValue = "ALL")

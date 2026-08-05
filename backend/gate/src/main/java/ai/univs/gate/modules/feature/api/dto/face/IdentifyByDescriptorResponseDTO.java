@@ -1,6 +1,6 @@
 package ai.univs.gate.modules.feature.api.dto.face;
 
-import ai.univs.gate.modules.feature.application.result.face.VerifyByDescriptorResult;
+import ai.univs.gate.modules.feature.application.result.face.IdentifyByDescriptorResult;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,12 +11,11 @@ import java.time.LocalDateTime;
 import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 
 /**
- * descriptor 기반 1:1 확인 응답 (UG-283).
+ * descriptor 기반 1:N 매칭 응답 (UG-279).
  *
- * <p>{@link IdentifyByDescriptorResponseDTO}(descriptor 1:N)와 필드 구성이 동일하다. 사유와
- * featureId 가 항상 비는 이유는 {@link VerifyByDescriptorResult} 주석 참고.
+ * <p>{@link IdentifyResponseDTO} 와 분리한 이유는 {@link IdentifyByDescriptorResult} 주석 참고.
  */
-public record VerifyByDescriptorResponseDTO(
+public record IdentifyByDescriptorResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_ID)
         Long matchingHistoryId,
 
@@ -48,11 +47,11 @@ public record VerifyByDescriptorResponseDTO(
         String transactionUuid
 ) {
 
-    public static VerifyByDescriptorResponseDTO from(VerifyByDescriptorResult result,
-                                                     String failureReason,
-                                                     String timezone
+    public static IdentifyByDescriptorResponseDTO from(IdentifyByDescriptorResult result,
+                                                       String failureReason,
+                                                       String timezone
     ) {
-        return new VerifyByDescriptorResponseDTO(
+        return new IdentifyByDescriptorResponseDTO(
                 result.matchingHistoryId(),
                 result.projectId(),
                 result.matchType(),

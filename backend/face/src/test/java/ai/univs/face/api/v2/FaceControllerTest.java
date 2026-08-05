@@ -1,10 +1,13 @@
 package ai.univs.face.api.v2;
 
 import ai.univs.face.application.result.ExtractResult;
+import ai.univs.face.application.result.IdentifyResult;
 import ai.univs.face.application.result.LivenessResult;
 import ai.univs.face.application.result.RegisterResult;
 import ai.univs.face.application.usecase.ExtractUseCase;
+import ai.univs.face.application.usecase.IdentifyByDescriptorUseCase;
 import ai.univs.face.application.usecase.LivenessUseCase;
+import ai.univs.face.application.usecase.RegisterByDescriptorUseCase;
 import ai.univs.face.application.usecase.RegisterUseCase;
 import ai.univs.face.shared.locale.MessageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -38,6 +43,8 @@ class FaceControllerTest {
     @MockBean private RegisterUseCase registerUseCase;
     @MockBean private LivenessUseCase livenessUseCase;
     @MockBean private ExtractUseCase extractUseCase;
+    @MockBean private RegisterByDescriptorUseCase registerByDescriptorUseCase;
+    @MockBean private IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
     @MockBean private MessageService messageService;
 
     private MockMultipartFile validJpgFile;
@@ -238,6 +245,102 @@ class FaceControllerTest {
             mockMvc.perform(multipart("/api/v2/face/unknown")
                             .file(validJpgFile))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    // ─── UG-279: descriptor 기반 등록/1:N ─────────────────────────────────────────
+
+    @Nested
+    @DisplayName("POST /api/v2/face/descriptor — descriptor 기반 등록 (UG-279)")
+    class RegisterByDescriptor {
+
+        @BeforeEach
+        void setUp() {
+            given(registerByDescriptorUseCase.execute(any()))
+                    .willReturn(new RegisterResult("branch-A", "server-generated-id", "txn-001"));
+        }
+
+        @Test
+        @DisplayName("유효한 요청 → 200 OK")
+        void 정상() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.faceId").value("server-generated-id"))
+                    .andExpect(jsonPath("$.data.branchName").value("branch-A"));
+        }
+
+        @Test
+        @DisplayName("descriptor 누락 → 400")
+        void descriptor_누락() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("branchName 누락 → 400")
+        void branchName_누락() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"descriptor\":\"AAAAAAAAAAAA\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("multipart 로 보내면 거부된다 — 이미지 기반 등록 경로와 섞이지 않는다")
+        void multipart_거부() throws Exception {
+            // 정확한 코드(405/415)는 스프링의 핸들러 매칭 내부 사정이라 고정하지 않는다.
+            // 확인하려는 계약은 "요청이 거부되고 UseCase 가 호출되지 않는다" 다.
+            mockMvc.perform(multipart("/api/v2/face/descriptor")
+                            .file(validJpgFile)
+                            .param("branchName", "branch-A"))
+                    .andExpect(status().is4xxClientError());
+
+            then(registerByDescriptorUseCase).should(never()).execute(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v2/face/identify/descriptor — descriptor 기반 1:N (UG-279)")
+    class IdentifyByDescriptor {
+
+        @BeforeEach
+        void setUp() {
+            given(identifyByDescriptorUseCase.execute(any()))
+                    .willReturn(new IdentifyResult("txn-002", "matched-face-id", "0.97000", "0.85", true));
+        }
+
+        @Test
+        @DisplayName("유효한 요청 → 200 OK")
+        void 정상() throws Exception {
+            mockMvc.perform(post("/api/v2/face/identify/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.faceId").value("matched-face-id"))
+                    .andExpect(jsonPath("$.data.similarity").value("0.97000"))
+                    .andExpect(jsonPath("$.data.result").value(true));
+        }
+
+        @Test
+        @DisplayName("descriptor 누락 → 400")
+        void descriptor_누락() throws Exception {
+            mockMvc.perform(post("/api/v2/face/identify/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("GET 메서드 사용 → 405")
+        void 메서드_불일치() throws Exception {
+            mockMvc.perform(get("/api/v2/face/identify/descriptor"))
+                    .andExpect(status().isMethodNotAllowed());
         }
     }
 }
