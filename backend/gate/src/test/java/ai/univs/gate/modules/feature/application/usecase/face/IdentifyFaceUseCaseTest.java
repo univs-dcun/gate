@@ -342,10 +342,13 @@ class IdentifyFaceUseCaseTest {
     }
 
     @Test
-    @DisplayName("UG-277: 무인증 데모(accountId=0L)도 clientId 에 프로젝트 소유자 accountId 를 보낸다")
-    void execute_demoCaller_sendsProjectOwnerAsClientId() {
+    @DisplayName("UG-277: 무인증 데모의 clientId 는 데모 출처를 보존하기 위해 호출자 값(0)을 유지한다")
+    void execute_demoCaller_keepsCallerAsClientId() {
         // given: 데모 DTO 는 accountId 자리에 0L 을 하드코딩한다 (DemoIdentifyRequestDTO).
-        // 예전에는 그 값을 그대로 face 서비스에 보내 모든 데모 기록이 createdBy="0" 으로 남았다.
+        // 처음에는 이 "0" 을 버그로 보고 소유자 id 로 바꿨는데, 반박 리뷰에서 그 값이
+        // face/palm 이력에서 데모 출처를 알려주는 유일한 흔적이라는 지적이 나왔다 —
+        // gate 의 MatchHistory 에는 callerType·accountId 컬럼이 없다. 소유자 id 로 통일하면
+        // 데모 요청과 인증 요청이 구분되지 않으므로 유지한다.
         IdentifyInput demoInput =
                 new IdentifyInput(CallerType.DEMO, 0L, API_KEY, matchingImage, TRANSACTION_UUID);
         ProjectSettings settings = ProjectSettings.builder()
@@ -370,11 +373,11 @@ class IdentifyFaceUseCaseTest {
         // when
         identifyFaceUseCase.execute(demoInput);
 
-        // then: 프로젝트 소유자 accountId 여야 한다. "0" 이면 회귀다.
+        // then: 데모 출처가 보존돼야 한다. 소유자 id 로 바뀌면 감사 해상도가 떨어진다.
         ArgumentCaptor<IdentifyFaceFeignRequestDTO> captor =
                 ArgumentCaptor.forClass(IdentifyFaceFeignRequestDTO.class);
         verify(faceService).identify(captor.capture());
-        assertThat(captor.getValue().getClientId()).isEqualTo(ACCOUNT_ID.toString());
-        assertThat(captor.getValue().getClientId()).isNotEqualTo("0");
+        assertThat(captor.getValue().getClientId()).isEqualTo("0");
+        assertThat(captor.getValue().getClientId()).isNotEqualTo(ACCOUNT_ID.toString());
     }
 }

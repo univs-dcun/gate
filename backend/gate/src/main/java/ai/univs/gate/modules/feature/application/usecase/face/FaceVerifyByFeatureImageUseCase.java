@@ -76,13 +76,14 @@ public class FaceVerifyByFeatureImageUseCase {
                 input.matchingFeatureImage(),
                 input.documentImage(),
                 input.transactionUuid(),
-                // UG-277: 호출자 accountId 가 아니라 프로젝트 소유자 accountId 를 보낸다.
-                // 이 값은 face/palm 서비스에서 createdBy·modifiedBy 감사 필드로만 쓰이고 조회
-                // 조건에는 쓰이지 않는다(파티셔닝은 branchName). 호출자 값을 쓰면 두 문제가 있었다 —
-                // 무인증 데모는 accountId 에 0L 을 넘기므로 모든 데모 기록이 "0" 으로 남았고,
-                // X-Account-Id 가 없으면 null.toString() 으로 NPE(500) 가 났다.
-                // 라이브니스 두 UseCase 는 원래 이 방식이었다.
-                project.getAccountId().toString(),
+                // UG-277 반박 리뷰: 여기는 호출자 accountId 를 그대로 보낸다. 프로젝트 소유자로 바꾸면
+                // 안 된다 — 무인증 데모 DTO 가 0L 을 넘기고, 그 "0" 이 face/palm 이력에서
+                // <b>데모에서 온 행임을 알려주는 유일한 흔적</b>이다. gate 의 MatchHistory 에는
+                // callerType·accountId 컬럼이 없고 face/palm 에도 호출자 필드가 없다. 소유자 id 로
+                // 통일하면 데모 등록과 인증 등록이 바이트 단위로 같아져 출처를 되찾을 수 없다.
+                // 은행권 e-KYC 에서 감사 해상도를 떨어뜨리는 변경이므로 하지 않는다.
+                // 인증 경로에서는 소유 검증(ENFORCE)이 호출자 == 소유자를 보장하므로 값이 같다.
+                input.accountId().toString(),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.VERIFY_IMAGE),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.VERIFY_IMAGE));
 

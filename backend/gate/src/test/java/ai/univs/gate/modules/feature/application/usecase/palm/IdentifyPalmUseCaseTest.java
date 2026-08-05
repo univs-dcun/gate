@@ -186,7 +186,8 @@ class IdentifyPalmUseCaseTest {
         assertThat(saved.getMatchedFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
         assertThat(saved.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
 
-        // then: feign 요청 파라미터 검증 (clientId는 호출자 accountId)
+        // then: feign 요청 파라미터 검증 — clientId 는 호출자 accountId 다 (UG-277 반박 리뷰).
+        // 데모가 0L 을 넘기므로 이 값이 데모 출처를 알려주는 유일한 흔적이다.
         ArgumentCaptor<IdentifyPalmFeignRequestDTO> requestCaptor =
                 ArgumentCaptor.forClass(IdentifyPalmFeignRequestDTO.class);
         verify(palmService).identify(requestCaptor.capture());
@@ -194,10 +195,7 @@ class IdentifyPalmUseCaseTest {
         assertThat(request.getBranchName()).isEqualTo("branch-1");
         assertThat(request.getPalmImage()).isEqualTo(matchingImage);
         assertThat(request.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
-        // UG-277: clientId 는 호출자가 아니라 프로젝트 소유자 accountId 다. 무인증 데모가
-        // accountId 로 0L 을 넘기던 탓에 데모 기록이 전부 "0" 으로 남는 문제와, X-Account-Id
-        // 부재 시 null.toString() NPE 를 함께 없앤다. 라이브니스 UseCase 와 같은 방식이다.
-        assertThat(request.getClientId()).isEqualTo(PROJECT_ACCOUNT_ID.toString());
+        assertThat(request.getClientId()).isEqualTo(CALLER_ACCOUNT_ID.toString());
         assertThat(request.getCheckLiveness()).isTrue();
     }
 
