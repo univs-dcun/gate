@@ -13,6 +13,7 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -46,7 +47,10 @@ public class FaceFeatureService {
      */
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
-            noRollbackFor = CustomFeignException.class
+            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
+            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
+            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
+            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
     )
     public CreateFaceFeatureServiceResult createFaceFeature(CallerType callerType,
                                                             Long accountId,
@@ -96,6 +100,11 @@ public class FaceFeatureService {
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
             throw e;
+        } catch (RemoteCallException e) {
+            // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
+            // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
+            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            throw e;
         }
 
         BiometricFeature biometricFeature = BiometricFeature.builder()
@@ -132,7 +141,10 @@ public class FaceFeatureService {
      */
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
-            noRollbackFor = CustomFeignException.class
+            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
+            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
+            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
+            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
     )
     public BiometricFeature createFaceFeatureByDescriptor(Long accountId,
                                                          String apiKey,
@@ -172,6 +184,11 @@ public class FaceFeatureService {
             featureId = faceService.createFaceByDescriptor(createRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        } catch (RemoteCallException e) {
+            // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
+            // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
+            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             throw e;
         }
 
