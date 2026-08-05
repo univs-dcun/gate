@@ -51,6 +51,8 @@ public class PalmController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> create(
@@ -72,6 +74,7 @@ public class PalmController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @PutMapping(value = "/{palmFeatureId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> update(
@@ -92,6 +95,7 @@ public class PalmController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @DeleteMapping("/{palmFeatureId}")
     public ResponseEntity<Void> delete(
@@ -110,6 +114,8 @@ public class PalmController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping("/{palmFeatureId}")
     public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> get(
@@ -129,6 +135,8 @@ public class PalmController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping
     public ResponseEntity<ResponseApi<PalmFeaturesResponseDTO>> list(
@@ -156,6 +164,8 @@ public class PalmController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_MATCH, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmIdentifyResponseDTO>> identify(
@@ -177,6 +187,8 @@ public class PalmController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmLivenessResponseDTO>> liveness(

@@ -41,6 +41,8 @@ public class MatchController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping
     public ResponseEntity<ResponseApi<MatchingHistoriesResponseDTO>> getView(
@@ -73,6 +75,8 @@ public class MatchController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_FOUND_MATCHING_HISTORY, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping("/{transactionUuid}")
     public ResponseEntity<ResponseApi<MatchingHistoryResponseDTO>> getIdViewByTransactionUuid(

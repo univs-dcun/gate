@@ -305,7 +305,7 @@ class DescriptorMatchHistoryTest {
         @InjectMocks private VerifyByDescriptorUseCase useCase;
 
         private final VerifyByDescriptorInput input =
-                new VerifyByDescriptorInput(API_KEY, ACCOUNT_ID, DESCRIPTOR, "target-descriptor", TX);
+                new VerifyByDescriptorInput(ACCOUNT_ID, API_KEY, DESCRIPTOR, "target-descriptor", TX);
 
         private void 공통() {
             given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
