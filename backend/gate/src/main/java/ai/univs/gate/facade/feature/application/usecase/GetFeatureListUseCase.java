@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -36,38 +35,21 @@ public class GetFeatureListUseCase {
         int offset = (query.page() - 1) * query.pageSize();
 
         return switch (query.featureType()) {
-            case FACE -> buildSingleResult(
-                    featureDSLRepository.countFace(projectId, query),
+            case FACE -> buildResult(
                     featureDSLRepository.findFaceRows(projectId, query, offset, query.pageSize()),
+                    featureDSLRepository.countFace(projectId, query),
                     query, prefixImagePath);
-            case PALM -> buildSingleResult(
-                    featureDSLRepository.countPalm(projectId, query),
+            case PALM -> buildResult(
                     featureDSLRepository.findPalmRows(projectId, query, offset, query.pageSize()),
+                    featureDSLRepository.countPalm(projectId, query),
                     query, prefixImagePath);
-            case ALL -> buildAllResult(projectId, query, offset, prefixImagePath);
+            // UG-269: face·palm 이 같은 테이블이므로 type 조건만 빼면 통합 조회가 된다. 예전에는
+            // 양쪽을 offset+pageSize 까지 각각 읽어 자바 힙에서 병합한 뒤 한 페이지만 잘라냈다.
+            case ALL -> buildResult(
+                    featureDSLRepository.findAllRows(projectId, query, offset, query.pageSize()),
+                    featureDSLRepository.countAll(projectId, query),
+                    query, prefixImagePath);
         };
-    }
-
-    private FeatureListResult buildAllResult(Long projectId, FeatureListQuery query, int offset, String prefixImagePath) {
-        long faceCount = featureDSLRepository.countFace(projectId, query);
-        long palmCount = featureDSLRepository.countPalm(projectId, query);
-        long total = faceCount + palmCount;
-
-        int fetchLimit = offset + query.pageSize();
-        List<FeatureRow> faceRows = featureDSLRepository.findFaceRows(projectId, query, 0, fetchLimit);
-        List<FeatureRow> palmRows = featureDSLRepository.findPalmRows(projectId, query, 0, fetchLimit);
-
-        List<FeatureRow> merged = mergeSortedDesc(faceRows, palmRows);
-
-        int from = Math.min(offset, merged.size());
-        int to = Math.min(offset + query.pageSize(), merged.size());
-        List<FeatureRow> page = merged.subList(from, to);
-
-        return buildResult(page, total, query, prefixImagePath);
-    }
-
-    private FeatureListResult buildSingleResult(long total, List<FeatureRow> rows, FeatureListQuery query, String prefixImagePath) {
-        return buildResult(rows, total, query, prefixImagePath);
     }
 
     private FeatureListResult buildResult(List<FeatureRow> rows, long total, FeatureListQuery query, String prefixImagePath) {
@@ -84,26 +66,11 @@ public class GetFeatureListUseCase {
                 ? prefixImagePath + row.imagePath()
                 : "";
         return new FeatureItemResult(
-                row.featureType(),
+                row.featureType().name(),
                 row.featureSeq(),
                 row.description(),
                 imageUrl,
                 row.featureId(),
                 row.createdAt());
-    }
-
-    private List<FeatureRow> mergeSortedDesc(List<FeatureRow> a, List<FeatureRow> b) {
-        List<FeatureRow> result = new ArrayList<>(a.size() + b.size());
-        int i = 0, j = 0;
-        while (i < a.size() && j < b.size()) {
-            if (!a.get(i).createdAt().isBefore(b.get(j).createdAt())) {
-                result.add(a.get(i++));
-            } else {
-                result.add(b.get(j++));
-            }
-        }
-        while (i < a.size()) result.add(a.get(i++));
-        while (j < b.size()) result.add(b.get(j++));
-        return result;
     }
 }
