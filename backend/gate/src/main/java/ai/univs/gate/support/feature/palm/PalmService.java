@@ -23,7 +23,7 @@ public class PalmService {
      */
 
     public String registerPalm(RegisterPalmFeignRequestDTO request) {
-        return RemoteCalls.of("palm.registerPalm", () -> palmClient.register(request).getData().getPalmId());
+        return RemoteCalls.data("palm.registerPalm", () -> palmClient.register(request)).getPalmId();
     }
 
     public void deletePalm(DeletePalmFeignRequestDTO request) {
@@ -31,10 +31,10 @@ public class PalmService {
     }
 
     public IdentifyPalmFeignResponseDTO identify(IdentifyPalmFeignRequestDTO request) {
-        return RemoteCalls.of("palm.identify", () -> palmClient.identify(request).getData());
+        return RemoteCalls.data("palm.identify", () -> palmClient.identify(request));
     }
 
     public LivenessPalmFeignResponseDTO liveness(LivenessPalmFeignRequestDTO request) {
-        return RemoteCalls.of("palm.liveness", () -> palmClient.liveness(request).getData());
+        return RemoteCalls.data("palm.liveness", () -> palmClient.liveness(request));
     }
 }

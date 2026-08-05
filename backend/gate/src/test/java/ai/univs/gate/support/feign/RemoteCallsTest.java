@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
+import ai.univs.gate.support.feign.dto.FeignResponseApi;
+import feign.FeignException;
 import feign.Request;
 import feign.RetryableException;
 import java.io.IOException;
@@ -95,14 +97,62 @@ class RemoteCallsTest {
     }
 
     @Test
-    @DisplayName("IOException 을 감싸지 않은 RuntimeException 은 통과시킨다")
-    void 예상외_런타임예외는_통과() {
+    @DisplayName("UG-280 재검증: 디코딩 실패(FeignException)도 번역한다 — 200 응답에서도 발생한다")
+    void 디코딩_실패도_번역() {
+        // ResponseHandler.handleResponse 가 IOException 을 FeignException.errorReading() 으로
+        // 감싼다. RetryableException 이 아니므로 예전에는 그대로 빠져나가 이력 행이 사라졌다.
+        // 프록시가 본문을 잘라 보내면 200 응답에서도 일어난다.
+        // FeignException.errorReading 은 패키지 전용이라 직접 못 만든다. 같은 계층의
+        // 공개 팩터리로 대체한다 — 잡히는 조건은 FeignException 여부이므로 동등하다.
+        FeignException decodeFailure = FeignException.errorStatus(
+                "FaceClient#identify()",
+                feign.Response.builder()
+                        .status(200)
+                        .reason("OK")
+                        .request(Request.create(Request.HttpMethod.POST, "http://face-service/x",
+                                Collections.emptyMap(), new byte[0], StandardCharsets.UTF_8, null))
+                        .headers(Collections.emptyMap())
+                        .body("truncated", StandardCharsets.UTF_8)
+                        .build());
+
+        assertThatThrownBy(() -> RemoteCalls.of("face.identify", () -> {
+            throw decodeFailure;
+        }))
+                .isInstanceOf(RemoteCallException.class)
+                .extracting(e -> ((RemoteCallException) e).isNoResponse())
+                .isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("우리 코드의 버그는 통과시킨다 — 원격 실패로 분류하면 원인이 가려진다")
+    void 우리_버그는_통과() {
         IllegalStateException boom = new IllegalStateException("boom");
 
         assertThatThrownBy(() -> RemoteCalls.of("face.identify", () -> {
             throw boom;
         }))
                 .isSameAs(boom);
+    }
+
+    @Test
+    @DisplayName("UG-280 재검증: 200 응답에 data 가 없으면 NPE 대신 RemoteCallException 이다")
+    void data_없으면_RemoteCallException() {
+        // {"success":false,"data":null} 을 200 으로 받으면 예전에는 .getFaceId() 에서 NPE 가 났고,
+        // NPE 는 noRollbackFor 에 걸리지 않아 매칭 이력 행이 사라졌다.
+        FeignResponseApi<String> empty = new FeignResponseApi<>(false, null, null);
+
+        assertThatThrownBy(() -> RemoteCalls.data("face.createFace", () -> empty))
+                .isInstanceOf(RemoteCallException.class)
+                .extracting(e -> ((RemoteCallException) e).getOperation())
+                .isEqualTo("face.createFace");
+    }
+
+    @Test
+    @DisplayName("data 가 있으면 그 값을 그대로 돌려준다")
+    void data_정상() {
+        FeignResponseApi<String> ok = new FeignResponseApi<>(true, "face-id-1", null);
+
+        assertThat(RemoteCalls.data("face.createFace", () -> ok)).isEqualTo("face-id-1");
     }
 
     @Test

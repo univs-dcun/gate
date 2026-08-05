@@ -23,7 +23,7 @@ public class FaceService {
      */
 
     public String createFace(CreateFaceFeignRequestDTO request) {
-        return RemoteCalls.of("face.createFace", () -> faceClient.create(request).getData().getFaceId());
+        return RemoteCalls.data("face.createFace", () -> faceClient.create(request)).getFaceId();
     }
 
     public void updateFace(UpdateFaceFeignRequestDTO request) {
@@ -35,34 +35,34 @@ public class FaceService {
     }
 
     public MatchFaceFeignResponseDTO identify(IdentifyFaceFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.identify", () -> faceClient.identify(feignRequest).getData());
+        return RemoteCalls.data("face.identify", () -> faceClient.identify(feignRequest));
     }
 
     public String createFaceByDescriptor(CreateFaceByDescriptorFeignRequestDTO request) {
-        return RemoteCalls.of("face.createFaceByDescriptor", () -> faceClient.createByDescriptor(request).getData().getFaceId());
+        return RemoteCalls.data("face.createFaceByDescriptor", () -> faceClient.createByDescriptor(request)).getFaceId();
     }
 
     public MatchFaceFeignResponseDTO identifyByDescriptor(IdentifyFaceByDescriptorFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.identifyByDescriptor", () -> faceClient.identifyByDescriptor(feignRequest).getData());
+        return RemoteCalls.data("face.identifyByDescriptor", () -> faceClient.identifyByDescriptor(feignRequest));
     }
 
     public MatchFaceFeignResponseDTO verifyByFaceId(VerifyFaceByFaceIdFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.verifyByFaceId", () -> faceClient.verifyByFaceId(feignRequest).getData());
+        return RemoteCalls.data("face.verifyByFaceId", () -> faceClient.verifyByFaceId(feignRequest));
     }
 
     public MatchFaceFeignResponseDTO verifyByImage(VerifyFaceByImageFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.verifyByImage", () -> faceClient.verifyByImage(feignRequest).getData());
+        return RemoteCalls.data("face.verifyByImage", () -> faceClient.verifyByImage(feignRequest));
     }
 
     public LivenessFaceFeignResponseDTO liveness(LivenessFaceFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.liveness", () -> faceClient.liveness(feignRequest).getData());
+        return RemoteCalls.data("face.liveness", () -> faceClient.liveness(feignRequest));
     }
 
     public ExtractFaceFeignResponseDTO extract(ExtractFaceFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.extract", () -> faceClient.extract(feignRequest).getData());
+        return RemoteCalls.data("face.extract", () -> faceClient.extract(feignRequest));
     }
 
     public VerifyFaceByDescriptorFeignResponseDTO verifyDescriptor(VerifyFaceByDescriptorFeignRequestDTO feignRequest) {
-        return RemoteCalls.of("face.verifyDescriptor", () -> faceClient.verifyDescriptor(feignRequest).getData());
+        return RemoteCalls.data("face.verifyDescriptor", () -> faceClient.verifyDescriptor(feignRequest));
     }
 }
