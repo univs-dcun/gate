@@ -10,8 +10,10 @@ import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardTrendUseCa
 import ai.univs.gate.facade.feature.api.dto.FeatureSelectCondition;
 import ai.univs.gate.facade.feature.application.usecase.GetFeatureListUseCase;
 import ai.univs.gate.modules.feature.api.dto.CreateFeatureRequestDTO;
+import ai.univs.gate.modules.feature.api.dto.face.CreateFaceFeatureByDescriptorRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.ExtractRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.FaceFeatureSelectCondition;
+import ai.univs.gate.modules.feature.api.dto.face.IdentifyByDescriptorRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.IdentifyRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.LivenessRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.UpdateFaceFeatureRequestDTO;
@@ -24,9 +26,11 @@ import ai.univs.gate.modules.feature.api.dto.palm.PalmFeatureSelectCondition;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmIdentifyRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmLivenessRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.palm.UpdatePalmFeatureRequestDTO;
+import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.DeleteFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.ExtractUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.IdentifyByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureIdUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureImageUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeatureByFaceIdUseCase;
@@ -109,6 +113,8 @@ class ApiKeyPropagationTest {
     @Mock private VerifyByDescriptorUseCase verifyByDescriptorUseCase;
     @Mock private IdentifyFaceUseCase identifyFaceUseCase;
     @Mock private LivenessFaceUseCase livenessFaceUseCase;
+    @Mock private CreateFaceFeatureByDescriptorUseCase createFaceFeatureByDescriptorUseCase;
+    @Mock private IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
 
     @Mock private CreatePalmFeatureUseCase createPalmFeatureUseCase;
     @Mock private UpdatePalmFeatureUseCase updatePalmFeatureUseCase;
@@ -193,6 +199,22 @@ class ApiKeyPropagationTest {
             given(identifyFaceUseCase.execute(any())).willAnswer(captureFirstArg());
             var request = new IdentifyRequestDTO(null, "tx-identify");
             assertApiKeyPropagated(capture(() -> faceController.identify(request)));
+        }
+
+        @Test
+        @DisplayName("등록 — descriptor 기반 (UG-279)")
+        void 등록_descriptor() {
+            given(createFaceFeatureByDescriptorUseCase.execute(any())).willAnswer(captureFirstArg());
+            var request = new CreateFaceFeatureByDescriptorRequestDTO("d1", "tx-create-descriptor");
+            assertApiKeyPropagated(capture(() -> faceController.createByDescriptor(request)));
+        }
+
+        @Test
+        @DisplayName("1:N 매칭 — descriptor 기반 (UG-279)")
+        void 매칭_descriptor() {
+            given(identifyByDescriptorUseCase.execute(any())).willAnswer(captureFirstArg());
+            var request = new IdentifyByDescriptorRequestDTO("d1", "tx-identify-descriptor");
+            assertApiKeyPropagated(capture(() -> faceController.identifyByDescriptor(request)));
         }
 
         @Test

@@ -5249,6 +5249,170 @@
         ]
       }
     },
+    "/api/v1/feature/face/identify/descriptor": {
+      "post": {
+        "tags": [
+          "특징점 얼굴 관리"
+        ],
+        "summary": "얼굴 1:N 매칭 (특징점 기반)",
+        "description": "이미지 대신 특징점 추출 API 가 반환한 descriptor 를 그대로 전달합니다. 라이브니스를 수행하지 않는 이유는 특징점 기반 등록 API 와 같습니다.",
+        "operationId": "identifyByDescriptor",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifyByDescriptorRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiIdentifyByDescriptorResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "FORBIDDEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      }
+    },
     "/api/v1/feature/face/extract": {
       "post": {
         "tags": [
@@ -5324,6 +5488,170 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ResponseApiExtractResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "FORBIDDEN": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feature/face/descriptor": {
+      "post": {
+        "tags": [
+          "특징점 얼굴 관리"
+        ],
+        "summary": "특징점 얼굴 등록 (특징점 기반)",
+        "description": "이미지 대신 특징점 추출 API 가 반환한 descriptor 를 그대로 전달합니다. descriptor 가 존재한다는 것은 추출·라이브니스 단계가 이미 끝났다는 뜻이므로 프로젝트의 라이브니스 설정과 무관하게 라이브니스를 수행하지 않습니다.",
+        "operationId": "createByDescriptor",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFaceFeatureByDescriptorRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiFaceFeatureByDescriptorResponseDTO"
                 }
               }
             }
@@ -7225,13 +7553,13 @@
           {
             "name": "matchType",
             "in": "query",
-            "description": "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | LIVENESS | ALL]",
+            "description": "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS | ALL]",
             "required": false,
             "schema": {
               "type": "string",
               "default": "ALL",
-              "description": "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | LIVENESS | ALL]",
-              "pattern": "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|IDENTIFY|LIVENESS|ALL)$"
+              "description": "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS | ALL]",
+              "pattern": "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|VERIFY_DESCRIPTOR|IDENTIFY|LIVENESS|ALL)$"
             }
           },
           {
@@ -9980,12 +10308,13 @@
           },
           "matchType": {
             "type": "string",
-            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
             "enum": [
               "REGISTER",
               "VERIFY",
               "VERIFY_ID",
               "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
               "IDENTIFY",
               "LIVENESS"
             ]
@@ -10143,12 +10472,13 @@
           },
           "matchType": {
             "type": "string",
-            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
             "enum": [
               "REGISTER",
               "VERIFY",
               "VERIFY_ID",
               "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
               "IDENTIFY",
               "LIVENESS"
             ]
@@ -10255,12 +10585,13 @@
           },
           "matchType": {
             "type": "string",
-            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
             "enum": [
               "REGISTER",
               "VERIFY",
               "VERIFY_ID",
               "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
               "IDENTIFY",
               "LIVENESS"
             ]
@@ -10326,12 +10657,14 @@
           "descriptor": {
             "type": "string",
             "description": "특징점",
-            "minLength": 1
+            "maxLength": 696,
+            "minLength": 696
           },
           "targetDescriptor": {
             "type": "string",
             "description": "매칭 대상 특징점",
-            "minLength": 1
+            "maxLength": 696,
+            "minLength": 696
           },
           "transactionUuid": {
             "type": "string",
@@ -10464,12 +10797,13 @@
           },
           "matchType": {
             "type": "string",
-            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
             "enum": [
               "REGISTER",
               "VERIFY",
               "VERIFY_ID",
               "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
               "IDENTIFY",
               "LIVENESS"
             ]
@@ -10542,6 +10876,98 @@
           }
         }
       },
+      "IdentifyByDescriptorRequestDTO": {
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "type": "string",
+            "description": "특징점",
+            "maxLength": 696,
+            "minLength": 696
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        },
+        "required": [
+          "descriptor"
+        ]
+      },
+      "IdentifyByDescriptorResponseDTO": {
+        "type": "object",
+        "properties": {
+          "matchingHistoryId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "매칭 이력 식별 번호"
+          },
+          "projectId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "프로젝트 식별 번호"
+          },
+          "matchType": {
+            "type": "string",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
+            "enum": [
+              "REGISTER",
+              "VERIFY",
+              "VERIFY_ID",
+              "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
+              "IDENTIFY",
+              "LIVENESS"
+            ]
+          },
+          "matchingTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "매칭 시간"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "매칭 성공 여부"
+          },
+          "featureId": {
+            "type": "string",
+            "description": "특징점 아이디"
+          },
+          "similarity": {
+            "type": "number",
+            "description": "매칭 유사도"
+          },
+          "failureType": {
+            "type": "string",
+            "description": "매칭 실패 타입"
+          },
+          "failureReason": {
+            "type": "string",
+            "description": "매칭 실패 이유"
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        }
+      },
+      "ResponseApiIdentifyByDescriptorResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/IdentifyByDescriptorResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
       "ExtractRequestDTO": {
         "type": "object",
         "properties": {
@@ -10577,6 +11003,64 @@
           },
           "data": {
             "$ref": "#/components/schemas/ExtractResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "CreateFaceFeatureByDescriptorRequestDTO": {
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "type": "string",
+            "description": "특징점",
+            "maxLength": 696,
+            "minLength": 696
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        },
+        "required": [
+          "descriptor"
+        ]
+      },
+      "FaceFeatureByDescriptorResponseDTO": {
+        "type": "object",
+        "properties": {
+          "faceFeatureId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "특징점 얼굴 식별 번호"
+          },
+          "featureId": {
+            "type": "string",
+            "description": "특징점 아이디"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성 일자"
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        }
+      },
+      "ResponseApiFaceFeatureByDescriptorResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FaceFeatureByDescriptorResponseDTO",
             "description": "성공 응답 데이터"
           },
           "errors": {
@@ -10961,12 +11445,13 @@
           },
           "matchType": {
             "type": "string",
-            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | LIVENESS]",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
             "enum": [
               "REGISTER",
               "VERIFY",
               "VERIFY_ID",
               "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
               "IDENTIFY",
               "LIVENESS"
             ]
