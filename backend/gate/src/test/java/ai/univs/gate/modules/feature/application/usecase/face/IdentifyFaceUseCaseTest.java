@@ -340,4 +340,41 @@ class IdentifyFaceUseCaseTest {
         assertThat(saved.getConsentSnapshot()).isFalse();
         assertThat(saved.getMatchedFeatureImagePath()).isNull();
     }
+
+    @Test
+    @DisplayName("UG-277: 무인증 데모(accountId=0L)도 clientId 에 프로젝트 소유자 accountId 를 보낸다")
+    void execute_demoCaller_sendsProjectOwnerAsClientId() {
+        // given: 데모 DTO 는 accountId 자리에 0L 을 하드코딩한다 (DemoIdentifyRequestDTO).
+        // 예전에는 그 값을 그대로 face 서비스에 보내 모든 데모 기록이 createdBy="0" 으로 남았다.
+        IdentifyInput demoInput =
+                new IdentifyInput(CallerType.DEMO, 0L, API_KEY, matchingImage, TRANSACTION_UUID);
+        ProjectSettings settings = ProjectSettings.builder()
+                .id(2L).project(project).consentEnabled(true).build();
+        given(apiKeyService.findByApiKey(CallerType.DEMO, API_KEY, 0L)).willReturn(apiKey);
+        given(projectSettingsService.findByProject(project)).willReturn(settings);
+        given(fileService.uploadIfConsent(matchingImage, true)).willReturn(UPLOADED_IMAGE_PATH);
+        given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.IDENTIFY))
+                .willReturn(true);
+        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class)))
+                .willReturn(MatchFaceFeignResponseDTO.builder()
+                        .transactionUuid(TRANSACTION_UUID)
+                        .faceId("registered-face-id")
+                        .similarity(new BigDecimal("0.95"))
+                        .result(true)
+                        .build());
+        given(faceFeatureService.getFaceFeatureByFaceIdAndProjectId("registered-face-id", PROJECT_ID))
+                .willReturn(registeredFeature());
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+
+        // when
+        identifyFaceUseCase.execute(demoInput);
+
+        // then: 프로젝트 소유자 accountId 여야 한다. "0" 이면 회귀다.
+        ArgumentCaptor<IdentifyFaceFeignRequestDTO> captor =
+                ArgumentCaptor.forClass(IdentifyFaceFeignRequestDTO.class);
+        verify(faceService).identify(captor.capture());
+        assertThat(captor.getValue().getClientId()).isEqualTo(ACCOUNT_ID.toString());
+        assertThat(captor.getValue().getClientId()).isNotEqualTo("0");
+    }
 }

@@ -194,7 +194,10 @@ class IdentifyPalmUseCaseTest {
         assertThat(request.getBranchName()).isEqualTo("branch-1");
         assertThat(request.getPalmImage()).isEqualTo(matchingImage);
         assertThat(request.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
-        assertThat(request.getClientId()).isEqualTo(CALLER_ACCOUNT_ID.toString());
+        // UG-277: clientId 는 호출자가 아니라 프로젝트 소유자 accountId 다. 무인증 데모가
+        // accountId 로 0L 을 넘기던 탓에 데모 기록이 전부 "0" 으로 남는 문제와, X-Account-Id
+        // 부재 시 null.toString() NPE 를 함께 없앤다. 라이브니스 UseCase 와 같은 방식이다.
+        assertThat(request.getClientId()).isEqualTo(PROJECT_ACCOUNT_ID.toString());
         assertThat(request.getCheckLiveness()).isTrue();
     }
 

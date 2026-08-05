@@ -82,7 +82,11 @@ public class FaceFeatureService {
                 project.getBranchName(),
                 featureImage,
                 transactionUuid,
-                String.valueOf(accountId),
+                // UG-277: 호출자 accountId 가 아니라 프로젝트 소유자 accountId 를 보낸다.
+                // 무인증 데모는 accountId 로 0L 을 넘기므로 예전에는 모든 데모 등록이
+                // face/palm 서비스에 createdBy="0" 으로 기록됐다. 이 값은 감사 필드로만
+                // 쓰이고 조회 조건에는 쓰이지 않는다(파티셔닝은 branchName).
+                String.valueOf(project.getAccountId()),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
         String featureId;
@@ -156,7 +160,11 @@ public class FaceFeatureService {
                 project.getBranchName(),
                 descriptor,
                 transactionUuid,
-                String.valueOf(accountId));
+                // UG-277: 호출자 accountId 가 아니라 프로젝트 소유자 accountId 를 보낸다.
+                // 무인증 데모는 accountId 로 0L 을 넘기므로 예전에는 모든 데모 등록이
+                // face/palm 서비스에 createdBy="0" 으로 기록됐다. 이 값은 감사 필드로만
+                // 쓰이고 조회 조건에는 쓰이지 않는다(파티셔닝은 branchName).
+                String.valueOf(project.getAccountId()));
         String featureId;
         try {
             featureId = faceService.createFaceByDescriptor(createRequest);

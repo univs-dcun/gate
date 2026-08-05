@@ -79,7 +79,13 @@ public class IdentifyFaceUseCase {
                 project.getBranchName(),
                 input.matchingFeatureImage(),
                 input.transactionUuid(),
-                input.accountId().toString(),
+                // UG-277: 호출자 accountId 가 아니라 프로젝트 소유자 accountId 를 보낸다.
+                // 이 값은 face/palm 서비스에서 createdBy·modifiedBy 감사 필드로만 쓰이고 조회
+                // 조건에는 쓰이지 않는다(파티셔닝은 branchName). 호출자 값을 쓰면 두 문제가 있었다 —
+                // 무인증 데모는 accountId 에 0L 을 넘기므로 모든 데모 기록이 "0" 으로 남았고,
+                // X-Account-Id 가 없으면 null.toString() 으로 NPE(500) 가 났다.
+                // 라이브니스 두 UseCase 는 원래 이 방식이었다.
+                project.getAccountId().toString(),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.IDENTIFY),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.IDENTIFY));
 
