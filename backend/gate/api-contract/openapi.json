@@ -10696,17 +10696,57 @@
       "VerifyByDescriptorResponseDTO": {
         "type": "object",
         "properties": {
+          "matchingHistoryId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "매칭 이력 식별 번호"
+          },
+          "projectId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "프로젝트 식별 번호"
+          },
+          "matchType": {
+            "type": "string",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
+            "enum": [
+              "REGISTER",
+              "VERIFY",
+              "VERIFY_ID",
+              "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
+              "IDENTIFY",
+              "LIVENESS"
+            ]
+          },
+          "matchingTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "매칭 시간"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "매칭 성공 여부"
+          },
+          "featureId": {
+            "type": "string",
+            "description": "특징점 아이디"
+          },
+          "similarity": {
+            "type": "number",
+            "description": "매칭 유사도"
+          },
+          "failureType": {
+            "type": "string",
+            "description": "매칭 실패 타입"
+          },
+          "failureReason": {
+            "type": "string",
+            "description": "매칭 실패 이유"
+          },
           "transactionUuid": {
             "type": "string",
             "description": "요청 키"
-          },
-          "similarity": {
-            "type": "string",
-            "description": "매칭 유사도"
-          },
-          "result": {
-            "type": "boolean",
-            "description": "매칭 성공 여부"
           }
         }
       },

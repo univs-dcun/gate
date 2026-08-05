@@ -277,7 +277,8 @@ public class FaceController {
         UserContext ctx = UserContext.get();
         var input = request.toVerifyByDescriptorInput(ctx.getApiKey(), ctx.getAccountIdAsLong());
         var result = verifyByDescriptorUseCase.execute(input);
-        var response = VerifyByDescriptorResponseDTO.from(result);
+        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
+        var response = VerifyByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
