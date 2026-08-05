@@ -25,8 +25,8 @@ public class GetMatchHistoryByTransactionUuidUseCase {
     private final ProjectSettingsService projectSettingsService;
 
     @Transactional(readOnly = true)
-    public MatchHistoryResult execute(String apiKey, String transactionUuid) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+    public MatchHistoryResult execute(Long accountId, String apiKey, String transactionUuid) {
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
 
         MatchHistory matchHistory = matchHistoryRepository.findTopByProjectAndTransactionUuidOrderByCreatedAtDesc(

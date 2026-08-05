@@ -17,9 +17,9 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
+import ai.univs.gate.support.feature.palm.PalmService;
+import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,7 @@ public class IdentifyPalmUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public PalmIdentifyResult execute(PalmIdentifyInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);

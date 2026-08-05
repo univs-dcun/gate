@@ -28,7 +28,7 @@ public class GetFeatureListUseCase {
     private final FileService fileService;
 
     public FeatureListResult execute(FeatureListQuery query) {
-        Project project = apiKeyService.findByApiKey(query.apiKey()).getProject();
+        Project project = apiKeyService.findOwnedByApiKey(query.apiKey(), query.accountId()).getProject();
         Long projectId = project.getId();
         ProjectSettings settings = projectSettingsService.findByProject(project);
         String prefixImagePath = settings.getConsentEnabled() ? fileService.getFileServerPath() : "";

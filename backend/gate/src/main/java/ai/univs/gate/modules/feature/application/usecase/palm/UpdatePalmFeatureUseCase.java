@@ -19,6 +19,7 @@ import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.feature.palm.PalmService;
+import ai.univs.gate.shared.utils.ApiKeyMasker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -41,11 +42,11 @@ public class UpdatePalmFeatureUseCase {
         BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.palmFeatureId(), FeatureType.PALM)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
         if (!biometricFeature.getProject().equals(project)) {
             log.error("Not palmFeature who created based on this apikey. accountId: {}, apiKey: {}, palmFeatureId: {}",
-                    input.accountId(), input.apiKey(), input.palmFeatureId());
+                    input.accountId(), ApiKeyMasker.mask(input.apiKey()), input.palmFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
         }
 

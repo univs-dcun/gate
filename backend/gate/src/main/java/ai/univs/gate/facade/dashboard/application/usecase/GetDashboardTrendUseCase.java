@@ -1,9 +1,9 @@
 package ai.univs.gate.facade.dashboard.application.usecase;
 
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +18,8 @@ public class GetDashboardTrendUseCase {
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
-    public DashboardTrendResult execute(String apiKey, TrendPeriod period, FeatureType featureType) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+    public DashboardTrendResult execute(Long accountId, String apiKey, TrendPeriod period, FeatureType featureType) {
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
         long projectId = findApiKey.getProject().getId();
         return dashboardStatsService.getTrend(projectId, period, featureType);
     }

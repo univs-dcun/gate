@@ -103,7 +103,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(matchingImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.VERIFY_ID))

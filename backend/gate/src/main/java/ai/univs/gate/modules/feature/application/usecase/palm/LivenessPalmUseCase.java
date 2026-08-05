@@ -1,10 +1,10 @@
 package ai.univs.gate.modules.feature.application.usecase.palm;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.application.input.palm.PalmLivenessInput;
 import ai.univs.gate.modules.feature.application.result.palm.PalmLivenessResult;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.LivenessPalmFeignRequestDTO;
@@ -13,8 +13,8 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.feature.palm.PalmService;
+import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -40,7 +40,7 @@ public class LivenessPalmUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public PalmLivenessResult execute(PalmLivenessInput input) {
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
 
 

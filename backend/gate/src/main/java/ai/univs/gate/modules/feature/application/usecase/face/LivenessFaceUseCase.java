@@ -3,11 +3,11 @@ package ai.univs.gate.modules.feature.application.usecase.face;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.face.LivenessInput;
 import ai.univs.gate.modules.feature.application.result.face.LivenessResult;
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.feature.infrastructure.client.face.dto.LivenessFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.infrastructure.client.face.dto.LivenessFaceFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
@@ -42,7 +42,7 @@ public class LivenessFaceUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public LivenessResult execute(LivenessInput input) {
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
 
 

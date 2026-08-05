@@ -93,7 +93,7 @@ class LivenessPalmUseCaseTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, CALLER_ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {

@@ -30,12 +30,12 @@ import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureB
 import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.DeleteFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.ExtractUseCase;
-import ai.univs.gate.modules.feature.application.usecase.face.IdentifyByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureIdUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureImageUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeatureByFaceIdUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeaturesUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.IdentifyByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.IdentifyFaceUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.LivenessFaceUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.UpdateFaceFeatureUseCase;
@@ -346,9 +346,9 @@ class ApiKeyPropagationTest {
         @Test
         @DisplayName("트랜잭션 UUID 기반 이력 조회 — apiKey 를 첫 인자로 직접 전달")
         void 이력단건() {
-            given(getMatchHistoryByTransactionUuidUseCase.execute(any(), any()))
-                    .willAnswer(captureFirstArg());
-            assertApiKeyPropagated(
+            given(getMatchHistoryByTransactionUuidUseCase.execute(any(), any(), any()))
+                    .willAnswer(captureAllArgs());
+            assertAccountIdAndApiKeyPropagated(
                     capture(() -> matchController.getIdViewByTransactionUuid("tx-1")));
         }
 
@@ -373,37 +373,37 @@ class ApiKeyPropagationTest {
         @Test
         @DisplayName("요약 조회")
         void 요약() {
-            given(getDashboardSummaryUseCase.execute(any(), any(), any()))
-                    .willAnswer(captureFirstArg());
+            given(getDashboardSummaryUseCase.execute(any(), any(), any(), any()))
+                    .willAnswer(captureAllArgs());
             var request = new DashboardPeriodRequest(null, null);
-            assertApiKeyPropagated(capture(() -> dashboardController.getSummary(request)));
+            assertAccountIdAndApiKeyPropagated(capture(() -> dashboardController.getSummary(request)));
         }
 
         @Test
         @DisplayName("사용량 추이 조회")
         void 추이() {
-            given(getDashboardTrendUseCase.execute(any(), any(), any()))
-                    .willAnswer(captureFirstArg());
+            given(getDashboardTrendUseCase.execute(any(), any(), any(), any()))
+                    .willAnswer(captureAllArgs());
             var request = new DashboardTrendRequest(null, null);
-            assertApiKeyPropagated(capture(() -> dashboardController.getTrend(request)));
+            assertAccountIdAndApiKeyPropagated(capture(() -> dashboardController.getTrend(request)));
         }
 
         @Test
         @DisplayName("비율 통계 조회")
         void 비율() {
-            given(getDashboardRatiosUseCase.execute(any(), any(), any()))
-                    .willAnswer(captureFirstArg());
+            given(getDashboardRatiosUseCase.execute(any(), any(), any(), any()))
+                    .willAnswer(captureAllArgs());
             var request = new DashboardPeriodRequest(null, null);
-            assertApiKeyPropagated(capture(() -> dashboardController.getRatios(request)));
+            assertAccountIdAndApiKeyPropagated(capture(() -> dashboardController.getRatios(request)));
         }
 
         @Test
         @DisplayName("일일 통계 조회")
         void 일일() {
-            given(getDashboardDailyStatsUseCase.execute(any(), anyInt(), anyInt(), any()))
-                    .willAnswer(captureFirstArg());
+            given(getDashboardDailyStatsUseCase.execute(any(), any(), anyInt(), anyInt(), any()))
+                    .willAnswer(captureAllArgs());
             var request = new DashboardDailyStatsRequest(1, 10, null);
-            assertApiKeyPropagated(capture(() -> dashboardController.getDailyStats(request)));
+            assertAccountIdAndApiKeyPropagated(capture(() -> dashboardController.getDailyStats(request)));
         }
     }
 
@@ -430,9 +430,29 @@ class ApiKeyPropagationTest {
         };
     }
 
+    /**
+     * UG-281 로 accountId 가 apiKey 앞에 붙은 경로용. 인자 배열째로 잡아 두 값을 함께 본다.
+     *
+     * <p>이 경로들은 Input 레코드가 아니라 원시 인자를 나열해 넘기므로, 자리만 바뀌어도 컴파일이
+     * 통과한다. 두 값이 서로 다른 상수여서 뒤바뀌면 아래 단언이 잡는다.
+     */
+    private static Answer<Object> captureAllArgs() {
+        return invocation -> {
+            throw new Captured(invocation.getArguments());
+        };
+    }
+
     private static Object capture(Executable handlerCall) {
         return assertThrows(Captured.class, handlerCall,
                 "UseCase 가 호출되지 않았다 — 컨트롤러가 다른 경로로 빠졌는지 확인할 것").argument;
+    }
+
+    private static void assertAccountIdAndApiKeyPropagated(Object captured) {
+        Object[] args = (Object[]) captured;
+        assertEquals(ACCOUNT_ID, args[0],
+                "accountId 가 첫 인자로 오지 않았다 — UG-281 소유 검증이 엉뚱한 값으로 돈다");
+        assertEquals(API_KEY, args[1],
+                "apiKey 가 두 번째 인자로 오지 않았다 — UG-274 회귀");
     }
 
     private static void assertApiKeyPropagated(Object captured) {

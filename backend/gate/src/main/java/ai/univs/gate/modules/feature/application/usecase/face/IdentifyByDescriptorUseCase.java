@@ -63,7 +63,7 @@ public class IdentifyByDescriptorUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public IdentifyByDescriptorResult execute(IdentifyByDescriptorInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);

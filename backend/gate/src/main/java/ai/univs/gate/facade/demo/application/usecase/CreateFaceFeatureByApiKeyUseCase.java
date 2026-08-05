@@ -12,6 +12,7 @@ import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import ai.univs.gate.shared.web.enums.CallerType;
 
 @Component
 @RequiredArgsConstructor
@@ -24,11 +25,12 @@ public class CreateFaceFeatureByApiKeyUseCase {
 
     @Transactional
     public FaceFeatureResult execute(CreateFaceFeatureByApiKeyInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findByApiKeyUnverified(input.apiKey());
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
+                CallerType.DEMO,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),
