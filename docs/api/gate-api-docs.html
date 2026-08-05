@@ -310,7 +310,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Auth</span> › 로그인</div>
     <div class="ep-title">로그인</div>
-    <div class="ep-desc">이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다. 이 엔드포인트는 IP 기준 <strong>분당 10회</strong>로 제한되며, 초과하면 응답 본문 없이 <code>429 Too Many Requests</code>가 반환됩니다.</div>
+    <div class="ep-desc">이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다.</div>
     <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/auth/login</span></div>
   </div>
   <div class="ep-body">
@@ -2590,8 +2590,8 @@ var PAGES = {
     crumb: { ko: '<span>Auth</span> › 로그인', en: '<span>Auth</span> › Login' },
     title: { ko: '로그인', en: 'Login' },
     desc: {
-      ko: '이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다. 이 엔드포인트는 IP 기준 <strong>분당 10회</strong>로 제한되며, 초과하면 응답 본문 없이 <code>429 Too Many Requests</code>가 반환됩니다.',
-      en: 'Log in with email and password to receive a JWT access token. The issued <code>accessToken</code> is used in all API requests that require authentication. This endpoint is rate limited to <strong>10 requests per minute</strong> per IP; exceeding it returns <code>429 Too Many Requests</code> with no response body.'
+      ko: '이메일과 비밀번호로 로그인하여 JWT 액세스 토큰을 발급받습니다. 발급된 <code>accessToken</code>은 인증이 필요한 모든 API 요청에 사용됩니다.',
+      en: 'Log in with email and password to receive a JWT access token. The issued <code>accessToken</code> is used in all API requests that require authentication.'
     },
     pdsc: [
       { ko: '로그인 이메일 주소 (최대 255자)', en: 'Login email address (max 255 chars)' },
