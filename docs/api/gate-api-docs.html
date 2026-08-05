@@ -144,14 +144,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('auth-refresh',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-token-refresh">토큰 재발급</span></li>
     </ul>
   </div>
-<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav FEATURE 그룹)
-  <div class="sb-sec">
-    <div class="sb-grp" onclick="tog('g-feature')">FEATURE <span class="sb-arr open" id="arr-g-feature">▶</span></div>
-    <ul class="sb-list" id="g-feature">
-      <li class="sb-item" onclick="show('feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-feature-list">통합 목록 조회</span></li>
-    </ul>
-  </div>
--->
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-face-feature')">FACE FEATURE <span class="sb-arr open" id="arr-g-face-feature">▶</span></div>
     <ul class="sb-list" id="g-face-feature">
@@ -160,9 +152,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('face-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span><span data-i18n="nav-face-feature-update">얼굴 특징점 수정</span></li>
       <li class="sb-item" onclick="show('face-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span><span data-i18n="nav-face-feature-delete">얼굴 특징점 삭제</span></li>
       <li class="sb-item" onclick="show('face-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-get">단건 조회</span></li>
-<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav FaceID 조회)
-      <li class="sb-item" onclick="show('face-feature-get-by-faceid',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-get-by-faceid">FaceID 조회</span></li>
--->
       <li class="sb-item" onclick="show('face-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-list">목록 조회</span></li>
     </ul>
   </div>
@@ -178,27 +167,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('face-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-liveness">라이브니스</span></li>
     </ul>
   </div>
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav PALM FEATURE)
-  <div class="sb-sec">
-    <div class="sb-grp" onclick="tog('g-palm-feature')">PALM FEATURE <span class="sb-arr open" id="arr-g-palm-feature">▶</span></div>
-    <ul class="sb-list" id="g-palm-feature">
-      <li class="sb-item" onclick="show('palm-feature-create',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-palm-feature-create">팜 특징점 등록</span></li>
-      <li class="sb-item" onclick="show('palm-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span><span data-i18n="nav-palm-feature-update">팜 특징점 수정</span></li>
-      <li class="sb-item" onclick="show('palm-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span><span data-i18n="nav-palm-feature-delete">팜 특징점 삭제</span></li>
-      <li class="sb-item" onclick="show('palm-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-palm-feature-get">단건 조회</span></li>
-      <li class="sb-item" onclick="show('palm-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-palm-feature-list">목록 조회</span></li>
-    </ul>
-  </div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav PALM MATCH)
-  <div class="sb-sec">
-    <div class="sb-grp" onclick="tog('g-palm-match')">PALM MATCH <span class="sb-arr open" id="arr-g-palm-match">▶</span></div>
-    <ul class="sb-list" id="g-palm-match">
-      <li class="sb-item" onclick="show('palm-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-palm-match-identify">팜 1:N 매칭</span></li>
-      <li class="sb-item" onclick="show('palm-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-palm-match-liveness">팜 라이브니스</span></li>
-    </ul>
-  </div>
--->
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-history')">HISTORY <span class="sb-arr open" id="arr-g-history">▶</span></div>
     <ul class="sb-list" id="g-history">
@@ -246,12 +214,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <h3><span class="iico" style="background:#EBF4FF">👤</span>얼굴 인식 (Face)</h3>
           <p>얼굴 특징점 등록/관리 및 매칭(1:1 확인, 1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/face</code></p>
         </div>
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (INTRO Palm 카드)
-        <div class="info-card">
-          <h3><span class="iico" style="background:#f0fdf4">✋</span>팜 정맥 인식 (Palm)</h3>
-          <p>팜 정맥 특징점 등록/관리 및 매칭(1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/palm</code></p>
-        </div>
--->
       </div>
     </div>
     <div class="intro-sec">
@@ -488,100 +450,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
-<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (page FEATURE: COMBINED LIST)
-<div class="page" id="p-feature-list">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Feature</span> › 통합 목록 조회</div>
-    <div class="ep-title">특징점 통합 목록 조회 (Face + Palm)</div>
-    <div class="ep-desc">프로젝트에 등록된 얼굴·팜 특징점을 하나의 목록으로 조회합니다. <code>featureType</code>으로 모듈별 필터링이 가능하며, 생략하면 두 모듈을 등록 일시 내림차순으로 병합해 반환합니다.</div>
-    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/feature</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Query Parameters</div>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 타입 필터 (FACE | PALM | ALL, 기본값: ALL)</td></tr>
-            <tr><td><span class="pname">keyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">검색 키워드 (featureId 또는 메모)</td></tr>
-            <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1, 범위: 1~1000)</td></tr>
-            <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 10, 범위: 1~1000)</td></tr>
-            <tr><td><span class="pname">isDeleted</span></td><td><span class="ptyp">boolean</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">삭제 여부 필터 (미입력 시 미삭제 기준)</td></tr>
-            <tr><td><span class="pname">startDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 시작일 (yyyy-MM-dd)</td></tr>
-            <tr><td><span class="pname">endDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 종료일 (yyyy-MM-dd)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">features</span></td><td><span class="ptyp">array</span></td><td class="pdsc">특징점 목록 (Face + Palm 통합)</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ featureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 타입 (FACE | PALM)</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ featureSeq</span></td><td><span class="ptyp">long</span></td><td class="pdsc">특징점 식별 번호 (faceFeatureId 또는 palmFeatureId)</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">메모 (설명)</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ imageUrl</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 이미지 URL (개인정보 수집 동의 미사용 프로젝트는 빈 문자열)</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
-            <tr><td><span class="pname">page</span></td><td><span class="ptyp">object</span></td><td class="pdsc">페이지네이션 정보</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ page</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">현재 페이지 번호</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ pageSize</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">페이지 크기</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ totalElements</span></td><td><span class="ptyp">long</span></td><td class="pdsc">전체 데이터 수</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ totalPages</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">전체 페이지 수</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ totalCount</span></td><td><span class="ptyp">long</span></td><td class="pdsc">전체 건수 (이 API에서는 totalElements와 동일)</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"features"</span>: [
-      {
-        <span class="jk">"featureType"</span>: <span class="js">"FACE"</span>,
-        <span class="jk">"featureSeq"</span>: <span class="jn">1</span>,
-        <span class="jk">"description"</span>: <span class="js">"description"</span>,
-        <span class="jk">"imageUrl"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
-        <span class="jk">"featureId"</span>: <span class="js">"abc123-..."</span>,
-        <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>
-      },
-      {
-        <span class="jk">"featureType"</span>: <span class="js">"PALM"</span>,
-        <span class="jk">"featureSeq"</span>: <span class="jn">7</span>,
-        <span class="jk">"description"</span>: <span class="js">"description"</span>,
-        <span class="jk">"imageUrl"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
-        <span class="jk">"featureId"</span>: <span class="js">"def456-..."</span>,
-        <span class="jk">"createdAt"</span>: <span class="js">"2024-01-14T18:20:00"</span>
-      }
-    ],
-    <span class="jk">"page"</span>: {
-      <span class="jk">"page"</span>: <span class="jn">1</span>,
-      <span class="jk">"pageSize"</span>: <span class="jn">10</span>,
-      <span class="jk">"totalElements"</span>: <span class="jn">2</span>,
-      <span class="jk">"totalPages"</span>: <span class="jn">1</span>,
-      <span class="jk">"totalCount"</span>: <span class="jn">2</span>
-    }
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
 <!-- FACE FEATURE: CREATE -->
 <div class="page" id="p-face-feature-create">
   <div class="ep-hdr">
@@ -947,70 +815,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
-<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (page FACE FEATURE: GET BY FACEID)
-<div class="page" id="p-face-feature-get-by-faceid">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Face Feature</span> › FaceID 조회</div>
-    <div class="ep-title">FaceID 기반 얼굴 특징점 조회</div>
-    <div class="ep-desc">AI 서버에서 발급된 <code>featureId</code>(faceId)를 기반으로 얼굴 특징점 정보를 조회합니다.</div>
-    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/feature/face/faceId/{faceId}</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Path Parameters</div>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">AI 서버 특징점 식별 ID (featureId)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">faceFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">얼굴 특징점 ID</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
-            <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로</td></tr>
-            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
-            <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"featureId"</span>: <span class="js">"abc123-def456-..."</span>,
-    <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
-    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
-    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
 <!-- FACE FEATURE: LIST -->
 <div class="page" id="p-face-feature-list">
   <div class="ep-hdr">
@@ -1721,522 +1525,6 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM FEATURE: CREATE)
-<div class="page" id="p-palm-feature-create">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Feature</span> › 팜 특징점 등록</div>
-    <div class="ep-title">팜 특징점 등록</div>
-    <div class="ep-desc">팜 이미지를 업로드하여 프로젝트에 팜 정맥 특징점을 등록합니다. 프로젝트 설정에 따라 중복 등록 방지 및 라이브니스 검사가 수행될 수 있습니다.</div>
-    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/feature/palm</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Request Body</div>
-        <p class="ct-note">Content-Type: multipart/form-data</p>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">팜 이미지 (jpg, jpeg, png)</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 설명 (최대 1000자)</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
-            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">외부 시스템 연동 키 (최대 255자)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">팜 특징점 ID</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
-            <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버에서 발급된 팜 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 팜 이미지 경로</td></tr>
-            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
-            <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">등록 성공</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
-    <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
-    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
-    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">중복 등록 또는 라이브니스 실패</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">false</span>,
-  <span class="jk">"data"</span>: <span class="jnu">null</span>,
-  <span class="jk">"errors"</span>: {
-    <span class="jk">"code"</span>: <span class="js">"PALM-201"</span>,
-    <span class="jk">"message"</span>: <span class="js">"이미 등록된 팜 사용자입니다."</span>
-  }
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM FEATURE: UPDATE)
-<div class="page" id="p-palm-feature-update">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Feature</span> › 팜 특징점 수정</div>
-    <div class="ep-title">팜 특징점 수정</div>
-    <div class="ep-desc">등록된 팜 특징점의 이미지 또는 설명을 수정합니다.</div>
-    <div class="ep-url"><span class="mb mb-put">PUT</span><span class="ep-path">/api/v1/feature/palm/{palmFeatureId}</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Path Parameters</div>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">수정할 팜 특징점 ID</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Request Body</div>
-        <p class="ct-note">Content-Type: multipart/form-data</p>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">교체할 팜 이미지 (jpg, jpeg, png)</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 설명 (최대 1000자)</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">팜 특징점 ID</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
-            <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 팜 이미지 경로</td></tr>
-            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
-            <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">최초 등록 일시</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">수정 성공</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"description (updated)"</span>,
-    <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
-    <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/new.jpg"</span>,
-    <span class="jk">"checkLiveness"</span>: <span class="jb">false</span>,
-    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM FEATURE: DELETE)
-<div class="page" id="p-palm-feature-delete">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Feature</span> › 팜 특징점 삭제</div>
-    <div class="ep-title">팜 특징점 삭제</div>
-    <div class="ep-desc">등록된 팜 특징점을 소프트 삭제합니다. 삭제된 특징점은 매칭에서 제외됩니다.</div>
-    <div class="ep-url"><span class="mb mb-del">DELETE</span><span class="ep-path">/api/v1/feature/palm/{palmFeatureId}</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Path Parameters</div>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">삭제할 팜 특징점 ID</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st204">204</span><span class="st-desc">삭제 성공 (No Content)</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">No Body</span></div>
-          <pre><span class="jnu">// No contents</span></pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM FEATURE: GET)
-<div class="page" id="p-palm-feature-get">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Feature</span> › 단건 조회</div>
-    <div class="ep-title">팜 특징점 단건 조회</div>
-    <div class="ep-desc">ID로 특정 팜 특징점 정보를 조회합니다.</div>
-    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/feature/palm/{palmFeatureId}</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Path Parameters</div>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">조회할 팜 특징점 ID</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">팜 특징점 ID</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
-            <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 팜 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 팜 이미지 경로</td></tr>
-            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
-            <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
-    <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
-    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
-    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM FEATURE: LIST)
-<div class="page" id="p-palm-feature-list">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Feature</span> › 목록 조회</div>
-    <div class="ep-title">팜 특징점 목록 조회</div>
-    <div class="ep-desc">프로젝트에 등록된 팜 특징점 목록을 페이지네이션으로 조회합니다.</div>
-    <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/feature/palm</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Query Parameters</div>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1, 범위: 1~1000)</td></tr>
-            <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 20, 범위: 1~1000)</td></tr>
-            <tr><td><span class="pname">userKeyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">설명(description) 검색 키워드</td></tr>
-            <tr><td><span class="pname">isDeleted</span></td><td><span class="ptyp">boolean</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">삭제 여부 필터</td></tr>
-            <tr><td><span class="pname">startDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 시작일 (yyyy-MM-dd)</td></tr>
-            <tr><td><span class="pname">endDate</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">조회 종료일 (yyyy-MM-dd)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">palmFeatures</span></td><td><span class="ptyp">array</span></td><td class="pdsc">팜 특징점 목록</td></tr>
-            <tr><td><span class="pname">page</span></td><td><span class="ptyp">object</span></td><td class="pdsc">페이지네이션 정보</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ page</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">현재 페이지 번호</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ pageSize</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">페이지 크기</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ totalElements</span></td><td><span class="ptyp">long</span></td><td class="pdsc">전체 데이터 수</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ totalPages</span></td><td><span class="ptyp">integer</span></td><td class="pdsc">전체 페이지 수</td></tr>
-            <tr><td><span class="pname">&nbsp;&nbsp;↳ totalCount</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 전체 등록 수 (검색 조건 무관)</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">OK</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"palmFeatures"</span>: [
-      {
-        <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-        <span class="jk">"description"</span>: <span class="js">"description"</span>,
-        <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
-        <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
-        <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
-        <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-        <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-      }
-    ],
-    <span class="jk">"page"</span>: {
-      <span class="jk">"page"</span>: <span class="jn">1</span>,
-      <span class="jk">"pageSize"</span>: <span class="jn">20</span>,
-      <span class="jk">"totalElements"</span>: <span class="jn">1</span>,
-      <span class="jk">"totalPages"</span>: <span class="jn">1</span>,
-      <span class="jk">"totalCount"</span>: <span class="jn">1</span>
-    }
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM MATCH: IDENTIFY)
-<div class="page" id="p-palm-match-identify">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Match</span> › 팜 1:N 매칭</div>
-    <div class="ep-title">팜 1:N 매칭 (Identify)</div>
-    <div class="ep-desc">제출된 팜 이미지를 프로젝트에 등록된 전체 팜 특징점과 비교하여 가장 유사한 특징점을 찾습니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.</div>
-    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/feature/palm/identify</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Request Body</div>
-        <p class="ct-note">Content-Type: multipart/form-data</p>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 팜 이미지 (jpg, jpeg, png)</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 ID</td></tr>
-            <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 ID</td></tr>
-            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>IDENTIFY</code></td></tr>
-            <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
-            <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
-            <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 성공 여부</td></tr>
-            <tr><td><span class="pname">palmFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭된 팜 특징점 ID (성공 시)</td></tr>
-            <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 팜 특징점 featureId (성공 시)</td></tr>
-            <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 설명 (성공 시)</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 팜 이미지 경로 (성공 시)</td></tr>
-            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로</td></tr>
-            <tr><td><span class="pname">threshold</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 임계값</td></tr>
-            <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (PALM_NOT_MATCH 등, 성공 시 null)</td></tr>
-            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-            <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">동의 여부 스냅샷</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">매칭 성공</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Match Success</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"matchingHistoryId"</span>: <span class="jn">500</span>,
-    <span class="jk">"projectId"</span>: <span class="jn">5</span>,
-    <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
-    <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
-    <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
-    <span class="jk">"success"</span>: <span class="jb">true</span>,
-    <span class="jk">"palmFeatureId"</span>: <span class="jn">1</span>,
-    <span class="jk">"featureId"</span>: <span class="js">"palm-uuid-..."</span>,
-    <span class="jk">"description"</span>: <span class="js">"description"</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">93.00</span>,
-    <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/p/img.jpg"</span>,
-    <span class="jk">"matchingFeatureImagePath"</span>: <span class="js">"https://files.univs.ai/m/palm.jpg"</span>,
-    <span class="jk">"threshold"</span>: <span class="js">"0.80"</span>,
-    <span class="jk">"failureType"</span>: <span class="jnu">null</span>,
-    <span class="jk">"failureReason"</span>: <span class="js">""</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>,
-    <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-        <div class="rs" style="margin-top:14px"><span class="st st200">200</span><span class="st-desc">매칭 실패</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">No Match</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"matchingHistoryId"</span>: <span class="jn">501</span>,
-    <span class="jk">"success"</span>: <span class="jb">false</span>,
-    <span class="jk">"similarity"</span>: <span class="jn">0.00</span>,
-    <span class="jk">"failureType"</span>: <span class="js">"PALM_NOT_MATCH"</span>,
-    <span class="jk">"failureReason"</span>: <span class="js">"팜이 일치하지 않습니다."</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
-<!-- [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (PALM MATCH: LIVENESS)
-<div class="page" id="p-palm-match-liveness">
-  <div class="ep-hdr">
-    <div class="ep-crumb"><span>Palm Match</span> › 팜 라이브니스</div>
-    <div class="ep-title">팜 라이브니스 (Liveness)</div>
-    <div class="ep-desc">제출된 팜 이미지가 실제 생체 손바닥인지 감지합니다. 사진이나 가짜 손바닥 이미지를 이용한 스푸핑 시도를 방지합니다.</div>
-    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/feature/palm/liveness</span></div>
-  </div>
-  <div class="ep-body">
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Authorization</div>
-        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Request Body</div>
-        <p class="ct-note">Content-Type: multipart/form-data</p>
-        <table class="tbl">
-          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">라이브니스 검사할 팜 이미지 (jpg, jpeg, png)</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Fields</div>
-        <table class="tbl">
-          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
-          <tbody>
-            <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 통과 여부</td></tr>
-            <tr><td><span class="pname">score</span></td><td><span class="ptyp">double</span></td><td class="pdsc">라이브니스 점수</td></tr>
-            <tr><td><span class="pname">threshold</span></td><td><span class="ptyp">double</span></td><td class="pdsc">라이브니스 임계값</td></tr>
-            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지 (성공 시 null)</td></tr>
-            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div>
-      <div class="sec-blk">
-        <div class="sec-ttl">Response Example</div>
-        <div class="rs"><span class="st st200">200</span><span class="st-desc">라이브니스 통과</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Passed</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"success"</span>: <span class="jb">true</span>,
-    <span class="jk">"score"</span>: <span class="jn">92.5</span>,
-    <span class="jk">"threshold"</span>: <span class="jn">85.0</span>,
-    <span class="jk">"failureReason"</span>: <span class="jnu">null</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-        <div class="rs" style="margin-top:14px"><span class="st st200">200</span><span class="st-desc">라이브니스 실패</span></div>
-        <div class="cblk">
-          <div class="cblk-hdr"><span class="cblk-ttl">Failed</span><span class="cblk-lng">JSON</span></div>
-          <pre>{
-  <span class="jk">"success"</span>: <span class="jb">true</span>,
-  <span class="jk">"data"</span>: {
-    <span class="jk">"success"</span>: <span class="jb">false</span>,
-    <span class="jk">"score"</span>: <span class="jn">42.1</span>,
-    <span class="jk">"threshold"</span>: <span class="jn">85.0</span>,
-    <span class="jk">"failureReason"</span>: <span class="js">"실제 손바닥이 아닌 것으로 감지되었습니다."</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
-  },
-  <span class="jk">"errors"</span>: <span class="jnu">null</span>
-}</pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
--->
 <!-- HISTORY: LIST -->
 <div class="page" id="p-history-list">
   <div class="ep-hdr">
@@ -2365,7 +1653,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureSeq</span></td><td><span class="ptyp">long</span></td><td class="pdsc">특징점 식별 번호 (faceFeatureId 또는 palmFeatureId)</td></tr>
+            <tr><td><span class="pname">featureSeq</span></td><td><span class="ptyp">long</span></td><td class="pdsc">특징점 식별 번호 (faceFeatureId)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
             <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">number</span></td><td class="pdsc">매칭 유사도</td></tr>
             <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로</td></tr>
@@ -2443,15 +1731,11 @@ var T = {
     'nav-overview': 'Overview',
     'nav-login': '로그인',
     'nav-token-refresh': '토큰 재발급',
-    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
-    // 'nav-feature-list': '통합 목록 조회',
     'nav-face-feature-create': '얼굴 특징점 등록',
     'nav-face-feature-create-descriptor': '얼굴 특징점 등록 (특징점)',
     'nav-face-feature-update': '얼굴 특징점 수정',
     'nav-face-feature-delete': '얼굴 특징점 삭제',
     'nav-face-feature-get': '단건 조회',
-    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
-    // 'nav-face-feature-get-by-faceid': 'FaceID 조회',
     'nav-face-feature-list': '목록 조회',
     'nav-face-match-extract': '특징점 추출',
     'nav-face-match-verify-id': '1:1 확인 (featureId)',
@@ -2460,15 +1744,6 @@ var T = {
     'nav-face-match-identify': '1:N 매칭',
     'nav-face-match-identify-descriptor': '1:N 매칭 (특징점)',
     'nav-face-match-liveness': '라이브니스',
-    /* [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav i18n (ko))
-    'nav-palm-feature-create': '팜 특징점 등록',
-    'nav-palm-feature-update': '팜 특징점 수정',
-    'nav-palm-feature-delete': '팜 특징점 삭제',
-    'nav-palm-feature-get': '단건 조회',
-    'nav-palm-feature-list': '목록 조회',
-    'nav-palm-match-identify': '팜 1:N 매칭',
-    'nav-palm-match-liveness': '팜 라이브니스'
-    */
     'nav-history-list': '매칭 이력 목록',
     'nav-history-get': '이력 단건 조회'
   },
@@ -2476,15 +1751,11 @@ var T = {
     'nav-overview': 'Overview',
     'nav-login': 'Login',
     'nav-token-refresh': 'Token Refresh',
-    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
-    // 'nav-feature-list': 'Combined List',
     'nav-face-feature-create': 'Register Face Feature',
     'nav-face-feature-create-descriptor': 'Register (descriptor)',
     'nav-face-feature-update': 'Update Face Feature',
     'nav-face-feature-delete': 'Delete Face Feature',
     'nav-face-feature-get': 'Get by ID',
-    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
-    // 'nav-face-feature-get-by-faceid': 'Get by FaceID',
     'nav-face-feature-list': 'List',
     'nav-face-match-extract': 'Extract',
     'nav-face-match-verify-id': '1:1 Verify (featureId)',
@@ -2493,15 +1764,6 @@ var T = {
     'nav-face-match-identify': '1:N Identify',
     'nav-face-match-identify-descriptor': '1:N Identify (descriptor)',
     'nav-face-match-liveness': 'Liveness',
-    /* [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav i18n (en))
-    'nav-palm-feature-create': 'Register Palm Feature',
-    'nav-palm-feature-update': 'Update Palm Feature',
-    'nav-palm-feature-delete': 'Delete Palm Feature',
-    'nav-palm-feature-get': 'Get by ID',
-    'nav-palm-feature-list': 'List',
-    'nav-palm-match-identify': 'Palm 1:N Identify',
-    'nav-palm-match-liveness': 'Palm Liveness'
-    */
     'nav-history-list': 'Match History',
     'nav-history-get': 'History by UUID'
   }
@@ -2527,11 +1789,8 @@ var CODE_MSGS = {
   '이미지에서 얼굴을 찾을 수 없습니다.':         'No face detected in the image.',
   '얼굴이 일치하지 않습니다.':                  'Face does not match.',
   '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
-  '이미 등록된 팜 사용자입니다.':               'Palm user is already registered.',
-  '팜이 일치하지 않습니다.':                   'Palm does not match.',
   '특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다.':
-      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.',
-  '실제 손바닥이 아닌 것으로 감지되었습니다.':    'Detected as non-live palm image.'
+      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.'
 };
 var CODE_MSGS_REV = {};
 Object.keys(CODE_MSGS).forEach(function(k) { CODE_MSGS_REV[CODE_MSGS[k]] = k; });
@@ -2555,10 +1814,6 @@ var INTRO = {
     ],
     cards: [
       { h3: '<span class="iico" style="background:#EBF4FF">👤</span>얼굴 인식 (Face)', p: '얼굴 특징점 등록/관리 및 매칭(1:1 확인, 1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/face</code>' },
-      /* [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.
-         HTML 의 .info-card 순번과 이 배열 인덱스가 1:1 이라 반드시 함께 빼야 한다 —
-         한쪽만 빼면 뒤 카드(JWT/API Key)에 팜 설명이 들어간다. */
-      // { h3: '<span class="iico" style="background:#f0fdf4">✋</span>팜 정맥 인식 (Palm)', p: '팜 정맥 특징점 등록/관리 및 매칭(1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/palm</code>' },
       { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: '로그인 후 발급된 accessToken을 Authorization 헤더에 포함합니다.<br><br><code>Authorization: Bearer {accessToken}</code>' },
       { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다.<br><br><code>X-Api-Key: {apiKey}</code>' },
       { h3: '✅ 성공 응답', p: null },
@@ -2583,10 +1838,6 @@ var INTRO = {
     ],
     cards: [
       { h3: '<span class="iico" style="background:#EBF4FF">👤</span>Face Recognition', p: 'Supports face feature registration/management and matching (1:1 verification, 1:N matching, liveness).<br><br>Base: <code>/api/v1/feature/face</code>' },
-      /* [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다.
-         HTML 의 .info-card 순번과 이 배열 인덱스가 1:1 이라 반드시 함께 빼야 한다 —
-         한쪽만 빼면 뒤 카드(JWT/API Key)에 팜 설명이 들어간다. */
-      // { h3: '<span class="iico" style="background:#f0fdf4">✋</span>Palm Vein Recognition', p: 'Supports palm vein feature registration/management and matching (1:N matching, liveness).<br><br>Base: <code>/api/v1/feature/palm</code>' },
       { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: 'Include the accessToken issued after login in the Authorization header.<br><br><code>Authorization: Bearer {accessToken}</code>' },
       { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: 'Include the project-specific API Key in the X-Api-Key header.<br><br><code>X-Api-Key: {apiKey}</code>' },
       { h3: '✅ Success Response', p: null },
@@ -2639,41 +1890,6 @@ var PAGES = {
       { ko: '만료된 리프레시 토큰', en: 'Expired refresh token' }
     ]
   },
-  /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. (PAGES p-feature-list)
-  'p-feature-list': {
-    crumb: { ko: '<span>Feature</span> › 통합 목록 조회', en: '<span>Feature</span> › Combined List' },
-    title: { ko: '특징점 통합 목록 조회 (Face + Palm)', en: 'List Features (Face + Palm)' },
-    desc: {
-      ko: '프로젝트에 등록된 얼굴·팜 특징점을 하나의 목록으로 조회합니다. <code>featureType</code>으로 모듈별 필터링이 가능하며, 생략하면 두 모듈을 등록 일시 내림차순으로 병합해 반환합니다.',
-      en: 'Retrieve face and palm features registered in the project as a single list. Filter by module using <code>featureType</code>; if omitted, both modules are merged and returned in descending order of registration time.'
-    },
-    pdsc: [
-      { ko: '특징점 타입 필터 (FACE | PALM | ALL, 기본값: ALL)', en: 'Feature type filter (FACE | PALM | ALL, default: ALL)' },
-      { ko: '검색 키워드 (featureId 또는 메모)', en: 'Search keyword (featureId or description)' },
-      { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
-      { ko: '페이지 크기 (기본값: 10, 범위: 1~1000)', en: 'Page size (default: 10, range: 1–1000)' },
-      { ko: '삭제 여부 필터 (미입력 시 미삭제 기준)', en: 'Deleted filter (defaults to non-deleted if omitted)' },
-      { ko: '조회 시작일 (yyyy-MM-dd)', en: 'Start date (yyyy-MM-dd)' },
-      { ko: '조회 종료일 (yyyy-MM-dd)', en: 'End date (yyyy-MM-dd)' },
-      { ko: '특징점 목록 (Face + Palm 통합)', en: 'Feature list (Face + Palm combined)' },
-      { ko: '특징점 타입 (FACE | PALM)', en: 'Feature type (FACE | PALM)' },
-      { ko: '특징점 식별 번호 (faceFeatureId 또는 palmFeatureId)', en: 'Feature sequence ID (faceFeatureId or palmFeatureId)' },
-      { ko: '메모 (설명)', en: 'Description' },
-      { ko: '특징점 이미지 URL (개인정보 수집 동의 미사용 프로젝트는 빈 문자열)', en: 'Feature image URL (empty string when the project does not use consent collection)' },
-      { ko: 'AI 서버 특징점 식별 ID', en: 'AI server feature ID' },
-      { ko: '등록 일시', en: 'Registration time' },
-      { ko: '페이지네이션 정보', en: 'Pagination info' },
-      { ko: '현재 페이지 번호', en: 'Current page number' },
-      { ko: '페이지 크기', en: 'Page size' },
-      { ko: '전체 데이터 수', en: 'Total element count' },
-      { ko: '전체 페이지 수', en: 'Total page count' },
-      { ko: '전체 건수 (이 API에서는 totalElements와 동일)', en: 'Total count (identical to totalElements for this API)' }
-    ],
-    stDesc: [
-      { ko: 'OK', en: 'OK' }
-    ]
-  },
-  */
   'p-face-feature-create': {
     crumb: { ko: '<span>Face Feature</span> › 얼굴 특징점 등록', en: '<span>Face Feature</span> › Register Face Feature' },
     title: { ko: '얼굴 특징점 등록', en: 'Register Face Feature' },
@@ -2782,29 +1998,6 @@ var PAGES = {
       { ko: 'OK', en: 'OK' }
     ]
   },
-  /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. (PAGES p-face-feature-get-by-faceid)
-  'p-face-feature-get-by-faceid': {
-    crumb: { ko: '<span>Face Feature</span> › FaceID 조회', en: '<span>Face Feature</span> › Get by FaceID' },
-    title: { ko: 'FaceID 기반 얼굴 특징점 조회', en: 'Get Face Feature by FaceID' },
-    desc: {
-      ko: 'AI 서버에서 발급된 <code>featureId</code>(faceId)를 기반으로 얼굴 특징점 정보를 조회합니다.',
-      en: 'Retrieve a face feature using the <code>featureId</code> (faceId) issued by the AI server.'
-    },
-    pdsc: [
-      { ko: 'AI 서버 특징점 식별 ID (featureId)', en: 'AI server feature identifier (featureId)' },
-      { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
-      { ko: '특징점 설명', en: 'Feature description' },
-      { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
-      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
-      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
-      { ko: '등록 일시', en: 'Registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
-    ],
-    stDesc: [
-      { ko: 'OK', en: 'OK' }
-    ]
-  },
-  */
   'p-face-feature-list': {
     crumb: { ko: '<span>Face Feature</span> › 목록 조회', en: '<span>Face Feature</span> › List' },
     title: { ko: '얼굴 특징점 목록 조회', en: 'List Face Features' },
@@ -3016,172 +2209,6 @@ var PAGES = {
       { ko: '라이브니스 실패', en: 'Liveness failed' }
     ]
   },
-  /* [HIDDEN] UG-279: Palm API 숨김. 되돌리려면 이 주석 래퍼만 제거하면 된다. (PAGES p-palm-* 7개)
-  'p-palm-feature-create': {
-    crumb: { ko: '<span>Palm Feature</span> › 팜 특징점 등록', en: '<span>Palm Feature</span> › Register Palm Feature' },
-    title: { ko: '팜 특징점 등록', en: 'Register Palm Feature' },
-    desc: {
-      ko: '팜 이미지를 업로드하여 프로젝트에 팜 정맥 특징점을 등록합니다. 프로젝트 설정에 따라 중복 등록 방지 및 라이브니스 검사가 수행될 수 있습니다.',
-      en: 'Upload a palm image to register a palm vein feature in the project. Duplicate registration prevention and liveness check may be performed depending on project settings.'
-    },
-    pdsc: [
-      { ko: '팜 이미지 (jpg, jpeg, png)', en: 'Palm image (jpg, jpeg, png)' },
-      { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
-      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
-      { ko: '외부 시스템 연동 키 (최대 255자)', en: 'External system integration key (max 255 chars)' },
-      { ko: '팜 특징점 ID', en: 'Palm feature ID' },
-      { ko: '특징점 설명', en: 'Feature description' },
-      { ko: 'AI 서버에서 발급된 팜 특징점 식별 ID', en: 'Palm feature identifier issued by the AI server' },
-      { ko: '저장된 팜 이미지 경로', en: 'Stored palm image path' },
-      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
-      { ko: '등록 일시', en: 'Registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
-    ],
-    stDesc: [
-      { ko: '등록 성공', en: 'Registration successful' },
-      { ko: '중복 등록 또는 라이브니스 실패', en: 'Duplicate registration or liveness failed' }
-    ]
-  },
-  'p-palm-feature-update': {
-    crumb: { ko: '<span>Palm Feature</span> › 팜 특징점 수정', en: '<span>Palm Feature</span> › Update Palm Feature' },
-    title: { ko: '팜 특징점 수정', en: 'Update Palm Feature' },
-    desc: {
-      ko: '등록된 팜 특징점의 이미지 또는 설명을 수정합니다.',
-      en: 'Update the image or description of a registered palm feature.'
-    },
-    pdsc: [
-      { ko: '수정할 팜 특징점 ID', en: 'ID of the palm feature to update' },
-      { ko: '교체할 팜 이미지 (jpg, jpeg, png)', en: 'Replacement palm image (jpg, jpeg, png)' },
-      { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
-      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
-      { ko: '팜 특징점 ID', en: 'Palm feature ID' },
-      { ko: '특징점 설명', en: 'Feature description' },
-      { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
-      { ko: '저장된 팜 이미지 경로', en: 'Stored palm image path' },
-      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
-      { ko: '최초 등록 일시', en: 'Initial registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
-    ],
-    stDesc: [
-      { ko: '수정 성공', en: 'Update successful' }
-    ]
-  },
-  'p-palm-feature-delete': {
-    crumb: { ko: '<span>Palm Feature</span> › 팜 특징점 삭제', en: '<span>Palm Feature</span> › Delete Palm Feature' },
-    title: { ko: '팜 특징점 삭제', en: 'Delete Palm Feature' },
-    desc: {
-      ko: '등록된 팜 특징점을 소프트 삭제합니다. 삭제된 특징점은 매칭에서 제외됩니다.',
-      en: 'Soft-delete a registered palm feature. Deleted features are excluded from matching.'
-    },
-    pdsc: [
-      { ko: '삭제할 팜 특징점 ID', en: 'ID of the palm feature to delete' }
-    ],
-    stDesc: [
-      { ko: '삭제 성공 (No Content)', en: 'Deleted (No Content)' }
-    ]
-  },
-  'p-palm-feature-get': {
-    crumb: { ko: '<span>Palm Feature</span> › 단건 조회', en: '<span>Palm Feature</span> › Get by ID' },
-    title: { ko: '팜 특징점 단건 조회', en: 'Get Palm Feature by ID' },
-    desc: {
-      ko: 'ID로 특정 팜 특징점 정보를 조회합니다.',
-      en: 'Retrieve a specific palm feature by its ID.'
-    },
-    pdsc: [
-      { ko: '조회할 팜 특징점 ID', en: 'ID of the palm feature to retrieve' },
-      { ko: '팜 특징점 ID', en: 'Palm feature ID' },
-      { ko: '특징점 설명', en: 'Feature description' },
-      { ko: 'AI 서버 팜 특징점 식별 ID', en: 'Palm feature identifier on the AI server' },
-      { ko: '저장된 팜 이미지 경로', en: 'Stored palm image path' },
-      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
-      { ko: '등록 일시', en: 'Registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
-    ],
-    stDesc: [
-      { ko: 'OK', en: 'OK' }
-    ]
-  },
-  'p-palm-feature-list': {
-    crumb: { ko: '<span>Palm Feature</span> › 목록 조회', en: '<span>Palm Feature</span> › List' },
-    title: { ko: '팜 특징점 목록 조회', en: 'List Palm Features' },
-    desc: {
-      ko: '프로젝트에 등록된 팜 특징점 목록을 페이지네이션으로 조회합니다.',
-      en: 'Retrieve a paginated list of palm features registered in the project.'
-    },
-    pdsc: [
-      { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
-      { ko: '페이지 크기 (기본값: 20, 범위: 1~1000)', en: 'Page size (default: 20, range: 1–1000)' },
-      { ko: '설명(description) 검색 키워드', en: 'Keyword to search in description' },
-      { ko: '삭제 여부 필터', en: 'Deleted filter' },
-      { ko: '조회 시작일 (yyyy-MM-dd)', en: 'Start date (yyyy-MM-dd)' },
-      { ko: '조회 종료일 (yyyy-MM-dd)', en: 'End date (yyyy-MM-dd)' },
-      { ko: '팜 특징점 목록', en: 'List of palm features' },
-      { ko: '페이지네이션 정보', en: 'Pagination info' },
-      { ko: '현재 페이지 번호', en: 'Current page number' },
-      { ko: '페이지 크기', en: 'Page size' },
-      { ko: '전체 데이터 수', en: 'Total element count' },
-      { ko: '전체 페이지 수', en: 'Total page count' },
-      { ko: '프로젝트 전체 등록 수 (검색 조건 무관)', en: 'Total registered count in the project (ignores search filters)' }
-    ],
-    stDesc: [
-      { ko: 'OK', en: 'OK' }
-    ]
-  },
-  'p-palm-match-identify': {
-    crumb: { ko: '<span>Palm Match</span> › 팜 1:N 매칭', en: '<span>Palm Match</span> › Palm 1:N Identify' },
-    title: { ko: '팜 1:N 매칭 (Identify)', en: 'Palm 1:N Matching (Identify)' },
-    desc: {
-      ko: '제출된 팜 이미지를 프로젝트에 등록된 전체 팜 특징점과 비교하여 가장 유사한 특징점을 찾습니다. 프로젝트 설정에 따라 라이브니스 감지가 함께 수행될 수 있습니다.',
-      en: 'Compare a submitted palm image against all registered palm features in the project to find the closest match. A liveness check may be performed depending on project settings.'
-    },
-    pdsc: [
-      { ko: '매칭할 팜 이미지 (jpg, jpeg, png)', en: 'Palm image to match (jpg, jpeg, png)' },
-      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
-      { ko: '매칭 이력 ID', en: 'Match history ID' },
-      { ko: '프로젝트 ID', en: 'Project ID' },
-      { ko: '매칭 유형 — <code>IDENTIFY</code>', en: 'Match type — <code>IDENTIFY</code>' },
-      { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
-      { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
-      { ko: '매칭 성공 여부', en: 'Whether matching succeeded' },
-      { ko: '매칭된 팜 특징점 ID (성공 시)', en: 'Matched palm feature ID (on success)' },
-      { ko: '매칭된 팜 특징점 featureId (성공 시)', en: 'Matched palm feature featureId (on success)' },
-      { ko: '매칭된 특징점 설명 (성공 시)', en: 'Matched feature description (on success)' },
-      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
-      { ko: '등록된 팜 이미지 경로 (성공 시)', en: 'Registered palm image path (on success)' },
-      { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
-      { ko: '매칭 임계값', en: 'Match threshold' },
-      { ko: '실패 코드 (PALM_NOT_MATCH 등, 성공 시 null)', en: 'Failure code (PALM_NOT_MATCH etc., null on success)' },
-      { ko: '실패 원인 메시지', en: 'Failure reason message' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' },
-      { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
-    ],
-    stDesc: [
-      { ko: '매칭 성공', en: 'Match successful' },
-      { ko: '매칭 실패', en: 'Match failed' }
-    ]
-  },
-  'p-palm-match-liveness': {
-    crumb: { ko: '<span>Palm Match</span> › 팜 라이브니스', en: '<span>Palm Match</span> › Palm Liveness' },
-    title: { ko: '팜 라이브니스 (Liveness)', en: 'Palm Liveness' },
-    desc: {
-      ko: '제출된 팜 이미지가 실제 생체 손바닥인지 감지합니다. 사진이나 가짜 손바닥 이미지를 이용한 스푸핑 시도를 방지합니다.',
-      en: 'Detect whether a submitted palm image is a real live palm. Prevents spoofing attempts using photos or fake palm images.'
-    },
-    pdsc: [
-      { ko: '라이브니스 검사할 팜 이미지 (jpg, jpeg, png)', en: 'Palm image for liveness check (jpg, jpeg, png)' },
-      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
-      { ko: '라이브니스 통과 여부', en: 'Whether liveness check passed' },
-      { ko: '라이브니스 점수', en: 'Liveness score' },
-      { ko: '라이브니스 임계값', en: 'Liveness threshold' },
-      { ko: '실패 원인 메시지 (성공 시 null)', en: 'Failure reason message (null on success)' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
-    ],
-    stDesc: [
-      { ko: '라이브니스 통과', en: 'Liveness passed' },
-      { ko: '라이브니스 실패', en: 'Liveness failed' }
-    ]
-  }
-  */
   'p-history-list': {
     crumb: { ko: '<span>History</span> › 매칭 이력 목록', en: '<span>History</span> › Match History' },
     title: { ko: '매칭 이력 목록 조회', en: 'List Match History' },
@@ -3227,7 +2254,7 @@ var PAGES = {
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '매칭 성공 여부', en: 'Whether the match succeeded' },
       { ko: 'AI 서버 특징점 식별 ID', en: 'AI server feature ID' },
-      { ko: '특징점 식별 번호 (faceFeatureId 또는 palmFeatureId)', en: 'Feature sequence ID (faceFeatureId or palmFeatureId)' },
+      { ko: '특징점 식별 번호 (faceFeatureId)', en: 'Feature sequence ID (faceFeatureId)' },
       { ko: '특징점 설명', en: 'Feature description' },
       { ko: '매칭 유사도', en: 'Match similarity' },
       { ko: '등록된 특징점 이미지 경로', en: 'Registered feature image path' },
