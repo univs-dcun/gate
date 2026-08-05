@@ -144,12 +144,14 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('auth-refresh',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-token-refresh">토큰 재발급</span></li>
     </ul>
   </div>
+<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav FEATURE 그룹)
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-feature')">FEATURE <span class="sb-arr open" id="arr-g-feature">▶</span></div>
     <ul class="sb-list" id="g-feature">
       <li class="sb-item" onclick="show('feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-feature-list">통합 목록 조회</span></li>
     </ul>
   </div>
+-->
   <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-face-feature')">FACE FEATURE <span class="sb-arr open" id="arr-g-face-feature">▶</span></div>
     <ul class="sb-list" id="g-face-feature">
@@ -158,7 +160,9 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('face-feature-update',this)"><span class="mb-sm mb-put-sm">PUT</span><span data-i18n="nav-face-feature-update">얼굴 특징점 수정</span></li>
       <li class="sb-item" onclick="show('face-feature-delete',this)"><span class="mb-sm mb-del-sm">DEL</span><span data-i18n="nav-face-feature-delete">얼굴 특징점 삭제</span></li>
       <li class="sb-item" onclick="show('face-feature-get',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-get">단건 조회</span></li>
+<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (nav FaceID 조회)
       <li class="sb-item" onclick="show('face-feature-get-by-faceid',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-get-by-faceid">FaceID 조회</span></li>
+-->
       <li class="sb-item" onclick="show('face-feature-list',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-face-feature-list">목록 조회</span></li>
     </ul>
   </div>
@@ -484,7 +488,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
-<!-- FEATURE: COMBINED LIST -->
+<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (page FEATURE: COMBINED LIST)
 <div class="page" id="p-feature-list">
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Feature</span> › 통합 목록 조회</div>
@@ -577,6 +581,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
+-->
 <!-- FACE FEATURE: CREATE -->
 <div class="page" id="p-face-feature-create">
   <div class="ep-hdr">
@@ -942,7 +947,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
-<!-- FACE FEATURE: GET BY FACEID -->
+<!-- [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다.  (page FACE FEATURE: GET BY FACEID)
 <div class="page" id="p-face-feature-get-by-faceid">
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Face Feature</span> › FaceID 조회</div>
@@ -1005,6 +1010,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
+-->
 <!-- FACE FEATURE: LIST -->
 <div class="page" id="p-face-feature-list">
   <div class="ep-hdr">
@@ -2236,7 +2242,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>History</span> › 매칭 이력 목록</div>
     <div class="ep-title">매칭 이력 목록 조회</div>
-    <div class="ep-desc">프로젝트에서 발생한 e-KYC 매칭 이력을 페이지네이션으로 조회합니다. 얼굴·팜 이력이 함께 반환되며 <code>featureType</code>으로 모듈별 필터링이 가능합니다.</div>
+    <div class="ep-desc">프로젝트에서 발생한 e-KYC 매칭 이력을 페이지네이션으로 조회합니다. <code>featureType</code>으로 모듈별 필터링이 가능합니다.</div>
     <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/match</span></div>
   </div>
   <div class="ep-body">
@@ -2252,7 +2258,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <tbody>
             <tr><td><span class="pname">matchingKeyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 검색 키워드</td></tr>
             <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 타입 필터 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS | ALL, 기본값: ALL)</td></tr>
-            <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 타입 필터 (FACE | PALM | ALL, 기본값: ALL)</td></tr>
+            <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 타입 필터 (FACE | ALL, 기본값: ALL)</td></tr>
             <tr><td><span class="pname">matchResultType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 결과 필터 (SUCCESS | FAILURE | ALL, 기본값: SUCCESS)</td></tr>
             <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1, 범위: 1~1000)</td></tr>
             <tr><td><span class="pname">pageSize</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 크기 (기본값: 10, 범위: 1~1000)</td></tr>
@@ -2353,7 +2359,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <tbody>
             <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 식별 번호</td></tr>
             <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 식별 번호</td></tr>
-            <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 타입 (FACE | PALM)</td></tr>
+            <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 타입 (FACE)</td></tr>
             <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 타입 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS)</td></tr>
             <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 시간</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
@@ -2437,13 +2443,15 @@ var T = {
     'nav-overview': 'Overview',
     'nav-login': '로그인',
     'nav-token-refresh': '토큰 재발급',
-    'nav-feature-list': '통합 목록 조회',
+    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
+    // 'nav-feature-list': '통합 목록 조회',
     'nav-face-feature-create': '얼굴 특징점 등록',
     'nav-face-feature-create-descriptor': '얼굴 특징점 등록 (특징점)',
     'nav-face-feature-update': '얼굴 특징점 수정',
     'nav-face-feature-delete': '얼굴 특징점 삭제',
     'nav-face-feature-get': '단건 조회',
-    'nav-face-feature-get-by-faceid': 'FaceID 조회',
+    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
+    // 'nav-face-feature-get-by-faceid': 'FaceID 조회',
     'nav-face-feature-list': '목록 조회',
     'nav-face-match-extract': '특징점 추출',
     'nav-face-match-verify-id': '1:1 확인 (featureId)',
@@ -2468,13 +2476,15 @@ var T = {
     'nav-overview': 'Overview',
     'nav-login': 'Login',
     'nav-token-refresh': 'Token Refresh',
-    'nav-feature-list': 'Combined List',
+    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
+    // 'nav-feature-list': 'Combined List',
     'nav-face-feature-create': 'Register Face Feature',
     'nav-face-feature-create-descriptor': 'Register (descriptor)',
     'nav-face-feature-update': 'Update Face Feature',
     'nav-face-feature-delete': 'Delete Face Feature',
     'nav-face-feature-get': 'Get by ID',
-    'nav-face-feature-get-by-faceid': 'Get by FaceID',
+    /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. */
+    // 'nav-face-feature-get-by-faceid': 'Get by FaceID',
     'nav-face-feature-list': 'List',
     'nav-face-match-extract': 'Extract',
     'nav-face-match-verify-id': '1:1 Verify (featureId)',
@@ -2629,6 +2639,7 @@ var PAGES = {
       { ko: '만료된 리프레시 토큰', en: 'Expired refresh token' }
     ]
   },
+  /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. (PAGES p-feature-list)
   'p-feature-list': {
     crumb: { ko: '<span>Feature</span> › 통합 목록 조회', en: '<span>Feature</span> › Combined List' },
     title: { ko: '특징점 통합 목록 조회 (Face + Palm)', en: 'List Features (Face + Palm)' },
@@ -2662,6 +2673,7 @@ var PAGES = {
       { ko: 'OK', en: 'OK' }
     ]
   },
+  */
   'p-face-feature-create': {
     crumb: { ko: '<span>Face Feature</span> › 얼굴 특징점 등록', en: '<span>Face Feature</span> › Register Face Feature' },
     title: { ko: '얼굴 특징점 등록', en: 'Register Face Feature' },
@@ -2770,6 +2782,7 @@ var PAGES = {
       { ko: 'OK', en: 'OK' }
     ]
   },
+  /* [HIDDEN] UG-284: 문서에서 Palm 흔적 제거. 되돌리려면 이 주석 래퍼만 제거하면 된다. (PAGES p-face-feature-get-by-faceid)
   'p-face-feature-get-by-faceid': {
     crumb: { ko: '<span>Face Feature</span> › FaceID 조회', en: '<span>Face Feature</span> › Get by FaceID' },
     title: { ko: 'FaceID 기반 얼굴 특징점 조회', en: 'Get Face Feature by FaceID' },
@@ -2791,6 +2804,7 @@ var PAGES = {
       { ko: 'OK', en: 'OK' }
     ]
   },
+  */
   'p-face-feature-list': {
     crumb: { ko: '<span>Face Feature</span> › 목록 조회', en: '<span>Face Feature</span> › List' },
     title: { ko: '얼굴 특징점 목록 조회', en: 'List Face Features' },
@@ -3172,13 +3186,13 @@ var PAGES = {
     crumb: { ko: '<span>History</span> › 매칭 이력 목록', en: '<span>History</span> › Match History' },
     title: { ko: '매칭 이력 목록 조회', en: 'List Match History' },
     desc: {
-      ko: '프로젝트에서 발생한 e-KYC 매칭 이력을 페이지네이션으로 조회합니다. 얼굴·팜 이력이 함께 반환되며 <code>featureType</code>으로 모듈별 필터링이 가능합니다.',
-      en: 'Retrieve a paginated list of e-KYC match history for the project. Face and palm records are returned together and can be filtered by module using <code>featureType</code>.'
+      ko: '프로젝트에서 발생한 e-KYC 매칭 이력을 페이지네이션으로 조회합니다. <code>featureType</code>으로 모듈별 필터링이 가능합니다.',
+      en: 'Retrieve a paginated list of e-KYC match history for the project. Records can be filtered by module using <code>featureType</code>.'
     },
     pdsc: [
       { ko: '매칭 검색 키워드', en: 'Match search keyword' },
       { ko: '매칭 타입 필터 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS | ALL, 기본값: ALL)', en: 'Match type filter (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS | ALL, default: ALL)' },
-      { ko: '특징점 타입 필터 (FACE | PALM | ALL, 기본값: ALL)', en: 'Feature type filter (FACE | PALM | ALL, default: ALL)' },
+      { ko: '특징점 타입 필터 (FACE | ALL, 기본값: ALL)', en: 'Feature type filter (FACE | ALL, default: ALL)' },
       { ko: '매칭 결과 필터 (SUCCESS | FAILURE | ALL, 기본값: SUCCESS)', en: 'Match result filter (SUCCESS | FAILURE | ALL, default: SUCCESS)' },
       { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
       { ko: '페이지 크기 (기본값: 10, 범위: 1~1000)', en: 'Page size (default: 10, range: 1–1000)' },
@@ -3207,7 +3221,7 @@ var PAGES = {
       { ko: '매칭 요청 시 전달한 요청 식별 UUID', en: 'Request UUID sent with the original matching request' },
       { ko: '매칭 이력 식별 번호', en: 'Match history ID' },
       { ko: '프로젝트 식별 번호', en: 'Project ID' },
-      { ko: '특징점 타입 (FACE | PALM)', en: 'Feature type (FACE | PALM)' },
+      { ko: '특징점 타입 (FACE)', en: 'Feature type (FACE)' },
       { ko: '매칭 타입 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS)', en: 'Match type (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS)' },
       { ko: '매칭 시간', en: 'Match time' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
