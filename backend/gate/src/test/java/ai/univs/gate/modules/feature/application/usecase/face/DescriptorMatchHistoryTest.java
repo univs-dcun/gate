@@ -130,7 +130,7 @@ class DescriptorMatchHistoryTest {
                 new IdentifyByDescriptorInput(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX);
 
         private void 공통() {
-            given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+            given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
             stubSave(matchHistoryRepository);
@@ -242,7 +242,7 @@ class DescriptorMatchHistoryTest {
         @InjectMocks private FaceFeatureService faceFeatureService;
 
         private void 공통() {
-            given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+            given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
             stubSave(matchHistoryRepository);
@@ -308,7 +308,7 @@ class DescriptorMatchHistoryTest {
                 new VerifyByDescriptorInput(API_KEY, ACCOUNT_ID, DESCRIPTOR, "target-descriptor", TX);
 
         private void 공통() {
-            given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+            given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             stubSave(matchHistoryRepository);
         }
 

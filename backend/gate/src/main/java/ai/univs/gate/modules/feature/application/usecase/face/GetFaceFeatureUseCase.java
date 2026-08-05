@@ -9,6 +9,7 @@ import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepositor
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.utils.ApiKeyMasker;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
@@ -33,11 +34,11 @@ public class GetFaceFeatureUseCase {
         BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.faceFeatureId(), FeatureType.FACE)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
         if (!biometricFeature.getProject().equals(project)) {
             log.error("Not faceFeature who created based on this apikey. accountId: {}, apiKey: {}, faceFeatureId: {}",
-                    input.accountId(), input.apiKey(), input.faceFeatureId());
+                    input.accountId(), ApiKeyMasker.mask(input.apiKey()), input.faceFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
         }
 

@@ -48,7 +48,7 @@ public class VerifyByDescriptorUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public VerifyByDescriptorResult execute(VerifyByDescriptorInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
 
         // UG-279: consentSnapshot 을 채우려고 projectSettingsService.findByProject 를 부르지

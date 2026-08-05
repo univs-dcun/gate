@@ -1,12 +1,12 @@
 package ai.univs.gate.modules.feature.application.usecase.palm;
 
 import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
-import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.application.input.palm.PalmFeatureQuery;
 import ai.univs.gate.modules.feature.application.result.palm.GetPalmFeaturesResult;
 import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
+import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
@@ -32,7 +32,7 @@ public class GetPalmFeaturesUseCase {
 
     @Transactional(readOnly = true)
     public GetPalmFeaturesResult execute(PalmFeatureQuery query) {
-        var apiKey = apiKeyService.findByApiKey(query.apiKey());
+        var apiKey = apiKeyService.findOwnedByApiKey(query.apiKey(), query.accountId());
         Project project = apiKey.getProject();
         ProjectSettings settings = projectSettingsService.findByProject(project);
 

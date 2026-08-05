@@ -28,7 +28,7 @@ public class GetFaceFeatureByFaceIdUseCase {
 
     @Transactional(readOnly = true)
     public FaceFeatureResult execute(GetFaceFeatureByFeatureIdInput input) {
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
         BiometricFeature biometricFeature = biometricFeatureRepository
                 .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(input.featureId(), project.getId(), FeatureType.FACE)

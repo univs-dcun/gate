@@ -53,7 +53,7 @@ public class IdentifyFaceUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public IdentifyResult execute(IdentifyInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
