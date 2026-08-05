@@ -32,7 +32,12 @@ public class LoggingAspect {
             "newPassword",
             "oldPassword",
             "passwordResetToken",
-            "faceData"
+            "faceData",
+            // UG-279: descriptor 는 생체 정보에서 파생된 템플릿이다. 마스킹은 키 이름
+            // contains 매칭이라 targetDescriptor/descriptorBody 도 함께 걸린다.
+            // 없으면 descriptor 기반 등록·1:N 이 매 요청 base64 전문을 INFO 로 남기고,
+            // 결과적으로 등록된 전 가입자의 템플릿이 ./logs 볼륨에 평문으로 축적된다.
+            "descriptor"
     );
 
     private final HttpServletRequest request;

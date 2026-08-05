@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import ai.univs.gate.shared.web.enums.CallerType;
 
 @Service
 @RequiredArgsConstructor
@@ -38,17 +39,23 @@ public class PalmFeatureService {
     private final PalmService palmService;
     private final ProjectSettingsService projectSettingsService;
 
+    /**
+     * @param callerType 무인증 데모({@link CallerType#DEMO})는 대조할 accountId 가 없어 소유 검증을
+     *                   건너뛴다. 인증 경로는 반드시 {@link CallerType#API} 를 넘긴다. (UG-281)
+     */
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
             noRollbackFor = CustomFeignException.class
     )
-    public CreatePalmFeatureServiceResult createPalmFeature(Long accountId,
+    public CreatePalmFeatureServiceResult createPalmFeature(CallerType callerType,
+                                                            Long accountId,
                                                             String apiKey,
                                                             MultipartFile featureImage,
                                                             String description,
                                                             String transactionUuid
     ) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+        // UG-281: FaceFeatureService.createFaceFeature 와 같은 이유로 맨 앞에서 검증한다.
+        ApiKey findApiKey = apiKeyService.findByApiKey(callerType, apiKey, accountId);
         Project project = findApiKey.getProject();
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);

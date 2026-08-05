@@ -21,6 +21,7 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
@@ -94,7 +95,7 @@ class PalmFeatureServiceTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.REGISTER))
@@ -126,7 +127,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
 
         // then: 저장된 특징 필드 검증
         ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
@@ -180,7 +181,7 @@ class PalmFeatureServiceTest {
 
         // when & then
         assertThatThrownBy(() ->
-                palmFeatureService.createPalmFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .isSameAs(exception);
 
         // then: 이력 fail 상태 검증
@@ -207,7 +208,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
 
         // then
         verify(fileService).uploadIfConsent(featureImage, false);
@@ -260,5 +261,24 @@ class PalmFeatureServiceTest {
                 .isInstanceOf(CustomGateException.class)
                 .satisfies(e -> assertThat(((CustomGateException) e).getErrorType())
                         .isEqualTo(ErrorType.INVALID_USER));
+    }
+
+    @Test
+    @DisplayName("UG-281: 소유 검증 실패 시 아무것도 쓰지 않고 즉시 중단한다")
+    void createPalmFeature_소유검증_실패시_쓰기_없음() {
+        // given: 검증이 이 메서드 맨 앞에서 실패한다
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, ACCOUNT_ID))
+                .willThrow(new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
+
+        // when
+        assertThatThrownBy(() -> palmFeatureService.createPalmFeature(
+                CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                .isInstanceOf(CustomGateException.class);
+
+        // then: FaceFeatureService 와 짝을 이루는 테스트다. 얼굴 쪽에만 있으면 손바닥 등록에서
+        // 검증이 뒤로 밀려도 아무도 모른다 — 이 메서드도 REQUIRES_NEW 라 같은 고아 위험을 갖는다.
+        verify(matchHistoryRepository, never()).save(any(MatchHistory.class));
+        verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+        verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
     }
 }

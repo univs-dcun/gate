@@ -34,6 +34,17 @@
 - 페이징: { content, page, size, totalElements }
 - 에러 코드: docs/api-conventions.md 참고
 
+## API 문서 규칙 (docs/api/gate-api-docs.html)
+
+- 클라이언트 대면 계약(요청·응답·오류 코드·제약)이 바뀌면 **같은 PR에서** `docs/api/gate-api-docs.html`을 함께 고친다.
+- **⚠️ 문서에 Palm을 넣지 않는다 (UG-284).** 현재 문서는 **Face 전용**이다. Palm API는 gate service에 실재하고 정상 동작하지만, 문서에서는 존재하지 않는 것처럼 다룬다.
+  - **Palm 코드를 고쳐도 문서는 건드리지 않는다.** 문서 동기화 대상은 Face 관련 변경뿐이다.
+  - Face와 Palm이 공유하는 API(매칭 이력, 통합 목록 등)를 문서화할 때는 **Palm을 드러내는 서술을 넣지 않는다** — `featureType`의 `PALM` 값, "얼굴·팜", `palmFeatureId` 같은 표현.
+  - 이 규칙은 **사용자가 "palm 문서를 만들어 달라"고 명시적으로 요청할 때까지** 유효하다. 그전까지는 판단하지 말고 그냥 빼면 된다.
+  - 배경·삭제 내역·복원 방법: `docs/api/README.md` 참고.
+- i18n은 DOM 순서 기반 위치 매핑이다. 표에 행을 추가·삭제하면 `PAGES[pageId].pdsc` 배열도 같은 위치에서 함께 고쳐야 한다. 상세는 `docs/api/README.md`.
+- 문서는 CI/CD로 배포되지 않는다. git push 후 서버에 수동 복사하는 단계가 별도로 있다.
+
 ## 브랜치 규칙
 - **모든 브랜치는 `dev` 브랜치 기반으로 생성한다** (`git checkout dev && git checkout -b {브랜치명}`)
 - 브랜치 네이밍: docs/branch-naming-conventions.md 참고

@@ -26,7 +26,9 @@ public class LoggingAspect {
             "password",
             "token",
             "faceData",
-            "secret"
+            "secret",
+            // UG-279: gate 쪽 LoggingAspect 와 같은 사유. 생체 템플릿 평문 로깅 방지.
+            "descriptor"
     );
 
     @Autowired

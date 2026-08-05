@@ -48,6 +48,8 @@ public class FaceController {
     private final VerifyByDescriptorUseCase verifyByDescriptorUseCase;
     private final IdentifyFaceUseCase identifyFaceUseCase;
     private final LivenessFaceUseCase livenessFaceUseCase;
+    private final CreateFaceFeatureByDescriptorUseCase createFaceFeatureByDescriptorUseCase;
+    private final IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
     private final MessageService messageService;
 
     @Operation(summary = "특징점 얼굴 등록")
@@ -67,6 +69,30 @@ public class FaceController {
         var input = request.toInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = createFaceFeatureUseCase.execute(input);
         var response = FaceFeatureResponseDTO.from(result, ctx.getTimezone());
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(
+            summary = "특징점 얼굴 등록 (특징점 기반)",
+            description = "이미지 대신 특징점 추출 API 가 반환한 descriptor 를 그대로 전달합니다. "
+                    + "descriptor 가 존재한다는 것은 추출·라이브니스 단계가 이미 끝났다는 뜻이므로 "
+                    + "프로젝트의 라이브니스 설정과 무관하게 라이브니스를 수행하지 않습니다."
+    )
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key")
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<FaceFeatureByDescriptorResponseDTO>> createByDescriptor(
+            @org.springframework.web.bind.annotation.RequestBody @Valid CreateFaceFeatureByDescriptorRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = request.toInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
+        var result = createFaceFeatureByDescriptorUseCase.execute(input);
+        var response = FaceFeatureByDescriptorResponseDTO.from(result, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
@@ -251,7 +277,8 @@ public class FaceController {
         UserContext ctx = UserContext.get();
         var input = request.toVerifyByDescriptorInput(ctx.getApiKey(), ctx.getAccountIdAsLong());
         var result = verifyByDescriptorUseCase.execute(input);
-        var response = VerifyByDescriptorResponseDTO.from(result);
+        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
+        var response = VerifyByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
@@ -273,6 +300,30 @@ public class FaceController {
         var result = identifyFaceUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyResponseDTO.from(result, failureReason, ctx.getTimezone());
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(
+            summary = "얼굴 1:N 매칭 (특징점 기반)",
+            description = "이미지 대신 특징점 추출 API 가 반환한 descriptor 를 그대로 전달합니다. "
+                    + "라이브니스를 수행하지 않는 이유는 특징점 기반 등록 API 와 같습니다."
+    )
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key"),
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/identify/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<IdentifyByDescriptorResponseDTO>> identifyByDescriptor(
+            @org.springframework.web.bind.annotation.RequestBody @Valid IdentifyByDescriptorRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = request.toIdentifyByDescriptorInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
+        var result = identifyByDescriptorUseCase.execute(input);
+        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
+        var response = IdentifyByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 

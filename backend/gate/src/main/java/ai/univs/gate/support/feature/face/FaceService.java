@@ -30,6 +30,17 @@ public class FaceService {
                 .getData();
     }
 
+    public String createFaceByDescriptor(CreateFaceByDescriptorFeignRequestDTO request) {
+        return faceClient.createByDescriptor(request)
+                .getData()
+                .getFaceId();
+    }
+
+    public MatchFaceFeignResponseDTO identifyByDescriptor(IdentifyFaceByDescriptorFeignRequestDTO feignRequest) {
+        return faceClient.identifyByDescriptor(feignRequest)
+                .getData();
+    }
+
     public MatchFaceFeignResponseDTO verifyByFaceId(VerifyFaceByFaceIdFeignRequestDTO feignRequest) {
         return faceClient.verifyByFaceId(feignRequest)
                 .getData();

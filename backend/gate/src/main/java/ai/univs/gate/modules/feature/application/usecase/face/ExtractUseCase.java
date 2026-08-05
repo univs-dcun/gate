@@ -16,7 +16,7 @@ public class ExtractUseCase {
     private final FaceService faceService;
 
     public ExtractResult execute(ExtractInput input) {
-        apiKeyService.findByApiKey(input.apiKey());
+        apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
 
         var feignRequest = new ExtractFaceFeignRequestDTO(
                 input.featureImage(),
