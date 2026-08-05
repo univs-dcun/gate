@@ -101,10 +101,9 @@ public class VerifyByDescriptorUseCase {
             matchHistory.fail(similarity, ErrorType.MISMATCH.name());
         }
 
-        return new VerifyByDescriptorResult(
-                response.getTransactionUuid(),
-                response.getSimilarity(),
-                response.isResult());
+        // UG-283: 응답을 face 원값이 아니라 MatchHistory 에서 만든다. descriptor 1:N 과 같은
+        // 구조·같은 유사도 스케일(백분율)을 내보내기 위해서다.
+        return VerifyByDescriptorResult.from(matchHistory);
     }
 
     /**

@@ -326,10 +326,18 @@ class DescriptorMatchHistoryTest {
 
             var result = useCase.execute(input);
 
-            // 응답은 이 티켓에서 바꾸지 않았다 — face 가 준 문자열을 그대로 돌려준다.
+            // UG-283: 응답 구조를 descriptor 1:N 과 동일하게 맞췄다. face 원값 문자열이 아니라
+            // MatchHistory 의 백분율을 내보낸다.
+            assertThat(result.matchingHistoryId()).isEqualTo(SAVED_ID);
+            assertThat(result.projectId()).isEqualTo(PROJECT_ID);
+            assertThat(result.matchType()).isEqualTo(MatchType.VERIFY_DESCRIPTOR);
+            assertThat(result.success()).isTrue();
+            assertThat(result.similarity()).isEqualTo(new BigDecimal("98.23"));
+            assertThat(result.failureType()).isEmpty();
             assertThat(result.transactionUuid()).isEqualTo(TX);
-            assertThat(result.similarity()).isEqualTo("0.98230");
-            assertThat(result.result()).isTrue();
+            assertThat(result.featureId())
+                    .as("1:1 은 갤러리를 조회하지 않으므로 특정할 등록 사용자가 없다")
+                    .isEmpty();
 
             MatchHistory saved = captureSaved(matchHistoryRepository);
             assertThat(saved.getMatchType())
@@ -357,7 +365,9 @@ class DescriptorMatchHistoryTest {
 
             var result = useCase.execute(input);
 
-            assertThat(result.result()).isFalse();
+            assertThat(result.success()).isFalse();
+            assertThat(result.similarity()).isEqualTo(new BigDecimal("10.00"));
+            assertThat(result.failureType()).isEqualTo(ErrorType.MISMATCH.name());
 
             MatchHistory saved = captureSaved(matchHistoryRepository);
             assertThat(saved.getFailureType())
@@ -389,8 +399,11 @@ class DescriptorMatchHistoryTest {
 
             var result = useCase.execute(input);
 
-            assertThat(result.similarity()).isEqualTo("N/A");
+            assertThat(result.similarity())
+                    .as("해석 불가한 유사도는 이력과 응답 모두 null 로 나간다 — 요청 자체는 깨지지 않는다")
+                    .isNull();
             assertThat(captureSaved(matchHistoryRepository).getSimilarity()).isNull();
+            assertThat(result.success()).isTrue();
         }
     }
 }
