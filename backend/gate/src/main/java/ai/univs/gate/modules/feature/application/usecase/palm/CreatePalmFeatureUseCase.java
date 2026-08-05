@@ -10,6 +10,7 @@ import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import ai.univs.gate.shared.web.enums.CallerType;
 
 @Component
 @RequiredArgsConstructor
@@ -22,13 +23,14 @@ public class CreatePalmFeatureUseCase {
 
     public PalmFeatureResult execute(CreatePalmFeatureInput input) {
         CreatePalmFeatureServiceResult result = palmFeatureService.createPalmFeature(
+                CallerType.API,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
                 input.transactionUuid());
 
-        var apiKey = apiKeyService.findByApiKey(input.apiKey());
+        var apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         ProjectSettings settings = projectSettingsService.findByProject(apiKey.getProject());
 
         return PalmFeatureResult.from(result.biometricFeature(), result.livenessChecked(),

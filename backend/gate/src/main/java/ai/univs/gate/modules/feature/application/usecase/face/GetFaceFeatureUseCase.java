@@ -33,7 +33,7 @@ public class GetFaceFeatureUseCase {
         BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.faceFeatureId(), FeatureType.FACE)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
         if (!biometricFeature.getProject().equals(project)) {
             log.error("Not faceFeature who created based on this apikey. accountId: {}, apiKey: {}, faceFeatureId: {}",

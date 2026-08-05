@@ -1,10 +1,10 @@
 package ai.univs.gate.modules.feature.application.usecase.palm;
 
+import ai.univs.gate.modules.feature.application.input.palm.GetPalmFeatureInput;
+import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.application.input.palm.GetPalmFeatureInput;
-import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
@@ -29,7 +29,7 @@ public class GetPalmFeatureUseCase {
         BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.palmFeatureId(), FeatureType.PALM)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
-        var apiKey = apiKeyService.findByApiKey(input.apiKey());
+        var apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         ProjectSettings settings = projectSettingsService.findByProject(apiKey.getProject());
 
         return PalmFeatureResult.from(biometricFeature, fileService.getFileServerPath(), settings.getConsentEnabled());

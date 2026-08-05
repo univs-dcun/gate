@@ -1,8 +1,8 @@
 package ai.univs.gate.facade.dashboard.application.usecase;
 
 import ai.univs.gate.facade.dashboard.application.result.DashboardDailyStatsResult;
-import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +17,8 @@ public class GetDashboardDailyStatsUseCase {
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
-    public DashboardDailyStatsResult execute(String apiKey, int page, int pageSize, FeatureType featureType) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+    public DashboardDailyStatsResult execute(Long accountId, String apiKey, int page, int pageSize, FeatureType featureType) {
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
         long projectId = findApiKey.getProject().getId();
         return dashboardStatsService.getDailyStats(projectId, page, pageSize, featureType);
     }

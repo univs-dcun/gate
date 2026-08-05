@@ -1,7 +1,7 @@
 package ai.univs.gate.modules.feature.api.controller;
 
-import ai.univs.gate.modules.feature.application.usecase.face.*;
 import ai.univs.gate.modules.feature.api.dto.match.*;
+import ai.univs.gate.modules.feature.application.usecase.face.*;
 import ai.univs.gate.modules.feature.application.usecase.match.*;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
@@ -80,7 +80,8 @@ public class MatchController {
             @PathVariable String transactionUuid
     ) {
         UserContext ctx = UserContext.get();
-        var result = getMatchHistoryByTransactionUuidUseCase.execute(ctx.getApiKey(), transactionUuid);
+        var result = getMatchHistoryByTransactionUuidUseCase.execute(
+                ctx.getAccountIdAsLong(), ctx.getApiKey(), transactionUuid);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = MatchingHistoryResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));

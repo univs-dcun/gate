@@ -19,8 +19,8 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.shared.web.enums.LivenessErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
-import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
+import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectSettingsService;
@@ -50,7 +50,7 @@ public class FaceVerifyByFeatureIdUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public VerifyByFaceIdResult execute(VerifyByFaceIdInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);

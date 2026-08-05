@@ -57,7 +57,7 @@ public class DashboardController {
     ) {
         UserContext ctx = UserContext.get();
         DashboardSummaryResult result = getDashboardSummaryUseCase.execute(
-                ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
+                ctx.getAccountIdAsLong(), ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
         var response = DashboardSummaryResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -80,7 +80,7 @@ public class DashboardController {
     ) {
         UserContext ctx = UserContext.get();
         DashboardTrendResult result = getDashboardTrendUseCase.execute(
-                ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
+                ctx.getAccountIdAsLong(), ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
         var response = DashboardTrendResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -102,7 +102,7 @@ public class DashboardController {
     ) {
         UserContext ctx = UserContext.get();
         DashboardRatiosResult result = getDashboardRatiosUseCase.execute(
-                ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
+                ctx.getAccountIdAsLong(), ctx.getApiKey(), request.effectivePeriod(), request.effectiveFeatureType());
         var response = DashboardRatiosResponse.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -125,7 +125,7 @@ public class DashboardController {
     ) {
         UserContext ctx = UserContext.get();
         DashboardDailyStatsResult result = getDashboardDailyStatsUseCase.execute(
-                ctx.getApiKey(),
+                ctx.getAccountIdAsLong(), ctx.getApiKey(),
                 request.effectivePage(),
                 request.effectivePageSize(),
                 request.effectiveFeatureType());

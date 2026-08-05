@@ -2,10 +2,10 @@ package ai.univs.gate.facade.demo.application.usecase;
 
 import ai.univs.gate.facade.demo.application.input.GetUsersByApiKeyInput;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
 import ai.univs.gate.modules.feature.application.input.face.FaceFeatureQuery;
 import ai.univs.gate.modules.feature.application.result.face.FaceFeatureResult;
 import ai.univs.gate.modules.feature.application.result.face.GetFaceFeaturesResult;
-import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
@@ -34,7 +34,7 @@ public class GetFaceFeaturesByApiKeyUseCase {
 
     @Transactional(readOnly = true)
     public GetFaceFeaturesResult execute(GetUsersByApiKeyInput input) {
-        ApiKey apiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey apiKey = apiKeyService.findByApiKeyUnverified(input.apiKey());
         Project project = apiKey.getProject();
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);

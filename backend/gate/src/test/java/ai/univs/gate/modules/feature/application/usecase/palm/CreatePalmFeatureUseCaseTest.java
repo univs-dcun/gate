@@ -11,6 +11,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.palm.CreatePalmFeatureServiceResult;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
@@ -89,7 +90,7 @@ class CreatePalmFeatureUseCaseTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
     }
@@ -101,7 +102,7 @@ class CreatePalmFeatureUseCaseTest {
         // (input의 externalKey는 서비스로 전달되지 않는다 — 프로덕션 코드 현재 동작)
         givenProjectSettings(true);
         given(palmFeatureService.createPalmFeature(
-                        ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, true));
 
         // when
@@ -123,7 +124,7 @@ class CreatePalmFeatureUseCaseTest {
         // given
         givenProjectSettings(false);
         given(palmFeatureService.createPalmFeature(
-                        ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, false));
 
         // when

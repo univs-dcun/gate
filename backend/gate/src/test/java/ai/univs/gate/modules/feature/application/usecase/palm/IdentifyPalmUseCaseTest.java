@@ -103,7 +103,7 @@ class IdentifyPalmUseCaseTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, CALLER_ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(biometricFeatureRepository.countByProjectIdAndTypeAndIsDeletedFalse(PROJECT_ID, FeatureType.PALM))
                 .willReturn(1L);
@@ -207,7 +207,7 @@ class IdentifyPalmUseCaseTest {
                 .project(project)
                 .consentEnabled(true)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, CALLER_ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(biometricFeatureRepository.countByProjectIdAndTypeAndIsDeletedFalse(PROJECT_ID, FeatureType.PALM))
                 .willReturn(0L);

@@ -11,6 +11,7 @@ import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import ai.univs.gate.shared.web.enums.CallerType;
 
 @Component
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class CreateFaceFeatureUseCase {
     @Transactional
     public FaceFeatureResult execute(CreateFeatureInput input) {
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
+                CallerType.API,
                 input.accountId(),
                 input.apiKey(),
                 input.featureImage(),
@@ -31,7 +33,7 @@ public class CreateFaceFeatureUseCase {
                 input.transactionUuid());
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(
-                apiKeyService.findByApiKey(input.apiKey()).getProject());
+                apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId()).getProject());
         return FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), projectSettings.getConsentEnabled());
     }
 }

@@ -21,6 +21,7 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
@@ -94,7 +95,7 @@ class PalmFeatureServiceTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.REGISTER))
@@ -126,7 +127,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
 
         // then: 저장된 특징 필드 검증
         ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
@@ -180,7 +181,7 @@ class PalmFeatureServiceTest {
 
         // when & then
         assertThatThrownBy(() ->
-                palmFeatureService.createPalmFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .isSameAs(exception);
 
         // then: 이력 fail 상태 검증
@@ -207,7 +208,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
 
         // then
         verify(fileService).uploadIfConsent(featureImage, false);

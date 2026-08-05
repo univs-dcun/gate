@@ -27,7 +27,7 @@ public class GetMatchHistoriesUseCase {
 
     @Transactional(readOnly = true)
     public MatchHistoriesResult execute(MatchHistoryQuery query) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(query.apiKey());
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(query.apiKey(), query.accountId());
         var project = findApiKey.getProject();
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);

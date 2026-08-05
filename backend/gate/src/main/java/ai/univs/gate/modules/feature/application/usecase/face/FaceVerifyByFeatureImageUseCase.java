@@ -46,7 +46,7 @@ public class FaceVerifyByFeatureImageUseCase {
             noRollbackFor = CustomFeignException.class
     )
     public VerifyByImageResult execute(VerifyByImageInput input) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(input.apiKey());
+        ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
 
 

@@ -21,6 +21,7 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
@@ -94,7 +95,7 @@ class FaceFeatureServiceTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.REGISTER))
@@ -126,7 +127,7 @@ class FaceFeatureServiceTest {
 
         // when
         CreateFaceFeatureServiceResult result =
-                faceFeatureService.createFaceFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
 
         // then: 저장된 특징 필드 검증
         ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
@@ -181,7 +182,7 @@ class FaceFeatureServiceTest {
 
         // when & then
         assertThatThrownBy(() ->
-                faceFeatureService.createFaceFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .isSameAs(exception);
 
         // then: 이력 fail 상태 검증
@@ -208,7 +209,7 @@ class FaceFeatureServiceTest {
 
         // when
         CreateFaceFeatureServiceResult result =
-                faceFeatureService.createFaceFeature(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
 
         // then
         verify(fileService).uploadIfConsent(featureImage, false);
@@ -262,5 +263,29 @@ class FaceFeatureServiceTest {
                 .isInstanceOf(CustomGateException.class)
                 .satisfies(e -> assertThat(((CustomGateException) e).getErrorType())
                         .isEqualTo(ErrorType.INVALID_USER));
+    }
+
+    @Test
+    @DisplayName("UG-281: 소유 검증 실패 시 아무것도 쓰지 않고 즉시 중단한다")
+    void createFaceFeature_소유검증_실패시_쓰기_없음() {
+        // given: 검증이 이 메서드 맨 앞에서 실패한다
+        given(apiKeyService.findByApiKey(CallerType.API, API_KEY, ACCOUNT_ID))
+                .willThrow(new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
+
+        // when
+        assertThatThrownBy(() -> faceFeatureService.createFaceFeature(
+                CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                .isInstanceOf(CustomGateException.class);
+
+        // then: 순서가 이 테스트의 본문이다.
+        //
+        // 예전에는 CreateFaceFeatureUseCase 가 이 메서드를 먼저 부르고 그 뒤에 소유를 확인했다.
+        // 그런데 이 메서드는 REQUIRES_NEW 라 자기 트랜잭션을 따로 커밋한다. 즉 UseCase 가 나중에
+        // 거부해도 남의 갤러리에는 이미 특징점과 REGISTER 이력이 남고, 이미지까지 업로드된 뒤였다.
+        // 검증을 맨 앞으로 옮겨 그 창을 없앴다.
+        verify(matchHistoryRepository, never()).save(any(MatchHistory.class));
+        verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+        verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
+        verify(faceService, never()).createFace(any(CreateFaceFeignRequestDTO.class));
     }
 }

@@ -11,6 +11,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
@@ -88,7 +89,7 @@ class CreateFaceFeatureUseCaseTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findByApiKey(API_KEY)).willReturn(apiKey);
+        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
     }
@@ -99,7 +100,7 @@ class CreateFaceFeatureUseCaseTest {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
         givenProjectSettings(true);
         given(faceFeatureService.createFaceFeature(
-                        ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, true));
 
         // when
@@ -121,7 +122,7 @@ class CreateFaceFeatureUseCaseTest {
         // given
         givenProjectSettings(false);
         given(faceFeatureService.createFaceFeature(
-                        ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, false));
 
         // when

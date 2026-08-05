@@ -1,10 +1,10 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
 import ai.univs.gate.modules.feature.application.input.face.FaceFeatureQuery;
 import ai.univs.gate.modules.feature.application.result.face.FaceFeatureResult;
 import ai.univs.gate.modules.feature.application.result.face.GetFaceFeaturesResult;
-import ai.univs.gate.modules.feature.application.input.BiometricFeatureQuery;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
@@ -36,7 +36,7 @@ public class GetFaceFeaturesUseCase {
     public GetFaceFeaturesResult execute(FaceFeatureQuery query) {
         UserContext userContext = UserContext.get();
 
-        ApiKey apiKey = apiKeyService.findByApiKey(userContext.getApiKey());
+        ApiKey apiKey = apiKeyService.findOwnedByApiKey(userContext.getApiKey(), userContext.getAccountIdAsLong());
         Project project = apiKey.getProject();
 
         long totalCount = biometricFeatureRepository.countByProjectIdAndTypeAndIsDeletedFalse(project.getId(), FeatureType.FACE);

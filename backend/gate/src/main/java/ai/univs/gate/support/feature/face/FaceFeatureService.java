@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import ai.univs.gate.shared.web.enums.CallerType;
 
 @Service
 @RequiredArgsConstructor
@@ -39,17 +40,25 @@ public class FaceFeatureService {
     private final FaceService faceService;
     private final ProjectSettingsService projectSettingsService;
 
+    /**
+     * @param callerType 무인증 데모({@link CallerType#DEMO})는 대조할 accountId 가 없어 소유 검증을
+     *                   건너뛴다. 인증 경로는 반드시 {@link CallerType#API} 를 넘긴다. (UG-281)
+     */
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
             noRollbackFor = CustomFeignException.class
     )
-    public CreateFaceFeatureServiceResult createFaceFeature(Long accountId,
+    public CreateFaceFeatureServiceResult createFaceFeature(CallerType callerType,
+                                                            Long accountId,
                                                             String apiKey,
                                                             MultipartFile featureImage,
                                                             String description,
                                                             String transactionUuid
     ) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+        // UG-281: 검증을 이 메서드 맨 앞에서 한다. 예전에는 호출하는 UseCase 가 등록을
+        // 마친 뒤에야 소유를 확인했는데, 이 메서드는 REQUIRES_NEW 라 그 시점엔 이미 특징점과
+        // 이력이 별도 트랜잭션으로 커밋된 뒤였다 — 거부해도 남의 갤러리에 얼굴이 남았다.
+        ApiKey findApiKey = apiKeyService.findByApiKey(callerType, apiKey, accountId);
         Project project = findApiKey.getProject();
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);
@@ -125,7 +134,8 @@ public class FaceFeatureService {
                                                          String descriptor,
                                                          String transactionUuid
     ) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+        // descriptor 등록은 인증 경로 전용이다 (데모에 대응 엔드포인트가 없다).
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(project);

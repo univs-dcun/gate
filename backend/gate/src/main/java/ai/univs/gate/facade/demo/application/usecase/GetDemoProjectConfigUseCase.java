@@ -20,7 +20,7 @@ public class GetDemoProjectConfigUseCase {
 
     @Transactional(readOnly = true)
     public ProjectSettingsResult execute(String apiKey, String timezone) {
-        ApiKey findApiKey = apiKeyService.findByApiKey(apiKey);
+        ApiKey findApiKey = apiKeyService.findByApiKeyUnverified(apiKey);
 
         ProjectSettings findProjectSettings = projectSettingsService.findByProject(findApiKey.getProject());
 
