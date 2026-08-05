@@ -63,7 +63,13 @@ public class UpdateFaceFeatureUseCase {
                     biometricFeature.getFeatureId(),
                     input.featureImage(),
                     input.transactionUuid(),
-                    String.valueOf(input.accountId()),
+                    // UG-277 반박 리뷰: 인증 전용 경로다 (데모 DTO 없음). String.valueOf(input.accountId()) 는
+                // X-Account-Id 가 없으면 문자열 "null" 을 만들고, face/palm 의 StringUtils.hasText
+                // 폴백은 자바 null·공백만 걸러 그 "null" 을 그대로 저장한다. 기본 ENFORCE 에서는
+                // 소유 검증이 먼저 거부하지만 mode=LOG_ONLY 동안에는 통과한다.
+                // 또한 palm 은 수정이 삭제+재등록이라, 재등록이 최초 등록과 다른 값을 쓰면
+                // 같은 특징점의 이력이 두 값으로 갈린다.
+                String.valueOf(project.getAccountId()),
                     projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.FACE, LivenessOperation.REGISTER),
                     projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
             faceService.updateFace(updateRequest);

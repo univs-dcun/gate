@@ -340,4 +340,44 @@ class IdentifyFaceUseCaseTest {
         assertThat(saved.getConsentSnapshot()).isFalse();
         assertThat(saved.getMatchedFeatureImagePath()).isNull();
     }
+
+    @Test
+    @DisplayName("UG-277: 무인증 데모의 clientId 는 데모 출처를 보존하기 위해 호출자 값(0)을 유지한다")
+    void execute_demoCaller_keepsCallerAsClientId() {
+        // given: 데모 DTO 는 accountId 자리에 0L 을 하드코딩한다 (DemoIdentifyRequestDTO).
+        // 처음에는 이 "0" 을 버그로 보고 소유자 id 로 바꿨는데, 반박 리뷰에서 그 값이
+        // face/palm 이력에서 데모 출처를 알려주는 유일한 흔적이라는 지적이 나왔다 —
+        // gate 의 MatchHistory 에는 callerType·accountId 컬럼이 없다. 소유자 id 로 통일하면
+        // 데모 요청과 인증 요청이 구분되지 않으므로 유지한다.
+        IdentifyInput demoInput =
+                new IdentifyInput(CallerType.DEMO, 0L, API_KEY, matchingImage, TRANSACTION_UUID);
+        ProjectSettings settings = ProjectSettings.builder()
+                .id(2L).project(project).consentEnabled(true).build();
+        given(apiKeyService.findByApiKey(CallerType.DEMO, API_KEY, 0L)).willReturn(apiKey);
+        given(projectSettingsService.findByProject(project)).willReturn(settings);
+        given(fileService.uploadIfConsent(matchingImage, true)).willReturn(UPLOADED_IMAGE_PATH);
+        given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.IDENTIFY))
+                .willReturn(true);
+        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class)))
+                .willReturn(MatchFaceFeignResponseDTO.builder()
+                        .transactionUuid(TRANSACTION_UUID)
+                        .faceId("registered-face-id")
+                        .similarity(new BigDecimal("0.95"))
+                        .result(true)
+                        .build());
+        given(faceFeatureService.getFaceFeatureByFaceIdAndProjectId("registered-face-id", PROJECT_ID))
+                .willReturn(registeredFeature());
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+
+        // when
+        identifyFaceUseCase.execute(demoInput);
+
+        // then: 데모 출처가 보존돼야 한다. 소유자 id 로 바뀌면 감사 해상도가 떨어진다.
+        ArgumentCaptor<IdentifyFaceFeignRequestDTO> captor =
+                ArgumentCaptor.forClass(IdentifyFaceFeignRequestDTO.class);
+        verify(faceService).identify(captor.capture());
+        assertThat(captor.getValue().getClientId()).isEqualTo("0");
+        assertThat(captor.getValue().getClientId()).isNotEqualTo(ACCOUNT_ID.toString());
+    }
 }
