@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
 /**
  * API 키 조회 진입점.
  *
@@ -56,9 +58,22 @@ public class ApiKeyService {
      * 어느 쪽이든 WARN 로그는 동일하게 남는다.
      *
      * <p>LOG_ONLY 를 남겨 둔 이유: 배포 시점에 "정상인데 불일치로 호출하던 기존 고객" 이 있는지
-     * 실트래픽으로 확인할 방법이 없었다. 만약 배포 후 그런 호출이 관측되면, 재배포 없이
-     * {@code gate-config} 의 값을 바꾸고 {@code POST /gate/actuator/refresh} 로 이 빈만 다시 만들면
-     * 된다({@link RefreshScope}). 되돌릴 수단이 롤백뿐인 상황을 만들지 않으려는 안전장치다.
+     * 실트래픽으로 확인할 방법이 없었다. 되돌릴 수단이 롤백뿐인 상황을 만들지 않으려는 안전장치다.
+     *
+     * <p><b>실제 전환 절차</b>({@link RefreshScope}). 게이트웨이를 통한 호출은 되지 않는다 —
+     * actuator 라우트는 dev 게이트웨이에만 있고 stage·prod·onpremise 에는 없으며, 액추에이터가
+     * {@code MANAGEMENT_SERVER_PORT}(9001) 라는 별도 포트에 뜨기 때문이다. 서버에서 컨테이너
+     * 내부 포트로 직접 호출해야 한다.
+     *
+     * <pre>{@code
+     * # 1. gate-config main 에서 mode 를 LOG_ONLY 로 바꾸고 push
+     * # 2. gate 컨테이너가 뜬 서버에서
+     * docker exec <gate-container> curl -s -X POST localhost:9001/gate/actuator/refresh
+     * }</pre>
+     *
+     * <p>이 절차는 <b>실제 환경에서 검증하지 않았다.</b> 되돌림이 필요해지는 상황에서 처음
+     * 시도하는 일이 없도록, dev 에 배포한 뒤 한 번 확인해 둘 것. 동작하지 않으면 컨테이너
+     * 재기동(설정은 기동 시 다시 읽는다)이 차선책이다.
      *
      * <p>관측 결과 불일치가 없다고 확인되면 이 속성과 분기를 제거할 것.
      */
@@ -67,8 +82,27 @@ public class ApiKeyService {
         LOG_ONLY
     }
 
+    /**
+     * enum 이 아니라 문자열로 받는다. enum 으로 직접 바인딩하면 오타 하나가 전면 장애가 되기
+     * 때문이다 — {@link RefreshScope} 빈은 refresh 이후 지연 생성되므로, 알 수 없는 값으로
+     * refresh 하면 그때부터 매 요청이 {@code BeanCreationException} 으로 터지고 이 빈을 주입받는
+     * 30여 개 컴포넌트가 전부 500 이 된다. 되돌리려다 더 큰 장애를 내는 셈이다.
+     *
+     * <p>문자열로 받아 {@link #mode()} 에서 해석하면, 잘못된 값은 경고와 함께 ENFORCE 로 떨어진다.
+     * 보안 통제이므로 해석 실패 시 <b>막는 쪽</b>이 안전한 기본값이다.
+     */
     @Value("${gate.security.api-key-ownership.mode:ENFORCE}")
-    private OwnershipMode mode;
+    private String modeProperty;
+
+    private OwnershipMode mode() {
+        try {
+            return OwnershipMode.valueOf(modeProperty.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            log.warn("gate.security.api-key-ownership.mode 값을 해석할 수 없어 ENFORCE 로 처리한다. value={}",
+                    modeProperty);
+            return OwnershipMode.ENFORCE;
+        }
+    }
 
     /**
      * 인증 경로 전용 조회. {@code accountId} 가 이 키의 프로젝트 소유자와 다르면 거부한다.
@@ -127,12 +161,14 @@ public class ApiKeyService {
             return;
         }
 
+        OwnershipMode currentMode = mode();
+
         // 정상 사용에서는 나올 수 없는 조합이다. 조사할 수 있도록 남기되 키 원문은 가린다.
         log.warn("API 키 소유 불일치 — 요청 accountId={}, 키 소유 accountId={}, projectId={}, apiKey={}, mode={}",
                 accountId, ownerAccountId, apiKey.getProject().getId(),
-                ApiKeyMasker.mask(apiKey.getApiKey()), mode);
+                ApiKeyMasker.mask(apiKey.getApiKey()), currentMode);
 
-        if (mode == OwnershipMode.ENFORCE) {
+        if (currentMode == OwnershipMode.ENFORCE) {
             throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
         }
     }

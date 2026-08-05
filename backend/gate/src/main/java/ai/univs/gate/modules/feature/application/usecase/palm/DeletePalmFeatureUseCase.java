@@ -8,6 +8,7 @@ import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepositor
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.utils.ApiKeyMasker;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -35,7 +36,7 @@ public class DeletePalmFeatureUseCase {
         Project project = apiKey.getProject();
         if (!biometricFeature.getProject().equals(project)) {
             log.error("Not palmFeature who created based on this apikey. accountId: {}, apiKey: {}, palmFeatureId: {}",
-                    input.accountId(), input.apiKey(), input.palmFeatureId());
+                    input.accountId(), ApiKeyMasker.mask(input.apiKey()), input.palmFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
         }
 

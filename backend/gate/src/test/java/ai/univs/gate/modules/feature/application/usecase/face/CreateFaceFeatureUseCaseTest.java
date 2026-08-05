@@ -12,7 +12,6 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.web.enums.CallerType;
-import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
@@ -40,7 +39,6 @@ class CreateFaceFeatureUseCaseTest {
 
     @Mock private FaceFeatureService faceFeatureService;
     @Mock private FileService fileService;
-    @Mock private ApiKeyService apiKeyService;
     @Mock private ProjectSettingsService projectSettingsService;
 
     @InjectMocks private CreateFaceFeatureUseCase createFaceFeatureUseCase;
@@ -89,7 +87,6 @@ class CreateFaceFeatureUseCaseTest {
                 .project(project)
                 .consentEnabled(consentEnabled)
                 .build();
-        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
     }

@@ -56,12 +56,18 @@ class ApiKeyOwnershipTest {
         enforce();
     }
 
+    private void mode(String raw) {
+        // 프로퍼티는 enum 이 아니라 문자열로 받는다 — 오타가 전면 장애가 되지 않게 하기 위해서다.
+        // 자세한 이유는 ApiKeyService.modeProperty 주석 참고.
+        ReflectionTestUtils.setField(apiKeyService, "modeProperty", raw);
+    }
+
     private void enforce() {
-        ReflectionTestUtils.setField(apiKeyService, "mode", ApiKeyService.OwnershipMode.ENFORCE);
+        mode("ENFORCE");
     }
 
     private void logOnly() {
-        ReflectionTestUtils.setField(apiKeyService, "mode", ApiKeyService.OwnershipMode.LOG_ONLY);
+        mode("LOG_ONLY");
     }
 
     private void keyExists() {
@@ -175,9 +181,38 @@ class ApiKeyOwnershipTest {
         }
 
         @Test
+        @DisplayName("알 수 없는 값은 ENFORCE 로 떨어진다 — 되돌리려다 장애 내지 않는다")
+        void 잘못된_값은_막는쪽으로() {
+            keyExists();
+
+            // @RefreshScope 빈이라 refresh 이후 지연 생성된다. enum 으로 직접 바인딩했다면
+            // 오타 하나로 이 빈을 주입받는 30여 개 컴포넌트가 전부 500 이 됐다.
+            // 문자열로 받아 해석 실패 시 '막는 쪽' 으로 떨어뜨린다 — 보안 통제의 안전한 기본값.
+            for (String 잘못된값 : new String[] {"OFF", "LOGONLY", "", "  "}) {
+                mode(잘못된값);
+                assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, ATTACKER))
+                        .as("mode=%s 일 때 검증이 꺼지면 안 된다", 잘못된값)
+                        .isInstanceOf(CustomGateException.class);
+            }
+        }
+
+        @Test
+        @DisplayName("대소문자·공백은 관대하게 받는다")
+        void 관대한_파싱() {
+            keyExists();
+
+            for (String 유효값 : new String[] {"log_only", " LOG_ONLY ", "Log_Only"}) {
+                mode(유효값);
+                assertThatCode(() -> apiKeyService.findOwnedByApiKey(KEY, ATTACKER))
+                        .as("mode=%s 는 LOG_ONLY 로 해석돼야 한다", 유효값)
+                        .doesNotThrowAnyException();
+            }
+        }
+
+        @Test
         @DisplayName("기본값은 ENFORCE 다")
         void 기본값_ENFORCE() throws Exception {
-            var field = ApiKeyService.class.getDeclaredField("mode");
+            var field = ApiKeyService.class.getDeclaredField("modeProperty");
             String defaultValue = field.getAnnotation(org.springframework.beans.factory.annotation.Value.class)
                     .value();
 
