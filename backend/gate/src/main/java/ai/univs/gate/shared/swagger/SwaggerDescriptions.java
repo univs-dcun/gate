@@ -12,7 +12,11 @@ public class SwaggerDescriptions {
 
     /* 페이징 */
     public static final String PAGE = "1 ~ n, 페이지 번호, 기본 값 1";
-    public static final String PAGE_SIZE = "1 ~ n, 한 페이지에 보여줄 컨텐츠 수, 기본 값 10";
+    // UG-270: 기본값을 문구에 넣지 않는다. 이 상수를 Face/Palm/Match/Project/Feature 조건 DTO 가
+    // 공유하는데 팜은 @Schema(defaultValue = "20") 이라, "기본 값 10" 이 박혀 있으면 같은
+    // 파라미터에 설명과 기본값이 서로 다른 값을 말한다. 스프링독이 default 를 별도 필드로
+    // 내보내므로 설명에 중복해 적을 이유도 없다.
+    public static final String PAGE_SIZE = "1 ~ n, 한 페이지에 보여줄 컨텐츠 수";
     public static final String TOTAL_ELEMENTS = "전체 컨텐츠 수 (검색 필터 적용)";
     public static final String TOTAL_PAGES = "전체 페이지 수";
     public static final String TOTAL_COUNT = "기준 전체 컨텐츠 수 (검색 필터 미적용)";

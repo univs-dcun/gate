@@ -38,10 +38,11 @@ public record VerifyByDescriptorRequestDTO(
         String transactionUuid
 ) {
 
-    public VerifyByDescriptorInput toVerifyByDescriptorInput(String apiKey, Long accountId) {
+    // UG-278: 인자 순서를 (accountId, apiKey) 로 통일한다. 다른 to*Input 은 모두 이 순서다.
+    public VerifyByDescriptorInput toVerifyByDescriptorInput(Long accountId, String apiKey) {
         return new VerifyByDescriptorInput(
-                apiKey,
                 accountId,
+                apiKey,
                 descriptor,
                 targetDescriptor,
                 TransactionUtil.useOrCreate(transactionUuid));
