@@ -53,6 +53,12 @@ public class DashboardController {
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             // 이 엔드포인트만 projectService.validateOwnership 을 한 번 더 거친다 (UG-288).
             // 나머지 셋은 findOwnedByApiKey 하나로 끝나서 이 두 코드가 나올 자리가 없다.
+            //
+            // 도달 조건이 좁다는 점은 알고 있다 (리뷰 지적). NOT_OWNERSHIP 은 ENFORCE 에서
+            // 앞줄이 먼저 API_KEY_NOT_FOUND 를 던지므로 LOG_ONLY 에서만 나오고,
+            // PROJECT_NOT_FOUND 는 두 검사 사이에 삭제가 끼어야 한다. 그래도 선언한다 —
+            // LOG_ONLY 는 실제로 켤 수 있는 스위치이고, 그때 이 엔드포인트가 다른 코드를
+            // 돌려준다는 사실을 클라이언트가 모르면 안 된다.
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
             // 403 이 아니라 400 이다. GlobalExceptionHandler.handleBusinessException 이
             // @ResponseStatus(BAD_REQUEST) 고정이라 ErrorType.status 가 FORBIDDEN 이어도

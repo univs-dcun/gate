@@ -9234,6 +9234,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,

@@ -65,12 +65,13 @@ import org.springframework.web.bind.annotation.*;
  *       {@link ErrorType#API_KEY_NOT_FOUND}. 데모 경로도 예외가 아니다. UG-288 이후로는
  *       삭제된 프로젝트의 키도 여기서 걸린다.
  *   <li>{@code projectSettingsService.findByProject} → {@link ErrorType#SETTINGS_NOT_FOUND}.
- *       설정을 직접 읽지 않는 UseCase 도 {@code FaceFeatureService}/{@code PalmFeatureService}
- *       를 거쳐 도달한다 — 한 단계 위임돼 있어 눈으로는 놓치기 쉽다.
+ *       이 컨트롤러 뒤의 UseCase 11개가 <b>전부</b> {@code execute()} 첫머리에서 직접 부른다.
+ *       (초판 주석은 "일부는 {@code FaceFeatureService} 를 거쳐 간접 도달한다" 고 적었는데
+ *       사실이 아니다 — 리뷰가 11개를 전수 확인했다. 간접 경로는 정식 API 쪽 이야기다.)
  * </ul>
  *
- * <p>{@code /config} 만 {@link ErrorType#INVALID_INPUT} 이 없다. 이 엔드포인트에는
- * {@code @Valid} 도 열거형 파라미터도 없어서 바인딩 오류가 날 자리가 없다.
+ * <p>{@code /feature/palms} 는 {@code @Hidden} 이라 선언을 붙여도 문서에는 나오지 않는다.
+ * 소스 일관성을 위해 같이 붙였다.
  */
 @Tag(name = "e-KYC 데모")
 @RestController
@@ -102,6 +103,12 @@ public class DemoController {
             @SecurityRequirement(name = "X-Api-Key")
     })
     @SwaggerErrorExample({
+            // @Valid 도 열거형 파라미터도 없지만 @RequestBody 는 required = true 가 기본이다.
+            // 본문이 없거나 JSON 이 아니면 HttpMessageNotReadableException 이 나고 핸들러가
+            // INVALID_INPUT 으로 매핑한다. 초판은 이 경로를 못 보고 "날 자리가 없다" 고
+            // 적었는데, 데모 브라우저 세션이 가장 먼저 두드리는 엔드포인트라 오히려 여기서
+            // 제일 흔하다 (리뷰 지적).
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
