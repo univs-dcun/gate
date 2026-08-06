@@ -8,9 +8,14 @@ import org.springframework.http.HttpStatus;
  * 오류 코드와 <b>오류의 성격</b>.
  *
  * <p><b>{@code status} 는 응답 상태 코드가 아니다</b> (UG-298). {@code GlobalExceptionHandler} 의
- * {@code handleBusinessException} 이 {@code @ResponseStatus(BAD_REQUEST)} 고정이라, 여기 무엇을
- *적든 클라이언트는 <b>항상 400 을 받는다.</b> {@code UNAUTHORIZED}(401)·{@code NOT_OWNERSHIP}(403)
- * 도 마찬가지다. 이 필드가 실제 응답 상태와 일치한 적은 한 번도 없다.
+ * {@code handleBusinessException} 이 {@code @ResponseStatus(BAD_REQUEST)} 고정이라,
+ * {@code BusinessException} 계열은 여기 무엇을 적든 클라이언트가 <b>항상 400 을 받는다.</b>
+ *
+ * <p>대부분은 우연히 맞는다 — 47개 중 39개가 {@code BAD_REQUEST} 이고, 프레임워크 예외를 받는
+ * 네 핸들러({@code NOT_FOUND}·{@code METHOD_NOT_ALLOWED} ×2·{@code INTERNAL_SERVER_ERROR})는
+ * 자기 {@code @ResponseStatus} 와 일치한다. 실제로 어긋나는 것은 {@code UNAUTHORIZED}(401)와
+ * {@code NOT_OWNERSHIP}(403) 둘뿐이다. (초판 주석은 "일치한 적이 한 번도 없다" 고 적었는데
+ * 그 둘에서 과일반화한 것이었다 — 리뷰 지적.)
  *
  * <p>지금 이 값이 결정하는 것은 <b>로그 수준</b> 하나다 (UG-290).
  *
@@ -52,6 +57,23 @@ public enum ErrorType {
     PROJECT_ALREADY_EXISTS("PJ-102", HttpStatus.BAD_REQUEST),
     PROJECT_NOT_FOUND("PJ-103", HttpStatus.BAD_REQUEST),
     NOT_OWNERSHIP("PJ-104", HttpStatus.FORBIDDEN),
+    /**
+     * <b>원인이 섞여 있다</b> — 세 번째 사례다 (UG-298 리뷰가 찾았다. 초판은 두 개라고 적었다).
+     *
+     * <p>클라이언트 입력: 없는 키, 남의 키, 삭제된 프로젝트의 키. 이 셋을 <b>같은 코드로</b>
+     * 막는 것이 이 상수의 핵심 목적이다 — 구분해 주면 키의 실재를 확인해 주는 열거 오라클이
+     * 된다 ({@code ApiKeyService} 참고).
+     *
+     * <p>우리 쪽 문제: {@code GetApiKeyUseCase}·{@code RegenerateApiKeyUseCase} 의
+     * {@code findActiveByProjectId().orElseThrow}. 두 곳 모두 {@code validateOwnership} 을
+     * 먼저 거치므로, 도달했다는 것은 "소유가 확인된, 삭제되지 않은 프로젝트에 활성 키가 없다"
+     * 는 뜻이다 — {@link #SETTINGS_NOT_FOUND} 와 완전히 같은 논리다.
+     *
+     * <p><b>그런데도 4xx 로 둔다.</b> 열거 오라클 방지가 우선이라 코드를 나눌 수 없다. 대신
+     * 그 두 자리에서 직접 {@code log.error} 를 남긴다 (리뷰 지적 — 그 전까지는 아무것도 남기지
+     * 않아 WARN 한 줄로 조용히 지나갔다. 섞인 코드의 대가를 치르는 방식이 다른 두 코드와
+     * 달랐던 셈이다).
+     */
     API_KEY_NOT_FOUND("PJ-105", HttpStatus.BAD_REQUEST),
     /**
      * 프로젝트에 설정 행이 없다.
@@ -77,8 +99,11 @@ public enum ErrorType {
     /**
      * <b>원인이 섞여 있다</b> (UG-298). 4xx 로 둔 것은 잠정이다.
      *
-     * <p>클라이언트 입력: {@code FileController.validateFilePath}(경로 순회 시도),
-     * {@code FileService.validationFilePath}(빈 경로).
+     * <p>클라이언트 입력: {@code FileController.validateFilePath}(경로 순회 시도).
+     *
+     * <p>애매한 것: {@code FileService.validationFilePath}(빈 경로). {@code down} 에서는
+     * 클라이언트가 준 값이지만 {@code delete} 에서는 <b>우리 DB 에 저장된 특징점 이미지 경로</b>가
+     * 온다 — 그쪽이 비어 있다면 우리 문제다 (리뷰 지적).
      *
      * <p>우리 쪽 문제: {@code FileUtil.getFile}·{@code delete} 의 IO 실패. 그 경로는 우리 DB 에
      * 저장된 값이므로, 읽지 못한다는 것은 파일이 사라졌거나 볼륨이 안 붙었거나
@@ -117,6 +142,11 @@ public enum ErrorType {
      * 이 이름에 묶여 있기 때문이다.
      */
     NOT_MATCH("ID-102", HttpStatus.BAD_REQUEST),
+    /**
+     * {@link #NOT_MATCH} 와 같다 — <b>예외로 던지지 않는다.</b> 1:1 검증에서 임계값에 못 미쳤을 때
+     * {@code matchHistory.fail(..., MISMATCH.name())} 로 이력의 실패 사유 문자열로만 쓰인다
+     * (1:N 은 {@code NOT_MATCH}, 1:1 은 이것 — 섞이면 운영자가 구분하지 못한다).
+     */
     MISMATCH("ID-103", HttpStatus.BAD_REQUEST),
         // Liveness
     FACE_NOT_FOUND("ID-201", HttpStatus.BAD_REQUEST),
