@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -22,6 +23,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -122,17 +124,41 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 하위 서비스가 우리 포맷으로 돌려준 4xx (UG-290).
+     * 하위 서비스가 우리 포맷으로 돌려준 오류 (UG-290).
      *
      * <p>{@link CustomFeignException} 은 {@link BusinessException} 계열이 아니라 자체
-     * {@code code}/{@code type} 을 들고 있어 {@link ErrorType} 매핑이 없다. 다만 이 예외가 만들어지는
-     * 지점({@code CommonErrorDecoder})이 <b>상태 코드 400~499 일 때만</b>이므로 언제나 4xx 다.
-     * 라이브니스 오류처럼 정상 흐름에서 흡수되는 경우도 여기 포함된다.
+     * {@code code}/{@code type} 을 들고 있어 {@link ErrorType} 매핑이 없다. 이 예외가 만들어지는
+     * 지점({@code CommonErrorDecoder})이 상태 코드 400~499 일 때만이므로 <b>HTTP 상태로는</b>
+     * 언제나 4xx 다.
+     *
+     * <p><b>그렇다고 클라이언트 잘못인 것은 아니다.</b> 반박 리뷰가 짚은 부분이다. face·palm 은
+     * 자기 쪽 5xx 를 {@code CustomFaceException(INTERNAL_SERVER_ERROR)} 로 감싼 뒤
+     * {@code @ResponseStatus(BAD_REQUEST)} 로 내려보내고, 그 과정에서 로그를 남기지 않는다.
+     * 즉 ML 매처가 전면 장애여도 gate 에는 400 으로 도착한다. HTTP 상태만 보고 WARN 으로 내리면
+     * <b>어느 서비스에서도 ERROR 가 한 줄도 남지 않는다.</b>
+     *
+     * <p>그래서 {@code type} 을 본다. 우리 서비스들은 모두 {@code Errors.from(errorType, ...)} 으로
+     * {@code type} 에 {@code ErrorType.name()} 을 싣는다 — 하위가 자기 문제라고 말한 것을 그대로
+     * 읽는 셈이다. 판정 불가일 때는 4xx 로 둔다. 여기서 잘못 올리면 라이브니스 오류처럼 정상
+     * 흐름에서 흡수되는 것까지 ERROR 가 된다.
      */
+    private static final Set<String> UPSTREAM_SERVER_ERROR_TYPES =
+            Set.of("INTERNAL_SERVER_ERROR", "SERVER_ERROR", "INTERNAL_ERROR");
+
+    /** {@code LoggingAspect} 가 같은 기준을 쓰도록 공개한다 — 두 지점이 갈리면 한쪽만 조용해진다. */
+    public static boolean isUpstreamServerError(String type) {
+        return type != null && UPSTREAM_SERVER_ERROR_TYPES.contains(type);
+    }
+
     @ExceptionHandler(CustomFeignException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseApi<?> CustomFeignException(CustomFeignException ex) {
-        log.warn("[{}] {} {} — {}", ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
+        if (isUpstreamServerError(ex.getType())) {
+            log.error("[{}] 하위 서비스가 자기 오류를 알렸다 — {} {} — {}",
+                    ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
+        } else {
+            log.warn("[{}] {} {} — {}", ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
+        }
 
         Errors errors = new Errors(
                 ex.getCode(),
@@ -152,7 +178,18 @@ public class GlobalExceptionHandler {
             messageBuilder.append(message).append(" ");
         });
 
-        logByStatus(ErrorType.INVALID_INPUT, ex, messageBuilder.toString().strip());
+        // 반박 리뷰: 예전 로그는 ex.getMessage() 를 통째로 찍어 "어느 필드가" 를 담고 있었다.
+        // i18n 해석 결과만 남기면 "MUST NOT BE BLANK" 처럼 필드를 알 수 없는 줄이 된다
+        // (메시지 키 없이 @NotBlank 만 쓴 DTO 가 여럿 있다). 필드명만 따로 모은다.
+        //
+        // 거부값(rejected value)은 일부러 빼놓는다. 그쪽에는 비밀번호·descriptor 가 들어올 수
+        // 있는데 LoggingAspect 의 마스킹은 이 경로에 적용되지 않는다.
+        String fields = ex.getBindingResult().getAllErrors().stream()
+                .map(error -> error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName())
+                .distinct()
+                .collect(Collectors.joining(", "));
+        logByStatus(ErrorType.INVALID_INPUT, ex,
+                "fields=[%s] %s".formatted(fields, messageBuilder.toString().strip()));
 
         return getExceptionResponse(ErrorType.INVALID_INPUT, messageBuilder.toString());
     }

@@ -2,6 +2,7 @@ package ai.univs.gate.shared.logging;
 
 import ai.univs.gate.shared.exception.BusinessException;
 import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.exception.GlobalExceptionHandler;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -94,8 +95,11 @@ public class LoggingAspect {
      * <p>판정 기준은 {@link ErrorType#getStatus()} 다. 값이 다 채워져 있는데도 프로덕션 코드에서
      * 한 번도 읽히지 않던 죽은 코드였다 — 별도 분류를 새로 만들기보다 이미 정확한 값을 살려 쓴다.
      *
-     * <p>{@link CustomFeignException} 은 {@code ErrorType} 매핑이 없지만, 만들어지는 지점인
-     * {@code CommonErrorDecoder} 가 상태 코드 400~499 일 때만 이 타입을 반환하므로 언제나 4xx 다.
+     * <p>{@link CustomFeignException} 은 {@code ErrorType} 매핑이 없어 {@code type} 문자열을 본다.
+     * HTTP 상태로는 언제나 4xx 지만 그렇다고 클라이언트 잘못은 아니다 — face·palm 이 자기 쪽 5xx 를
+     * 400 으로 번역해 내려보내기 때문이다. 하위가 자기 문제라고 말한 경우까지 WARN 으로 내리면
+     * ML 매처 전면 장애에 ERROR 가 한 줄도 안 남는다. 판정은
+     * {@code GlobalExceptionHandler} 와 같은 기준을 쓴다.
      *
      * <p>그 밖은 5xx 로 본다. 분류를 모르는 예외를 조용한 쪽으로 보내면 진짜 장애를 놓친다.
      */
@@ -103,7 +107,10 @@ public class LoggingAspect {
         if (ex instanceof BusinessException businessException) {
             return businessException.getErrorType().getStatus().is4xxClientError();
         }
-        return ex instanceof CustomFeignException;
+        if (ex instanceof CustomFeignException feignException) {
+            return !GlobalExceptionHandler.isUpstreamServerError(feignException.getType());
+        }
+        return false;
     }
 
     private Map<String, Object> extractRequestData(ProceedingJoinPoint joinPoint) {

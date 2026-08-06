@@ -90,6 +90,9 @@ public class FileUtil {
         try (InputStream is = file.getInputStream()) {
             image = ImageIO.read(is);
         } catch (IOException e) {
+            // UG-290 반박 리뷰: FAILURE_COMPRESSION_FILE 은 4xx 로 분류돼 있어 핸들러가
+            // 스택트레이스를 남기지 않는다. 여기서 남기지 않으면 원인이 완전히 사라진다.
+            log.warn("업로드 이미지를 읽지 못했다 — filename={}", file.getOriginalFilename(), e);
             throw new CustomGateException(ErrorType.FAILURE_COMPRESSION_FILE);
         }
 
@@ -114,6 +117,12 @@ public class FileUtil {
             ImageIO.write(bufferedImage, type, new File(fileRootPath + imagePath));
             return imagePath;
         } catch (MetadataException | IOException e) {
+            // 같은 ErrorType 이지만 원인이 다르다. 이 블록에는 ImageIO.write 로 디스크에 쓰는
+            // 단계가 들어 있어, 디스크 풀·권한 없음·file.root-path 오설정 같은 서버 문제가
+            // 여기로 떨어진다 (온프레미스에서 흔하다). 클라이언트 입력 문제와 구분할 단서가
+            // 스택트레이스뿐이므로 반드시 남긴다.
+            log.error("이미지 리사이즈·저장에 실패했다 — filename={}, rootPath={}",
+                    file.getOriginalFilename(), fileRootPath, e);
             throw new CustomGateException(ErrorType.FAILURE_COMPRESSION_FILE);
         }
     }

@@ -18,7 +18,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.MethodParameter;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -117,6 +121,42 @@ class ExceptionLogLevelTest {
         assertThat(event.getLevel()).isEqualTo(Level.WARN);
         assertThat(event.getThrowableProxy()).isNull();
         assertThat(event.getFormattedMessage()).contains("ML-101").contains("FACE_NOT_FOUND");
+    }
+
+    @Test
+    @DisplayName("하위 서비스가 자기 오류라고 말하면 HTTP 400 이어도 ERROR 다")
+    void 하위가_자기오류라_말하면_ERROR() {
+        // 반박 리뷰가 찾은 경로. face·palm 은 자기 쪽 5xx 를
+        // CustomFaceException(INTERNAL_SERVER_ERROR) 로 감싼 뒤 @ResponseStatus(BAD_REQUEST) 로
+        // 내려보내며, 그 과정에서 로그를 아예 남기지 않는다. 즉 ML 매처가 전면 장애여도 gate 에는
+        // 400 으로 도착한다. HTTP 상태만 보고 WARN 으로 내리면 어느 서비스에서도 ERROR 가 한 줄도
+        // 남지 않는다 — "4xx = 클라이언트 잘못" 이 이 코드베이스에서 성립하지 않는 지점이다.
+        handler.CustomFeignException(
+                new CustomFeignException("SWAGGER-005", "INTERNAL_SERVER_ERROR", "matcher down"));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getFormattedMessage()).contains("INTERNAL_SERVER_ERROR");
+    }
+
+    @Test
+    @DisplayName("검증 실패 로그에 어느 필드인지 남는다")
+    void 검증_실패는_필드명을_남긴다() {
+        // i18n 해석 결과만 남기면 "MUST NOT BE BLANK" 처럼 필드를 알 수 없는 줄이 된다 —
+        // 메시지 키 없이 @NotBlank 만 쓴 DTO 가 여럿 있다. 거부값은 일부러 빼놓는다
+        // (비밀번호·descriptor 가 들어올 수 있고 LoggingAspect 의 마스킹이 이 경로엔 없다).
+        BeanPropertyBindingResult binding =
+                new BeanPropertyBindingResult(new Object(), "webhookConfigRequestDTO");
+        binding.addError(new FieldError("webhookConfigRequestDTO", "webhookUrl", "must not be blank"));
+
+        handler.handleMethodArgumentNotValidException(
+                new MethodArgumentNotValidException((MethodParameter) null, binding));
+
+        String message = onlyEvent().getFormattedMessage();
+        assertThat(message).contains("webhookUrl");
+        assertThat(message)
+                .as("거부값은 남기지 않는다 — 민감 정보가 들어올 수 있다")
+                .doesNotContain("rejected value");
     }
 
     @Test
