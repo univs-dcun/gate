@@ -15,7 +15,7 @@ import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.project.ProjectService;
-import java.util.Optional;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +34,9 @@ import org.springframework.test.util.ReflectionTestUtils;
  *
  * <p>이런 종류의 결함은 컴파일러도 기존 테스트도 잡지 못한다. 삭제 경로에 테스트가 하나도 없었기
  * 때문이다. 그래서 "삭제하면 무엇이 참이 되는가" 를 여기서 못박는다.
+ *
+ * <p>영속성 경계(트랜잭션·flush)는 여기서 볼 수 없다 — 순수 Mockito 테스트다. 그쪽은
+ * {@link DeleteProjectTransactionGuardTest} 가 맡는다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UG-288: 프로젝트 삭제")
@@ -63,16 +66,21 @@ class DeleteProjectUseCaseTest {
                 .build();
         ReflectionTestUtils.setField(project, "id", PROJECT);
 
-        apiKey = ApiKey.builder()
-                .project(project)
-                .apiKey("univs_live_abcdefghijklmnop")
-                .isActive(true)
-                .build();
-        ReflectionTestUtils.setField(apiKey, "id", 9L);
+        apiKey = activeKey(9L, "univs_live_abcdefghijklmnop");
+    }
+
+    private ApiKey activeKey(long id, String value) {
+        ApiKey key = ApiKey.builder().project(project).apiKey(value).isActive(true).build();
+        ReflectionTestUtils.setField(key, "id", id);
+        return key;
     }
 
     private void givenOwnedProject() {
         given(projectService.validateOwnership(PROJECT, ACCOUNT)).willReturn(project);
+    }
+
+    private void givenActiveKeys(ApiKey... keys) {
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT)).willReturn(List.of(keys));
     }
 
     @Test
@@ -80,7 +88,7 @@ class DeleteProjectUseCaseTest {
     void 삭제_플래그가_켜진다() {
         // 원래 버그가 정확히 여기였다. delete() 가 isDeleted 를 false 로 두면 이 단언이 깨진다.
         givenOwnedProject();
-        given(apiKeyRepository.findActiveByProjectId(PROJECT)).willReturn(Optional.of(apiKey));
+        givenActiveKeys(apiKey);
 
         deleteProjectUseCase.execute(ACCOUNT, PROJECT);
 
@@ -96,7 +104,7 @@ class DeleteProjectUseCaseTest {
         // 'ACTIVE' | 'INACTIVE' | 'DELETED' 로 이미 기대하고 있다. INACTIVE 는 '삭제는 아니지만
         // 비활성' 자리로 남긴다 — 둘을 같은 값으로 쓰면 그 구분을 영영 못 만든다.
         givenOwnedProject();
-        given(apiKeyRepository.findActiveByProjectId(PROJECT)).willReturn(Optional.of(apiKey));
+        givenActiveKeys(apiKey);
 
         deleteProjectUseCase.execute(ACCOUNT, PROJECT);
 
@@ -107,7 +115,7 @@ class DeleteProjectUseCaseTest {
     @DisplayName("API 키가 함께 비활성화된다")
     void API_키가_비활성화된다() {
         givenOwnedProject();
-        given(apiKeyRepository.findActiveByProjectId(PROJECT)).willReturn(Optional.of(apiKey));
+        givenActiveKeys(apiKey);
 
         deleteProjectUseCase.execute(ACCOUNT, PROJECT);
 
@@ -117,12 +125,30 @@ class DeleteProjectUseCaseTest {
     }
 
     @Test
+    @DisplayName("활성 키가 여러 개여도 전부 끄고 삭제된다")
+    void 활성_키가_둘이어도_삭제된다() {
+        // 반박 리뷰 지적. api_keys 에는 (project_id, is_active) 부분 유니크 인덱스가 없고,
+        // RegenerateApiKeyUseCase 가 잠금 없이 '기존 끄기 → 새로 넣기' 를 하므로 동시 호출이면
+        // 활성 키 2개가 남을 수 있다. Optional 조회를 쓰면 그 프로젝트는
+        // IncorrectResultSizeDataAccessException 으로 삭제까지 롤백돼 영영 지울 수 없게 된다.
+        ApiKey second = activeKey(10L, "univs_live_qrstuvwxyz012345");
+        givenOwnedProject();
+        givenActiveKeys(apiKey, second);
+
+        deleteProjectUseCase.execute(ACCOUNT, PROJECT);
+
+        assertThat(apiKey.getIsActive()).isFalse();
+        assertThat(second.getIsActive()).isFalse();
+        assertThat(project.isDeleted()).isTrue();
+    }
+
+    @Test
     @DisplayName("활성 키가 없어도 삭제는 성공한다")
     void 활성_키가_없어도_터지지_않는다() {
         // 키를 회전하다 중단됐거나 이미 비활성화된 프로젝트가 있을 수 있다. 그 경우에
         // 삭제 자체가 실패하면 사용자는 프로젝트를 영영 못 지운다.
         givenOwnedProject();
-        given(apiKeyRepository.findActiveByProjectId(PROJECT)).willReturn(Optional.empty());
+        givenActiveKeys();
 
         assertThatCode(() -> deleteProjectUseCase.execute(ACCOUNT, PROJECT))
                 .doesNotThrowAnyException();
@@ -140,6 +166,6 @@ class DeleteProjectUseCaseTest {
 
         assertThat(project.isDeleted()).isFalse();
         assertThat(apiKey.getIsActive()).isTrue();
-        verify(apiKeyRepository, never()).findActiveByProjectId(PROJECT);
+        verify(apiKeyRepository, never()).findAllActiveByProjectId(PROJECT);
     }
 }

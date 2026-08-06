@@ -5,6 +5,7 @@ import ai.univs.gate.modules.api_key.domain.repository.ApiKeyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,6 +22,11 @@ public class ApiKeyRepositoryImpl implements ApiKeyRepository {
     @Override
     public Optional<ApiKey> findActiveByProjectId(Long projectId) {
         return apiKeyJpaRepository.findByProjectIdAndIsActive(projectId, true);
+    }
+
+    @Override
+    public List<ApiKey> findAllActiveByProjectId(Long projectId) {
+        return apiKeyJpaRepository.findAllByProjectIdAndIsActive(projectId, true);
     }
 
     @Override

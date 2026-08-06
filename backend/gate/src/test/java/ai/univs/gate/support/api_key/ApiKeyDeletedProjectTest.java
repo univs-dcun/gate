@@ -10,7 +10,11 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.Optional;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -120,6 +124,34 @@ class ApiKeyDeletedProjectTest {
 
         // 코드가 갈리면 "이 키는 실재했다" 를 알려주는 셈이 된다. UG-281·UG-250 과 같은 논리.
         assertThat(삭제된프로젝트의키).isEqualTo(없는키).isEqualTo(ErrorType.API_KEY_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("거부 로그에 API 키 원문을 남기지 않는다")
+    void 로그에_키_원문이_없다() {
+        // 반박 리뷰가 찾은 생존 변이. ApiKeyMasker.mask 를 빼고 원문을 찍어도 아무 테스트도
+        // 깨지지 않았다. API 키는 특징점 등록·매칭 전 기능의 인증 수단이라, 로그 열람 권한만으로
+        // 남의 생체 API 를 호출할 수 있게 된다. 온프레미스에서는 로그 묶음이 그대로 밖으로 나간다.
+        // (UG-274 가 ApiKeyMasker 를 만든 이유와 같다)
+        Logger logger = (Logger) LoggerFactory.getLogger(ApiKeyService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            givenKeyOfProject(true);
+
+            assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, OWNER))
+                    .isInstanceOf(CustomGateException.class);
+
+            assertThat(appender.list)
+                    .as("조사 단서가 남아야 하므로 로그 자체는 있어야 한다")
+                    .isNotEmpty();
+            assertThat(appender.list)
+                    .noneMatch(event -> event.getFormattedMessage().contains(KEY));
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 
     @Test

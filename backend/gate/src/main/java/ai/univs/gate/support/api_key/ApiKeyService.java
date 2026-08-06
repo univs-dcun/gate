@@ -136,8 +136,10 @@ public class ApiKeyService {
      * <p>인증 경로에서 이것을 부르면 테넌트 격리가 뚫린다. 새 코드에서 이 메서드가 필요해 보이면
      * 십중팔구 {@link #findOwnedByApiKey} 를 써야 하는 상황이다.
      *
-     * <p><b>UG-288: 삭제된 프로젝트의 키는 여기서 걸린다.</b> 세 조회 메서드가 전부 이 메서드를
-     * 거치므로, 삭제 검사를 여기 한 곳에만 두면 인증·데모·공유 UseCase 가 함께 닫힌다. 소유 검증과
+     * <p><b>UG-288: 삭제된 프로젝트의 키는 여기서 걸린다.</b> 키 문자열로 조회하는 세 메서드
+     * ({@link #findOwnedByApiKey}, {@link #findByApiKey}, 이 메서드)가 전부 여기를 거치므로,
+     * 검사를 한 곳에 두면 인증·데모·공유 UseCase 가 함께 닫힌다. 프로젝트로 조회하는
+     * {@link #findByProject} 만 이 경로 밖이라 거기서 따로 막는다. 소유 검증과
      * 달리 데모도 예외가 아니다 — 데모 키가 공개돼도 되는 근거는 "그 키로 할 수 있는 일이 데모
      * 범위에 머문다" 인데, 삭제된 프로젝트에는 머물 범위 자체가 없다.
      *
@@ -179,7 +181,19 @@ public class ApiKeyService {
         throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
     }
 
+    /**
+     * 프로젝트로 활성 키를 찾는다.
+     *
+     * <p>이 메서드는 {@link #findByApiKeyUnverified} 를 거치지 않으므로 삭제 검사를 여기서 따로
+     * 한다 (반박 리뷰 지적). 현재 유일한 호출처인 {@code GetProjectUseCase} 는
+     * {@code findByIdAndIsDeletedFalse} 로 얻은 프로젝트만 넘겨서 도달할 수 없지만, 호출처가
+     * 늘면 조용히 뚫리는 자리다.
+     */
     public ApiKey findByProject(Project project) {
+        if (project.isDeleted()) {
+            throw new CustomGateException(ErrorType.PROJECT_NOT_FOUND);
+        }
+
         return apiKeyRepository.findActiveByProjectId(project.getId())
                 .orElseThrow(() -> new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
     }
