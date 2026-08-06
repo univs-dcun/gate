@@ -87,4 +87,19 @@ class CommonErrorDecoderTest {
 
         assertThat(result).isInstanceOf(CustomFeignException.class);
     }
+
+    @Test
+    @DisplayName("4xx 인데 errors 가 비어 있어도 NPE 로 500 이 나가지 않는다")
+    void errors_없는_4xx() {
+        // 델타 리뷰가 실측했다. 예전에는 여기서 NPE 가 나 handleGlobalException 으로 떨어졌고
+        // 클라이언트는 90여 줄 스택트레이스와 함께 500 을 받았다. palm 디코더는 같은 상황을
+        // 이미 정상 처리하고 있어 face 만 예외였다.
+        assertThatThrownBy(() -> decoder.decode("FaceClient#verify()",
+                response(400, """
+                        {"success":false,"data":null}
+                        """)))
+                .isInstanceOf(UpstreamCallException.class)
+                .satisfies(thrown ->
+                        assertThat(((UpstreamCallException) thrown).getUpstreamStatus()).isEqualTo(400));
+    }
 }

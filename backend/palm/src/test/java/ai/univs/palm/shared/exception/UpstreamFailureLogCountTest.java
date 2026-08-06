@@ -1,10 +1,10 @@
-package ai.univs.face.shared.exception;
+package ai.univs.palm.shared.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.univs.face.shared.feign.CommonErrorDecoder;
-import ai.univs.face.shared.locale.MessageService;
-import ai.univs.face.shared.web.enums.ErrorType;
+import ai.univs.palm.shared.feign.CommonErrorDecoder;
+import ai.univs.palm.shared.locale.MessageService;
+import ai.univs.palm.shared.web.enums.ErrorType;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -29,7 +29,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  *
  * <p>UG-299 의 첫 시도는 {@code CommonErrorDecoder} 에서 상태 코드를 로그로 남기는 것이었다.
  * 리뷰가 그것을 실측해 보여 줬다 — 디코더가 한 줄, 그 예외를 받은 핸들러가 스택트레이스와 함께
- * 또 한 줄. ML 매처가 죽어서 초당 50 요청이 실패하면 <b>초당 ERROR 100 줄에 스택트레이스
+ * 또 한 줄. ML 모듈이 죽어서 초당 50 요청이 실패하면 <b>초당 ERROR 100 줄에 스택트레이스
  * 50 개</b>다. 대시보드는 장애 규모를 두 배로 센다.
  *
  * <p>UG-291 이 gate 에서 없앤 이중 기록과 같은 문제라, 같은 해법을 썼다 — 상태 코드를 예외에
@@ -59,7 +59,7 @@ class UpstreamFailureLogCountTest {
         root.addAppender(appender);
 
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(
-                new MockHttpServletRequest("POST", "/api/v1/face/extract")));
+                new MockHttpServletRequest("POST", "/api/v1/palm/extract")));
     }
 
     @AfterEach
@@ -86,7 +86,7 @@ class UpstreamFailureLogCountTest {
     @Test
     @DisplayName("ML 5xx — ERROR 한 줄, 스택트레이스 없음, 상태 코드 포함")
     void ML_5xx_는_한_줄이다() {
-        Exception decoded = decoder.decode("FaceClient#extract(MultipartFile)", response(503, ""));
+        Exception decoded = decoder.decode("PalmClient#extract(MultipartFile)", response(503, ""));
         handler.handleUpstreamCallException((UpstreamCallException) decoded);
 
         assertThat(errors())
@@ -97,8 +97,8 @@ class UpstreamFailureLogCountTest {
         assertThat(event.getThrowableProxy()).isNull();
         assertThat(event.getFormattedMessage())
                 .contains("503")
-                .contains("FaceClient#extract(MultipartFile)")
-                .contains("POST /api/v1/face/extract");
+                .contains("PalmClient#extract(MultipartFile)")
+                .contains("POST /api/v1/palm/extract");
     }
 
     @Test
@@ -106,7 +106,7 @@ class UpstreamFailureLogCountTest {
     void ML_3xx_도_상태코드가_남는다() {
         // 리다이렉트는 "죽었다" 와 성격이 다르다. Feign 은 따라가지 않으므로 호출은 실패하지만,
         // 302 인지 503 인지 구분할 수 있어야 원인을 찾는다.
-        Exception decoded = decoder.decode("FaceClient#extract(MultipartFile)", response(302, ""));
+        Exception decoded = decoder.decode("PalmClient#extract(MultipartFile)", response(302, ""));
         handler.handleUpstreamCallException((UpstreamCallException) decoded);
 
         assertThat(errors()).hasSize(1);
@@ -118,7 +118,7 @@ class UpstreamFailureLogCountTest {
     void 파싱_실패도_한_줄이다() {
         UpstreamCallException thrown = null;
         try {
-            decoder.decode("FaceClient#extract(MultipartFile)", response(400, "not json"));
+            decoder.decode("PalmClient#extract(MultipartFile)", response(400, "not json"));
         } catch (UpstreamCallException e) {
             thrown = e;
         }

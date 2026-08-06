@@ -103,7 +103,7 @@ public class GlobalExceptionHandler {
      *   <li>하위 모듈의 상태 코드를 남긴다. 위 핸들러가 찍는 {@code ErrorType.name()} 은
      *       {@code INTERNAL_SERVER_ERROR} 고정이라 502·503·리다이렉트를 구분할 수 없다.
      *   <li><b>한 번만 남긴다.</b> 처음에는 {@code CommonErrorDecoder} 에서 찍었는데, 그러면
-     *       디코더 한 줄 + 이 핸들러 한 줄로 ERROR 가 둘이 됐다. ML 모듈가 죽어서 초당 50 요청이
+     *       디코더 한 줄 + 이 핸들러 한 줄로 ERROR 가 둘이 됐다. ML 모듈이 죽어서 초당 50 요청이
      *       실패하면 초당 ERROR 100 줄이다. UG-291 이 gate 에서 없앤 이중 기록과 같은 문제다.
      * </ul>
      *

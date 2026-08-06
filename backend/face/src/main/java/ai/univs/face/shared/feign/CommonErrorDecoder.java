@@ -27,6 +27,16 @@ public class CommonErrorDecoder implements ErrorDecoder {
         if (status >= 400 && status < 500) {
             FeignResponseApi<?> feignResponse = parseFeignResponse(s, response);
             FeignErrors feignErrors = feignResponse.getErrors();
+
+            // 본문이 우리 포맷으로 파싱은 됐는데 errors 가 비어 있는 경우 (델타 리뷰 지적).
+            // 예전에는 여기서 곧바로 NPE 가 나 handleGlobalException 으로 떨어졌다 — ERROR 에
+            // 90여 줄 스택트레이스가 붙고 클라이언트는 500 을 받았다. palm 쪽 디코더는 같은
+            // 상황을 이미 정상 처리하고 있어 face 만 예외였다. gate 의 RemoteCallException
+            // javadoc 도 이 경우를 명시적으로 덮는다고 적고 있다.
+            if (feignErrors == null) {
+                throw new UpstreamCallException(status, s, "errors 없는 4xx 응답");
+            }
+
             return new CustomFeignException(feignErrors.getCode(), feignErrors.getType(), feignErrors.getMessage());
         }
 

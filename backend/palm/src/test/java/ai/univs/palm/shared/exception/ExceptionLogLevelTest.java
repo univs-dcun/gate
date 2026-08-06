@@ -247,7 +247,7 @@ class ExceptionLogLevelTest {
     @DisplayName("ML 모듈 호출 실패는 ERROR 한 줄이고 스택트레이스가 없다")
     void 하위_호출_실패는_한_줄이다() {
         // 반박 리뷰의 MAJOR. 처음에는 CommonErrorDecoder 가 한 줄, 이 핸들러가 스택트레이스와
-        // 함께 또 한 줄을 남겨 한 사건에 ERROR 가 둘이었다. ML 모듈가 죽어 초당 50 요청이
+        // 함께 또 한 줄을 남겨 한 사건에 ERROR 가 둘이었다. ML 모듈이 죽어 초당 50 요청이
         // 실패하면 초당 ERROR 100 줄에 스택트레이스 50 개다.
         handler.handleUpstreamCallException(
                 new UpstreamCallException(503, "PalmClient#extract()", "Service Unavailable"));
