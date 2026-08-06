@@ -1,5 +1,8 @@
 package ai.univs.gate.shared.logging;
 
+import ai.univs.gate.shared.exception.BusinessException;
+import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.web.enums.ErrorType;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,10 +68,42 @@ public class LoggingAspect {
                     httpMethod, uri, controller, methodName, System.currentTimeMillis() - start);
             return result;
         } catch (Throwable ex) {
-            log.error("[EXCEPTION] {} {} | {}.{} | duration={}ms | exception={}",
-                    httpMethod, uri, controller, methodName, System.currentTimeMillis() - start, ex.getMessage());
+            // UG-290/291: 이 줄은 [REQUEST] 의 종결선이다 — 소요시간이 여기에만 있으므로 지우면
+            // 요청이 어떻게 끝났는지 알 수 없게 된다. 대신 두 가지를 바꿨다.
+            //
+            //  1. 수준을 오류 성격에 맞춘다. 클라이언트 입력이 원인인 4xx 를 ERROR 로 남기면
+            //     에러 대시보드에 오탐이 쌓여 진짜 5xx 가 묻힌다.
+            //  2. 예외 상세는 여기서 늘리지 않는다. GlobalExceptionHandler 가 코드·메시지·
+            //     스택트레이스를 담당하고, 이 줄은 "어느 요청이 얼마 만에 어떻게 끝났는가" 만 맡는다.
+            //     두 줄이 남지만 겹치는 내용은 예외 이름 하나뿐이다.
+            String line = "[EXCEPTION] {} {} | {}.{} | duration={}ms | exception={}";
+            Object[] args = {httpMethod, uri, controller, methodName,
+                    System.currentTimeMillis() - start, ex.getMessage()};
+            if (isClientError(ex)) {
+                log.warn(line, args);
+            } else {
+                log.error(line, args);
+            }
             throw ex;
         }
+    }
+
+    /**
+     * 이 예외가 클라이언트 입력 문제인지 (UG-290).
+     *
+     * <p>판정 기준은 {@link ErrorType#getStatus()} 다. 값이 다 채워져 있는데도 프로덕션 코드에서
+     * 한 번도 읽히지 않던 죽은 코드였다 — 별도 분류를 새로 만들기보다 이미 정확한 값을 살려 쓴다.
+     *
+     * <p>{@link CustomFeignException} 은 {@code ErrorType} 매핑이 없지만, 만들어지는 지점인
+     * {@code CommonErrorDecoder} 가 상태 코드 400~499 일 때만 이 타입을 반환하므로 언제나 4xx 다.
+     *
+     * <p>그 밖은 5xx 로 본다. 분류를 모르는 예외를 조용한 쪽으로 보내면 진짜 장애를 놓친다.
+     */
+    private boolean isClientError(Throwable ex) {
+        if (ex instanceof BusinessException businessException) {
+            return businessException.getErrorType().getStatus().is4xxClientError();
+        }
+        return ex instanceof CustomFeignException;
     }
 
     private Map<String, Object> extractRequestData(ProceedingJoinPoint joinPoint) {
