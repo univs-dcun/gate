@@ -26,9 +26,12 @@ import java.util.function.Supplier;
  *   <li>{@link FeignException} — 본문 디코딩 실패. {@code ResponseHandler.handleResponse} 가
  *       {@code FeignException.errorReading()} 으로 감싼다. <b>200 응답에서도 발생한다</b>
  *       (프록시가 본문을 잘라 보내는 경우 등). {@code RetryableException} 은 이것의 하위 타입이다.
- *   <li>인코딩·인터셉터 단계의 예외 — 요청 템플릿을 만드는 시점은 Feign 의 재시도 블록
- *       <b>바깥</b>이라 아무 가공 없이 나온다. 이 람다 안에서 일어나므로 여기서 잡힌다.
+ *   <li>인코딩 실패 — {@code EncodeException} 은 {@link FeignException} 하위라 함께 잡힌다.
  * </ul>
+ *
+ * <p>다만 {@code CommonFeignConfig} 의 인터셉터가 던지는 임의의 {@code RuntimeException} 은
+ * {@link FeignException} 이 아니므로 여기서 잡히지 않는다 — 아래 "여기서 잡지 않는 것" 과 같은
+ * 취급이다.
  *
  * <p>{@code FeignException} 을 잡아도 우리 디코더가 만든 예외는 삼키지 않는다 —
  * {@code CustomFeignException} 과 {@link RemoteCallException} 은 우리 클래스이고

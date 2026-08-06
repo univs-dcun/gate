@@ -17,19 +17,25 @@ import lombok.Getter;
  * {@code FaceFeatureService.createFaceFeature} 처럼 특징점과 이력을 함께 쓰는 경로에서는
  * 반쯤 등록된 특징점이 남는다.
  *
- * <p>두 가지 경로로 만들어진다.
+ * <p>세 가지 경로로 만들어진다.
  * <ul>
- *   <li>{@code CommonErrorDecoder} — 하위 서비스가 3xx/5xx 를 <b>응답</b>한 경우.
- *       {@link #upstreamStatus} 에 그 코드가 담긴다.
- *   <li>{@code RemoteCalls} — 연결 거부·타임아웃처럼 <b>응답 자체가 없는</b> 경우.
- *       {@code ErrorDecoder} 는 상태 코드 300 이상의 응답이 도착했을 때만 불리므로 이 경우를
- *       잡지 못한다. Feign 이 던지는 {@code RetryableException} 을 그 지점에서 번역한다.
- *       상태 코드가 없어 {@link #NO_RESPONSE} 가 들어간다.
+ *   <li>{@code CommonErrorDecoder} — 하위 서비스가 3xx/5xx 를 <b>응답</b>했거나, 4xx 인데 본문이
+ *       우리 포맷이 아니거나 {@code errors} 가 비어 있는 경우. {@link #upstreamStatus} 에
+ *       그 코드가 담긴다.
+ *   <li>{@code RemoteCalls.of} — Feign 이 {@code FeignException} 을 던진 경우. 연결 거부·타임아웃
+ *       ({@code RetryableException}) 과 본문 디코딩 실패({@code errorReading}) 를 함께 덮는다.
+ *       {@code ErrorDecoder} 는 상태 코드 300 이상의 응답이 도착했을 때만 불리므로 이 경우들을
+ *       잡지 못한다. 디코딩 실패는 <b>HTTP 200 에서도 일어난다.</b>
+ *   <li>{@code RemoteCalls.data} — HTTP 200 인데 envelope 의 {@code data} 가 비어 있는 경우.
+ *       예외조차 아니어서 예전에는 곧바로 NPE 가 났다.
  * </ul>
  *
+ * <p>뒤의 두 경로는 상태 코드가 없거나 의미가 없어 {@link #NO_RESPONSE} 가 들어간다.
+ *
  * <p>{@link BusinessException} 을 상속하므로 {@code GlobalExceptionHandler} 가 기존과 동일한
- * {@code PJ-005} 400 응답을 만든다. <b>클라이언트가 보는 계약은 바뀌지 않는다.</b> 오류 코드를
- * 새로 만들면 그 코드로 분기하던 고객 코드가 깨지므로 일부러 유지했다.
+ * {@code PJ-005} 400 응답을 만든다. 오류 코드로 분기하던 고객 코드는 영향이 없다. 다만 위 세
+ * 경로 중 예전에 NPE 로 <b>500</b> 이 나가던 두 가지(4xx + {@code errors} 없음, 200 +
+ * {@code data} 없음)는 이제 400 이 된다 — 본문은 같고 상태 코드만 바뀐다.
  *
  * <p>{@link #upstreamStatus} 와 {@link #operation} 은 로그용이다. 응답에는 넣지 않는다 — 하위
  * 서비스의 상태 코드나 내부 호출 이름을 노출하면 내부 구성이 드러난다.

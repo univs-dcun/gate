@@ -382,6 +382,7 @@ class IdentifyFaceUseCaseTest {
         assertThat(captor.getValue().getClientId()).isNotEqualTo(ACCOUNT_ID.toString());
     }
 
+    @Test
     @DisplayName("UG-280: 라이브니스 계열이 아닌 4xx 는 실패 사유를 남긴 뒤 예외를 전파한다")
     void execute_nonLivenessFeignError_recordsReasonThenPropagates() {
         // given: 예전에는 사유를 남기지 않고 곧바로 rethrow 했다. noRollbackFor 로 행은

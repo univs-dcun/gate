@@ -20,7 +20,9 @@ public class CommonErrorDecoder implements ErrorDecoder {
 
         if (status >= 400 && status < 500) {
             FeignResponseApi<?> feignResponse = parseFeignResponse(s, response);
-            FeignErrors feignErrors = feignResponse.getErrors();
+            // 본문이 리터럴 null 이면 readValue 가 null 을 돌려준다 — 파싱은 성공했으므로
+            // parseFeignResponse 의 catch 에 걸리지 않는다. 여기서 막지 않으면 다음 줄이 NPE 다.
+            FeignErrors feignErrors = feignResponse == null ? null : feignResponse.getErrors();
             if (feignErrors == null) {
                 // UG-280 반박 리뷰: 본문이 우리 envelope 모양이긴 하나 errors 가 비어 있는 경우다
                 // (예: 프록시·사이드카가 같은 포맷으로 {"success":false,"data":null} 만 반환).

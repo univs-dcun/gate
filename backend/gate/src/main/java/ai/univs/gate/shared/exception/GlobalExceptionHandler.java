@@ -45,8 +45,8 @@ public class GlobalExceptionHandler {
      * 위 핸들러가 잡는다. 따로 둔 이유는 두 가지다.
      *
      * <ul>
-     *   <li>하위 서비스의 상태 코드를 로그에 남긴다. 위 핸들러는 {@code ex.getMessage()} 만
-     *       찍는데 그 값은 {@code INTERNAL_SERVER_ERROR} 라 502·503·타임아웃을 구분할 수 없다.
+     *   <li>하위 서비스의 상태 코드를 로그에 남긴다. 위 핸들러가 찍는 {@code ex.getMessage()} 는
+     *       {@code INTERNAL_SERVER_ERROR} 고정이라 502·503·타임아웃을 구분할 수 없다.
      *   <li>스택트레이스를 남기지 않는다. 원인은 하위 서비스이고 우리 쪽 호출 스택은 매번 같아서
      *       90여 줄이 반복될 뿐이다. 하위 장애 시에는 이 예외가 대량으로 발생한다.
      * </ul>

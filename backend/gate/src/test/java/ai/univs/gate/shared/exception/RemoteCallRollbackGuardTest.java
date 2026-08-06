@@ -39,19 +39,59 @@ class RemoteCallRollbackGuardTest {
     private static final Path SOURCE_ROOT = Path.of("src/main/java");
     private static final String REQUIRED = "RemoteCallException";
 
-    /** 엉뚱한 트리를 훑고 조용히 통과하는 것을 막는다. 현재 11곳. */
-    private static final int MIN_SITES = 10;
+    /** 엉뚱한 트리를 훑고 조용히 통과하는 것을 막는다. 한 곳을 통째로 지워도 통과하지 않도록 실제 수와 맞춘다. */
+    private static final int MIN_SITES = 11;
 
     private static final Pattern TRANSACTIONAL = Pattern.compile("@Transactional\\s*\\(");
 
+    /**
+     * 애노테이션 원문에서 주석을 지운다.
+     *
+     * <p>3차 반박 리뷰의 지적. 이 레포의 {@code @Transactional} 선언은 괄호 <b>안</b>에 UG-280 을
+     * 설명하는 주석을 달고 있고, 그 주석에 {@code RemoteCallException} 이라는 낱말이 들어 있다.
+     * 원문을 그대로 {@code contains} 하면 {@code noRollbackFor} 를 예전 상태로 되돌려도 주석 때문에
+     * 계속 통과한다 — 이 가드가 막겠다고 선언한 바로 그 회귀를 못 잡는다.
+     */
+    private static final Pattern COMMENT = Pattern.compile("//[^\\n]*|/\\*.*?\\*/", Pattern.DOTALL);
+
+    /** {@code noRollbackFor = {A.class, B.class}} 와 중괄호 없는 단일 값 형태를 모두 받는다. */
+    private static final Pattern NO_ROLLBACK_FOR =
+            Pattern.compile("noRollbackFor\\s*=\\s*(\\{[^}]*}|[\\w.]+)");
+
     private record Site(Path file, int line, String annotation, String fileText) {
+        /** 주석을 지운 애노테이션. 판정은 반드시 이쪽으로 한다. */
+        String code() {
+            return COMMENT.matcher(annotation).replaceAll("");
+        }
+
         boolean isRequiresNew() {
-            return annotation.contains("REQUIRES_NEW");
+            return code().contains("REQUIRES_NEW");
+        }
+
+        /** {@code noRollbackFor} 의 값 부분만. 선언이 없으면 빈 문자열. */
+        String noRollbackFor() {
+            Matcher m = NO_ROLLBACK_FOR.matcher(code());
+            return m.find() ? m.group(1) : "";
+        }
+
+        /** 주석이 아니라 실제 {@code noRollbackFor} 목록에 들어 있는지. */
+        boolean declaresRemoteCall() {
+            return noRollbackFor().contains(REQUIRED + ".class");
         }
 
         String describe() {
             return "%s:%d".formatted(file, line);
         }
+    }
+
+    /** {@code index} 앞쪽에서 가장 가까운 문장 경계({@code ; { }})의 위치. 없으면 -1. */
+    private static int boundaryBefore(String text, int index) {
+        if (index <= 0) {
+            return -1;
+        }
+        return Math.max(
+                Math.max(text.lastIndexOf(';', index - 1), text.lastIndexOf('{', index - 1)),
+                text.lastIndexOf('}', index - 1));
     }
 
     /** {@code @Transactional(...)} 을 괄호 짝을 세어 통째로 잘라낸다 — 줄바꿈 위치와 무관하다. */
@@ -100,7 +140,7 @@ class RemoteCallRollbackGuardTest {
                     .hasSizeGreaterThanOrEqualTo(MIN_SITES);
 
             List<String> bad = requiresNew.stream()
-                    .filter(s -> !s.annotation().contains(REQUIRED))
+                    .filter(s -> !s.declaresRemoteCall())
                     .map(Site::describe)
                     .toList();
 
@@ -121,7 +161,7 @@ class RemoteCallRollbackGuardTest {
             // 행이 커밋돼도 failure_type 이 NULL 이면 응답을 받지 못하고 끊긴 요청과 구분되지 않는다.
             // UG-280 이 고친 것의 절반이 이쪽이라 선언만으로는 부족하다.
             List<String> missingCatch = findTransactionalSites().stream()
-                    .filter(s -> s.annotation().contains(REQUIRED))
+                    .filter(Site::declaresRemoteCall)
                     .filter(s -> !s.fileText().contains("catch (RemoteCallException"))
                     .map(Site::describe)
                     .distinct()
@@ -146,7 +186,33 @@ class RemoteCallRollbackGuardTest {
 
             assertThat(multiline).isNotEmpty();
             assertThat(multiline.stream().filter(Site::isRequiresNew).toList())
-                    .allSatisfy(s -> assertThat(s.annotation()).contains(REQUIRED));
+                    .allSatisfy(s -> assertThat(s.noRollbackFor()).contains(REQUIRED + ".class"));
+        }
+
+        @Test
+        @DisplayName("판정은 주석이 아니라 선언을 본다 — 이 가드 자신의 회귀 테스트")
+        void 주석은_선언으로_치지_않는다() {
+            // 3차 반박 리뷰: 이 레포의 선언은 괄호 안에 RemoteCallException 을 언급하는 주석을
+            // 달고 있다. 원문을 그대로 contains 하면 noRollbackFor 를 되돌려도 통과해 버려서,
+            // 가드가 존재하지만 아무것도 막지 못하는 상태가 된다. 파서를 직접 검증한다.
+            Site 주석만 = new Site(SOURCE_ROOT, 1, """
+                    @Transactional(
+                            propagation = Propagation.REQUIRES_NEW,
+                            // UG-280: RemoteCallException 이 목록에 있어야 이력이 커밋된다
+                            noRollbackFor = {CustomFeignException.class}
+                    )""", "");
+            Site 선언까지 = new Site(SOURCE_ROOT, 1, """
+                    @Transactional(
+                            propagation = Propagation.REQUIRES_NEW,
+                            // UG-280: RemoteCallException 이 목록에 있어야 이력이 커밋된다
+                            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
+                    )""", "");
+
+            assertThat(주석만.isRequiresNew()).isTrue();
+            assertThat(주석만.declaresRemoteCall())
+                    .as("주석에만 있는 낱말을 선언으로 오인하면 가드가 무력화된다")
+                    .isFalse();
+            assertThat(선언까지.declaresRemoteCall()).isTrue();
         }
     }
 
@@ -190,17 +256,45 @@ class RemoteCallRollbackGuardTest {
             // ErrorDecoder 는 상태 코드 300 이상의 "응답이 도착했을 때만" 불린다. 연결 거부·타임아웃은
             // Feign 이 RetryableException 을 던지고, 그것은 BusinessException 계열이 아니라
             // noRollbackFor 에 걸리지 않는다. RemoteCalls 가 그 경계에서 번역한다.
-            List<String> unwrapped = new ArrayList<>();
+            // 3차 반박 리뷰: 예전에는 (Face|Palm)Service.java 두 파일만, 그것도 한 줄 단위로 봤다.
+            // 새 @FeignClient 를 다른 클래스에서 부르거나 호출을 줄바꿈하면 그대로 빠져나갔다.
+            // 이제 @FeignClient 인터페이스 이름을 트리에서 모은 뒤, src/main 전체를 문장 단위로 본다.
+            List<String> clientTypes = new ArrayList<>();
+            List<Path> sources;
             try (Stream<Path> paths = Files.walk(SOURCE_ROOT)) {
-                List<Path> services = paths
-                        .filter(f -> f.getFileName().toString().matches("(Face|Palm)Service\\.java"))
-                        .toList();
-                assertThat(services).hasSize(2);
-                for (Path p : services) {
-                    for (String line : Files.readString(p).split("\n")) {
-                        if (line.contains("Client.") && !line.contains("RemoteCalls.")) {
-                            unwrapped.add(p + " — " + line.trim());
-                        }
+                sources = paths.filter(f -> f.toString().endsWith(".java")).toList();
+            }
+            for (Path p : sources) {
+                String text = Files.readString(p);
+                if (text.contains("@FeignClient")) {
+                    clientTypes.add(p.getFileName().toString().replace(".java", ""));
+                }
+            }
+            assertThat(clientTypes)
+                    .as("@FeignClient 인터페이스를 하나도 못 찾았다면 이 검사가 무의미하다")
+                    .isNotEmpty();
+
+            // faceClient / palmClient 같은 필드명 — 인터페이스명의 첫 글자만 낮춘 형태를 쓴다.
+            String fields = clientTypes.stream()
+                    .map(t -> Character.toLowerCase(t.charAt(0)) + t.substring(1))
+                    .reduce((a, b) -> a + "|" + b)
+                    .orElseThrow();
+            Pattern call = Pattern.compile("\\b(" + fields + ")\\s*\\.\\s*\\w+\\s*\\(");
+
+            List<String> unwrapped = new ArrayList<>();
+            for (Path p : sources) {
+                String text = COMMENT.matcher(Files.readString(p)).replaceAll("");
+                Matcher m = call.matcher(text);
+                while (m.find()) {
+                    // 이 호출이 속한 문장의 시작점까지 거슬러 올라가 RemoteCalls 경유인지 본다.
+                    // 줄바꿈·들여쓰기와 무관하게 판정된다.
+                    int from = boundaryBefore(text, m.start());
+                    String statement = text.substring(from + 1, m.end());
+                    // 람다 본문을 중괄호로 감싼 형태( () -> { client.xxx(...); } )는 한 단계 더
+                    // 거슬러 올라가야 RemoteCalls 가 보인다.
+                    String widened = text.substring(boundaryBefore(text, from) + 1, m.end());
+                    if (!statement.contains("RemoteCalls.") && !widened.contains("RemoteCalls.")) {
+                        unwrapped.add(p + " — " + statement.strip().replaceAll("\\s+", " "));
                     }
                 }
             }
