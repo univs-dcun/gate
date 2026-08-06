@@ -42,6 +42,9 @@ class RemoteCallRollbackGuardTest {
     /** 엉뚱한 트리를 훑고 조용히 통과하는 것을 막는다. 한 곳을 통째로 지워도 통과하지 않도록 실제 수와 맞춘다. */
     private static final int MIN_SITES = 11;
 
+    /** 같은 목적의 하한선. Feign 호출 지점이 사라지면 래핑 검사가 공회전한다. 현재 15곳. */
+    private static final int MIN_FEIGN_CALLS = 15;
+
     private static final Pattern TRANSACTIONAL = Pattern.compile("@Transactional\\s*\\(");
 
     /**
@@ -52,7 +55,23 @@ class RemoteCallRollbackGuardTest {
      * 원문을 그대로 {@code contains} 하면 {@code noRollbackFor} 를 예전 상태로 되돌려도 주석 때문에
      * 계속 통과한다 — 이 가드가 막겠다고 선언한 바로 그 회귀를 못 잡는다.
      */
-    private static final Pattern COMMENT = Pattern.compile("//[^\\n]*|/\\*.*?\\*/", Pattern.DOTALL);
+    private static final Pattern COMMENT = Pattern.compile(
+            // 문자열 리터럴을 먼저 매칭해 통째로 보존한다. 이게 없으면 "https://..." 의 // 를
+            // 주석으로 오인해 리터럴 뒷부분과 문장 종결 세미콜론까지 지운다 (실제로 이 레포의
+            // SwaggerDescriptions·SwaggerConfig 에 그런 리터럴이 있다).
+            "\"(?:\\\\.|[^\"\\\\])*\"|//[^\\n]*|/\\*.*?\\*/", Pattern.DOTALL);
+
+    /** 주석만 지우고 문자열 리터럴은 그대로 둔다. */
+    private static String stripComments(String source) {
+        Matcher m = COMMENT.matcher(source);
+        StringBuilder out = new StringBuilder();
+        while (m.find()) {
+            m.appendReplacement(out, Matcher.quoteReplacement(
+                    m.group().startsWith("\"") ? m.group() : ""));
+        }
+        m.appendTail(out);
+        return out.toString();
+    }
 
     /** {@code noRollbackFor = {A.class, B.class}} 와 중괄호 없는 단일 값 형태를 모두 받는다. */
     private static final Pattern NO_ROLLBACK_FOR =
@@ -61,7 +80,7 @@ class RemoteCallRollbackGuardTest {
     private record Site(Path file, int line, String annotation, String fileText) {
         /** 주석을 지운 애노테이션. 판정은 반드시 이쪽으로 한다. */
         String code() {
-            return COMMENT.matcher(annotation).replaceAll("");
+            return stripComments(annotation);
         }
 
         boolean isRequiresNew() {
@@ -84,14 +103,49 @@ class RemoteCallRollbackGuardTest {
         }
     }
 
-    /** {@code index} 앞쪽에서 가장 가까운 문장 경계({@code ; { }})의 위치. 없으면 -1. */
-    private static int boundaryBefore(String text, int index) {
-        if (index <= 0) {
-            return -1;
+    private static final Pattern REMOTE_CALLS_BEFORE =
+            Pattern.compile("(?s).*RemoteCalls\\s*\\.\\s*\\w+\\s*$");
+
+    /**
+     * {@code callStart} 위치의 호출이 {@code RemoteCalls.xxx(...)} 안에 들어 있는지.
+     *
+     * <p>델타 검증의 지적. 처음에는 "문장 경계까지 거슬러 올라가 한 단계 되감기" 로 판정했는데
+     * 오탐과 미탐을 동시에 만들었다 — 다중문 람다로 정상적으로 감싼 호출을 위반으로 잡고
+     * ({@code () -> { var r = ...; return client.x(r); }}), 감싼 호출 바로 뒤에 있는 안 감싼
+     * 호출은 앞 문장의 {@code RemoteCalls.} 를 보고 통과시켰다.
+     *
+     * <p>지금은 감싸는 스코프를 실제로 한 겹씩 벗겨 나간다. 여는 괄호를 만나면 그 앞이
+     * {@code RemoteCalls.xxx} 인지 보고, 아니면 한 겹 더 바깥으로 간다. 여는 중괄호를 만나면
+     * 람다 본문({@code ->} 뒤)일 때만 계속 나가고, 메서드·블록 본문이면 거기서 끝난다.
+     */
+    private static boolean wrappedByRemoteCalls(String text, int callStart) {
+        int paren = 0;
+        int brace = 0;
+        for (int i = callStart - 1; i >= 0; i--) {
+            char c = text.charAt(i);
+            if (c == ')') {
+                paren++;
+            } else if (c == '(') {
+                if (paren == 0) {
+                    if (REMOTE_CALLS_BEFORE.matcher(text.substring(0, i)).matches()) {
+                        return true;
+                    }
+                    // 다른 호출이었다 — 한 겹 더 바깥을 본다
+                } else {
+                    paren--;
+                }
+            } else if (c == '}') {
+                brace++;
+            } else if (c == '{') {
+                if (brace == 0) {
+                    // 람다 본문이면 계속 바깥으로, 아니면 여기가 스코프의 끝이다
+                    return text.substring(0, i).stripTrailing().endsWith("->")
+                            && wrappedByRemoteCalls(text, i);
+                }
+                brace--;
+            }
         }
-        return Math.max(
-                Math.max(text.lastIndexOf(';', index - 1), text.lastIndexOf('{', index - 1)),
-                text.lastIndexOf('}', index - 1));
+        return false;
     }
 
     /** {@code @Transactional(...)} 을 괄호 짝을 세어 통째로 잘라낸다 — 줄바꿈 위치와 무관하다. */
@@ -213,6 +267,31 @@ class RemoteCallRollbackGuardTest {
                     .as("주석에만 있는 낱말을 선언으로 오인하면 가드가 무력화된다")
                     .isFalse();
             assertThat(선언까지.declaresRemoteCall()).isTrue();
+
+            // 델타 검증의 지적: 위 픽스처만으로는 두 방어(주석 제거 / 값 부분만 추출)가 서로를
+            // 가려서, 둘 중 하나만 되돌리는 뮤테이션이 살아남는다. 축을 분리한다.
+            //
+            // (1) noRollbackFor 밖에 낱말이 있는 형태 — "값만 추출" 이 없으면 통과해 버린다.
+            Site 밖에만 = new Site(SOURCE_ROOT, 1, """
+                    @Transactional(
+                            propagation = Propagation.REQUIRES_NEW,
+                            rollbackFor = RemoteCallException.class,
+                            noRollbackFor = {CustomFeignException.class}
+                    )""", "");
+            assertThat(밖에만.declaresRemoteCall())
+                    .as("noRollbackFor 가 아닌 다른 속성의 값을 선언으로 세면 안 된다")
+                    .isFalse();
+
+            // (2) 블록 주석 형태 — "주석 제거" 가 없으면 통과해 버린다.
+            Site 블록주석 = new Site(SOURCE_ROOT, 1, """
+                    @Transactional(
+                            propagation = Propagation.REQUIRES_NEW,
+                            noRollbackFor = {/* RemoteCallException.class 는 뺐다 */
+                                    CustomFeignException.class}
+                    )""", "");
+            assertThat(블록주석.declaresRemoteCall())
+                    .as("블록 주석 안의 낱말도 선언이 아니다")
+                    .isFalse();
         }
     }
 
@@ -274,30 +353,46 @@ class RemoteCallRollbackGuardTest {
                     .as("@FeignClient 인터페이스를 하나도 못 찾았다면 이 검사가 무의미하다")
                     .isNotEmpty();
 
-            // faceClient / palmClient 같은 필드명 — 인터페이스명의 첫 글자만 낮춘 형태를 쓴다.
-            String fields = clientTypes.stream()
-                    .map(t -> Character.toLowerCase(t.charAt(0)) + t.substring(1))
-                    .reduce((a, b) -> a + "|" + b)
-                    .orElseThrow();
-            Pattern call = Pattern.compile("\\b(" + fields + ")\\s*\\.\\s*\\w+\\s*\\(");
-
-            List<String> unwrapped = new ArrayList<>();
+            // 델타 검증의 지적: 필드명을 인터페이스명에서 유추하면(FaceClient → faceClient)
+            // 관례를 벗어난 이름을 쓰는 순간 정규식이 0건 매칭하고 검사는 조용히 초록이 된다.
+            // 그래서 선언된 "타입" 으로 필드명을 찾는다 — 이름이 무엇이든 걸린다.
+            Pattern field = Pattern.compile(
+                    "\\b(?:" + String.join("|", clientTypes) + ")\\s+(\\w+)\\s*[;,)=]");
+            List<String> fieldNames = new ArrayList<>();
             for (Path p : sources) {
-                String text = COMMENT.matcher(Files.readString(p)).replaceAll("");
-                Matcher m = call.matcher(text);
-                while (m.find()) {
-                    // 이 호출이 속한 문장의 시작점까지 거슬러 올라가 RemoteCalls 경유인지 본다.
-                    // 줄바꿈·들여쓰기와 무관하게 판정된다.
-                    int from = boundaryBefore(text, m.start());
-                    String statement = text.substring(from + 1, m.end());
-                    // 람다 본문을 중괄호로 감싼 형태( () -> { client.xxx(...); } )는 한 단계 더
-                    // 거슬러 올라가야 RemoteCalls 가 보인다.
-                    String widened = text.substring(boundaryBefore(text, from) + 1, m.end());
-                    if (!statement.contains("RemoteCalls.") && !widened.contains("RemoteCalls.")) {
-                        unwrapped.add(p + " — " + statement.strip().replaceAll("\\s+", " "));
+                Matcher fm = field.matcher(stripComments(Files.readString(p)));
+                while (fm.find()) {
+                    if (!fieldNames.contains(fm.group(1))) {
+                        fieldNames.add(fm.group(1));
                     }
                 }
             }
+            assertThat(fieldNames)
+                    .as("@FeignClient 타입으로 선언된 필드를 하나도 못 찾았다 — 검사가 무의미하다")
+                    .isNotEmpty();
+
+            Pattern call = Pattern.compile(
+                    "\\b(" + String.join("|", fieldNames) + ")\\s*\\.\\s*\\w+\\s*\\(");
+
+            int callSites = 0;
+            List<String> unwrapped = new ArrayList<>();
+            for (Path p : sources) {
+                String text = stripComments(Files.readString(p));
+                Matcher m = call.matcher(text);
+                while (m.find()) {
+                    callSites++;
+                    if (!wrappedByRemoteCalls(text, m.start())) {
+                        unwrapped.add(p + " — " + text.substring(m.start(), m.end()).strip());
+                    }
+                }
+            }
+
+            // 위반이 0건인 것과 볼 것이 0건인 것은 다르다. 후자를 초록으로 넘기면 이 가드는
+            // 존재하되 아무것도 지키지 않는 상태가 된다 — UG-280 3차 리뷰가 잡은 실패 양상이다.
+            assertThat(callSites)
+                    .as("Feign 호출 지점을 %d 건밖에 못 찾았다. 현재 15건이다 — 검사 범위가 무너졌는지 볼 것",
+                            callSites)
+                    .isGreaterThanOrEqualTo(MIN_FEIGN_CALLS);
 
             assertThat(unwrapped)
                     .as("""
