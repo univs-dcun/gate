@@ -27,9 +27,12 @@ import org.junit.jupiter.api.Test;
  * <p>규칙은 전부 <b>포스트그레스 쌍둥이에서 복사해 올 때 딸려 오는 것</b>들이다 — 실제로 UG-292 가
  * 그렇게 생겼다. 포스트그레스는 허용하고 오라클은 거부하는 문법이라 쌍둥이 쪽에서는 드러나지 않는다.
  *
- * <p><b>주의.</b> 오라클 환경은 이 SQL 이 옳더라도 아직 기동하지 않는다 — Flyway 10 부터 DB 지원이
- * 모듈로 분리됐는데 {@code org.flywaydb:flyway-database-oracle} 의존성이 어느 서비스에도 없다
- * (UG-296). 그 전까지 이 테스트의 초록은 "오라클 납품이 된다" 는 뜻이 아니다.
+ * <p><b>주의.</b> 이 테스트의 초록은 여전히 "오라클 납품이 된다" 는 뜻이 아니다. UG-296 이
+ * {@code org.flywaydb:flyway-database-oracle} 을 넣어 <b>부팅은</b> 되게 만들었지만
+ * ({@code FlywayOracleSupportTest} 가 지킨다), 실제 오라클 인스턴스에서 V1~V22 를 끝까지 돌려
+ * 본 적은 아직 없다. 그리고 {@code gate-config} 의 {@code baseline-on-migrate: true} +
+ * {@code baseline-version: 21} 이 프로파일 무관으로 걸려 있어, 비어 있지 않은 스키마에서는
+ * V1~V21 이 통째로 스킵된다.
  */
 @DisplayName("오라클 마이그레이션 문법 가드 (UG-292)")
 class OracleMigrationSyntaxTest {

@@ -2,6 +2,8 @@ package ai.univs.palm.shared.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,5 +51,31 @@ class FlywayOracleSupportTest {
         assertThat(plugins)
                 .as("대조군 — 이것까지 없으면 SPI 조회 자체가 잘못된 것이다")
                 .contains(POSTGRESQL);
+    }
+
+    /**
+     * 마이그레이션 위치가 오라클 폴더를 가리키는지 (리뷰 지적).
+     *
+     * <p>플러그인이 있어도 {@code application-oracle.yml} 의
+     * {@code spring.flyway.locations} 가 사라지면 Flyway 는 기본값
+     * {@code classpath:db/migration} 으로 되돌아간다. 그 폴더는 없으므로 <b>아무것도 실행하지
+     * 않고 조용히 성공한다.</b> 부팅이 되니 더 알아채기 어렵다.
+     *
+     * <p>스프링 컨텍스트를 띄우지 않고 리소스 원문을 읽는다 — 이 서비스에는 슬라이스 테스트
+     * 인프라가 없다 (UG-300).
+     */
+    @Test
+    @DisplayName("오라클 프로파일이 db/migration/oracle 을 가리킨다")
+    void 오라클_프로파일이_오라클_폴더를_가리킨다() throws Exception {
+        try (InputStream in = getClass().getResourceAsStream("/application-oracle.yml")) {
+            assertThat(in)
+                    .as("application-oracle.yml 이 사라지면 오라클 프로파일 자체가 동작하지 않는다")
+                    .isNotNull();
+
+            String yml = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(yml)
+                    .as("이 설정이 없으면 Flyway 가 db/migration 으로 되돌아가 아무것도 실행하지 않는다")
+                    .contains("classpath:db/migration/oracle");
+        }
     }
 }
