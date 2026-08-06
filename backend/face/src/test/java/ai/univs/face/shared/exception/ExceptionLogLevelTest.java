@@ -217,4 +217,62 @@ class ExceptionLogLevelTest {
                 .toList())
                 .containsExactly(ErrorType.INTERNAL_SERVER_ERROR);
     }
+
+    @Test
+    @DisplayName("하위 모듈이 type 을 안 주면 NPE 없이 WARN 으로 남긴다")
+    void type_이_없어도_터지지_않는다() {
+        // 반박 리뷰가 찾은 생존 변이. logUpstream 의 type != null 가드를 지워도 전 테스트가
+        // 초록이었다. Set.of(...).contains(null) 은 NPE 이므로, 그 가드가 사라지면
+        // **예외 핸들러 안에서** NPE 가 난다 — 원래 오류가 통째로 가려진다.
+        //
+        // 도달 가능한 경로다. CommonErrorDecoder 가 feignErrors.getType() 을 그대로 싣는데,
+        // ML 모듈 응답에 type 이 없으면 null 이 들어온다.
+        handler.CustomFeignException(new CustomFeignException("ML-1", null, "no type field"));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.WARN);
+    }
+
+    @Test
+    @DisplayName("INTERNAL_ERROR 도 하위 자기 오류로 본다")
+    void INTERNAL_ERROR_도_ERROR() {
+        // 이 값은 판정 집합에 있는데 어떤 테스트도 지나가지 않았다 — 지워도 초록이었다.
+        handler.CustomFeignException(
+                new CustomFeignException("ML-500", "INTERNAL_ERROR", "boom"));
+
+        assertThat(onlyEvent().getLevel()).isEqualTo(Level.ERROR);
+    }
+
+    @Test
+    @DisplayName("ML 모듈 호출 실패는 ERROR 한 줄이고 스택트레이스가 없다")
+    void 하위_호출_실패는_한_줄이다() {
+        // 반박 리뷰의 MAJOR. 처음에는 CommonErrorDecoder 가 한 줄, 이 핸들러가 스택트레이스와
+        // 함께 또 한 줄을 남겨 한 사건에 ERROR 가 둘이었다. ML 매처가 죽어 초당 50 요청이
+        // 실패하면 초당 ERROR 100 줄에 스택트레이스 50 개다.
+        handler.handleUpstreamCallException(
+                new UpstreamCallException(503, "FaceClient#extract()", "Service Unavailable"));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getThrowableProxy())
+                .as("원인은 하위 모듈이고 우리 호출 스택은 매번 같다")
+                .isNull();
+        assertThat(event.getFormattedMessage())
+                .contains("503")
+                .contains("FaceClient#extract()")
+                .contains("Service Unavailable");
+    }
+
+    @Test
+    @DisplayName("응답 해석 실패일 때만 스택트레이스를 남긴다")
+    void 파싱_실패는_스택트레이스를_남긴다() {
+        handler.handleUpstreamCallException(new UpstreamCallException(
+                400, "FaceClient#extract()", "응답 해석 실패", new IllegalStateException("bad json")));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getThrowableProxy())
+                .as("이쪽은 우리 파싱 코드가 원인일 수 있다")
+                .isNotNull();
+    }
 }

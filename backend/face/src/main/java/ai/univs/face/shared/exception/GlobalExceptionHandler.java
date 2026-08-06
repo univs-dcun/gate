@@ -93,6 +93,40 @@ public class GlobalExceptionHandler {
         return getExceptionResponse(ex.getErrorType());
     }
 
+    /**
+     * ML 모듈 호출 실패 (UG-299 반박 리뷰).
+     *
+     * <p>{@link UpstreamCallException} 은 {@link CustomFaceException} 하위이므로 이 핸들러가
+     * 없어도 위 핸들러가 잡는다. 따로 둔 이유는 두 가지다.
+     *
+     * <ul>
+     *   <li>하위 모듈의 상태 코드를 남긴다. 위 핸들러가 찍는 {@code ErrorType.name()} 은
+     *       {@code INTERNAL_SERVER_ERROR} 고정이라 502·503·리다이렉트를 구분할 수 없다.
+     *   <li><b>한 번만 남긴다.</b> 처음에는 {@code CommonErrorDecoder} 에서 찍었는데, 그러면
+     *       디코더 한 줄 + 이 핸들러 한 줄로 ERROR 가 둘이 됐다. ML 매처가 죽어서 초당 50 요청이
+     *       실패하면 초당 ERROR 100 줄이다. UG-291 이 gate 에서 없앤 이중 기록과 같은 문제다.
+     * </ul>
+     *
+     * <p>스택트레이스는 {@code cause} 가 있을 때만 남긴다. 하위 모듈이 오류를 <b>응답한</b>
+     * 경우는 우리 호출 스택이 매번 같아 정보가 없고, 응답을 <b>해석하지 못한</b> 경우는 우리 쪽
+     * 파싱 문제일 수 있어 단서가 된다.
+     *
+     * <p>응답 본문·상태 코드는 위 핸들러와 동일하다 ({@code SWAGGER-005}, 400). 클라이언트가
+     * 보는 계약을 바꾸지 않기 위해 일부러 맞췄다.
+     */
+    @ExceptionHandler(UpstreamCallException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseApi<?> handleUpstreamCallException(UpstreamCallException ex) {
+        // cause 를 마지막 인자로 넘긴다. slf4j 는 마지막 인자가 Throwable 일 때만 스택트레이스로
+        // 취급하므로, null 이면 자리표시자 개수를 넘는 여분 인자로 조용히 무시된다. 즉 분기를
+        // 따로 쓸 필요가 없다 — 실제로 if/else 로 나눠 봤더니 관측 가능한 차이가 없었다.
+        log.error("[{}] ML 모듈 호출 실패 {} — operation={}, upstreamStatus={}, reason={}",
+                ex.getErrorType().getCode(), requestInfo(),
+                ex.getOperation(), ex.getUpstreamStatus(), ex.getReason(), ex.getCause());
+
+        return getExceptionResponse(ex.getErrorType());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseApi<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {

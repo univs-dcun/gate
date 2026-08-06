@@ -1,25 +1,30 @@
 package ai.univs.palm.shared.feign;
 
 import ai.univs.palm.shared.exception.CustomFeignException;
-import ai.univs.palm.shared.exception.CustomPalmException;
+import ai.univs.palm.shared.exception.UpstreamCallException;
 import ai.univs.palm.shared.feign.dto.ProblemDetailFeignResponseDTO;
-import ai.univs.palm.shared.web.enums.ErrorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Response;
 import feign.codec.ErrorDecoder;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class CommonErrorDecoder implements ErrorDecoder {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * <b>여기서는 로그를 남기지 않는다</b> (UG-299 반박 리뷰).
+     *
+     * <p>처음에는 여기서 {@code log.error} 를 찍었는데, 그러면 한 번의 실패에 ERROR 두 줄이
+     * 나간다 — 여기서 한 줄, 이 예외를 받은 {@code GlobalExceptionHandler} 가 스택트레이스와
+     * 함께 또 한 줄. 대신 상태 코드를 {@link UpstreamCallException} 에 실어 보내고 기록은
+     * 핸들러에 맡긴다. gate 의 {@code RemoteCallException} 과 같은 모양이다.
+     */
     @Override
     public Exception decode(String s, Response response) {
         int status = response.status();
 
         if (status >= 400 && status < 500) {
-            ProblemDetailFeignResponseDTO problem = parseProblemDetail(response);
+            ProblemDetailFeignResponseDTO problem = parseProblemDetail(s, response);
             String code = "PALM-" + status;
             String type = problem.getTitle() != null
                     ? problem.getTitle().toUpperCase().replace(" ", "_")
@@ -30,27 +35,20 @@ public class CommonErrorDecoder implements ErrorDecoder {
             return new CustomFeignException(code, type, message);
         }
 
-        // 3xx or 5xx — 하위(ML) 모듈이 자기 오류를 냈다.
-        //
-        // UG-299: 여기서 남기지 않으면 어떤 상태 코드를 받았는지 알 방법이 사라진다.
-        // 이 예외는 GlobalExceptionHandler 가 잡아 ErrorType.INTERNAL_SERVER_ERROR 로
-        // 뭉개는데, 그 시점에는 502 였는지 503 이었는지 타임아웃이었는지 구분할 수 없다.
-        // 스택트레이스는 남기지 않는다 — 원인은 하위 모듈이고 우리 쪽 호출 스택은 매번 같다.
-        log.error("ML 모듈 호출 실패 — method={}, upstreamStatus={}, reason={}",
-                s, status, response.reason());
-
-        return new CustomPalmException(ErrorType.INTERNAL_SERVER_ERROR);
+        // 3xx or 5xx. 3xx 도 여기로 온다 — Feign 은 리다이렉트를 따라가지 않으므로 호출은
+        // 실패한 것이지만 "죽었다" 와는 성격이 다르다. 그래서 메시지에 상태 코드를 그대로
+        // 싣고 단정적인 표현을 쓰지 않는다.
+        return new UpstreamCallException(status, s, response.reason());
     }
 
-    private ProblemDetailFeignResponseDTO parseProblemDetail(Response response) {
+    private ProblemDetailFeignResponseDTO parseProblemDetail(String methodKey, Response response) {
         try {
             return mapper.readValue(response.body().asInputStream(), ProblemDetailFeignResponseDTO.class);
         } catch (Exception e) {
             // 4xx 인데 본문이 ProblemDetail 이 아니다. 하위 모듈이 계약을 바꿨거나 프록시가
-            // 끼어든 것이므로 우리 쪽 문제로 올린다 (UG-299: 상태 코드를 함께 남긴다).
-            log.error("ML 모듈 오류 응답을 해석하지 못했다 — upstreamStatus={}, {}",
-                    response.status(), e.getMessage(), e);
-            throw new CustomPalmException(ErrorType.INTERNAL_SERVER_ERROR);
+            // 끼어든 것이므로 우리 쪽 문제로 올린다. 이쪽은 파싱이 우리 코드라 스택트레이스가
+            // 단서가 되므로 cause 를 실어 보낸다 (핸들러가 그때만 스택트레이스를 남긴다).
+            throw new UpstreamCallException(response.status(), methodKey, "응답 해석 실패", e);
         }
     }
 }
