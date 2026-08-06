@@ -230,7 +230,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         </div>
         <div class="info-card">
           <h3><span class="iico" style="background:#eff6ff">🔑</span>API Key</h3>
-          <p>프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 합니다</strong> — 다른 계정의 키를 사용하면 <code>PJ-105</code>로 거부됩니다.<br><br><code>X-Api-Key: {apiKey}</code></p>
+          <p>프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 하며, 그 프로젝트가 삭제되지 않은 상태여야 합니다</strong> — 다른 계정의 키를 사용하거나 삭제된 프로젝트의 키를 사용하면 <code>PJ-105</code>로 거부됩니다. 프로젝트를 삭제하면 그 프로젝트의 API Key는 즉시 비활성화됩니다.<br><br><code>X-Api-Key: {apiKey}</code></p>
         </div>
       </div>
     </div>
@@ -1815,7 +1815,7 @@ var INTRO = {
     cards: [
       { h3: '<span class="iico" style="background:#EBF4FF">👤</span>얼굴 인식 (Face)', p: '얼굴 특징점 등록/관리 및 매칭(1:1 확인, 1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/face</code>' },
       { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: '로그인 후 발급된 accessToken을 Authorization 헤더에 포함합니다.<br><br><code>Authorization: Bearer {accessToken}</code>' },
-      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 합니다</strong> — 다른 계정의 키를 사용하면 <code>PJ-105</code>로 거부됩니다.<br><br><code>X-Api-Key: {apiKey}</code>' },
+      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 하며, 그 프로젝트가 삭제되지 않은 상태여야 합니다</strong> — 다른 계정의 키를 사용하거나 삭제된 프로젝트의 키를 사용하면 <code>PJ-105</code>로 거부됩니다. 프로젝트를 삭제하면 그 프로젝트의 API Key는 즉시 비활성화됩니다.<br><br><code>X-Api-Key: {apiKey}</code>' },
       { h3: '✅ 성공 응답', p: null },
       { h3: '❌ 오류 응답', p: null }
     ]
@@ -1839,7 +1839,7 @@ var INTRO = {
     cards: [
       { h3: '<span class="iico" style="background:#EBF4FF">👤</span>Face Recognition', p: 'Supports face feature registration/management and matching (1:1 verification, 1:N matching, liveness).<br><br>Base: <code>/api/v1/feature/face</code>' },
       { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: 'Include the accessToken issued after login in the Authorization header.<br><br><code>Authorization: Bearer {accessToken}</code>' },
-      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: 'Include the project-specific API Key in the X-Api-Key header. <strong>The key must belong to a project owned by the account that issued the accessToken</strong> — using an API Key owned by a different account is rejected with <code>PJ-105</code>.<br><br><code>X-Api-Key: {apiKey}</code>' },
+      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: 'Include the project-specific API Key in the X-Api-Key header. <strong>The key must belong to a project that is owned by the account that issued the accessToken and has not been deleted</strong> — using an API Key owned by a different account, or one belonging to a deleted project, is rejected with <code>PJ-105</code>. Deleting a project deactivates its API Key immediately.<br><br><code>X-Api-Key: {apiKey}</code>' },
       { h3: '✅ Success Response', p: null },
       { h3: '❌ Error Response', p: null }
     ]

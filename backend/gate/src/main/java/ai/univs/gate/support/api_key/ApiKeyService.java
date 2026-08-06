@@ -135,13 +135,72 @@ public class ApiKeyService {
      *
      * <p>인증 경로에서 이것을 부르면 테넌트 격리가 뚫린다. 새 코드에서 이 메서드가 필요해 보이면
      * 십중팔구 {@link #findOwnedByApiKey} 를 써야 하는 상황이다.
+     *
+     * <p><b>UG-288: 삭제된 프로젝트의 키는 여기서 걸린다.</b> 키 문자열로 조회하는 세 메서드
+     * ({@link #findOwnedByApiKey}, {@link #findByApiKey}, 이 메서드)가 전부 여기를 거치므로,
+     * 검사를 한 곳에 두면 인증·데모·공유 UseCase 가 함께 닫힌다. 프로젝트로 조회하는
+     * {@link #findByProject} 만 이 경로 밖이라 거기서 따로 막는다. 소유 검증과
+     * 달리 데모도 예외가 아니다 — 데모 키가 공개돼도 되는 근거는 "그 키로 할 수 있는 일이 데모
+     * 범위에 머문다" 인데, 삭제된 프로젝트에는 머물 범위 자체가 없다.
+     *
+     * <p>없는 키와 같은 {@link ErrorType#API_KEY_NOT_FOUND} 로 막는다. "삭제된 프로젝트의 키"라고
+     * 알려주면 그 키가 <b>실재했다</b>는 사실을 확인해 주는 셈이라, {@link #validateOwnership} 과
+     * 같은 열거 오라클이 된다.
      */
     public ApiKey findByApiKeyUnverified(String apiKey) {
-        return apiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
+        ApiKey found = apiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
                 .orElseThrow(() -> new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
+
+        validateProjectNotDeleted(found);
+
+        return found;
     }
 
+    /**
+     * 삭제된 프로젝트의 키를 거부한다 (UG-288).
+     *
+     * <p>조회 쿼리에 조건을 붙이면(파생 쿼리 {@code ...AndProject_IsDeletedFalse}) 쿼리 한 번으로
+     * 끝나지만, <b>이 프로젝트에는 그것을 검증할 테스트가 없다.</b> {@code @DataJpaTest} 도
+     * {@code @SpringBootTest} 도 없고 H2 는 {@code developmentOnly} 라 테스트 클래스패스에도 없다.
+     * 보안 통제를 어떤 테스트도 닿지 않는 자리에 두지 않으려고 자바 조건으로 뒀다 — 대가는
+     * {@code getProject()} 지연 로딩 한 번이며, 인증 경로는 어차피 {@link #validateOwnership} 에서
+     * 같은 연관을 읽는다.
+     *
+     * <p>JPA 슬라이스 테스트가 생기면 쿼리로 옮기는 편이 낫다.
+     */
+    private void validateProjectNotDeleted(ApiKey apiKey) {
+        if (!apiKey.getProject().isDeleted()) {
+            return;
+        }
+
+        // 정상 사용에서는 나올 수 없다. 삭제 시 키도 함께 비활성화되므로(DeleteProjectUseCase)
+        // 여기까지 왔다는 것은 그 경로를 타지 않고 삭제된 행이 있다는 뜻이다.
+        log.warn("삭제된 프로젝트의 API 키로 호출이 들어왔다. projectId={}, apiKey={}",
+                apiKey.getProject().getId(), ApiKeyMasker.mask(apiKey.getApiKey()));
+
+        throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
+    }
+
+    /**
+     * 프로젝트로 활성 키를 찾는다.
+     *
+     * <p>이 메서드는 {@link #findByApiKeyUnverified} 를 거치지 않으므로 삭제 검사를 여기서 따로
+     * 한다 (반박 리뷰 지적). 현재 유일한 호출처인 {@code GetProjectUseCase} 는
+     * {@code findByIdAndIsDeletedFalse} 로 얻은 프로젝트만 넘겨서 도달할 수 없지만, 호출처가
+     * 늘면 조용히 뚫리는 자리다.
+     *
+     * <p><b>키가 없을 때와 같은 {@link ErrorType#API_KEY_NOT_FOUND} 로 막는다</b> (델타 리뷰
+     * 지적). 처음에는 {@code PROJECT_NOT_FOUND} 를 던졌는데, 그러면 이 클래스가 세 문단에 걸쳐
+     * 피하려고 한 열거 오라클을 이 메서드만 다시 만든다 — 호출자가 "삭제된 프로젝트" 와 "키 없음"
+     * 을 응답으로 구분할 수 있게 된다. 이 가드는 <b>아직 없는 호출처</b>를 위한 것이므로 그 호출처가
+     * API 키 인증 경로일지 계정 인증 경로일지 알 수 없고, 안전한 쪽으로 맞춘다.
+     */
     public ApiKey findByProject(Project project) {
+        if (project.isDeleted()) {
+            log.warn("삭제된 프로젝트로 API 키를 조회했다. projectId={}", project.getId());
+            throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
+        }
+
         return apiKeyRepository.findActiveByProjectId(project.getId())
                 .orElseThrow(() -> new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
     }
