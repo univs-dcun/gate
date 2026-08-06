@@ -15,7 +15,11 @@ import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.project.ProjectService;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.List;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -153,6 +157,49 @@ class DeleteProjectUseCaseTest {
         assertThatCode(() -> deleteProjectUseCase.execute(ACCOUNT, PROJECT))
                 .doesNotThrowAnyException();
         assertThat(project.isDeleted()).isTrue();
+    }
+
+    /**
+     * 비활성화 기록이 남는지 (델타 리뷰 지적).
+     *
+     * <p>{@code if (!activeKeys.isEmpty())} 조건을 뒤집어도 — 즉 키를 껐을 때는 조용하고 아무것도
+     * 안 껐을 때만 로그를 남기도록 바꿔도 — 기존 테스트가 전부 초록이었다. 이 로그는 "언제 어떤
+     * 키가 꺼졌는가" 의 유일한 흔적이다. 삭제된 프로젝트의 키로 호출이 들어오면
+     * {@code ApiKeyService} 가 WARN 을 남기는데, 그때 이 줄이 없으면 그 키가 어쩌다 살아남았는지
+     * 추적할 방법이 없다.
+     */
+    @Test
+    @DisplayName("끈 키의 id 를 로그로 남긴다 — 끌 게 없으면 남기지 않는다")
+    void 비활성화_기록이_남는다() {
+        Logger logger = (Logger) LoggerFactory.getLogger(DeleteProjectUseCase.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            givenOwnedProject();
+            givenActiveKeys(apiKey);
+
+            deleteProjectUseCase.execute(ACCOUNT, PROJECT);
+
+            assertThat(appender.list)
+                    .as("어떤 키가 꺼졌는지 남아야 한다")
+                    .anyMatch(event -> event.getFormattedMessage().contains("9"));
+
+            appender.list.clear();
+
+            // 끌 키가 없으면 굳이 남기지 않는다. 조건이 뒤집히면 이쪽이 깨진다.
+            Project 다른프로젝트 = Project.builder().accountId(ACCOUNT).isDeleted(false).build();
+            ReflectionTestUtils.setField(다른프로젝트, "id", 43L);
+            given(projectService.validateOwnership(43L, ACCOUNT)).willReturn(다른프로젝트);
+            given(apiKeyRepository.findAllActiveByProjectId(43L)).willReturn(List.of());
+
+            deleteProjectUseCase.execute(ACCOUNT, 43L);
+
+            assertThat(appender.list).isEmpty();
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 
     @Test

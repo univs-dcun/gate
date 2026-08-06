@@ -2,6 +2,9 @@ package ai.univs.gate.modules.project.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardSummaryUseCase;
+import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
+import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,7 +12,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * UG-288: 삭제가 실제로 커밋되는지를 지키는 가드.
+ * UG-288: 트랜잭션 선언이 조용히 사라지는 것을 막는 가드.
  *
  * <p>반박 리뷰가 찾은 생존 변이다. {@code DeleteProjectUseCase.execute} 에서
  * {@code @Transactional} 을 떼거나 {@code readOnly = true} 로 바꾸면 더티 체킹이 flush 되지 않아
@@ -20,12 +23,32 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>제대로 된 답은 JPA 슬라이스 테스트다 (UG-300). 그 인프라가 생기기 전까지, 최소한 애노테이션이
  * 조용히 사라지는 것은 여기서 막는다. 트랜잭션 경계가 실제로 동작하는지는 여전히 검증하지 못한다 —
  * 이 테스트가 지키는 것은 "선언이 남아 있는가" 까지다.
+ *
+ * <p><b>읽기 쪽도 함께 지킨다</b> (델타 리뷰 지적). 처음에는 삭제 경로만 봤는데, 같은 PR 이
+ * {@code GetDashboardSummaryUseCase} 에도 {@code @Transactional(readOnly = true)} 를 <b>같은
+ * 이유로</b> 새로 붙이고는 가드를 두지 않았다. 그쪽이 사라지면 나는 증상은 반대다 — flush 가
+ * 아니라 지연 로딩이다. {@code ApiKey.project} 가 LAZY 이고 {@code ApiKeyService} 에도 트랜잭션이
+ * 없어서, 지금은 OSIV 기본값(true)에만 기대고 있다. {@code application.yaml} 의
+ * {@code open-in-view: false} 는 {@code local} 프로파일 블록 안에만 있다. 누가 그걸 전역으로
+ * 올리는 순간 이 엔드포인트만 {@code LazyInitializationException} 으로 500 이 된다.
  */
-@DisplayName("UG-288: 삭제 트랜잭션 선언 가드")
+@DisplayName("UG-288: 트랜잭션 선언 가드")
 class DeleteProjectTransactionGuardTest {
 
+    /**
+     * 트랜잭션이 실제로 열린다고 볼 수 있는 전파 속성.
+     *
+     * <p>{@code MANDATORY} 는 뺐다 (델타 리뷰 지적). 바깥 트랜잭션이 없으면
+     * {@code IllegalTransactionStateException} 이라 삭제 요청이 전부 500 이 된다 — 이 UseCase 는
+     * 컨트롤러에서 직접 불리므로 바깥 트랜잭션이 없다. "쓰기가 커밋된다" 를 지키는 가드가
+     * "요청이 전부 실패한다" 를 통과시키면 안 된다.
+     */
+    private static final Propagation[] 트랜잭션이_열리는_전파 = {
+            Propagation.REQUIRED, Propagation.REQUIRES_NEW
+    };
+
     @Test
-    @DisplayName("execute 는 쓰기 트랜잭션이어야 한다")
+    @DisplayName("삭제 execute 는 쓰기 트랜잭션이어야 한다")
     void 삭제는_쓰기_트랜잭션이다() throws NoSuchMethodException {
         Method execute = DeleteProjectUseCase.class.getMethod("execute", Long.class, Long.class);
         Transactional transactional = execute.getAnnotation(Transactional.class);
@@ -41,7 +64,26 @@ class DeleteProjectTransactionGuardTest {
                 .isFalse();
 
         assertThat(transactional.propagation())
-                .as("트랜잭션 없이도 실행될 수 있는 전파 속성이면 같은 문제가 난다")
-                .isIn(Propagation.REQUIRED, Propagation.REQUIRES_NEW, Propagation.MANDATORY);
+                .as("트랜잭션 없이도 실행될 수 있거나, 바깥 트랜잭션을 요구하는 전파 속성이면 안 된다")
+                .isIn((Object[]) 트랜잭션이_열리는_전파);
+    }
+
+    @Test
+    @DisplayName("대시보드 summary execute 는 읽기 트랜잭션이어야 한다")
+    void 대시보드_summary_는_읽기_트랜잭션이다() throws NoSuchMethodException {
+        Method execute = GetDashboardSummaryUseCase.class.getMethod(
+                "execute", Long.class, String.class, TrendPeriod.class, FeatureType.class);
+        Transactional transactional = execute.getAnnotation(Transactional.class);
+
+        assertThat(transactional)
+                .as("@Transactional 이 없으면 ApiKey.project(LAZY) 접근이 영속성 컨텍스트 밖에서 일어난다. "
+                        + "지금은 OSIV 기본값(true)이 가려주고 있을 뿐이고, open-in-view: false 가 "
+                        + "local 프로파일 밖으로 나오는 순간 이 엔드포인트만 500 이 된다")
+                .isNotNull();
+
+        assertThat(transactional.propagation())
+                .as("트랜잭션 없이도 실행될 수 있거나, 바깥 트랜잭션을 요구하는 전파 속성이면 "
+                        + "위와 같은 문제가 난다")
+                .isIn((Object[]) 트랜잭션이_열리는_전파);
     }
 }

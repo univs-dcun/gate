@@ -2,7 +2,10 @@ package ai.univs.gate.support.api_key;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.api_key.domain.repository.ApiKeyRepository;
@@ -31,9 +34,13 @@ import org.springframework.test.util.ReflectionTestUtils;
  * 타지 않고 {@code is_deleted} 가 켜진 행(직접 DB 수정, 배치, 앞으로 생길 다른 삭제 경로)이 있으면
  * 키가 그대로 유효해진다. 그래서 <b>조회 시점에도</b> 막는다.
  *
- * <p>검사를 {@code findByApiKeyUnverified} 한 곳에만 둔 이유는 세 조회 메서드가 전부 그것을 거치기
- * 때문이다. 이 테스트가 세 진입점을 모두 두드리는 것은 그 구조가 유지되는지 확인하기 위해서다 —
+ * <p>검사 지점은 <b>두 곳</b>이다. 키 문자열로 조회하는 세 메서드는 전부
+ * {@code findByApiKeyUnverified} 를 거치므로 거기 한 번, 그 경로 밖인 {@code findByProject} 에
+ * 한 번. 이 테스트가 네 진입점을 모두 두드리는 것은 그 구조가 유지되는지 확인하기 위해서다 —
  * 누군가 {@code findOwnedByApiKey} 를 리포지토리 직행으로 바꾸면 여기서 걸린다.
+ *
+ * <p>(이 문단은 "한 곳" 이라고 적혀 있었다. 델타 리뷰가 짚었듯 같은 커밋이 두 번째 지점을
+ * 만들었으므로 사실이 아니었다.)
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UG-288: 삭제된 프로젝트의 API 키")
@@ -163,5 +170,68 @@ class ApiKeyDeletedProjectTest {
         assertThat(apiKeyService.findOwnedByApiKey(KEY, OWNER)).isNotNull();
         assertThat(apiKeyService.findByApiKey(CallerType.DEMO, KEY, 0L)).isNotNull();
         assertThat(apiKeyService.findByApiKeyUnverified(KEY)).isNotNull();
+    }
+
+    private Project project(boolean deleted) {
+        Project project = Project.builder().accountId(OWNER).isDeleted(deleted).build();
+        ReflectionTestUtils.setField(project, "id", 42L);
+        return project;
+    }
+
+    /**
+     * 두 번째 검사 지점 (델타 리뷰 지적).
+     *
+     * <p>이 가드는 처음 넣었을 때 어떤 테스트도 닿지 않았다 — 통째로 지워도 전 테스트가 초록이었다.
+     * 같은 클래스의 javadoc 이 "보안 통제를 어떤 테스트도 닿지 않는 자리에 두지 않으려고" 라고
+     * 적어 놓고 바로 그런 자리를 하나 더 만든 셈이었다.
+     */
+    @Test
+    @DisplayName("프로젝트로 조회하는 경로도 삭제된 프로젝트를 거부한다")
+    void 프로젝트_조회경로에서도_거부() {
+        Logger logger = (Logger) LoggerFactory.getLogger(ApiKeyService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            assertThatThrownBy(() -> apiKeyService.findByProject(project(true)))
+                    .isInstanceOf(CustomGateException.class);
+
+            // 예외만으로는 이 가드를 못 지킨다. 가드를 통째로 지워도 아래 리포지토리 조회가
+            // 빈 Optional 을 돌려주며 같은 API_KEY_NOT_FOUND 를 던지기 때문이다 (델타 리뷰의
+            // R1 변이가 그렇게 살아남았다). "리포지토리까지 가지 않는다" 와 "흔적을 남긴다" 로
+            // 못박는다.
+            verify(apiKeyRepository, never()).findActiveByProjectId(anyLong());
+            assertThat(appender.list)
+                    .as("삭제된 프로젝트로 키를 찾으려 한 것은 조사 단서다")
+                    .anyMatch(event -> event.getFormattedMessage().contains("42"));
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @Test
+    @DisplayName("프로젝트 조회 경로의 오류 코드도 키 없음과 같다 — 열거 오라클 방지")
+    void 프로젝트_조회경로_열거_오라클_없음() {
+        // 처음에는 PROJECT_NOT_FOUND 를 던졌다. 그러면 호출자가 "삭제된 프로젝트" 와 "키 없음" 을
+        // 응답으로 구분할 수 있어, 이 클래스가 findByApiKeyUnverified 에서 세 문단에 걸쳐 피한
+        // 열거 오라클을 이 메서드만 다시 만든다.
+        Project 살아있음 = project(false);
+        given(apiKeyRepository.findActiveByProjectId(42L)).willReturn(Optional.empty());
+
+        ErrorType 키없음 = errorTypeOf(() -> apiKeyService.findByProject(살아있음));
+        ErrorType 삭제된프로젝트 = errorTypeOf(() -> apiKeyService.findByProject(project(true)));
+
+        assertThat(삭제된프로젝트).isEqualTo(키없음).isEqualTo(ErrorType.API_KEY_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("살아 있는 프로젝트는 프로젝트 조회 경로로도 통과한다")
+    void 프로젝트_조회경로_대조군() {
+        Project 살아있음 = project(false);
+        ApiKey apiKey = ApiKey.builder().project(살아있음).apiKey(KEY).isActive(true).build();
+        given(apiKeyRepository.findActiveByProjectId(42L)).willReturn(Optional.of(apiKey));
+
+        assertThat(apiKeyService.findByProject(살아있음)).isSameAs(apiKey);
     }
 }

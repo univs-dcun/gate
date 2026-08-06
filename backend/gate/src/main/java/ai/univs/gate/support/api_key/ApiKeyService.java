@@ -188,10 +188,17 @@ public class ApiKeyService {
      * 한다 (반박 리뷰 지적). 현재 유일한 호출처인 {@code GetProjectUseCase} 는
      * {@code findByIdAndIsDeletedFalse} 로 얻은 프로젝트만 넘겨서 도달할 수 없지만, 호출처가
      * 늘면 조용히 뚫리는 자리다.
+     *
+     * <p><b>키가 없을 때와 같은 {@link ErrorType#API_KEY_NOT_FOUND} 로 막는다</b> (델타 리뷰
+     * 지적). 처음에는 {@code PROJECT_NOT_FOUND} 를 던졌는데, 그러면 이 클래스가 세 문단에 걸쳐
+     * 피하려고 한 열거 오라클을 이 메서드만 다시 만든다 — 호출자가 "삭제된 프로젝트" 와 "키 없음"
+     * 을 응답으로 구분할 수 있게 된다. 이 가드는 <b>아직 없는 호출처</b>를 위한 것이므로 그 호출처가
+     * API 키 인증 경로일지 계정 인증 경로일지 알 수 없고, 안전한 쪽으로 맞춘다.
      */
     public ApiKey findByProject(Project project) {
         if (project.isDeleted()) {
-            throw new CustomGateException(ErrorType.PROJECT_NOT_FOUND);
+            log.warn("삭제된 프로젝트로 API 키를 조회했다. projectId={}", project.getId());
+            throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
         }
 
         return apiKeyRepository.findActiveByProjectId(project.getId())
