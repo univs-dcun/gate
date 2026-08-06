@@ -4,10 +4,8 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardSummaryResult;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
-import ai.univs.gate.support.project.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,20 +16,16 @@ import java.time.LocalDateTime;
 public class GetDashboardSummaryUseCase {
 
     private final ApiKeyService apiKeyService;
-    private final ProjectService projectService;
     private final DashboardStatsService dashboardStatsService;
 
     public DashboardSummaryResult execute(Long accountId, String apiKey, TrendPeriod period, FeatureType featureType) {
+        // UG-288: 여기 있던 projectService.validateOwnership 호출을 지웠다. UG-281 이 소유 검증을
+        // findOwnedByApiKey 로 옮긴 뒤에도 '삭제되지 않은 프로젝트인가' 하나 때문에 남겨 뒀던
+        // 것인데, 그 검사가 이제 ApiKeyService 의 키 조회 안으로 들어갔다. 대시보드 4종 중 이
+        // UseCase 만 검사를 갖고 있어 삭제된 프로젝트에서 summary 만 다르게 응답하던 불일치도
+        // 함께 사라진다 (실제로는 delete() 가 플래그를 세우지 않아 그 차이조차 나지 않았다).
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
-        Project project = findApiKey.getProject();
-        // UG-281: 소유 검증은 findOwnedByApiKey 로 옮겼다. 이 호출을 남겨 둔 것은 소유가 아니라
-        // '삭제되지 않은 프로젝트인가'(findByIdAndIsDeletedFalse) 때문이다. 프로젝트를 소프트
-        // 삭제해도 api_key.is_active 는 그대로라(DeleteProjectUseCase 는 project.delete() 만
-        // 호출한다) 키가 계속 유효하고, 이 검사만 그것을 막고 있다. 나머지 대시보드 3종과
-        // 특징점·이력 경로에는 이 검사가 없어 삭제된 프로젝트도 조회된다 — 별건으로 분리한다.
-        projectService.validateOwnership(project.getId(), accountId);
-
-        Long projectId = project.getId();
+        Long projectId = findApiKey.getProject().getId();
         LocalDateTime from = DashboardStatsService.periodFrom(period);
         return new DashboardSummaryResult(
                 dashboardStatsService.countRegistrations(projectId, from, featureType),
