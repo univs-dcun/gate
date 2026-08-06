@@ -40,8 +40,10 @@ public class VerifyByFaceIdUseCase {
         DescriptorDetail descriptorDetail = DescriptorDetail.from(input.descriptor());
 
         if (!descriptorDetail.descriptorSpec().equals(targetDescriptorSpec)) {
-            log.error("The each descriptor is created by other extractor.");
-            log.error("descriptor: {}, target descriptor: {}, ", descriptorDetail.descriptorSpec().getVersion(), targetDescriptorSpec.getVersion());
+            // UG-299: 수준 판정은 GlobalExceptionHandler 가 한다. 여기서는 핸들러가
+            // 알 수 없는 값만 남긴다 — ERROR 로 두면 한 사건에 ERROR 두 줄이 된다.
+            log.warn("추출기가 다른 descriptor 다 — descriptor={}, target={}",
+                    descriptorDetail.descriptorSpec().getVersion(), targetDescriptorSpec.getVersion());
             throw new CustomFaceMatcherException(ErrorType.DIFFERENT_EXTRACTION_TYPE);
         }
 

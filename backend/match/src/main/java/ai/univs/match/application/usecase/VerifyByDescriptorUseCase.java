@@ -26,8 +26,9 @@ public class VerifyByDescriptorUseCase {
         DescriptorDetail targetDescriptorDetail = DescriptorDetail.from(targetDescriptor);
 
         if (!descriptorDetail.descriptorSpec().equals(targetDescriptorDetail.descriptorSpec())) {
-            log.error("The each descriptor is created by other extractor.");
-            log.error("descriptor: {}, target descriptor: {}, ",
+            // UG-299: 수준 판정은 GlobalExceptionHandler 가 한다. 여기서는 핸들러가
+            // 알 수 없는 값만 남긴다 — ERROR 로 두면 한 사건에 ERROR 두 줄이 된다.
+            log.warn("추출기가 다른 descriptor 다 — descriptor={}, target={}",
                     descriptorDetail.descriptorSpec().getVersion(),
                     targetDescriptorDetail.descriptorSpec().getVersion());
             throw new CustomFaceMatcherException(ErrorType.DIFFERENT_EXTRACTION_TYPE);
