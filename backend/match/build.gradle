@@ -41,7 +41,15 @@ dependencies {
 
     /* DB Migration (Flyway) */
     implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
+    // Flyway 10 부터 DB 지원이 모듈로 분리됐다. 아래 두 줄이 없으면 해당 DB 로 기동할 때
+    // Flyway 가 JDBC URL 을 처리할 DatabaseType 을 못 찾아 부팅 시점에 죽는다 —
+    // db/migration 의 SQL 은 한 줄도 파싱되지 않는다 (UG-296).
+    //
+    // 컴파일 시점에 참조하는 코드가 없는 순수 SPI 플러그인이라 runtimeOnly 로 둔다
+    // (바로 위 JDBC 드라이버들과 같다). 버전은 Spring Boot BOM 이 flyway-core 와 함께
+    // 관리하므로 명시하지 않는다.
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.flywaydb:flyway-database-oracle'
 
     /* Docs */
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
