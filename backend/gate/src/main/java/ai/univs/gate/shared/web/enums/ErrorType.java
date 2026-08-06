@@ -4,6 +4,29 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 오류 코드와 <b>오류의 성격</b>.
+ *
+ * <p><b>{@code status} 는 응답 상태 코드가 아니다</b> (UG-298). {@code GlobalExceptionHandler} 의
+ * {@code handleBusinessException} 이 {@code @ResponseStatus(BAD_REQUEST)} 고정이라, 여기 무엇을
+ *적든 클라이언트는 <b>항상 400 을 받는다.</b> {@code UNAUTHORIZED}(401)·{@code NOT_OWNERSHIP}(403)
+ * 도 마찬가지다. 이 필드가 실제 응답 상태와 일치한 적은 한 번도 없다.
+ *
+ * <p>지금 이 값이 결정하는 것은 <b>로그 수준</b> 하나다 (UG-290).
+ *
+ * <ul>
+ *   <li>4xx — 원인이 클라이언트 입력이다. WARN, 스택트레이스 없음.
+ *   <li>5xx — 원인이 우리 쪽이다. ERROR + 스택트레이스.
+ * </ul>
+ *
+ * <p>그러므로 새 값을 정할 때 물어야 할 것은 "HTTP 로 치면 몇 번인가" 가 아니라
+ * <b>"이 오류가 났을 때 우리가 무언가 고쳐야 하는가"</b> 다.
+ *
+ * <p>UG-290 은 "값이 다 채워져 있는데 한 번도 읽히지 않던 죽은 코드였으니 살려 쓰자" 는 논리로
+ * 이 필드를 되살렸다. 앞부분은 사실이었지만 <b>거기서 "그러므로 정확하다" 가 따라 나오지
+ * 않는다</b> — 한 번도 실행되지 않았기 때문에 정확할 이유가 없었다. UG-298 에서 전수 점검했고,
+ * 그 결과를 {@code ErrorTypeClassificationTest} 가 못박는다.
+ */
 @Getter
 @AllArgsConstructor
 public enum ErrorType {
@@ -30,7 +53,18 @@ public enum ErrorType {
     PROJECT_NOT_FOUND("PJ-103", HttpStatus.BAD_REQUEST),
     NOT_OWNERSHIP("PJ-104", HttpStatus.FORBIDDEN),
     API_KEY_NOT_FOUND("PJ-105", HttpStatus.BAD_REQUEST),
-    SETTINGS_NOT_FOUND("PJ-106", HttpStatus.BAD_REQUEST),
+    /**
+     * 프로젝트에 설정 행이 없다.
+     *
+     * <p><b>클라이언트 입력 문제가 아니다</b> (UG-298 재분류). 이 예외를 던지는 여섯 자리는
+     * 모두 프로젝트를 먼저 해결한 뒤 설정을 찾는다 — 즉 "존재하는 프로젝트에 설정이 없다" 는
+     * 뜻이고, {@code CreateProjectUseCase} 가 생성 시 항상 설정을 함께 저장하므로 그런 행은
+     * 있을 수 없다. 있다면 데이터가 깨진 것이고 우리가 고쳐야 한다.
+     *
+     * <p>4xx 로 두면 WARN 으로 조용히 지나가 아무도 모른다. 응답은 그대로 PJ-106 / 400 이다 —
+     * 바뀌는 것은 로그 수준뿐이다.
+     */
+    SETTINGS_NOT_FOUND("PJ-106", HttpStatus.INTERNAL_SERVER_ERROR),
     COMPANY_ALREADY_EXISTS("PJ-107", HttpStatus.BAD_REQUEST),
     PROJECT_LIMIT_EXCEEDED("PJ-109", HttpStatus.BAD_REQUEST),
     WEBHOOK_CONFIG_NOT_FOUND("PJ-110", HttpStatus.BAD_REQUEST),
@@ -40,15 +74,48 @@ public enum ErrorType {
 
     // File
     INVALID_FILE("FILE-101", HttpStatus.BAD_REQUEST),
+    /**
+     * <b>원인이 섞여 있다</b> (UG-298). 4xx 로 둔 것은 잠정이다.
+     *
+     * <p>클라이언트 입력: {@code FileController.validateFilePath}(경로 순회 시도),
+     * {@code FileService.validationFilePath}(빈 경로).
+     *
+     * <p>우리 쪽 문제: {@code FileUtil.getFile}·{@code delete} 의 IO 실패. 그 경로는 우리 DB 에
+     * 저장된 값이므로, 읽지 못한다는 것은 파일이 사라졌거나 볼륨이 안 붙었거나
+     * {@code file.root-path} 가 어긋났다는 뜻이다 — 온프레미스에서 흔하다.
+     *
+     * <p>둘을 가르려면 코드를 나눠야 하는데 그건 클라이언트 계약 변경이다. 그때까지는 두 서버
+     * 경로가 {@code log.error} + 스택트레이스를 직접 남긴다.
+     */
     INVALID_FILE_PATH("FILE-102", HttpStatus.BAD_REQUEST),
     REQUIRED_FILE_NAME("FILE-103", HttpStatus.BAD_REQUEST),
     REQUIRED_EXTENSION("FILE-104", HttpStatus.BAD_REQUEST),
+    /**
+     * <b>원인이 섞여 있다</b> (UG-298). 4xx 로 둔 것은 잠정이다.
+     *
+     * <p>클라이언트 입력: {@code ImageIO.read} 실패(깨진 이미지).
+     *
+     * <p>우리 쪽 문제: 리사이즈 후 {@code ImageIO.write} 실패 — 디스크 풀, 권한 없음,
+     * {@code file.root-path} 오설정.
+     *
+     * <p>{@code FileUtil.fileResizeAndSave} 가 두 블록을 나눠 각각 WARN·ERROR 로 남긴다
+     * (UG-290). 코드 분리는 클라이언트 계약 변경이라 별도 판단이 필요하다.
+     */
     FAILURE_COMPRESSION_FILE("FILE-105", HttpStatus.BAD_REQUEST),
 
     // Mail
 
     // match
     NOT_FOUND_MATCHING_HISTORY("ID-101", HttpStatus.BAD_REQUEST),
+    /**
+     * <b>예외로 던지지 않는다</b> (UG-295·UG-298 확인). 1:N 매칭에서 후보를 못 찾았을 때
+     * {@code matchHistory.fail(..., NOT_MATCH.name())} 로 <b>이력의 실패 사유 문자열</b>로만
+     * 쓰인다. 응답은 HTTP 200 이고 {@code failureReason} 에 i18n 메시지가 실린다.
+     *
+     * <p>그래서 {@code @SwaggerError} 로 선언하면 안 된다 — UG-295 에서 PalmController 의
+     * 잘못된 선언을 지웠다. 상수를 남겨 두는 이유는 이력 문자열과 messages.properties 키가
+     * 이 이름에 묶여 있기 때문이다.
+     */
     NOT_MATCH("ID-102", HttpStatus.BAD_REQUEST),
     MISMATCH("ID-103", HttpStatus.BAD_REQUEST),
         // Liveness
