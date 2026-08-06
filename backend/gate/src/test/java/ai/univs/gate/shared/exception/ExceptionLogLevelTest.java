@@ -8,14 +8,11 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import ai.univs.gate.support.message.MessageService;
-import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
@@ -181,26 +178,18 @@ class ExceptionLogLevelTest {
         assertThat(onlyEvent().getFormattedMessage()).contains("요청 정보 없음");
     }
 
-    @ParameterizedTest
-    @EnumSource(ErrorType.class)
-    @DisplayName("모든 ErrorType 에 status 가 채워져 있다 — 판정 기준이 비면 분류가 무너진다")
-    void 모든_ErrorType에_상태코드가_있다(ErrorType errorType) {
-        // getStatus() 는 이 변경 전까지 프로덕션 코드에서 한 번도 읽히지 않는 죽은 코드였다.
-        // 값이 방치돼 있었다는 뜻이므로, 살려 쓰기로 한 이상 전수로 못박는다.
-        assertThat(errorType.getStatus()).isNotNull();
-        assertThat(errorType.getStatus().isError())
-                .as("%s 의 상태 코드가 오류 범위가 아니다", errorType.name())
-                .isTrue();
-    }
-
     @Test
-    @DisplayName("5xx 로 분류되는 ErrorType 은 INTERNAL_SERVER_ERROR 하나뿐이다")
-    void 서버_오류_분류는_하나뿐이다() {
-        // 새 ErrorType 에 5xx 를 달면 그 오류가 ERROR + 스택트레이스로 승격된다. 의도한 것이라면
-        // 이 테스트를 함께 고치면 되고, 실수라면 여기서 걸린다.
-        assertThat(Arrays.stream(ErrorType.values())
-                .filter(e -> e.getStatus().is5xxServerError())
-                .toList())
-                .containsExactly(ErrorType.INTERNAL_SERVER_ERROR);
+    @DisplayName("우리 쪽 문제로 분류된 ErrorType 은 ERROR 로 올라간다")
+    void 서버_오류로_분류되면_ERROR() {
+        // 전수 분류 자체는 ErrorTypeClassificationTest 가 못박는다 (UG-298). 여기서는 그 분류가
+        // 실제로 로그 수준을 바꾸는지만 본다 — 목록과 동작이 따로 놀면 둘 다 무의미해진다.
+        handler.handleBusinessException(new CustomGateException(ErrorType.SETTINGS_NOT_FOUND));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getThrowableProxy())
+                .as("존재하는 프로젝트에 설정 행이 없다는 것은 데이터가 깨졌다는 뜻이다 (UG-298)")
+                .isNotNull();
+        assertThat(event.getFormattedMessage()).contains("PJ-106");
     }
 }

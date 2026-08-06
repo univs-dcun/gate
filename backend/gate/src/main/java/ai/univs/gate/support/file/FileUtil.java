@@ -39,7 +39,7 @@ public class FileUtil {
         try {
             return Files.readAllBytes(Path.of(fileRootPath + filePath));
         } catch (Exception ex) {
-            log.error("invalid file path: {}", filePath, ex);
+            log.error("파일에 접근하지 못했다 — 경로 문제일 수도 있고 볼륨·권한 문제일 수도 있다. filePath={}, rootPath={}", filePath, fileRootPath, ex);
             throw new CustomGateException(ErrorType.INVALID_FILE_PATH);
         }
     }
@@ -61,7 +61,7 @@ public class FileUtil {
         try {
             Files.deleteIfExists(Path.of(fileRootPath + filePath));
         } catch (Exception ex) {
-            log.error("invalid file path: {}", filePath, ex);
+            log.error("파일에 접근하지 못했다 — 경로 문제일 수도 있고 볼륨·권한 문제일 수도 있다. filePath={}, rootPath={}", filePath, fileRootPath, ex);
             throw new CustomGateException(ErrorType.INVALID_FILE_PATH);
         }
     }
