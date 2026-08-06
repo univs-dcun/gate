@@ -49,7 +49,15 @@ public class DashboardController {
             @SecurityRequirement(name = "X-Api-Key")
     })
     @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // 이 엔드포인트만 projectService.validateOwnership 을 한 번 더 거친다 (UG-288).
+            // 나머지 셋은 findOwnedByApiKey 하나로 끝나서 이 두 코드가 나올 자리가 없다.
+            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
+            // 403 이 아니라 400 이다. GlobalExceptionHandler.handleBusinessException 이
+            // @ResponseStatus(BAD_REQUEST) 고정이라 ErrorType.status 가 FORBIDDEN 이어도
+            // 클라이언트는 400 을 받는다 (UG-295 에서 확인. 근본 정리는 UG-298).
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @GetMapping("/summary")
     public ResponseEntity<ResponseApi<DashboardSummaryResponse>> getSummary(
@@ -72,6 +80,9 @@ public class DashboardController {
             @SecurityRequirement(name = "X-Api-Key")
     })
     @SwaggerErrorExample({
+            // period·featureType 이 열거형이라 잘못된 값이면 바인딩 단계에서 INVALID_INPUT 이다.
+            // /daily 만 선언하고 있었다.
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @GetMapping("/trend")
@@ -94,6 +105,9 @@ public class DashboardController {
             @SecurityRequirement(name = "X-Api-Key")
     })
     @SwaggerErrorExample({
+            // period·featureType 이 열거형이라 잘못된 값이면 바인딩 단계에서 INVALID_INPUT 이다.
+            // /daily 만 선언하고 있었다.
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @GetMapping("/ratios")

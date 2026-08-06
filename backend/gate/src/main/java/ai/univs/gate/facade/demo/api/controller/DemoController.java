@@ -48,6 +48,30 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 데모 엔드포인트 (UG-295).
+ *
+ * <p><b>오류 계약은 정식 API 와 같다.</b> 이 컨트롤러는 인증 방식만 다를 뿐
+ * {@code FaceController}/{@code PalmController} 와 <b>같은 UseCase 인스턴스</b>를 주입받는다.
+ * 그런데 UG-276 이 정식 API 만 전수 보강해서, 예를 들어
+ * {@code /api/v1/feature/face/liveness} 는 PJ-105·PJ-106 을 선언하는데
+ * {@code /api/v1/demo/feature/face/liveness} 는 선언하지 않는 상태가 남아 있었다.
+ *
+ * <p>판정은 grep 이 아니라 UseCase 의존성을 따라가서 했다 — UG-276 이 grep 으로 4건을 틀렸다.
+ * 두 갈래가 모두 도달한다.
+ *
+ * <ul>
+ *   <li>{@code apiKeyService.findByApiKey(DEMO, ...)} → {@code findByApiKeyUnverified} →
+ *       {@link ErrorType#API_KEY_NOT_FOUND}. 데모 경로도 예외가 아니다. UG-288 이후로는
+ *       삭제된 프로젝트의 키도 여기서 걸린다.
+ *   <li>{@code projectSettingsService.findByProject} → {@link ErrorType#SETTINGS_NOT_FOUND}.
+ *       설정을 직접 읽지 않는 UseCase 도 {@code FaceFeatureService}/{@code PalmFeatureService}
+ *       를 거쳐 도달한다 — 한 단계 위임돼 있어 눈으로는 놓치기 쉽다.
+ * </ul>
+ *
+ * <p>{@code /config} 만 {@link ErrorType#INVALID_INPUT} 이 없다. 이 엔드포인트에는
+ * {@code @Valid} 도 열거형 파라미터도 없어서 바인딩 오류가 날 자리가 없다.
+ */
 @Tag(name = "e-KYC 데모")
 @RestController
 @RequiredArgsConstructor
@@ -97,6 +121,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> createUserByApiKey(
@@ -119,6 +145,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/face/verify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByFaceIdResponseDTO>> verifyByApiKey(
@@ -138,6 +166,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/face/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByImageResponseDTO>> verifyByImageAndApiKey(
@@ -157,6 +187,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/face/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identifyByApiKey(
@@ -174,7 +206,9 @@ public class DemoController {
     @Operation(summary = "특징점 얼굴 목록 조회")
     @SecurityRequirements({})
     @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping("/feature/faces")
     public ResponseEntity<ResponseApi<FaceFeaturesResponseDTO>> getUsersByApiKey(
@@ -197,6 +231,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/face/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<LivenessResponseDTO>> LivenessByApiKey(
@@ -220,6 +256,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/palm", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> createPalmByApiKey(
@@ -241,7 +279,9 @@ public class DemoController {
     @Operation(summary = "특징점 팜 목록 조회")
     @SecurityRequirements({})
     @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping("/feature/palms")
     public ResponseEntity<ResponseApi<PalmFeaturesResponseDTO>> getPalmsByApiKey(
@@ -264,6 +304,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/palm/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmIdentifyResponseDTO>> palmIdentifyByApiKey(
@@ -283,6 +325,8 @@ public class DemoController {
     @SecurityRequirements({})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/feature/palm/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmLivenessResponseDTO>> palmLivenessByApiKey(

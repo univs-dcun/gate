@@ -36,7 +36,7 @@ public class WebhookConfigController {
     @SecurityRequirements({@SecurityRequirement(name = "Authentication")})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 403),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @GetMapping
     public ResponseEntity<ResponseApi<WebhookConfigResponseDTO>> getWebhookConfig(
@@ -53,7 +53,7 @@ public class WebhookConfigController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 403),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @PutMapping
     public ResponseEntity<ResponseApi<WebhookConfigResponseDTO>> upsertWebhookConfig(
@@ -77,7 +77,7 @@ public class WebhookConfigController {
     @SecurityRequirements({@SecurityRequirement(name = "Authentication")})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 403),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @DeleteMapping
     public ResponseEntity<Void> deleteWebhookConfig(

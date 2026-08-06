@@ -166,7 +166,6 @@ public class PalmController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.NOT_MATCH, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })

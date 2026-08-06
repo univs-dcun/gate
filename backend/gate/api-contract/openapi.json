@@ -72,6 +72,16 @@
                       }
                     }
                   },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
                   "NOT_OWNERSHIP": {
                     "value": {
                       "success": false,
@@ -603,6 +613,16 @@
                         "message": "Project not found."
                       }
                     }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
+                      }
+                    }
                   }
                 }
               }
@@ -665,16 +685,6 @@
                         "code": "PJ-005",
                         "type": "INTERNAL_SERVER_ERROR",
                         "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  },
-                  "NOT_OWNERSHIP": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-104",
-                        "type": "NOT_OWNERSHIP",
-                        "message": "You do not have permission to access this project."
                       }
                     }
                   }
@@ -792,6 +802,16 @@
                         "message": "Project not found."
                       }
                     }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
+                      }
+                    }
                   }
                 }
               }
@@ -854,16 +874,6 @@
                         "code": "PJ-005",
                         "type": "INTERNAL_SERVER_ERROR",
                         "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  },
-                  "NOT_OWNERSHIP": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-104",
-                        "type": "NOT_OWNERSHIP",
-                        "message": "You do not have permission to access this project."
                       }
                     }
                   }
@@ -961,6 +971,16 @@
                         "message": "Project not found."
                       }
                     }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
+                      }
+                    }
                   }
                 }
               }
@@ -1016,16 +1036,6 @@
                         "code": "PJ-005",
                         "type": "INTERNAL_SERVER_ERROR",
                         "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  },
-                  "NOT_OWNERSHIP": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-104",
-                        "type": "NOT_OWNERSHIP",
-                        "message": "You do not have permission to access this project."
                       }
                     }
                   }
@@ -4082,16 +4092,6 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "NOT_MATCH": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "ID-102",
-                        "type": "NOT_MATCH",
-                        "message": "Face does not match."
-                      }
-                    }
-                  },
                   "INVALID_INPUT": {
                     "value": {
                       "success": false,
@@ -6145,6 +6145,26 @@
                         "message": "The user\u0027s request contains invalid values."
                       }
                     }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
                   }
                 }
               }
@@ -6298,6 +6318,26 @@
                         "code": "PJ-101",
                         "type": "INVALID_INPUT",
                         "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }
@@ -6455,6 +6495,26 @@
                         "message": "The user\u0027s request contains invalid values."
                       }
                     }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
                   }
                 }
               }
@@ -6608,6 +6668,26 @@
                         "code": "PJ-101",
                         "type": "INVALID_INPUT",
                         "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }
@@ -6765,6 +6845,26 @@
                         "message": "The user\u0027s request contains invalid values."
                       }
                     }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
                   }
                 }
               }
@@ -6918,6 +7018,26 @@
                         "code": "PJ-101",
                         "type": "INVALID_INPUT",
                         "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }
@@ -7075,6 +7195,26 @@
                         "message": "The user\u0027s request contains invalid values."
                       }
                     }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
                   }
                 }
               }
@@ -7228,6 +7368,26 @@
                         "code": "PJ-101",
                         "type": "INVALID_INPUT",
                         "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }
@@ -7569,6 +7729,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
                   "PROJECT_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -8887,6 +9057,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -8894,6 +9074,16 @@
                         "code": "PJ-105",
                         "type": "API_KEY_NOT_FOUND",
                         "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }
@@ -9237,6 +9427,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -9423,6 +9623,26 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-103",
+                        "type": "PROJECT_NOT_FOUND",
+                        "message": "Project not found."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -9430,6 +9650,16 @@
                         "code": "PJ-105",
                         "type": "API_KEY_NOT_FOUND",
                         "message": "API key not found."
+                      }
+                    }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
                       }
                     }
                   }
@@ -9609,6 +9839,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
