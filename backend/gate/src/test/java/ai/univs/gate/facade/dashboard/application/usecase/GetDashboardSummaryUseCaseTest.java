@@ -2,6 +2,7 @@ package ai.univs.gate.facade.dashboard.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -20,10 +21,12 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
 import ai.univs.gate.support.project.ProjectService;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -165,5 +168,37 @@ class GetDashboardSummaryUseCaseTest {
                 getDashboardSummaryUseCase.execute(OWNER, KEY, TrendPeriod.WEEK, FeatureType.FACE);
 
         assertThat(result).isEqualTo(new DashboardSummaryResult(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L));
+    }
+
+    /**
+     * 요청 파라미터가 집계까지 그대로 전달되는지 (3차 리뷰 지적).
+     *
+     * <p>위 테스트가 슬롯 순서는 못박지만 인자는 못박지 못했다. 열 개 스텁이 전부
+     * {@code any(LocalDateTime.class)} 라 {@code periodFrom(period)} 를 {@code now()} 로 바꿔도
+     * 통과했고, 픽스처가 FACE 뿐이라 {@code featureType} 을 {@code FACE} 상수로 굳혀도 통과했다.
+     *
+     * <p>둘 다 클라이언트가 보내는 쿼리 파라미터다. 전자가 깨지면 {@code period=MONTH} 요청이
+     * 조용히 오늘치만 돌려주고, 후자가 깨지면 PALM 대시보드 타일에 FACE 수치가 뜬다.
+     */
+    @Test
+    @DisplayName("period 와 featureType 을 집계에 그대로 넘긴다")
+    void 요청_파라미터를_그대로_넘긴다() {
+        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+
+        getDashboardSummaryUseCase.execute(OWNER, KEY, TrendPeriod.MONTH, FeatureType.PALM);
+
+        LocalDateTime expectedFrom = DashboardStatsService.periodFrom(TrendPeriod.MONTH);
+
+        ArgumentCaptor<LocalDateTime> from = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(dashboardStatsService)
+                .countRegistrations(eq(PROJECT), from.capture(), eq(FeatureType.PALM));
+
+        // periodFrom 은 호출 시각 기준이라 정확히 같을 수 없다. now() 로 바뀌면 한 달 차이가 난다.
+        assertThat(from.getValue())
+                .as("period 를 무시하고 now() 를 쓰면 이 단언이 깨진다")
+                .isCloseTo(expectedFrom, within(5, ChronoUnit.SECONDS));
+
+        // 열 개 전부가 아니라 대표 두 개만 본다 — 인자 통과를 보는 것이지 배선을 다시 세는 게 아니다.
+        verify(dashboardStatsService).countTotalLiveness(PROJECT, FeatureType.PALM);
     }
 }

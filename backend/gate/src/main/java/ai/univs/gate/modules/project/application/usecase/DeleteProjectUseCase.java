@@ -34,7 +34,7 @@ public class DeleteProjectUseCase {
      *
      * <p>{@code @Transactional} 은 이 메서드의 전부다. 떼거나 {@code readOnly = true} 로 바꾸면
      * 더티 체킹이 flush 되지 않아 <b>UG-288 과 똑같이 조용히 아무 일도 하지 않게</b> 된다.
-     * {@code DeleteProjectTransactionGuardTest} 가 그것을 막는다.
+     * {@code TransactionDeclarationGuardTest} 가 그것을 막는다.
      */
     @Transactional
     public void execute(Long accountId, Long projectId) {

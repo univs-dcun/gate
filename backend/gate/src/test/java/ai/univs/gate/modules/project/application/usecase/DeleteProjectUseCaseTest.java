@@ -40,7 +40,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * 때문이다. 그래서 "삭제하면 무엇이 참이 되는가" 를 여기서 못박는다.
  *
  * <p>영속성 경계(트랜잭션·flush)는 여기서 볼 수 없다 — 순수 Mockito 테스트다. 그쪽은
- * {@link DeleteProjectTransactionGuardTest} 가 맡는다.
+ * {@code TransactionDeclarationGuardTest} 가 맡는다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UG-288: 프로젝트 삭제")
@@ -48,6 +48,7 @@ class DeleteProjectUseCaseTest {
 
     private static final long ACCOUNT = 7L;
     private static final long PROJECT = 42L;
+    private static final String KEY = "univs_live_abcdefghijklmnop";
 
     @Mock
     private ProjectService projectService;
@@ -184,7 +185,14 @@ class DeleteProjectUseCaseTest {
 
             assertThat(appender.list)
                     .as("어떤 키가 꺼졌는지 남아야 한다")
-                    .anyMatch(event -> event.getFormattedMessage().contains("9"));
+                    .anyMatch(event -> event.getFormattedMessage().contains("apiKeyIds=[9]"));
+
+            // 3차 리뷰가 찾은 생존 변이. 이 줄에 키 원문을 덧붙여도 아무 테스트도 깨지지 않았다.
+            // ApiKeyService 쪽에는 같은 규칙이 이미 못박혀 있는데(ApiKeyDeletedProjectTest),
+            // 같은 사건 사슬에 새로 생긴 이 로그에는 없었다. 온프레미스에서는 로그 묶음이
+            // 그대로 밖으로 나간다.
+            assertThat(appender.list)
+                    .noneMatch(event -> event.getFormattedMessage().contains(KEY));
 
             appender.list.clear();
 
