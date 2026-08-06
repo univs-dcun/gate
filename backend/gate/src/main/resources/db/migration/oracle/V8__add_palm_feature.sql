@@ -15,7 +15,7 @@ CREATE TABLE palm_feature (
     feature_image_path VARCHAR2(255),
     description     CLOB,
     username        VARCHAR2(255),
-    is_deleted      NUMBER(1)       NOT NULL DEFAULT 0,
+    is_deleted      NUMBER(1)       DEFAULT 0 NOT NULL,
     transaction_uuid VARCHAR2(36),
     external_key    VARCHAR2(255),
     created_at      TIMESTAMP       NOT NULL,
