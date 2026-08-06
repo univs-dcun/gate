@@ -19,7 +19,9 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.CallerType;
+import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
@@ -208,9 +210,9 @@ class LivenessPalmUseCaseTest {
     }
 
     @Test
-    @DisplayName("palm 서비스가 CustomFeignException을 던지면 이력은 저장된 채 예외가 그대로 전파된다")
+    @DisplayName("palm 서비스가 CustomFeignException을 던지면 실패 사유를 남긴 채 예외가 그대로 전파된다")
     void execute_feignException_propagated() {
-        // given: identify와 달리 liveness는 CustomFeignException을 흡수하지 않는다
+        // given: identify와 달리 liveness는 CustomFeignException을 흡수하지 않는다 (응답은 그대로 4xx)
         givenCommonFlow(true, UPLOADED_IMAGE_PATH);
         CustomFeignException exception = new CustomFeignException("ML-500", "INTERNAL_ERROR", "palm server error");
         given(palmService.liveness(any(LivenessPalmFeignRequestDTO.class))).willThrow(exception);
@@ -218,10 +220,28 @@ class LivenessPalmUseCaseTest {
         // when & then
         assertThatThrownBy(() -> livenessPalmUseCase.execute(input)).isSameAs(exception);
 
-        // then: 이력은 실패 상태 그대로 저장되어 있어야 한다 (fail 전이는 일어나지 않음)
+        // then: UG-280 — 예전에는 failureType 이 NULL 이었다. noRollbackFor 로 행은 커밋되는데
+        // 사유가 비어 있어서, 응답을 받지 못하고 끊긴 요청과 구분할 수 없었다.
         MatchHistory saved = capturedMatchHistory();
         assertThat(saved.getSuccess()).isFalse();
-        assertThat(saved.getFailureType()).isNull();
+        assertThat(saved.getFailureType()).isEqualTo("INTERNAL_ERROR");
+    }
+
+    @Test
+    @DisplayName("UG-280: palm 서비스가 5xx(RemoteCallException)를 내면 실패 사유를 남긴 채 전파된다")
+    void execute_remoteCallException_recordsReason() {
+        // given: 예전에는 이 경로가 CustomGateException 이라 noRollbackFor 에 걸리지 않아
+        // 트랜잭션이 롤백되고 이력 행 자체가 사라졌다
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        RemoteCallException exception = new RemoteCallException(503);
+        given(palmService.liveness(any(LivenessPalmFeignRequestDTO.class))).willThrow(exception);
+
+        // when & then
+        assertThatThrownBy(() -> livenessPalmUseCase.execute(input)).isSameAs(exception);
+
+        MatchHistory saved = capturedMatchHistory();
+        assertThat(saved.getSuccess()).isFalse();
+        assertThat(saved.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
     }
 
     @Test

@@ -11,6 +11,7 @@ import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceBy
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceService;
@@ -45,7 +46,10 @@ public class VerifyByDescriptorUseCase {
 
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
-            noRollbackFor = CustomFeignException.class
+            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
+            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
+            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
+            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
     )
     public VerifyByDescriptorResult execute(VerifyByDescriptorInput input) {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
@@ -92,6 +96,11 @@ public class VerifyByDescriptorUseCase {
             // failure_type 이 NULL 로 남아 "미완료 요청" 과 구분되지 않는다.
             // 같은 기능의 IdentifyByDescriptorUseCase / FaceFeatureService 와 동일한 처리다.
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        } catch (RemoteCallException e) {
+            // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
+            // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
+            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             throw e;
         }
 

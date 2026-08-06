@@ -15,6 +15,7 @@ import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFei
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
@@ -50,7 +51,10 @@ public class IdentifyFaceUseCase {
 
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
-            noRollbackFor = CustomFeignException.class
+            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
+            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
+            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
+            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
     )
     public IdentifyResult execute(IdentifyInput input) {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
@@ -94,10 +98,18 @@ public class IdentifyFaceUseCase {
         try {
             data = faceService.identify(identifyRequest);
         } catch (CustomFeignException e) {
+            // UG-280: 사유를 먼저 남긴다. 예전에는 라이브니스 계열이 아니면 곧바로 rethrow 해서
+            // noRollbackFor 로 커밋된 행의 failure_type 이 NULL 로 남았다 — 응답을 받지 못하고
+            // 끊긴 요청과 구분되지 않아 이력만 보고는 원인을 알 수 없었다.
+            matchHistory.fail(BigDecimal.ZERO, e.getType());
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
-            matchHistory.fail(BigDecimal.ZERO, e.getType());
             return fail(input.callerType(), matchHistory, consentEnabled);
+        } catch (RemoteCallException e) {
+            // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
+            // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
+            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            throw e;
         }
 
         if (!data.isResult()) {

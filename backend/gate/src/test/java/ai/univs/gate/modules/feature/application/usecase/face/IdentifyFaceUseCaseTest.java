@@ -23,6 +23,7 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -379,5 +380,41 @@ class IdentifyFaceUseCaseTest {
         verify(faceService).identify(captor.capture());
         assertThat(captor.getValue().getClientId()).isEqualTo("0");
         assertThat(captor.getValue().getClientId()).isNotEqualTo(ACCOUNT_ID.toString());
+    }
+
+    @Test
+    @DisplayName("UG-280: 라이브니스 계열이 아닌 4xx 는 실패 사유를 남긴 뒤 예외를 전파한다")
+    void execute_nonLivenessFeignError_recordsReasonThenPropagates() {
+        // given: 예전에는 사유를 남기지 않고 곧바로 rethrow 했다. noRollbackFor 로 행은
+        // 커밋되는데 failure_type 이 NULL 이라, 응답을 받지 못하고 끊긴 요청과 구분되지 않았다.
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        CustomFeignException exception = new CustomFeignException("ML-900", "UNKNOWN_ERROR", "boom");
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class))).willThrow(exception);
+
+        // when & then: 응답 계약은 그대로 — 흡수하지 않고 전파한다
+        assertThatThrownBy(() -> identifyFaceUseCase.execute(input)).isSameAs(exception);
+
+        MatchHistory saved = capturedMatchHistory();
+        assertThat(saved.getSuccess()).isFalse();
+        assertThat(saved.getFailureType()).isEqualTo("UNKNOWN_ERROR");
+        verifyNoInteractions(useCaseNotifyService);
+    }
+
+    @Test
+    @DisplayName("UG-280: 하위 서비스 5xx(RemoteCallException)도 실패 사유를 남긴 뒤 전파한다")
+    void execute_remoteCallException_recordsReasonThenPropagates() {
+        // given: 예전에는 CustomGateException 이라 noRollbackFor 에 걸리지 않아
+        // REQUIRES_NEW 트랜잭션이 롤백되고 이력 행 자체가 사라졌다
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        RemoteCallException exception = new RemoteCallException(502);
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class))).willThrow(exception);
+
+        // when & then
+        assertThatThrownBy(() -> identifyFaceUseCase.execute(input)).isSameAs(exception);
+
+        MatchHistory saved = capturedMatchHistory();
+        assertThat(saved.getSuccess()).isFalse();
+        assertThat(saved.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        verifyNoInteractions(useCaseNotifyService);
     }
 }
