@@ -1736,6 +1736,16 @@
                         "message": "User information is invalid."
                       }
                     }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
                   }
                 }
               }
@@ -2271,6 +2281,16 @@
                         "code": "USER-101",
                         "type": "INVALID_USER",
                         "message": "User information is invalid."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }
@@ -5059,16 +5079,6 @@
                         "message": "API key not found."
                       }
                     }
-                  },
-                  "SETTINGS_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-106",
-                        "type": "SETTINGS_NOT_FOUND",
-                        "message": "Project settings not found."
-                      }
-                    }
                   }
                 }
               }
@@ -5961,6 +5971,16 @@
                         "code": "PJ-105",
                         "type": "API_KEY_NOT_FOUND",
                         "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
                       }
                     }
                   }

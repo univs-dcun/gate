@@ -87,6 +87,9 @@ public class FaceController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UseCase 자체에는 settings 참조가 없고 FaceFeatureService.createFaceFeatureByDescriptor
+            // 가 projectSettingsService.findByProject 를 부른다. 한 단계 위임돼 있어 처음에 빠졌다.
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureByDescriptorResponseDTO>> createByDescriptor(
@@ -109,6 +112,9 @@ public class FaceController {
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UpdateFaceFeatureUseCase 는 projectSettingsService 가 아니라
+            // projectSettingsRepository.findByProject 로 직접 조회하고 같은 예외를 던진다.
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PutMapping(value = "/{faceFeatureId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> update(
@@ -286,7 +292,9 @@ public class FaceController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
+            // SETTINGS_NOT_FOUND 는 여기 넣지 않는다. VerifyByDescriptorUseCase 는
+            // project_settings 를 아예 조회하지 않는다 — UG-279 가 "새 실패 지점을 만들지
+            // 않겠다"고 의도적으로 뺀 호출이며 그 판단이 UseCase 주석에 남아 있다.
     })
     @PostMapping(value = "/verify/descriptor")
     public ResponseEntity<ResponseApi<VerifyByDescriptorResponseDTO>> verifyByDescriptor(

@@ -75,6 +75,9 @@ public class PalmController {
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UpdatePalmFeatureUseCase 는 projectSettingsService 가 아니라
+            // projectSettingsRepository.findByProject 로 직접 조회하고 같은 예외를 던진다.
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PutMapping(value = "/{palmFeatureId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> update(
