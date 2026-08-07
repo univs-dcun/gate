@@ -44,10 +44,6 @@ public class ApiKey extends BaseTimeEntity {
         this.isActive = false;
     }
 
-    public void activate() {
-        this.isActive = true;
-    }
-
     public boolean isExpired() {
         return expiresAt != null && LocalDateTime.now().isAfter(expiresAt);
     }
