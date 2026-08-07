@@ -37,8 +37,13 @@ dependencies {
     /* DB */
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'org.postgresql:postgresql'
-    // UG-296: 나머지 세 서비스와 같은 ojdbc11 로 맞춘다. ojdbc8 은 JDK 8 타깃 산출물이고
-    // 이 서비스는 Java 21 에서 돈다. 오라클 19 지원은 둘 다 되므로 기능 변화는 없다.
+    // UG-296: 나머지 세 서비스와 같은 아티팩트(ojdbc11)로 맞춘다. ojdbc8 은 JDK 8 타깃
+    // 산출물이고 이 서비스는 Java 21 에서 돈다. 오라클 19 지원은 둘 다 되므로 기능 변화는
+    // 없고, 전이 의존성도 그대로다 (해석 결과 202개 동일).
+    //
+    // 다만 버전까지 같아지는 것은 아니다. 버전은 Spring Boot BOM 이 정하는데 서비스마다
+    // Boot 가 갈려 있어 gate·palm(3.5.x)은 23.7.x, face·match(3.3.x)는 21.9.x 로 해석된다.
+    // Boot 버전 정렬은 이 티켓 범위 밖이다.
     runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
 
     /* DB Migration (Flyway) */

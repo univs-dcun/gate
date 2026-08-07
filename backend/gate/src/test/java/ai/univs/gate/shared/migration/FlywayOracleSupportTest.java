@@ -65,7 +65,7 @@ class FlywayOracleSupportTest {
     private static final String ORACLE = "org.flywaydb.database.oracle.OracleDatabaseType";
     private static final String POSTGRESQL = "org.flywaydb.database.postgresql.PostgreSQLDatabaseType";
 
-    private static final String SERVICE = "gate";
+    private static final String ORACLE_ACCOUNT = "univs_gate";
 
     @Test
     @DisplayName("오라클 DatabaseType 이 Flyway 플러그인으로 등록돼 있다")
@@ -140,19 +140,67 @@ class FlywayOracleSupportTest {
         return new Binder(ConfigurationPropertySources.from(merged));
     }
 
-    /** 테이블이 올 자리에 점이 들어간 이름 — {@code ALTER TABLE UNIVS."DESCRIPTOR"} 같은 것. */
-    private static final Pattern 테이블_자리 = Pattern.compile(
-            "(?i)\\b(ALTER\\s+TABLE|CREATE\\s+TABLE|INSERT\\s+INTO|UPDATE|REFERENCES|FROM|JOIN"
-                    + "|COMMENT\\s+ON\\s+TABLE)\\s+([A-Za-z0-9_$\"]+(?:\\.[A-Za-z0-9_$\"]+)+)");
+    /** 식별자 한 조각. 따옴표로 감싼 것도 포함한다 — {@code "DESCRIPTOR"}. */
+    private static final String 이름 = "[A-Za-z0-9_$\"]+";
+
+    /** 점으로 이어 붙인 이름. 오라클은 점 좌우 공백을 허용한다 — {@code UNIVS . DESCRIPTOR}. */
+    private static final String 한정된_이름 = "(" + 이름 + "(?:\\s*\\.\\s*" + 이름 + ")+)";
+
+    /**
+     * 객체 이름이 올 자리 뒤에 점이 들어간 이름.
+     *
+     * <p>동사를 열거하는 방식이라 <b>원리적으로 빈틈이 있다.</b> 처음 판에서는
+     * {@code ALTER TABLE}·{@code CREATE TABLE}·{@code INSERT INTO}·{@code UPDATE}·
+     * {@code REFERENCES}·{@code FROM}·{@code JOIN}·{@code COMMENT ON TABLE} 여덟 개만
+     * 봤는데, 반박 리뷰가 {@code MERGE INTO}·{@code TRUNCATE TABLE}·{@code DROP TABLE}·
+     * {@code CREATE SEQUENCE}·{@code CREATE VIEW}·{@code CREATE SYNONYM} 등 12종이
+     * 그대로 통과하는 것을 실측으로 보여 줬다. 여기 목록은 그 지적을 반영한 것이고,
+     * 오라클 마이그레이션에 나올 수 있는 동사를 넓게 덮는다. 새 동사가 생기면 여기도
+     * 함께 늘려야 한다.
+     */
+    private static final Pattern 객체_자리 = Pattern.compile("(?i)\\b("
+            + "ALTER\\s+TABLE"
+            + "|CREATE\\s+(?:GLOBAL\\s+TEMPORARY\\s+|PRIVATE\\s+TEMPORARY\\s+)?TABLE"
+            + "|DROP\\s+TABLE|TRUNCATE\\s+TABLE|RENAME\\s+TABLE"
+            + "|INSERT\\s+INTO|MERGE\\s+INTO|UPDATE|DELETE\\s+FROM|REFERENCES|FROM|JOIN"
+            + "|COMMENT\\s+ON\\s+TABLE"
+            + "|CREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:MATERIALIZED\\s+)?VIEW|DROP\\s+VIEW"
+            + "|CREATE\\s+SEQUENCE|DROP\\s+SEQUENCE|ALTER\\s+SEQUENCE"
+            + "|CREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:PUBLIC\\s+)?SYNONYM|DROP\\s+SYNONYM"
+            + "|CREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:PROCEDURE|FUNCTION|PACKAGE|TRIGGER|TYPE)"
+            + "|DROP\\s+INDEX|ALTER\\s+INDEX"
+            + ")\\s+" + 한정된_이름);
 
     /** {@code CREATE INDEX ... ON schema.table} */
     private static final Pattern 인덱스_대상 = Pattern.compile(
-            "(?i)\\bCREATE\\s+(?:UNIQUE\\s+)?INDEX\\s+[A-Za-z0-9_$\"]+\\s+ON\\s+"
-                    + "([A-Za-z0-9_$\"]+(?:\\.[A-Za-z0-9_$\"]+)+)");
+            "(?i)\\bCREATE\\s+(?:UNIQUE\\s+|BITMAP\\s+)?INDEX\\s+" + 이름 + "\\s+ON\\s+"
+                    + 한정된_이름);
+
+    /** {@code CREATE SYNONYM x FOR schema.table} — 한정자가 FOR 뒤에 온다. */
+    private static final Pattern 시노님_대상 = Pattern.compile(
+            "(?i)\\bCREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:PUBLIC\\s+)?SYNONYM\\s+" + 이름
+                    + "\\s+FOR\\s+" + 한정된_이름);
+
+    /** {@code GRANT ... ON schema.table TO ...} — 문장 안 어디든 ON 뒤가 한정돼 있으면 잡는다. */
+    private static final Pattern 권한_대상 = Pattern.compile(
+            "(?is)\\bGRANT\\b[^;]*?\\bON\\s+" + 한정된_이름);
 
     /** {@code COMMENT ON COLUMN} 은 table.column 이라 점 하나까지가 정상이다. 둘 이상이면 스키마다. */
     private static final Pattern 컬럼_주석 = Pattern.compile(
-            "(?i)\\bCOMMENT\\s+ON\\s+COLUMN\\s+([A-Za-z0-9_$\"]+(?:\\.[A-Za-z0-9_$\"]+){2,})");
+            "(?i)\\bCOMMENT\\s+ON\\s+COLUMN\\s+(" + 이름 + "(?:\\s*\\.\\s*" + 이름 + "){2,})");
+
+    /** DB 링크 — {@code FROM BRANCH@OLDDB}. 배포처를 특정 DB 에 묶는다는 점에서 같은 문제다. */
+    private static final Pattern 디비_링크 = Pattern.compile(
+            "(?i)(" + 이름 + "\\s*@\\s*[A-Za-z0-9_$.]+)");
+
+    /**
+     * {@code ALTER SESSION SET CURRENT_SCHEMA = ...} — 이 가드의 목적을 통째로 무력화한다.
+     *
+     * <p>한 줄이면 이후 모든 문장이 특정 스키마에서 돈다. 반박 리뷰가 찾은 것 중 가장 나쁜
+     * 되돌림이라 한정자 검사와 별개로 존재 자체를 금지한다.
+     */
+    private static final Pattern 세션_스키마 = Pattern.compile(
+            "(?i)(\\bALTER\\s+SESSION\\s+SET\\s+CURRENT_SCHEMA\\b)");
 
     /**
      * UG-296: 오라클 마이그레이션 SQL 에 스키마 한정자를 쓰지 않는다.
@@ -163,9 +211,9 @@ class FlywayOracleSupportTest {
      * 우연히 {@code univs} 라 드러나지 않았을 뿐이다.
      *
      * <p>온프레미스는 서비스마다 오라클 계정을 따로 판다 — 오라클은 계정과 스키마가 1:1 이라
-     * 그렇게 하지 않으면 네 서비스가 {@code flyway_schema_history} 를 공유하게 되고, 두 번째로
-     * 뜨는 서비스가 자기 {@code V1} 의 체크섬 불일치로 기동에 실패한다. 그래서 스키마 이름은
-     * 접속 계정이 정하게 두고 SQL 에는 적지 않는다.
+     * 그렇게 하지 않으면 다섯 서비스가 {@code flyway_schema_history} 를 공유하게 되고, 두
+     * 번째로 뜨는 서비스가 자기 {@code V1} 의 체크섬 불일치로 기동에 실패한다. 그래서 스키마
+     * 이름은 접속 계정이 정하게 두고 SQL 에는 적지 않는다.
      *
      * <p>주석은 먼저 걷어낸다. 위 사정을 설명하는 주석 자체에 {@code UNIVS.} 가 들어 있다.
      */
@@ -176,9 +224,13 @@ class FlywayOracleSupportTest {
 
         for (Path sql : 오라클_마이그레이션_파일들()) {
             String 본문 = 주석을_지운다(Files.readString(sql, StandardCharsets.UTF_8));
-            모은다(위반, sql, 본문, 테이블_자리, 2, "테이블 자리");
+            모은다(위반, sql, 본문, 객체_자리, 2, "객체 자리");
             모은다(위반, sql, 본문, 인덱스_대상, 1, "인덱스 대상");
+            모은다(위반, sql, 본문, 권한_대상, 1, "GRANT 대상");
+            모은다(위반, sql, 본문, 시노님_대상, 1, "시노님 대상");
             모은다(위반, sql, 본문, 컬럼_주석, 1, "COMMENT ON COLUMN");
+            모은다(위반, sql, 본문, 디비_링크, 1, "DB 링크");
+            모은다(위반, sql, 본문, 세션_스키마, 1, "세션 스키마 고정");
         }
 
         assertThat(위반)
@@ -190,15 +242,21 @@ class FlywayOracleSupportTest {
     /**
      * UG-296: 이 서비스의 오라클 계정이 다른 서비스와 겹치지 않는다.
      *
-     * <p>네 서비스가 모두 {@code username: univs} 를 쓰고 있었다. 오라클에서 그것은 한 스키마를
-     * 넷이 나눠 쓴다는 뜻이고, {@code flyway_schema_history} 도 하나가 된다. 각 서비스의
-     * {@code V1__init.sql} 은 서로 다르므로 두 번째로 뜨는 서비스부터
+     * <p>다섯 서비스가 모두 {@code username: univs} 를 쓰고 있었다. 오라클에서 그것은 한
+     * 스키마를 다섯이 나눠 쓴다는 뜻이고, {@code flyway_schema_history} 도 하나가 된다. 각
+     * 서비스의 {@code V1__init.sql} 은 서로 다르므로 두 번째로 뜨는 서비스부터
      * {@code Migration checksum mismatch for migration version 1} 로 기동에 실패한다.
      *
      * <p>PostgreSQL 은 서비스별 데이터베이스를 쓰고 있어 같은 문제가 없다. 오라클만의 함정이다.
      *
-     * <p>여기서 볼 수 있는 것은 레포 안의 개발 기본값뿐이다. 실환경 값은 gate-config 가 정한다
-     * (클래스 주석의 경고와 같다). 그래도 다른 서비스의 yml 을 복사해 오는 흔한 되돌림은 잡힌다.
+     * <p>부분 문자열이 아니라 <b>정확히 일치</b>를 본다. 리뷰가 {@code univs_gateway} 나
+     * {@code gate_face_palm_match} 같은 값이 {@code contains} 검사를 통과하는 것을 보여 줬다.
+     *
+     * <p><b>이 가드가 덮는 범위는 레포 안의 개발 기본값까지다.</b> 실제 컨테이너는 compose 가
+     * 넘기는 {@code SPRING_DATASOURCE_USERNAME} 환경변수를 쓰고, 그쪽이 config-server 값보다
+     * 우선한다 ({@code spring.config.import} 는 bootstrap 이 아니라 config-data 경로다).
+     * 실배포의 계정 분리는 {@code infra/docker/compose/compose.*.yml} 과 {@code .env} 가 쥐고
+     * 있으므로 {@code docs/onpremise-oracle-setup.md} 를 함께 볼 것.
      */
     @Test
     @DisplayName("오라클 계정이 이 서비스 전용이다")
@@ -208,15 +266,23 @@ class FlywayOracleSupportTest {
                 .orElse("");
 
         assertThat(username)
-                .as("서비스 이름이 들어가지 않은 계정은 다른 서비스와 공유될 여지가 있다. "
+                .as("다른 서비스의 yml 을 복사해 오거나 공용 계정으로 되돌리는 것을 막는다. "
                         + "오라클은 계정 = 스키마다")
-                .contains(SERVICE);
+                .isEqualTo(ORACLE_ACCOUNT);
     }
 
+    /**
+     * 오라클 마이그레이션 파일 전부.
+     *
+     * <p>{@code Files.list} 가 아니라 {@code Files.walk} 다. Flyway 의 위치 스캔은 재귀라
+     * {@code oracle/extra/V98__x.sql} 도 실행하는데, 1단계만 보면 그 파일은 가드를 통과한다
+     * (반박 리뷰가 실측으로 보여 줬다).
+     */
     private static List<Path> 오라클_마이그레이션_파일들() throws IOException {
         Path dir = new ClassPathResource("db/migration/oracle").getFile().toPath();
-        try (Stream<Path> paths = Files.list(dir)) {
-            List<Path> sqls = paths.filter(p -> p.getFileName().toString().endsWith(".sql"))
+        try (Stream<Path> paths = Files.walk(dir)) {
+            List<Path> sqls = paths.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".sql"))
                     .sorted(Comparator.comparing(Path::toString))
                     .toList();
             assertThat(sqls)
