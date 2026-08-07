@@ -51,19 +51,11 @@ public class DashboardController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
-            // 이 엔드포인트만 projectService.validateOwnership 을 한 번 더 거친다 (UG-288).
-            // 나머지 셋은 findOwnedByApiKey 하나로 끝나서 이 두 코드가 나올 자리가 없다.
-            //
-            // 도달 조건이 좁다는 점은 알고 있다 (리뷰 지적). NOT_OWNERSHIP 은 ENFORCE 에서
-            // 앞줄이 먼저 API_KEY_NOT_FOUND 를 던지므로 LOG_ONLY 에서만 나오고,
-            // PROJECT_NOT_FOUND 는 두 검사 사이에 삭제가 끼어야 한다. 그래도 선언한다 —
-            // LOG_ONLY 는 실제로 켤 수 있는 스위치이고, 그때 이 엔드포인트가 다른 코드를
-            // 돌려준다는 사실을 클라이언트가 모르면 안 된다.
-            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
-            // 403 이 아니라 400 이다. GlobalExceptionHandler.handleBusinessException 이
-            // @ResponseStatus(BAD_REQUEST) 고정이라 ErrorType.status 가 FORBIDDEN 이어도
-            // 클라이언트는 400 을 받는다 (UG-295 에서 확인. 근본 정리는 UG-298).
-            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
+            // UG-301: 예전에는 여기에 PROJECT_NOT_FOUND · NOT_OWNERSHIP 이 있었다
+            // (UG-288). 네 엔드포인트가 ApiKeyService.findStrictlyOwnedByApiKey 로 통일되면서
+            // 두 코드가 날 자리가 사라졌다 — 소유 불일치도 API_KEY_NOT_FOUND 로 나가고,
+            // 삭제 여부는 그 조회가 이미 본다. 남의 키의 '존재' 를 확인해 주지 않으려는
+            // ApiKeyService 의 열거 오라클 방지 정책과도 이제 어긋나지 않는다.
     })
     @GetMapping("/summary")
     public ResponseEntity<ResponseApi<DashboardSummaryResponse>> getSummary(

@@ -111,9 +111,95 @@ public class ApiKeyService {
      *                  값은 {@code AuthenticationFilter} 가 항상 덮어쓰므로 위조할 수 없다.
      */
     public ApiKey findOwnedByApiKey(String apiKey, Long accountId) {
+        requireAccountId(apiKey, accountId);
+
         ApiKey found = findByApiKeyUnverified(apiKey);
         validateOwnership(found, accountId);
         return found;
+    }
+
+    /**
+     * 소유 검증을 <b>모드와 무관하게</b> 하는 조회. {@code LOG_ONLY} 여도 거부한다.
+     *
+     * <p>UG-301: {@code /api/v1/dashboard/**} 네 엔드포인트가 쓴다.
+     *
+     * <p><b>왜 따로 두는가.</b> {@link #findOwnedByApiKey} 의 검증은
+     * {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 통과시킨다. 그 스위치는
+     * UG-281 의 비상 되돌림 수단이고 실제로 켤 수 있다. 대시보드는 프로젝트 전체 집계를
+     * 통째로 내주므로, 되돌림이 필요한 상황에서 폭발 반경이 거기까지 넓어지는 것은 받아들일
+     * 수 없다고 판단했다.
+     *
+     * <p><b>이 판단은 대시보드에만 적용됐다 — 일관성 없는 상태다.</b> 반박 리뷰가 짚은 대로
+     * {@code Delete/Update Face·Palm Feature} 를 포함한 나머지 16곳은 여전히 LOG_ONLY 에서
+     * 열린다. 그쪽이 오히려 파괴적이다. 그러나 그 16곳을 여기로 옮기면 LOG_ONLY 는 아무것도
+     * 끄지 않는 죽은 스위치가 되고, 그것은 사실상 UG-306(LOG_ONLY 제거)을 이름만 다르게
+     * 하는 것이다. UG-306 은 UG-281 의 WARN 실트래픽 관측이 선행 조건이므로 여기서 몰래
+     * 처리하지 않는다. 전수 목록은 UG-306 코멘트에 남겼다.
+     *
+     * <p><b>왜 {@code ProjectService.validateOwnership} 을 쓰지 않는가.</b> 초판은 그것을
+     * 불렀다. 반박 리뷰가 두 가지를 짚었다.
+     * <ul>
+     *   <li>그쪽은 {@code NOT_OWNERSHIP} 을 던진다 — "이 키는 실재하고 남의 것" 을 확인해 주는
+     *       열거 오라클이다. 이 클래스가 {@link #validateOwnership} 에서 세 문단에 걸쳐 피하려는
+     *       바로 그것이고, 그 코드가 공개 계약서(openapi.json)에까지 실렸다.
+     *   <li>{@code findByIdAndIsDeletedFalse} 로 SELECT 를 한 번 더 친다. 비교 대상
+     *       {@code accountId} 는 이미 손에 있는 프록시에 들어 있고
+     *       ({@link #validateProjectNotDeleted} 가 초기화해 둔다) 삭제 여부도 거기서 이미 봤다.
+     * </ul>
+     * 인메모리 비교 + {@link ErrorType#API_KEY_NOT_FOUND} 로 바꾸니 오라클도 추가 쿼리도
+     * 사라졌고, 두 모드의 응답이 같아져 계약 스펙 변경이 0 이 됐다.
+     */
+    public ApiKey findStrictlyOwnedByApiKey(String apiKey, Long accountId) {
+        ApiKey found = findOwnedByApiKey(apiKey, accountId);
+
+        if (!found.getProject().getAccountId().equals(accountId)) {
+            // 여기 도달했다는 것은 위 검증이 LOG_ONLY 로 통과시켰다는 뜻이다. WARN 은 이미
+            // validateOwnership 이 남겼으므로 중복해 남기지 않는다.
+            throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
+        }
+
+        return found;
+    }
+
+    /**
+     * UG-277: 인증 경로인데 {@code X-Account-Id} 가 없으면 여기서 끝낸다.
+     *
+     * <p>{@code UserContext.getAccountIdAsLong()} 은 헤더가 없으면 {@code null} 을 돌려준다.
+     * 게이트웨이를 경유하면 {@code AuthenticationFilter} 가 항상 채우므로 정상 트래픽에서는
+     * 나오지 않고, gate 포트에 직접 붙는 경우(내부망 호출·디버깅·포트 노출)에만 생긴다.
+     *
+     * <p><b>왜 여기인가.</b> 그 {@code null} 이 그대로 흘러가면 매칭 UseCase 들이
+     * {@code input.accountId().toString()} 에서 NPE(500)를 낸다. 그것도
+     * {@code matchHistoryRepository.save()} 뒤라 사유 없는 실패 이력 행이 남는다. 소유 검증보다
+     * 앞에 두면 {@link #findByApiKey} 를 타는 공유 UseCase 8곳과 인증 전용 조회 20곳이 한
+     * 자리에서 닫힌다. (반박 리뷰 지적으로 "6곳" 을 고쳤다 —
+     * {@code FaceFeatureService}·{@code PalmFeatureService} 경유 2곳이 빠져 있었다.)
+     *
+     * <p><b>왜 하필 지금 필요해졌나.</b> 기본 모드({@code ENFORCE})에서는 아래
+     * {@link #validateOwnership} 이 {@code null} 을 불일치로 보고 먼저 거부하므로 NPE 까지 가지
+     * 않는다. 그러나 {@code mode=LOG_ONLY} 는 통과시키고, 그 모드는 UG-281 의 비상 되돌림
+     * 수단이라 실제로 켤 수 있다.
+     *
+     * <p><b>이 가드가 아래 겹을 관측 불가로 만들었다</b> (반박 리뷰 지적). 이제 {@code null} 이
+     * {@link #validateOwnership} 까지 갈 수 없으므로, 그쪽이 {@code null} 을 어떻게 다루는지는
+     * 어떤 테스트로도 볼 수 없다. 이 가드를 지우는 변이는 잡히지만, 지운 <b>뒤에</b> 아래 겹까지
+     * 손대는 조합은 잡히지 않는다. 이 가드가 사실상 단일 방어선이라는 뜻이다.
+     *
+     * <p><b>왜 새 오류 코드를 만들지 않았나.</b> {@link ErrorType#API_KEY_NOT_FOUND} 를 그대로
+     * 쓰면 ENFORCE 에서의 응답이 <b>바이트 단위로 그대로</b>다 — 지금도 같은 코드가 나간다.
+     * 즉 이 변경은 LOG_ONLY 에서만 500 을 400 으로 바꾸고, 클라이언트 계약은 건드리지 않는다.
+     *
+     * <p>로그는 소유 불일치와 <b>구분해서</b> 남긴다. 같은 WARN 으로 뭉치면 UG-281 이 관측하려는
+     * "정상인데 불일치로 호출하던 기존 고객" 집계에 헤더 누락이 섞여 들어간다.
+     */
+    private void requireAccountId(String apiKey, Long accountId) {
+        if (accountId != null) {
+            return;
+        }
+
+        log.warn("인증 경로 호출에 X-Account-Id 가 없다. 게이트웨이를 우회한 호출로 보인다. apiKey={}",
+                ApiKeyMasker.mask(apiKey));
+        throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
     }
 
     /**

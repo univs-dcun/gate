@@ -115,7 +115,14 @@ public class DemoController {
     @GetMapping("/config")
     public ResponseEntity<ResponseApi<ProjectSettingsResponseDTO>> getProjectConfigByApiKey(
             HttpServletRequest httpServletRequest,
-            @RequestBody DemoProjectConfigRequestDTO request
+            // UG-310: @Valid 가 없어서 DemoProjectConfigRequestDTO 의 @NotBlank·@Length 가
+            // 한 번도 돌지 않았다. 빈 apiKey 가 그대로 조회까지 내려가 API_KEY_NOT_FOUND 로
+            // 끝났고, 36자를 넘는 값도 그대로 통과했다.
+            //
+            // 응답 계약은 바뀌지 않는다. 위반은 MethodArgumentNotValidException 이 되고
+            // GlobalExceptionHandler 가 INVALID_INPUT 으로 매핑하는데, 그 코드는 UG-295 에서
+            // 이미 이 엔드포인트에 선언돼 있다.
+            @Valid @RequestBody DemoProjectConfigRequestDTO request
     ) {
         String timezone = httpServletRequest.getHeader("Accept-TimeZone");
         var result = getDemoProjectConfigUseCase.execute(request.apiKey(), timezone);

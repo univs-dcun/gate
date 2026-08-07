@@ -76,12 +76,32 @@ public class SwaggerConfig {
 
     private void settingExamples(Operation operation, SwaggerError[] customErrors) {
         // 공통 에러 문서화
+        //
+        // UG-309: 키는 ErrorType 의 '이름' 이다. 아래 getExample 이 ErrorType.from(name) 으로
+        // 되찾는데, 그 메서드는 못 찾으면 조용히 INTERNAL_SERVER_ERROR 로 떨어뜨린다.
+        // 그래서 문자열이 아니라 ErrorType 상수를 직접 참조한다 — 이름을 손으로 짓는 순간
+        // 오타가 컴파일이 아니라 런타임 폴백으로 나타난다.
+        //
+        // 403 은 아예 뺐다. 두 판을 거쳤다.
+        //   1판: HttpStatus.FORBIDDEN.name() → ErrorType 에 그 이름이 없어 폴백. 54개
+        //        엔드포인트 전부가 403 자리에 PJ-005 짜리 예시를 달고 있었다.
+        //   2판: NEED_SERVICE_ROLE(PJ-002)로 교정.
+        //   3판(지금): 자리 자체를 제거. 반박 리뷰가 짚었다 — 이 서비스는 403 을 낼 수 없다.
+        //        gate 에는 Spring Security 의존성이 없어 AccessDeniedException 경로가 없고,
+        //        GlobalExceptionHandler 의 @ResponseStatus 는 400·404·405·500 뿐이며,
+        //        NEED_SERVICE_ROLE 을 던지는 프로덕션 코드가 0곳이다. 던지더라도
+        //        handleBusinessException 이 BAD_REQUEST 고정이라 400 으로 나간다.
+        //        즉 2판은 아무도 볼 수 없는 예시를 다른 거짓으로 바꾼 것이었다.
+        //
+        // 401 은 남긴다. 게이트웨이의 AuthenticationFilter 가 실제로 401 을 내기 때문이다.
+        // 다만 그쪽은 본문 없이 상태코드만 보내므로 여기 예시의 ResponseApi 본문은 실제와
+        // 다르다. 그 불일치는 스캐폴드 경계(msa-scaffold) 문제라 이 티켓에서 고치지 않고
+        // UG-309 에 잔여 항목으로 남겼다.
         Map<String, Integer> allErrors = new HashMap<>();
-        allErrors.put(HttpStatus.UNAUTHORIZED.name(), HttpStatus.UNAUTHORIZED.value());
-        allErrors.put(HttpStatus.NOT_FOUND.name(), HttpStatus.NOT_FOUND.value());
-        allErrors.put(HttpStatus.FORBIDDEN.name(), HttpStatus.FORBIDDEN.value());
-        allErrors.put(HttpStatus.METHOD_NOT_ALLOWED.name(), HttpStatus.METHOD_NOT_ALLOWED.value());
-        allErrors.put(HttpStatus.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+        allErrors.put(ErrorType.UNAUTHORIZED.name(), HttpStatus.UNAUTHORIZED.value());
+        allErrors.put(ErrorType.NOT_FOUND.name(), HttpStatus.NOT_FOUND.value());
+        allErrors.put(ErrorType.METHOD_NOT_ALLOWED.name(), HttpStatus.METHOD_NOT_ALLOWED.value());
+        allErrors.put(ErrorType.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR.value());
 
         // 컨트롤러에 annotation 으로 설정된 발생 가능한 예외 문서화
         for (SwaggerError error : customErrors) {
