@@ -14,9 +14,17 @@ services:
       - ./logs:/logs
     environment:
       SPRING_PROFILES_ACTIVE: ${CORE_SPRING_PROFILES_ACTIVE}
-      SPRING_DATASOURCE_URL: ${CORE_DB_URL}/palm
-      SPRING_DATASOURCE_USERNAME: ${CORE_DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${CORE_DB_PASSWORD}
+      # UG-296: 오라클은 계정과 스키마가 1:1 이라 서비스마다 계정을 따로 판다. 아래 세 줄이
+      # 실제로 계정을 정하는 자리다 — 서비스는 spring.config.import 로 config-server 를 읽는
+      # config-data 경로라, 컨테이너 환경변수가 config-server 값을 이긴다. 그래서 gate-config
+      # 의 {서비스}-oracle.yml 만 고쳐서는 아무것도 바뀌지 않는다.
+      #
+      # {서비스}_DB_* 를 .env 에 넣으면 그 값이 쓰이고, 없으면 기존 CORE_DB_* 로 떨어진다.
+      # PostgreSQL 환경(dev/stage/prod)은 CORE_DB_* 만 쓰므로 동작이 그대로다.
+      # 절차: gate 레포 docs/onpremise-oracle-setup.md
+      SPRING_DATASOURCE_URL: ${PALM_DB_URL:-${CORE_DB_URL}/palm}
+      SPRING_DATASOURCE_USERNAME: ${PALM_DB_USERNAME:-${CORE_DB_USERNAME}}
+      SPRING_DATASOURCE_PASSWORD: ${PALM_DB_PASSWORD:-${CORE_DB_PASSWORD}}
       PALM_MODULE_URL: ${PALM_MODULE_URL}
       MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
     depends_on:
