@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -111,12 +112,13 @@ public class GlobalExceptionHandler {
      * 경우는 우리 호출 스택이 매번 같아 정보가 없고, 응답을 <b>해석하지 못한</b> 경우는 우리 쪽
      * 파싱 문제일 수 있어 단서가 된다.
      *
-     * <p>응답 본문·상태 코드는 위 핸들러와 동일하다 ({@code SWAGGER-005}, 400). 클라이언트가
-     * 보는 계약을 바꾸지 않기 위해 일부러 맞췄다.
+     * <p>응답 본문은 위 핸들러와 동일하다 ({@code SWAGGER-005}). 상태 코드는 UG-308 에서
+     * 갈렸다 — 하위 모듈이 오류를 <b>응답한</b> 경우는 UG-299 가 맞춘 400 그대로고, 응답을
+     * <b>못 받은</b> 경우({@code NO_RESPONSE})는 500 이다. 두 값 모두 UG-308 이전 거동과
+     * 같으므로 클라이언트가 보는 계약은 바뀌지 않는다. 이유는 아래 분기 주석에 있다.
      */
     @ExceptionHandler(UpstreamCallException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseApi<?> handleUpstreamCallException(UpstreamCallException ex) {
+    public ResponseEntity<ResponseApi<?>> handleUpstreamCallException(UpstreamCallException ex) {
         // cause 를 마지막 인자로 넘긴다. slf4j 는 마지막 인자가 Throwable 일 때만 스택트레이스로
         // 취급하므로, null 이면 자리표시자 개수를 넘는 여분 인자로 조용히 무시된다. 즉 분기를
         // 따로 쓸 필요가 없다 — 실제로 if/else 로 나눠 봤더니 관측 가능한 차이가 없었다.
@@ -124,7 +126,31 @@ public class GlobalExceptionHandler {
                 ex.getErrorType().getCode(), requestInfo(),
                 ex.getOperation(), ex.getUpstreamStatus(), ex.getReason(), ex.getCause());
 
-        return getExceptionResponse(ex.getErrorType());
+        // UG-308: 응답을 못 받은 실패만 5xx 로 남긴다. 나머지(하위 모듈이 오류를 응답한
+        // 경우)는 UG-299 가 정한 대로 400 그대로다.
+        //
+        // 처음에는 전부 400 으로 통일했다 — 티켓 항목 4가 "다른 실패 경로와 같아지니
+        // 일관성이 좋아진다" 고 봤기 때문이다. 반박 리뷰가 그 '일관성' 이 정확히 해로운
+        // 지점임을 실측으로 보여 줬다.
+        //
+        // gate 의 CommonErrorDecoder 는 4xx 를 CustomFeignException 으로, 5xx 를
+        // RemoteCallException 으로 가른다. 그리고 gate 의 IdentifyPalmUseCase 는 전자를
+        // catch 해서 **정상 결과로 반환**한다 (rethrow 하지 않는 유일한 지점). 즉 400 으로
+        // 바꾸는 순간 팜 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 둔갑한다 — 은행·출입문
+        // 게이트 제품에서 생체 모듈이 죽은 것이 단순 불일치로 집계된다.
+        //
+        // 부수적으로 두 가지가 더 따라온다. 400 이면 gate 가 우리 SWAGGER-005 를 그대로
+        // 외부에 노출하고(원래는 gate 자신의 PJ-005), gate 쪽 로그에서 operation·
+        // upstreamStatus 가 사라진다.
+        //
+        // 500 을 그대로 두면 이 변경은 계약을 전혀 건드리지 않는다 — 예전에도
+        // handleGlobalException 이 500 이었다. 순수하게 관측성만 좋아진다.
+        // (502 Bad Gateway 가 의미상 더 정확하지만, 계약을 바꾸지 않는 쪽을 택했다.)
+        HttpStatus status = ex.getUpstreamStatus() == UpstreamCallException.NO_RESPONSE
+                ? HttpStatus.INTERNAL_SERVER_ERROR
+                : HttpStatus.BAD_REQUEST;
+
+        return ResponseEntity.status(status).body(getExceptionResponse(ex.getErrorType()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

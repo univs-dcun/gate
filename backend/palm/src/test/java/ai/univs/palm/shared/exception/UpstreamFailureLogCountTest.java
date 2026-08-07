@@ -139,8 +139,9 @@ class UpstreamFailureLogCountTest {
      * 지워도 전부 초록이었다 — 그러면 운영에서는 {@code handleXxxCustomException} 으로 떨어져
      * 이 커밋이 없앤 <b>스택트레이스가 그대로 돌아오고</b> upstreamStatus 도 사라진다.
      *
-     * <p>{@code @ResponseStatus} 도 함께 못박는다. 400 → 500 으로 바꿔도 아무 테스트가 깨지지
-     * 않았는데, "클라이언트가 보는 것은 안 바뀐다" 가 이 PR 이 문서 동기화를 생략한 근거다.
+     * <p>UG-308 에서 {@code @ResponseStatus} 고정이 사라졌다. 상태 코드가 상류 실패의 종류에
+     * 따라 갈리기 때문이다 — 상세는 {@code UpstreamCallStatusTest}. 여기서는 고정 애노테이션이
+     * 다시 붙지 않았는지만 본다.
      */
     @Test
     @DisplayName("상류 실패 핸들러가 전용 애노테이션으로 등록돼 있다")
@@ -155,12 +156,26 @@ class UpstreamFailureLogCountTest {
                 .isNotNull();
         assertThat(handler.value()).containsExactly(UpstreamCallException.class);
 
-        var status = method.getAnnotation(
-                org.springframework.web.bind.annotation.ResponseStatus.class);
-        assertThat(status).isNotNull();
-        assertThat(status.value())
-                .as("클라이언트 계약이다. 바뀌면 gate-api-docs 동기화가 필요해진다")
-                .isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST);
+        // UG-308: @ResponseStatus 고정이던 것을 ResponseEntity 로 바꿨다. 응답을 못 받은
+        // 실패(NO_RESPONSE)만 5xx 로 내보내야 하기 때문이다 — 400 으로 두면 gate 의
+        // CommonErrorDecoder 가 4xx 로 분류하고, gate 의 IdentifyPalmUseCase 가 그것을
+        // 정상 결과로 흡수해 팜 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 둔갑한다.
+        //
+        // 상태 코드 자체는 UpstreamCallStatusTest 가 핸들러를 실제로 호출해 못박는다.
+        // 여기서는 '고정 애노테이션이 다시 붙지 않았는지' 만 본다.
+        //
+        // 처음에는 그 이유를 "붙는 순간 분기가 무력화되기 때문" 이라고 적었는데 <b>사실이
+        // 아니다</b> (델타 리뷰가 실측으로 잡았다). @ResponseStatus 를 다시 붙여도
+        // ServletInvocableHandlerMethod.setResponseStatus 다음에 HttpEntityMethodProcessor 가
+        // ResponseEntity 의 상태로 덮으므로 분기는 그대로 산다 — MockMvc 로 재현해 보면
+        // 여전히 500 이 나온다. 즉 이 가드가 막는 것은 동작 회귀가 아니라 <b>의도 혼선</b>이다.
+        // 애노테이션과 반환값이 서로 다른 상태를 말하고 있으면, 다음 사람이 애노테이션 쪽을
+        // 참으로 읽고 분기를 지운다.
+        assertThat(method.getAnnotation(org.springframework.web.bind.annotation.ResponseStatus.class))
+                .as("고정 애노테이션과 ResponseEntity 가 서로 다른 상태를 말하면 안 된다")
+                .isNull();
+        assertThat(method.getReturnType())
+                .isEqualTo(org.springframework.http.ResponseEntity.class);
     }
 
     @Test

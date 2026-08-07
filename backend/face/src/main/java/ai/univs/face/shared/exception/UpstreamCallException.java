@@ -20,14 +20,34 @@ import lombok.Getter;
  * <b>예외에 실어서</b> 던지기만 하고, 로그는 핸들러가 한 번만 남긴다.
  *
  * <p>{@link CustomFaceException} 을 상속하므로 기존 {@code catch (CustomFaceException e)} 와
- * {@code @ExceptionHandler(CustomFaceException.class)} 가 그대로 동작한다. 응답도 이전과 같은
- * {@code SWAGGER-005} 400 이다 — 클라이언트가 보는 계약은 바뀌지 않는다.
+ * {@code @ExceptionHandler(CustomFaceException.class)} 가 그대로 동작한다. 응답 본문도 이전과
+ * 같은 {@code SWAGGER-005} 다. 상태 코드는 UG-308 에서 갈렸다 — 오류를 <b>응답한</b> 경우는
+ * 400, 응답을 <b>못 받은</b> 경우({@link #NO_RESPONSE})는 500. 둘 다 각 경우의 이전 거동과
+ * 같으므로 클라이언트가 보는 계약은 바뀌지 않는다.
  *
  * <p>{@link #upstreamStatus} 와 {@link #operation} 은 로그용이다. 응답에는 넣지 않는다 — 하위
  * 모듈의 상태 코드나 내부 호출 이름을 노출하면 내부 구성이 드러난다.
  */
 @Getter
 public class UpstreamCallException extends CustomFaceException {
+
+    /**
+     * 응답을 아예 받지 못했다는 표시 (UG-308).
+     *
+     * <p>연결 거부·읽기 타임아웃·연결 리셋에서는 <b>상태 코드라는 것이 없다.</b> 그런 실패까지
+     * 실제 상태 코드와 같은 자리에 담으려면 "없음" 을 뜻하는 값이 필요하다. HTTP 상태 코드는
+     * 100 미만이 존재하지 않으므로 0 은 실제 값과 절대 충돌하지 않는다.
+     *
+     * <p>로그에서 이 값이 보이면 <b>응답을 받지 못했다</b>는 뜻이고, 502·503 이 보이면
+     * <b>살아 있는데 오류를 응답했다</b>는 뜻이다. 장애 대응에서 갈리는 지점이라 한 값으로
+     * 뭉뚱그리지 않는다.
+     *
+     * <p>"응답을 받지 못했다" 가 곧 "모듈이 죽었다" 는 아니다 (델타 리뷰 지적). 살아 있는
+     * 모듈의 200 응답을 우리가 <b>파싱하지 못한</b> 경우도 상태 코드라는 것이 없어 이 값을
+     * 쓴다. 둘은 {@code reason} 으로 갈린다 — "연결 실패·타임아웃" 이면 닿지 않은 것이고,
+     * "응답 처리 실패" 면 닿았는데 해석을 못 한 것이다. 후자에는 스택트레이스도 함께 남는다. gate 의 {@code RemoteCallException.NO_RESPONSE} 와 같다.
+     */
+    public static final int NO_RESPONSE = 0;
 
     private final int upstreamStatus;
 
