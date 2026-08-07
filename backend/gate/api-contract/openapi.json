@@ -142,24 +142,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -331,24 +313,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -503,24 +467,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -667,24 +613,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -863,24 +791,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -1018,24 +928,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1226,24 +1118,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -1427,24 +1301,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -1600,24 +1456,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1807,24 +1645,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -1964,24 +1784,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2147,24 +1949,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2354,24 +2138,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -2528,24 +2294,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -2675,24 +2423,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2834,24 +2564,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3030,24 +2742,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -3192,24 +2886,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3383,24 +3059,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3628,24 +3286,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -3801,24 +3441,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3990,24 +3612,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -4165,24 +3769,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4413,24 +3999,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -4586,24 +4154,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4775,24 +4325,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -4957,24 +4489,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -5123,24 +4637,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5312,24 +4808,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -5487,24 +4965,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5678,24 +5138,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -5843,24 +5285,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6034,24 +5458,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -6216,24 +5622,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -6384,24 +5772,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6566,24 +5936,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -6734,24 +6086,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6916,24 +6250,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -7084,24 +6400,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7266,24 +6564,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -7434,24 +6714,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7628,24 +6890,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -7802,24 +7046,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7993,24 +7219,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8264,24 +7472,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -8449,24 +7639,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8703,24 +7875,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -8878,24 +8032,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9137,24 +8273,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -9307,24 +8425,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9500,24 +8600,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9703,24 +8785,6 @@
               }
             }
           },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "404": {
             "content": {
               "application/json": {
@@ -9892,24 +8956,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -10099,24 +9145,6 @@
                         "code": "PJ-001",
                         "type": "UNAUTHORIZED",
                         "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NEED_SERVICE_ROLE": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-002",
-                        "type": "NEED_SERVICE_ROLE",
-                        "message": "Authorization is required to use this service."
                       }
                     }
                   }

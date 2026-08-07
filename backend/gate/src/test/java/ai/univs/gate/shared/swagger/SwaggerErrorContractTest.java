@@ -71,10 +71,17 @@ class SwaggerErrorContractTest {
      *
      * <p>여기 이름과 상태가 {@code SwaggerConfig} 와 어긋나면 전 엔드포인트가 한꺼번에
      * 빨개진다 — 그것이 의도다. 공통 항목은 54개 오퍼레이션에 전부 실리므로 오탐일 수 없다.
+     *
+     * <p><b>이 사본이 {@code SwaggerConfig} 와 따로 논다는 점을 알고 있어야 한다.</b> 반박
+     * 리뷰가 {@code SwaggerConfig} 쪽 401 만 다른 {@link ErrorType} 으로 바꾸는 변이를 심었는데
+     * 이 테스트는 초록이었다 — 여기는 생성기를 읽지 않고 커밋된 JSON 과 자기 사본만 비교하기
+     * 때문이다. 그 방향은 {@code SwaggerConfigCommonExampleTest.공통_슬롯_전부_고정} 이 막는다.
+     * 두 테스트가 양쪽 방향을 하나씩 맡는다.
+     *
+     * <p>403 은 없다. 이 서비스는 403 을 낼 수 없다 — 사유는 {@code SwaggerConfig} 주석 참고.
      */
     private static final Map<String, Integer> 공통 = Map.of(
             ErrorType.UNAUTHORIZED.name(), 401,
-            ErrorType.NEED_SERVICE_ROLE.name(), 403,
             ErrorType.NOT_FOUND.name(), 404,
             ErrorType.METHOD_NOT_ALLOWED.name(), 405,
             ErrorType.INTERNAL_SERVER_ERROR.name(), 500);
@@ -118,6 +125,7 @@ class SwaggerErrorContractTest {
                         .formatted(handler.label(), handler.method().toUpperCase(), handler.path(),
                                 기대, 실제));
             }
+            어긋남.addAll(본문이_이름과_맞는가(handler, operation));
         }
 
         assertThat(검사한_오퍼레이션)
@@ -147,7 +155,7 @@ class SwaggerErrorContractTest {
         spec.path("paths").fields().forEachRemaining(path ->
                 path.getValue().fieldNames().forEachRemaining(method -> {
                     String key = method + " " + path.getKey();
-                    if (RequestMethod.values().length > 0 && !코드.contains(key)) {
+                    if (!코드.contains(key)) {
                         유령.add(key);
                     }
                 }));
@@ -183,6 +191,40 @@ class SwaggerErrorContractTest {
         allErrors.forEach((name, status) ->
                 byStatus.computeIfAbsent(status, k -> new TreeSet<>()).add(name));
         return byStatus;
+    }
+
+    /**
+     * 예시 <b>본문</b>의 오류 코드가 그 예시 이름과 맞는지 본다.
+     *
+     * <p>이름만 보면 기준선의 내용이 썩어도 모른다. 반박 리뷰가 커밋된 JSON 의
+     * {@code "PJ-105"} 41곳을 {@code "PJ-999-ROTTEN"} 으로 바꿨는데 전 테스트가 초록이었다 —
+     * 그리고 그것은 이 티켓이 고친 403 버그와 <b>정확히 같은 모양</b>의 부패다.
+     *
+     * <p>{@code ErrorType} 이름으로 코드를 되찾아 대조하므로, {@code ErrorType} 의 코드를
+     * 바꾸고 기준선을 재생성하지 않아도 걸린다.
+     */
+    private static List<String> 본문이_이름과_맞는가(Handler handler, JsonNode operation) {
+        List<String> 어긋남 = new ArrayList<>();
+        operation.path("responses").fields().forEachRemaining(response -> {
+            JsonNode examples = response.getValue()
+                    .path("content").path("application/json").path("examples");
+            examples.fields().forEachRemaining(example -> {
+                String name = example.getKey();
+                String code = example.getValue().path("value").path("errors").path("code").asText();
+                ErrorType errorType;
+                try {
+                    errorType = ErrorType.valueOf(name);
+                } catch (IllegalArgumentException e) {
+                    어긋남.add("%s: 예시 이름 '%s' 에 해당하는 ErrorType 이 없다".formatted(handler.label(), name));
+                    return;
+                }
+                if (!errorType.getCode().equals(code)) {
+                    어긋남.add("%s: %s 예시 본문의 코드가 '%s' 인데 ErrorType 은 '%s' 다"
+                            .formatted(handler.label(), name, code, errorType.getCode()));
+                }
+            });
+        });
+        return 어긋남;
     }
 
     private static Map<Integer, Set<String>> 실제_예시(JsonNode operation) {

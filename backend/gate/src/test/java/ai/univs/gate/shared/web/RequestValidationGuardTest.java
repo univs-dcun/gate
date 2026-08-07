@@ -8,7 +8,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,7 +21,11 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -115,9 +121,36 @@ class RequestValidationGuardTest {
         return found;
     }
 
+    /**
+     * 스프링이 요청 본문·파라미터를 DTO 로 바인딩하는 자리인가.
+     *
+     * <p>반박 리뷰가 세 형태를 통과시키는 것을 실측으로 보여 줬다. 처음에는
+     * {@code @RequestBody}·{@code @ModelAttribute} 두 어노테이션만 봤다.
+     *
+     * <ul>
+     *   <li>{@code @RequestPart} — 멀티파트 본문 조각. 이 프로젝트는 이미지 업로드가 많다.
+     *   <li><b>어노테이션 없는 POJO 파라미터</b> — 스프링은 이것을 암묵적
+     *       {@code @ModelAttribute} 로 바인딩한다. 가장 놓치기 쉬운 형태다.
+     * </ul>
+     *
+     * <p>그래서 판정을 뒤집었다 — "바인딩 어노테이션이 있는가" 가 아니라 "바인딩되지
+     * <b>않는</b> 것으로 알려진 형태인가" 를 뺀다. 새 바인딩 방식이 생겨도 기본값이
+     * '검사한다' 쪽이다.
+     */
     private static boolean 바인딩_대상(Parameter parameter) {
-        return parameter.isAnnotationPresent(RequestBody.class)
-                || parameter.isAnnotationPresent(ModelAttribute.class);
+        if (parameter.isAnnotationPresent(RequestBody.class)
+                || parameter.isAnnotationPresent(ModelAttribute.class)
+                || parameter.isAnnotationPresent(RequestPart.class)) {
+            return true;
+        }
+        if (parameter.isAnnotationPresent(RequestParam.class)
+                || parameter.isAnnotationPresent(PathVariable.class)
+                || parameter.isAnnotationPresent(RequestHeader.class)) {
+            return false;
+        }
+        // 어노테이션 없는 우리 패키지 타입 = 암묵적 @ModelAttribute.
+        // HttpServletRequest 같은 프레임워크 인자는 패키지 조건에서 걸러진다.
+        return parameter.getType().getName().startsWith(BASE_PACKAGE);
     }
 
     /**
@@ -132,13 +165,39 @@ class RequestValidationGuardTest {
         }
 
         for (RecordComponent component : 레코드_구성요소(type)) {
-            if (제약_어노테이션이_있다(component) || 제약이_있다(component.getType(), 방문)) {
+            if (제약_어노테이션이_있다(component)
+                    || 제약이_있다(component.getType(), 방문)
+                    || 제네릭_인자에_있다(component.getGenericType(), 방문)) {
                 return true;
             }
         }
 
         for (var field : type.getDeclaredFields()) {
-            if (제약_어노테이션이_있다(field) || 제약이_있다(field.getType(), 방문)) {
+            if (제약_어노테이션이_있다(field)
+                    || 제약이_있다(field.getType(), 방문)
+                    || 제네릭_인자에_있다(field.getGenericType(), 방문)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * {@code List<Inner>} 처럼 원시 타입이 아니라 <b>타입 인자</b> 쪽에 제약이 있는 경우.
+     *
+     * <p>{@code getType()} 만 따라가면 {@code List} 에서 멈춘다. 반박 리뷰가 이 형태를
+     * 통과시키는 것을 보여 줬고, {@code LivenessSettingsUpdateRequestDTO} 가 이미
+     * {@code List<OperationSettingDTO>} 를 갖고 있어 한 발짝 거리였다.
+     */
+    private static boolean 제네릭_인자에_있다(Type type, Set<Class<?>> 방문) {
+        if (!(type instanceof ParameterizedType parameterized)) {
+            return false;
+        }
+        for (Type arg : parameterized.getActualTypeArguments()) {
+            if (arg instanceof Class<?> raw && 제약이_있다(raw, 방문)) {
+                return true;
+            }
+            if (제네릭_인자에_있다(arg, 방문)) {
                 return true;
             }
         }

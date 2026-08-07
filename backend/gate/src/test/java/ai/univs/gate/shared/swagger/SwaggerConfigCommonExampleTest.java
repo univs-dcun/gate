@@ -76,15 +76,48 @@ class SwaggerConfigCommonExampleTest {
                         .isEqualTo(ErrorType.valueOf(name).getCode()));
     }
 
+    /**
+     * 공통 슬롯 <b>전부</b>를 상태코드·이름·오류코드까지 못박는다.
+     *
+     * <p>초판은 403 하나만 봤다. 반박 리뷰가 401 을 {@code ErrorType.INVALID_TOKEN} 으로
+     * 바꿔치기하는 변이를 심었는데 <b>전 테스트가 초록이었다</b> — 54개 엔드포인트의 401
+     * 예시가 {@code PJ-001} 에서 {@code AUTH-106} 으로 바뀌는데 아무도 몰랐다.
+     * 위 {@link #공통_예시가_제_코드를_단다()} 는 이름↔코드 <b>자기정합성</b>만 보므로
+     * {@code INVALID_TOKEN}→{@code AUTH-106} 처럼 정합적인 바꿔치기를 통과시킨다.
+     *
+     * <p>그래서 여기서 기대값을 통째로 고정한다. 슬롯을 늘리거나 줄이거나 다른
+     * {@link ErrorType} 으로 갈아 끼우면 전부 여기서 걸린다.
+     */
     @Test
-    @DisplayName("403 예시는 NEED_SERVICE_ROLE(PJ-002)이다 — 이 티켓의 본문")
-    void 삼공삼은_NEED_SERVICE_ROLE() throws NoSuchMethodException {
-        Map<String, String> 사공삼 = 공통_예시를_뽑는다().get(403);
+    @DisplayName("공통 슬롯의 상태코드·이름·오류코드가 전부 고정돼 있다")
+    void 공통_슬롯_전부_고정() throws NoSuchMethodException {
+        assertThat(공통_예시를_뽑는다()).isEqualTo(Map.of(
+                401, Map.of(ErrorType.UNAUTHORIZED.name(), "PJ-001"),
+                404, Map.of(ErrorType.NOT_FOUND.name(), "PJ-003"),
+                405, Map.of(ErrorType.METHOD_NOT_ALLOWED.name(), "PJ-004"),
+                500, Map.of(ErrorType.INTERNAL_SERVER_ERROR.name(), "PJ-005")));
+    }
 
-        assertThat(사공삼)
-                .as("예전에는 이름이 FORBIDDEN 이었고, ErrorType 에 그 이름이 없어 "
-                        + "INTERNAL_SERVER_ERROR(PJ-005)로 폴백했다")
-                .containsExactly(Map.entry(ErrorType.NEED_SERVICE_ROLE.name(), "PJ-002"));
+    /**
+     * 403 자리는 없어야 한다.
+     *
+     * <p>이 서비스는 403 을 낼 수 없다 — gate 에 Spring Security 의존성이 없어
+     * {@code AccessDeniedException} 경로가 없고, {@code GlobalExceptionHandler} 의
+     * {@code @ResponseStatus} 는 400·404·405·500 뿐이며, {@code NEED_SERVICE_ROLE} 을 던지는
+     * 프로덕션 코드가 0곳이다. 던지더라도 {@code handleBusinessException} 이
+     * {@code BAD_REQUEST} 고정이라 400 으로 나간다.
+     *
+     * <p>UG-309 는 이 자리를 두 번 잘못 다뤘다 — 먼저 {@code FORBIDDEN} 이라는 없는 이름으로
+     * {@code PJ-005} 를 심었고(초판), 다음엔 {@code NEED_SERVICE_ROLE} 로 "고쳤다". 둘 다
+     * 아무도 볼 수 없는 예시다. 반박 리뷰가 그것을 짚어 자리를 없앴다.
+     *
+     * <p>다시 넣고 싶어지면 <b>먼저 403 을 실제로 내는 코드</b>를 만들 것. 그러면 이 테스트가
+     * 그 사실을 알려 준다.
+     */
+    @Test
+    @DisplayName("403 예시를 심지 않는다 — 이 서비스는 403 을 낼 수 없다")
+    void 사공삼은_없다() throws NoSuchMethodException {
+        assertThat(공통_예시를_뽑는다()).doesNotContainKey(403);
     }
 
     /**
