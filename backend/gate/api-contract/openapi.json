@@ -9447,6 +9447,16 @@
                       }
                     }
                   },
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-103",
+                        "type": "PROJECT_NOT_FOUND",
+                        "message": "Project not found."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -9454,6 +9464,16 @@
                         "code": "PJ-105",
                         "type": "API_KEY_NOT_FOUND",
                         "message": "API key not found."
+                      }
+                    }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
                       }
                     }
                   }
@@ -9859,6 +9879,16 @@
                       }
                     }
                   },
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-103",
+                        "type": "PROJECT_NOT_FOUND",
+                        "message": "Project not found."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -9866,6 +9896,16 @@
                         "code": "PJ-105",
                         "type": "API_KEY_NOT_FOUND",
                         "message": "API key not found."
+                      }
+                    }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
                       }
                     }
                   }
@@ -10066,6 +10106,16 @@
                       }
                     }
                   },
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-103",
+                        "type": "PROJECT_NOT_FOUND",
+                        "message": "Project not found."
+                      }
+                    }
+                  },
                   "API_KEY_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -10073,6 +10123,16 @@
                         "code": "PJ-105",
                         "type": "API_KEY_NOT_FOUND",
                         "message": "API key not found."
+                      }
+                    }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
                       }
                     }
                   }

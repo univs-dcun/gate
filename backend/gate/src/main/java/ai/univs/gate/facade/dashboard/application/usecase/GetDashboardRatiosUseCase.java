@@ -4,8 +4,10 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
+import ai.univs.gate.support.project.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,13 +19,18 @@ import java.time.LocalDateTime;
 public class GetDashboardRatiosUseCase {
 
     private final ApiKeyService apiKeyService;
+    private final ProjectService projectService;
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
     public DashboardRatiosResult execute(Long accountId, String apiKey, TrendPeriod period, FeatureType featureType) {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
-        long projectId = findApiKey.getProject().getId();
+        Project project = findApiKey.getProject();
+
+        // UG-301: LOG_ONLY 에서도 막기 위한 두 번째 검사. 사유는 GetDashboardTrendUseCase 주석 참고.
+        projectService.validateOwnership(project.getId(), accountId);
+
         LocalDateTime from = DashboardStatsService.periodFrom(period);
-        return dashboardStatsService.getRatios(projectId, from, featureType);
+        return dashboardStatsService.getRatios(project.getId(), from, featureType);
     }
 }

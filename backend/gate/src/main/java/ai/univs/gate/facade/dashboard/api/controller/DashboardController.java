@@ -51,8 +51,8 @@ public class DashboardController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
-            // 이 엔드포인트만 projectService.validateOwnership 을 한 번 더 거친다 (UG-288).
-            // 나머지 셋은 findOwnedByApiKey 하나로 끝나서 이 두 코드가 나올 자리가 없다.
+            // 네 엔드포인트 모두 projectService.validateOwnership 을 한 번 더 거친다
+            // (UG-288 에서 summary 만, UG-301 에서 나머지 셋).
             //
             // 도달 조건이 좁다는 점은 알고 있다 (리뷰 지적). NOT_OWNERSHIP 은 ENFORCE 에서
             // 앞줄이 먼저 API_KEY_NOT_FOUND 를 던지므로 LOG_ONLY 에서만 나오고,
@@ -90,6 +90,9 @@ public class DashboardController {
             // /daily 만 선언하고 있었다.
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UG-301: 소유 검증을 추가하면서 나올 수 있게 된 두 코드. 사유는 /summary 참고.
+            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @GetMapping("/trend")
     public ResponseEntity<ResponseApi<DashboardTrendResponse>> getTrend(
@@ -115,6 +118,9 @@ public class DashboardController {
             // /daily 만 선언하고 있었다.
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UG-301: 소유 검증을 추가하면서 나올 수 있게 된 두 코드. 사유는 /summary 참고.
+            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @GetMapping("/ratios")
     public ResponseEntity<ResponseApi<DashboardRatiosResponse>> getRatios(
@@ -138,6 +144,9 @@ public class DashboardController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            // UG-301: 소유 검증을 추가하면서 나올 수 있게 된 두 코드. 사유는 /summary 참고.
+            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
     @GetMapping("/daily")
     public ResponseEntity<ResponseApi<DashboardDailyStatsResponse>> getDailyStats(
