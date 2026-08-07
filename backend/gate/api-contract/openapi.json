@@ -146,13 +146,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -335,13 +335,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -507,13 +507,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -678,13 +678,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -867,13 +867,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1029,13 +1029,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1230,13 +1230,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1431,13 +1431,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1611,13 +1611,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1811,13 +1811,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -1975,13 +1975,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2158,13 +2158,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2358,13 +2358,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2532,13 +2532,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2686,13 +2686,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -2845,13 +2845,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3034,13 +3034,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3203,13 +3203,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3394,13 +3394,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3632,13 +3632,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3812,13 +3812,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -3994,13 +3994,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4176,13 +4176,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4417,13 +4417,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4597,13 +4597,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4779,13 +4779,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -4961,13 +4961,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5134,13 +5134,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5316,13 +5316,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5498,13 +5498,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5682,13 +5682,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -5854,13 +5854,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6038,13 +6038,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6220,13 +6220,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6395,13 +6395,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6570,13 +6570,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6745,13 +6745,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -6920,13 +6920,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7095,13 +7095,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7270,13 +7270,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7445,13 +7445,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7632,13 +7632,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -7813,13 +7813,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8004,13 +8004,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8268,13 +8268,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8460,13 +8460,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8707,13 +8707,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -8889,13 +8889,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9141,13 +9141,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9318,13 +9318,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9531,13 +9531,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9747,13 +9747,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -9963,13 +9963,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }
@@ -10190,13 +10190,13 @@
             "content": {
               "application/json": {
                 "examples": {
-                  "FORBIDDEN": {
+                  "NEED_SERVICE_ROLE": {
                     "value": {
                       "success": false,
                       "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
+                        "code": "PJ-002",
+                        "type": "NEED_SERVICE_ROLE",
+                        "message": "Authorization is required to use this service."
                       }
                     }
                   }

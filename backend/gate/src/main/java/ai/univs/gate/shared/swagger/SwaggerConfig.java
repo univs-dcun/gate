@@ -76,12 +76,23 @@ public class SwaggerConfig {
 
     private void settingExamples(Operation operation, SwaggerError[] customErrors) {
         // 공통 에러 문서화
+        //
+        // UG-309: 키는 ErrorType 의 '이름' 이다. 아래 getExample 이 ErrorType.from(name) 으로
+        // 되찾는데, 그 메서드는 못 찾으면 조용히 INTERNAL_SERVER_ERROR 로 떨어뜨린다.
+        //
+        // 예전에는 다섯 줄 모두 HttpStatus.XXX.name() 을 썼다. 넷은 우연히 같은 이름의
+        // ErrorType 이 있어 맞았지만 FORBIDDEN 만 없었다 — 그 결과 54개 엔드포인트 전부가
+        // 403 버킷에 PJ-005(INTERNAL_SERVER_ERROR) 짜리 엉뚱한 예시를 달고 있었다.
+        // 403 에 해당하는 ErrorType 은 NEED_SERVICE_ROLE(PJ-002)이다.
+        //
+        // 이제 ErrorType 상수를 직접 참조한다. 이름을 문자열로 짓지 않으므로 같은 어긋남이
+        // 컴파일 단계에서 막힌다.
         Map<String, Integer> allErrors = new HashMap<>();
-        allErrors.put(HttpStatus.UNAUTHORIZED.name(), HttpStatus.UNAUTHORIZED.value());
-        allErrors.put(HttpStatus.NOT_FOUND.name(), HttpStatus.NOT_FOUND.value());
-        allErrors.put(HttpStatus.FORBIDDEN.name(), HttpStatus.FORBIDDEN.value());
-        allErrors.put(HttpStatus.METHOD_NOT_ALLOWED.name(), HttpStatus.METHOD_NOT_ALLOWED.value());
-        allErrors.put(HttpStatus.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+        allErrors.put(ErrorType.UNAUTHORIZED.name(), HttpStatus.UNAUTHORIZED.value());
+        allErrors.put(ErrorType.NOT_FOUND.name(), HttpStatus.NOT_FOUND.value());
+        allErrors.put(ErrorType.NEED_SERVICE_ROLE.name(), HttpStatus.FORBIDDEN.value());
+        allErrors.put(ErrorType.METHOD_NOT_ALLOWED.name(), HttpStatus.METHOD_NOT_ALLOWED.value());
+        allErrors.put(ErrorType.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR.value());
 
         // 컨트롤러에 annotation 으로 설정된 발생 가능한 예외 문서화
         for (SwaggerError error : customErrors) {

@@ -132,8 +132,18 @@ pitest {
 
 // API 계약 스펙 생성 (UG-238): ./gradlew generateOpenApiDocs
 // openapi 프로파일로 앱을 잠깐 띄워 스펙을 뽑는다 — DB/config-server/eureka 불필요
-// 생성물은 build/openapi/ 에 떨어지며, 계약 기준선(api-contract/openapi.json)과
-// CI(L1b Contract Check)에서 비교된다. 의도된 스펙 변경 시에만 생성물을 기준선으로 복사해 커밋한다.
+// 생성물은 build/openapi/ 에 떨어진다. 의도된 스펙 변경 시에만 기준선(api-contract/openapi.json)
+// 으로 복사해 커밋한다.
+//
+// UG-309: 예전 주석은 "CI(L1b Contract Check)에서 비교된다" 고 적고 있었는데 사실상 아니었다.
+// L1b 는 BRANCH_NAME == 'dev' 조건이라 PR 이 아니라 머지 후에 돌고, Jenkinsfile 이
+// contract: 'observe' 라 깨져도 빌드가 안 죽는다. enforce 로 바꿔도 비교기(openapi-diff)는
+// operation·parameter·schema·응답 코드만 보므로 @SwaggerError 가 사는
+// responses.<code>.content.application/json.examples 안쪽을 구조적으로 못 본다.
+//
+// 그래서 그 부분은 CI 가 아니라 test 단계가 지킨다 — SwaggerErrorContractTest 가 커밋된
+// 기준선과 어노테이션을 대조하고, SwaggerConfigCommonExampleTest 가 공통 예시를 지킨다.
+// 둘 다 앱을 띄우지 않으므로 이 태스크를 check 에 걸지 않았다 (빌드 시간을 늘리지 않는다).
 openApi {
     apiDocsUrl = "http://localhost:18099/api-docs/gate"
     outputDir = file("build/openapi")
