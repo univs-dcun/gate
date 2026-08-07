@@ -29,6 +29,19 @@ import lombok.Getter;
 @Getter
 public class UpstreamCallException extends CustomPalmException {
 
+    /**
+     * 응답을 아예 받지 못했다는 표시 (UG-308).
+     *
+     * <p>연결 거부·읽기 타임아웃·연결 리셋에서는 <b>상태 코드라는 것이 없다.</b> 그런 실패까지
+     * 실제 상태 코드와 같은 자리에 담으려면 "없음" 을 뜻하는 값이 필요하다. HTTP 상태 코드는
+     * 100 미만이 존재하지 않으므로 0 은 실제 값과 절대 충돌하지 않는다.
+     *
+     * <p>로그에서 이 값이 보이면 <b>하위 모듈이 죽었거나 닿지 않는다</b>는 뜻이고, 502·503 이
+     * 보이면 <b>살아 있는데 오류를 응답했다</b>는 뜻이다. 장애 대응에서 갈리는 지점이라
+     * 한 값으로 뭉뚱그리지 않는다. gate 의 {@code RemoteCallException.NO_RESPONSE} 와 같다.
+     */
+    public static final int NO_RESPONSE = 0;
+
     private final int upstreamStatus;
 
     /** 어느 호출이었는지 (Feign methodKey). 알 수 없으면 {@code null}. */
