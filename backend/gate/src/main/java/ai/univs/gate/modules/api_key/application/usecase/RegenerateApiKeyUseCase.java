@@ -68,6 +68,18 @@ public class RegenerateApiKeyUseCase {
                     activeKeys.size(), projectId, activeKeys.stream().map(ApiKey::getId).toList());
         }
         activeKeys.forEach(ApiKey::deactivate);
+
+        // 비활성화를 <b>지금</b> 내보낸다 (반박 리뷰가 실측으로 찾은 블로커).
+        //
+        // deactivate() 는 더티 마킹일 뿐이고, 아래 ApiKeyGenerator 는 SecureRandom 만 써서
+        // DB 를 건드리지 않으므로 auto-flush 가 일어나지 않는다. 그대로 두면 IDENTITY 인
+        // save() 가 id 를 받으려고 INSERT 를 먼저 내보내고, 그 시점에 DB 에는 기존 행이
+        // 아직 활성이다 — V24 의 부분 유니크 인덱스가 그 순간을 잡아 재발급이 전부 실패한다.
+        //
+        // 인덱스가 없던 때는 순서가 드러나지 않았다. 그래서 이 한 줄이 빠져도 V24 전에는
+        // 아무 신호가 없다. RegenerateApiKeyFlushOrderTest 가 순서를 못박는다.
+        apiKeyRepository.flush();
+
         log.info("Old API Key deactivated: count={}, projectId={}", activeKeys.size(), projectId);
 
 

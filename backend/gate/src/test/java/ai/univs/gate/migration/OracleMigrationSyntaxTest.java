@@ -40,8 +40,8 @@ class OracleMigrationSyntaxTest {
     private static final Path ORACLE = Path.of("src/main/resources/db/migration/oracle");
     private static final Path POSTGRESQL = Path.of("src/main/resources/db/migration/postgresql");
 
-    /** 방언 파일이 통째로 사라졌는데 조용히 통과하는 것을 막는다. 현재 22개. */
-    private static final int MIN_FILES = 22;
+    /** 방언 파일이 통째로 사라졌는데 조용히 통과하는 것을 막는다. 현재 24개 (UG-302 가 V23·V24 추가). */
+    private static final int MIN_FILES = 24;
 
     private record Violation(Path file, int line, String rule, String text) {
         @Override

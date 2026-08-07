@@ -52,6 +52,11 @@ public class ApiKeyRepositoryImpl implements ApiKeyRepository {
     }
 
     @Override
+    public void flush() {
+        apiKeyJpaRepository.flush();
+    }
+
+    @Override
     public Optional<ApiKey> findByApiKeyAndIsActiveTrue(String apiKey) {
         return apiKeyJpaRepository.findByApiKeyAndIsActive(apiKey, true);
     }
