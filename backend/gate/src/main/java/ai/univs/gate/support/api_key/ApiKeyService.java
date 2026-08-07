@@ -111,9 +111,45 @@ public class ApiKeyService {
      *                  값은 {@code AuthenticationFilter} 가 항상 덮어쓰므로 위조할 수 없다.
      */
     public ApiKey findOwnedByApiKey(String apiKey, Long accountId) {
+        requireAccountId(apiKey, accountId);
+
         ApiKey found = findByApiKeyUnverified(apiKey);
         validateOwnership(found, accountId);
         return found;
+    }
+
+    /**
+     * UG-277: 인증 경로인데 {@code X-Account-Id} 가 없으면 여기서 끝낸다.
+     *
+     * <p>{@code UserContext.getAccountIdAsLong()} 은 헤더가 없으면 {@code null} 을 돌려준다.
+     * 게이트웨이를 경유하면 {@code AuthenticationFilter} 가 항상 채우므로 정상 트래픽에서는
+     * 나오지 않고, gate 포트에 직접 붙는 경우(내부망 호출·디버깅·포트 노출)에만 생긴다.
+     *
+     * <p><b>왜 여기인가.</b> 그 {@code null} 이 그대로 흘러가면 매칭 UseCase 들이
+     * {@code input.accountId().toString()} 에서 NPE(500)를 낸다. 그것도
+     * {@code matchHistoryRepository.save()} 뒤라 사유 없는 실패 이력 행이 남는다. 소유 검증보다
+     * 앞에 두면 여섯 개의 공유 UseCase 와 인증 전용 조회 20여 곳이 한 자리에서 닫힌다.
+     *
+     * <p><b>왜 하필 지금 필요해졌나.</b> 기본 모드({@code ENFORCE})에서는 아래
+     * {@link #validateOwnership} 이 {@code null} 을 불일치로 보고 먼저 거부하므로 NPE 까지 가지
+     * 않는다. 그러나 {@code mode=LOG_ONLY} 는 통과시키고, 그 모드는 UG-281 의 비상 되돌림
+     * 수단이라 실제로 켤 수 있다.
+     *
+     * <p><b>왜 새 오류 코드를 만들지 않았나.</b> {@link ErrorType#API_KEY_NOT_FOUND} 를 그대로
+     * 쓰면 ENFORCE 에서의 응답이 <b>바이트 단위로 그대로</b>다 — 지금도 같은 코드가 나간다.
+     * 즉 이 변경은 LOG_ONLY 에서만 500 을 400 으로 바꾸고, 클라이언트 계약은 건드리지 않는다.
+     *
+     * <p>로그는 소유 불일치와 <b>구분해서</b> 남긴다. 같은 WARN 으로 뭉치면 UG-281 이 관측하려는
+     * "정상인데 불일치로 호출하던 기존 고객" 집계에 헤더 누락이 섞여 들어간다.
+     */
+    private void requireAccountId(String apiKey, Long accountId) {
+        if (accountId != null) {
+            return;
+        }
+
+        log.warn("인증 경로 호출에 X-Account-Id 가 없다. 게이트웨이를 우회한 호출로 보인다. apiKey={}",
+                ApiKeyMasker.mask(apiKey));
+        throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
     }
 
     /**

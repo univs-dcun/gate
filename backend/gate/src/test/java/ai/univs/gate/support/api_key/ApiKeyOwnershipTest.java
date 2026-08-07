@@ -21,7 +21,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * UG-281: X-Api-Key 가 인증 계정 소유인지 검증한다.
@@ -218,6 +222,117 @@ class ApiKeyOwnershipTest {
 
             // 속성을 안 넣은 환경(온프레미스 포함)에서 조용히 검증이 꺼지면 안 된다.
             assertThat(defaultValue).isEqualTo("${gate.security.api-key-ownership.mode:ENFORCE}");
+        }
+    }
+
+    /**
+     * UG-277: 인증 경로에 {@code X-Account-Id} 가 없으면 400 으로 끝낸다.
+     *
+     * <p>없으면 {@code null} 이 그대로 흘러 매칭 UseCase 의
+     * {@code input.accountId().toString()} 에서 NPE(500)가 난다 — 그것도 매칭 이력을 저장한
+     * 뒤라 사유 없는 실패 행이 남는다.
+     *
+     * <p><b>ENFORCE 만 보면 이 가드가 있으나 없으나 초록이다.</b> 아래 소유 검증이 {@code null}
+     * 을 불일치로 보고 먼저 거부하기 때문이다. 그래서 {@code LOG_ONLY} 케이스가 이 묶음의
+     * 본문이다 — 가드를 지우면 거기서만 깨진다.
+     */
+    @Nested
+    @DisplayName("UG-277: X-Account-Id 부재")
+    class MissingAccountId {
+
+        /**
+         * 키가 실재한다는 사실만 세팅한다. 가드가 <b>조회에 닿기 전에</b> 끝내므로 이 스텁은
+         * 쓰이지 않는 것이 정상이다 — strict stubbing 에 걸리지 않도록 lenient 로 둔다.
+         * 가드를 지우면 그때 이 스텁이 쓰이면서 LOG_ONLY 를 타고 정상 반환하게 되고,
+         * 그것이 테스트를 깨뜨린다.
+         */
+        private void 키는_있다() {
+            lenient().when(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY))
+                    .thenReturn(Optional.of(apiKey));
+        }
+
+        /**
+         * <b>키가 실재해야 이 테스트가 의미를 가진다.</b> 처음에는 {@code keyExists()} 를 빼고
+         * 썼는데, 그러면 가드를 지워도 조회가 빈 결과를 내며 같은 {@code API_KEY_NOT_FOUND} 를
+         * 던져 초록이었다 — 변이 심기로 확인했다. 키가 있어야 가드 없는 코드가 LOG_ONLY 를 타고
+         * <b>정상 반환</b>하고, 그제야 이 단언이 깨진다.
+         */
+        @Test
+        @DisplayName("LOG_ONLY 여도 accountId 가 없으면 거부한다 — 이 가드의 본문")
+        void 로그만이어도_거부() {
+            키는_있다();
+            logOnly();
+
+            assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, null))
+                    .isInstanceOf(CustomGateException.class)
+                    .satisfies(e -> assertThat(((CustomGateException) e).getErrorType())
+                            .isEqualTo(ErrorType.API_KEY_NOT_FOUND));
+        }
+
+        /**
+         * 가드가 <b>조회·소유검증보다 앞</b>이라는 것까지 못박는다.
+         *
+         * <p>순서를 뒤로 미뤄도 호출자가 받는 예외는 같아서 위 테스트로는 잡히지 않는다. 하지만
+         * 뒤에 두면 {@link ApiKeyService#validateOwnership} 이 {@code accountId=null} 을 소유
+         * 불일치로 보고 WARN 을 남긴다 — UG-281 이 관측하려는 "정상인데 불일치로 호출하던 기존
+         * 고객" 집계에 헤더 누락이 섞여 들어간다.
+         */
+        @Test
+        @DisplayName("키 조회에 닿기 전에 끝낸다 — 소유 불일치 로그를 오염시키지 않는다")
+        void 조회_전에_끝낸다() {
+            logOnly();
+
+            assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, null))
+                    .isInstanceOf(CustomGateException.class);
+
+            verify(apiKeyRepository, never()).findByApiKeyAndIsActiveTrue(any());
+        }
+
+        /**
+         * 기본 모드에서의 응답이 바뀌지 않았음을 고정한다.
+         *
+         * <p>이 테스트는 <b>가드를 지워도 초록이다</b> — 지우면 소유 검증이 {@code null} 을
+         * 불일치로 보고 같은 코드를 던지기 때문이다. 그게 요점이다. 이 변경이 ENFORCE 트래픽의
+         * 계약을 건드리지 않는다는 사실 자체를 기록해 두는 것이고, 나중에 여기서 새 오류 코드를
+         * 내보내려는 변경이 오면 그때 깨진다.
+         */
+        @Test
+        @DisplayName("ENFORCE 에서의 응답은 그대로다 — 계약이 바뀌지 않았다")
+        void ENFORCE_응답_불변() {
+            키는_있다();
+            enforce();
+
+            assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, null))
+                    .isInstanceOf(CustomGateException.class)
+                    .satisfies(e -> assertThat(((CustomGateException) e).getErrorType())
+                            .isEqualTo(ErrorType.API_KEY_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("데모·인증 공유 UseCase 도 인증 경로면 같이 막힌다")
+        void 공유_UseCase_인증경로도_막는다() {
+            키는_있다();
+            logOnly();
+
+            // 매칭 UseCase 여섯 개가 타는 경로다. 여기가 뚫리면
+            // input.accountId().toString() 에서 NPE 가 난다.
+            assertThatThrownBy(() ->
+                    apiKeyService.findByApiKey(CallerType.API, KEY, null))
+                    .isInstanceOf(CustomGateException.class);
+        }
+
+        /**
+         * 데모는 대조할 accountId 자체가 없다. 여기까지 막으면 QR 데모가 통째로 죽는다.
+         *
+         * <p>실제 데모 DTO 는 {@code 0L} 을 넘기지만, 가드를 {@code findByApiKey} 진입부로
+         * 올리는 변경이 이 테스트를 깨뜨리도록 {@code null} 로 둔다.
+         */
+        @Test
+        @DisplayName("데모 경로는 accountId 가 없어도 통과한다")
+        void 데모는_막지_않는다() {
+            keyExists();
+
+            assertThat(apiKeyService.findByApiKey(CallerType.DEMO, KEY, null)).isSameAs(apiKey);
         }
     }
 }
