@@ -212,6 +212,38 @@ SELECT object_name, object_type FROM user_objects;   -- 비어 있어야 한다
 DROP USER univs_gate CASCADE;   -- DBA 권한 필요
 ```
 
+### 마이그레이션이 중간에 실패했을 때 (오라클 전용 함정)
+
+**오라클은 DDL 이 암묵적 커밋을 일으킨다.** 그래서 한 마이그레이션 파일 안에 DML 과 DDL 이
+같이 있으면, DML 은 커밋됐는데 DDL 만 실패하는 상태가 남을 수 있다. postgresql 은 DDL 이
+트랜잭션 안에 들어가므로 통째로 롤백된다 — 이 함정은 오라클에만 있다.
+
+그 상태가 되면 `flyway_schema_history` 에 `success = 0` 행이 남고, `validate-on-migrate`
+기본값이 `true` 라 **이후 모든 기동이 "Detected failed migration" 으로 실패한다.**
+compose 가 `restart: unless-stopped` 이므로 컨테이너는 크래시 루프에 들어간다.
+
+```sql
+-- 실패한 마이그레이션이 있는지 (계정별로 접속해서)
+SELECT installed_rank, version, description, success
+  FROM flyway_schema_history
+ WHERE success = 0;
+```
+
+복구는 둘 중 하나다.
+
+1. **실패한 문장을 손으로 실행한 뒤 이력을 고친다.** 무엇이 실패했는지 로그로 확인하고 그
+   문장만 SQL*Plus 로 실행한 다음, 위 행을 지우고 재기동한다.
+   ```sql
+   DELETE FROM flyway_schema_history WHERE success = 0;
+   COMMIT;
+   ```
+2. **Flyway repair 를 돌린다.** 애플리케이션이 못 뜨는 상태이므로 Flyway CLI 가 필요하다.
+
+UG-302 는 이 함정을 피하려고 정리(V23, DML)와 인덱스 생성(V24, DDL)을 **버전을 나눠**
+넣었다. 그러면 V23 은 성공으로 기록되고 V24 만 재시도되므로, 재실행할 때 정리가 두 번
+돌지 않는다. 새 마이그레이션을 쓸 때도 같은 원칙을 따르는 편이 안전하다 — **DML 과 DDL 을
+한 파일에 섞지 않는다.**
+
 ---
 
 ## 6. 설치 후 검증

@@ -40,8 +40,8 @@ class OracleMigrationSyntaxTest {
     private static final Path ORACLE = Path.of("src/main/resources/db/migration/oracle");
     private static final Path POSTGRESQL = Path.of("src/main/resources/db/migration/postgresql");
 
-    /** 방언 파일이 통째로 사라졌는데 조용히 통과하는 것을 막는다. 현재 22개. */
-    private static final int MIN_FILES = 22;
+    /** 방언 파일이 통째로 사라졌는데 조용히 통과하는 것을 막는다. 현재 24개 (UG-302 가 V23·V24 추가). */
+    private static final int MIN_FILES = 24;
 
     private record Violation(Path file, int line, String rule, String text) {
         @Override
@@ -91,6 +91,13 @@ class OracleMigrationSyntaxTest {
             new Rule("LIMIT / OFFSET",
                     Pattern.compile("\\b(LIMIT|OFFSET)\\s+\\d", Pattern.CASE_INSENSITIVE),
                     "오라클은 FETCH FIRST n ROWS ONLY 를 쓴다."),
+            new Rule("부분 인덱스 (CREATE INDEX ... WHERE)",
+                    Pattern.compile("CREATE\\s+(UNIQUE\\s+)?INDEX\\b[^;]*\\bWHERE\\b",
+                            Pattern.CASE_INSENSITIVE),
+                    "오라클에는 부분 인덱스가 없다 (ORA-00933). 같은 것을 표현하려면 함수 기반 "
+                            + "인덱스를 쓴다 — CASE 가 NULL 을 돌려주는 행은 단일 컬럼 인덱스에 "
+                            + "실리지 않는다. V23 이 그 형태다. CASE WHEN 의 WHEN 은 WHERE 가 "
+                            + "아니므로 오탐이 나지 않는다."),
             new Rule("백틱 식별자",
                     Pattern.compile("`"),
                     "MySQL 문법이다."));
@@ -223,6 +230,36 @@ class OracleMigrationSyntaxTest {
         assertThat(clauseOrder.pattern().matcher(scrub(multiline)).find())
                 .as("줄바꿈으로 나뉜 NOT NULL / DEFAULT 를 잡지 못하면 이 가드는 의미가 없다")
                 .isTrue();
+    }
+
+    /**
+     * 부분 인덱스 규칙 자신의 회귀 테스트 (UG-302).
+     *
+     * <p>규칙을 목록에서 지우거나 패턴을 망가뜨리면 "위반이 없다" 는 검사만으로는 알 수 없다 —
+     * 차단 목록의 구조적 한계다 (변이 심기로 확인). 그래서 <b>잡아야 할 형태</b>와
+     * <b>잡으면 안 되는 형태</b>를 함께 못박는다.
+     */
+    @Test
+    @DisplayName("부분 인덱스는 잡고 함수 기반 인덱스는 통과시킨다")
+    void 부분인덱스_규칙이_동작한다() {
+        Rule 부분인덱스 = RULES.stream()
+                .filter(r -> r.name().startsWith("부분 인덱스"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("부분 인덱스 규칙이 목록에서 사라졌다"));
+
+        String 포스트그레스_형태 = """
+                CREATE UNIQUE INDEX ux_api_keys_active_project
+                    ON api_keys (project_id) WHERE is_active;""";
+        String 오라클_형태 = """
+                CREATE UNIQUE INDEX ux_api_keys_active_project
+                    ON api_keys (CASE WHEN is_active = 1 THEN project_id END);""";
+
+        assertThat(부분인덱스.pattern().matcher(scrub(포스트그레스_형태)).find())
+                .as("쌍둥이 파일에서 복사해 오면 오라클이 ORA-00933 으로 거부한다")
+                .isTrue();
+        assertThat(부분인덱스.pattern().matcher(scrub(오라클_형태)).find())
+                .as("CASE WHEN 의 WHEN 을 WHERE 로 오인하면 정상 SQL 을 위반으로 잡는다")
+                .isFalse();
     }
 
     @Test

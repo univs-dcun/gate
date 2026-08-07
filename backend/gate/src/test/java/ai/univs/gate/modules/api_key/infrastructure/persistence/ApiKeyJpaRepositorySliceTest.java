@@ -245,21 +245,27 @@ class ApiKeyJpaRepositorySliceTest {
         }
 
         /**
-         * 스키마가 이 상태를 막지 않는다는 사실 자체를 못박는다.
+         * <b>이 슬라이스는 부분 유니크 인덱스를 보지 못한다</b> — 그 사실 자체를 기록해 둔다.
          *
-         * <p>{@code api_keys} 에는 {@code UNIQUE (api_key)} 뿐이고
-         * {@code (project_id, is_active)} 부분 유니크 인덱스가 없다. UG-302 가 그것을 넣으면
-         * 이 테스트가 깨지면서 "이제 막힌다" 를 알려 준다.
+         * <p>초판 javadoc 은 "UG-302 가 인덱스를 넣으면 이 테스트가 깨지면서 알려 준다" 고
+         * 적었는데 <b>틀렸다.</b> 인덱스는 V23 마이그레이션에 들어갔지만, 이 슬라이스의 스키마는
+         * 마이그레이션이 아니라 <b>엔티티</b>에서 만들어진다({@code ddl-auto: create-drop}).
+         * 그래서 인덱스가 생긴 뒤에도 여기서는 두 행이 그대로 들어간다.
          *
-         * <p><b>다만 H2 로는 부분 유니크 인덱스를 그대로 검증할 수 없다</b> — 스키마를
-         * 마이그레이션이 아니라 엔티티에서 만들기 때문이다. 실제 제약 검증은 Testcontainers 가
-         * 필요하다 ({@code JpaSliceTest} javadoc 참고).
+         * <p>JPA 로 표현할 수도 없다. {@code @Table(uniqueConstraints)} 로
+         * {@code (project_id, is_active)} 를 걸면 <b>비활성 키도 프로젝트당 하나</b>가 되어
+         * 이력이 쌓이지 않는다 — 부분 인덱스와 전혀 다른 제약이다.
+         *
+         * <p>그래서 이 테스트가 지키는 것은 "제약이 없다" 가 아니라 <b>"이 하네스로는 제약을
+         * 검증할 수 없다"</b> 는 경계다. 실제 인덱스 동작 확인은 Testcontainers 로 진짜
+         * PostgreSQL·오라클을 띄워야 한다 ({@code JpaSliceTest} javadoc 참고).
          */
         @Test
-        @DisplayName("스키마가 활성 키 중복을 막지 않는다 — UG-302 의 본문")
-        void 스키마가_막지_않는다() {
+        @DisplayName("이 하네스는 V23 부분 유니크 인덱스를 검증하지 못한다 — 경계 기록")
+        void 슬라이스는_인덱스를_보지_못한다() {
             assertThat(apiKeyJpaRepository.findAllByProjectIdAndIsActive(project.getId(), true))
-                    .as("부분 유니크 인덱스가 생기면 저장 단계에서 막혀 여기까지 오지 않는다")
+                    .as("엔티티에서 만든 스키마라 마이그레이션의 인덱스가 없다. 여기가 초록이어도 "
+                            + "운영 DB 에서 중복이 허용된다는 뜻이 아니다")
                     .hasSize(2);
         }
     }

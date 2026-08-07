@@ -231,4 +231,32 @@ class RegenerateApiKeyUseCaseTest {
             logger.detachAppender(appender);
         }
     }
+
+    /**
+     * 비활성화를 <b>새 키 삽입 전에</b> DB 로 내보낸다 (반박 리뷰가 찾은 블로커).
+     *
+     * <p>{@code deactivate()} 는 더티 마킹일 뿐이고 그 사이 {@code ApiKeyGenerator} 는 DB 를
+     * 건드리지 않아 auto-flush 가 없다. IDENTITY 라 {@code save()} 가 INSERT 를 즉시
+     * 내보내는데, 그때 DB 에는 기존 행이 아직 활성이다 — V24 의 부분 유니크 인덱스가 그
+     * 순간을 잡아 <b>모든 프로젝트의 재발급이 실패</b>한다.
+     *
+     * <p>여기서는 순서만 못박는다. 인덱스 아래에서 실제로 어떻게 깨지는지는
+     * {@code ActiveApiKeyIndexOrderingTest} 가 진짜 DB 로 재현한다.
+     */
+    @Test
+    @DisplayName("비활성화를 flush 한 뒤에 새 키를 저장한다 — 순서가 뒤집히면 인덱스에 걸린다")
+    void 비활성화를_먼저_내보낸다() {
+        given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID)).willReturn(project);
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID)).willReturn(List.of(oldApiKey));
+        given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
+        given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
+        given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(i -> i.getArgument(0));
+
+        regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID);
+
+        InOrder inOrder = org.mockito.Mockito.inOrder(apiKeyRepository);
+        inOrder.verify(apiKeyRepository).findAllActiveByProjectId(PROJECT_ID);
+        inOrder.verify(apiKeyRepository).flush();
+        inOrder.verify(apiKeyRepository).save(any(ApiKey.class));
+    }
 }
