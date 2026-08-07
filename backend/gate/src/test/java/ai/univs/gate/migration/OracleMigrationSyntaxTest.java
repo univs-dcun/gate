@@ -282,7 +282,7 @@ class OracleMigrationSyntaxTest {
     void 방언_버전이_일치한다() throws IOException {
         // 한쪽에만 있는 버전이 생기면 그 환경에서만 스키마가 어긋난다. 파일이 늘 때 쌍으로
         // 추가하는 것을 강제한다. 다만 이 검사는 파일 "이름" 만 본다 — 이름이 같고 내용이
-        // 어긋나는 것은 못 잡는다 (실제로 V8·V14 에 그런 차이가 있다, UG-297).
+        // 어긋나는 것은 DialectSchemaParityTest 가 본다 (UG-297).
         List<String> oracle = sqlFiles(ORACLE).stream().map(p -> p.getFileName().toString()).toList();
         List<String> postgresql =
                 sqlFiles(POSTGRESQL).stream().map(p -> p.getFileName().toString()).toList();
