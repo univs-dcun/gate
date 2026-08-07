@@ -5,6 +5,7 @@ import feign.FeignException;
 import feign.RetryableException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -19,8 +20,13 @@ import org.springframework.stereotype.Component;
  * {@code ErrorDecoder} 는 상태 코드 300 이상의 <b>응답이 도착했을 때만</b> 불리기 때문이다.
  * 연결 거부·읽기 타임아웃·연결 리셋에서는 Feign 이 직접 {@link RetryableException} 을 던지는데,
  * face·palm 어디에도 그것을 잡는 코드가 없어 {@code handleGlobalException} 까지 떨어졌다 —
- * ERROR 에 90여 줄 스택트레이스가 붙고, 클라이언트는 다른 경로와 달리 <b>500</b> 을 받고,
- * 어느 호출이 왜 실패했는지 알 수 없었다.
+ * ERROR 에 스택트레이스가 통째로 붙고, <b>어느 호출이 왜 실패했는지 알 수 없었다.</b>
+ *
+ * <p><b>고치는 것은 진단 정보이지 응답이 아니다.</b> 이 경로는 예전에도 500 이었고 지금도 500
+ * 이다 — 델타 리뷰가 상태·본문·헤더를 바이트 단위로 대조해 확인했다. 초판은 티켓 항목 4를
+ * 따라 400 으로 통일하려 했는데, 그러면 gate 의 {@code IdentifyPalmUseCase} 가 4xx 를 정상
+ * 결과로 흡수해 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 나간다. 상세는
+ * {@code GlobalExceptionHandler.handleUpstreamCallException} 의 분기 주석에 있다.
  *
  * <p>아이러니하게도 그것이 UG-299 가 예로 든 시나리오다 — "ML 매처가 죽어서 초당 50 요청이
  * 실패하면". 매처가 <b>오류를 응답하며</b> 죽으면 새 경로를 타고, <b>정말 죽어서</b> 응답이
@@ -95,7 +101,12 @@ public class FeignFailureTranslator implements BeanPostProcessor {
         // Feign 의 FeignInvocationHandler.equals 가 인자에서 InvocationHandler 를 꺼내
         // 비교하는데 우리 람다는 그 타입이 아니라 bean.equals(bean) 조차 false 가 된다 —
         // Object.equals 계약의 반사성 위반이다.
-        if ("equals".equals(method.getName()) && args != null && args.length == 1) {
+        //
+        // 파라미터 타입까지 본다 (델타 리뷰 지적). 이름과 인자 개수만 보면 Feign 인터페이스에
+        // 있는 동명의 <b>비즈니스 메서드</b>(예: boolean equals(String))까지 가로채 항상
+        // false 를 돌려준다 — 예외도 로그도 없는 조용한 오답이다. 지금 세 인터페이스에는
+        // 그런 메서드가 없지만, 생기는 순간 원인을 찾기 어려운 종류의 버그다.
+        if (Object_equals_인가(method)) {
             return proxy == args[0];
         }
 
@@ -127,6 +138,21 @@ public class FeignFailureTranslator implements BeanPostProcessor {
             }
             throw cause;
         }
+    }
+
+
+    /**
+     * {@code Object.equals(Object)} 인가. 동명의 비즈니스 메서드는 제외한다.
+     *
+     * <p>이름·인자 개수·파라미터 타입을 따로 검사하지 않고 <b>시그니처를 통째로</b> 비교한다.
+     * 세 조건을 나열하면 그중 하나가 느슨해져도(예: {@code == 1} 이 {@code >= 1} 로) 컴파일도
+     * 테스트도 통과한다 — 실제로 변이 심기에서 그 형태가 살아남았다. 시그니처 하나로 묶으면
+     * 그런 부분적 완화가 표현되지 않는다. 인자 배열이 정확히 1칸임도 여기서 보장되므로
+     * 호출부의 {@code args[0]} 이 안전하다.
+     */
+    private static boolean Object_equals_인가(java.lang.reflect.Method method) {
+        return "equals".equals(method.getName())
+                && Arrays.equals(method.getParameterTypes(), new Class<?>[] {Object.class});
     }
 
     /**

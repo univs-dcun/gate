@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 
 /**
@@ -49,15 +50,27 @@ class UpstreamCallStatusTest {
     }
 
     @Test
-    @DisplayName("응답을 못 받은 실패(NO_RESPONSE)는 5xx 다 — 4xx 면 gate 가 200 으로 삼킨다")
+    @DisplayName("응답을 못 받은 실패(NO_RESPONSE)는 500 이다 — 4xx 면 gate 가 200 으로 삼킨다")
     void 응답없음은_5xx() {
         ResponseEntity<ResponseApi<?>> response = handler.handleUpstreamCallException(
                 new UpstreamCallException(UpstreamCallException.NO_RESPONSE, "MatchFeign#identify", "연결 실패"));
 
+        // 두 단언은 서로 다른 것을 지킨다 (델타 리뷰 지적).
+        //
+        // 5xx 는 <b>안전 성질</b>이다 — gate 의 CommonErrorDecoder 가 4xx 를
+        // CustomFeignException 으로 가르고 IdentifyPalmUseCase 가 그것을 정상 결과로
+        // 흡수하므로, 4xx 가 되는 순간 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 둔갑한다.
+        //
+        // 500 은 <b>계약</b>이다. 502·503 도 안전 성질은 만족하지만 클라이언트가 보는 상태가
+        // 달라진다. 이 커밋은 "계약을 한 바이트도 바꾸지 않는다" 를 근거로 문서 동기화를
+        // 생략했으므로 그 근거를 여기서 못박는다 — 초판은 is5xx 만 봐서 502·503 변이가
+        // 살아남았고, 그러면 커밋 메시지의 논거가 무방비였다.
         assertThat(response.getStatusCode())
-                .as("400 으로 바꾸면 gate 의 IdentifyPalmUseCase 가 장애를 정상 결과로 흡수한다")
-                .is(new org.assertj.core.api.Condition<>(
-                        s -> s.is5xxServerError(), "5xx"));
+                .as("4xx 면 gate 의 IdentifyPalmUseCase 가 장애를 정상 결과로 흡수한다")
+                .matches(HttpStatusCode::is5xxServerError, "5xx");
+        assertThat(response.getStatusCode())
+                .as("UG-308 이전에도 이 경로는 500 이었다 — 이 커밋은 계약을 바꾸지 않는다")
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     /**

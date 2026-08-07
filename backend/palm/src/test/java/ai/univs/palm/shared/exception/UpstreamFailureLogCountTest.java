@@ -162,10 +162,17 @@ class UpstreamFailureLogCountTest {
         // 정상 결과로 흡수해 팜 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 둔갑한다.
         //
         // 상태 코드 자체는 UpstreamCallStatusTest 가 핸들러를 실제로 호출해 못박는다.
-        // 여기서는 '고정 애노테이션이 다시 붙지 않았는지' 만 본다 — 붙는 순간 분기가
-        // 무력화되기 때문이다.
+        // 여기서는 '고정 애노테이션이 다시 붙지 않았는지' 만 본다.
+        //
+        // 처음에는 그 이유를 "붙는 순간 분기가 무력화되기 때문" 이라고 적었는데 <b>사실이
+        // 아니다</b> (델타 리뷰가 실측으로 잡았다). @ResponseStatus 를 다시 붙여도
+        // ServletInvocableHandlerMethod.setResponseStatus 다음에 HttpEntityMethodProcessor 가
+        // ResponseEntity 의 상태로 덮으므로 분기는 그대로 산다 — MockMvc 로 재현해 보면
+        // 여전히 500 이 나온다. 즉 이 가드가 막는 것은 동작 회귀가 아니라 <b>의도 혼선</b>이다.
+        // 애노테이션과 반환값이 서로 다른 상태를 말하고 있으면, 다음 사람이 애노테이션 쪽을
+        // 참으로 읽고 분기를 지운다.
         assertThat(method.getAnnotation(org.springframework.web.bind.annotation.ResponseStatus.class))
-                .as("@ResponseStatus 를 다시 붙이면 NO_RESPONSE 분기가 무력화된다")
+                .as("고정 애노테이션과 ResponseEntity 가 서로 다른 상태를 말하면 안 된다")
                 .isNull();
         assertThat(method.getReturnType())
                 .isEqualTo(org.springframework.http.ResponseEntity.class);

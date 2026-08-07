@@ -20,8 +20,8 @@ import org.springframework.cloud.openfeign.FeignClient;
  * UG-308: 응답을 받지 못한 Feign 실패가 {@link UpstreamCallException} 으로 번역된다.
  *
  * <p>번역이 없으면 {@code RetryableException} 이 {@code handleGlobalException} 까지 떨어져
- * ERROR + 90여 줄 스택트레이스가 남고 클라이언트는 500 을 받는다. 다른 실패 경로는 전부
- * 400 이라 <b>정말 죽었을 때만</b> 응답이 달라지는 상태였다.
+ * ERROR 에 스택트레이스가 통째로 붙고, <b>어느 Feign 호출이 왜 끊겼는지</b>가 로그에 남지
+ * 않는다. 응답은 예전에도 500, 지금도 500 이다 — 이 커밋이 바꾸는 것은 진단 정보뿐이다.
  *
  * <p>진짜 {@link FeignFailureTranslator} 에 {@code @FeignClient} 인터페이스 구현을 넣어
  * 돌린다. 스프링 컨텍스트는 띄우지 않는다 — {@code BeanPostProcessor} 는 그냥 메서드다.
@@ -298,6 +298,63 @@ class FeignFailureTranslatorTest {
 
             assertThat(wrapped.equals(wrapped)).isTrue();
         }
+    }
 
+    /**
+     * {@code equals} 특수 처리가 <b>Object.equals 만</b> 가로채는가 (델타 리뷰가 뚫은 지점).
+     *
+     * <p>초판은 메서드 이름과 인자 개수만 봤다. 그 상태에서 두 변이가 살아남았다 —
+     * 비대칭을 도입해도, 인자 개수 검사를 지워도 전부 초록이었다. 반사성 하나만 고정돼
+     * 있었기 때문이다.
+     */
+    @Nested
+    @DisplayName("equals 특수 처리의 경계")
+    class equals_경계 {
+
+        /** {@code equals} 라는 이름의 <b>비즈니스 메서드</b>를 가진 Feign 인터페이스. */
+        @FeignClient(name = "eq-probe")
+        interface EqualsNamedFeign {
+            boolean equals(String other);
+        }
+
+        @Test
+        @DisplayName("동명의 비즈니스 메서드는 가로채지 않는다")
+        void 비즈니스_equals_는_그대로() {
+            EqualsNamedFeign raw = other -> true;
+
+            var wrapped = (EqualsNamedFeign) translator.postProcessAfterInitialization(raw, "eq");
+
+            assertThat(wrapped.equals("ok"))
+                    .as("이름·인자 개수만 보면 이 호출이 프록시 비교로 새어 나가 항상 false 가 된다 "
+                            + "— 예외도 로그도 없는 조용한 오답이다")
+                    .isTrue();
+        }
+
+        @Test
+        @DisplayName("Object.equals 는 대칭이다 — 원본과는 서로 다르다")
+        void equals_대칭성() {
+            ProbeFeign raw = new ProbeFeign() {
+                @Override public String call() { return "ok"; }
+                @Override public void run() { }
+            };
+            Object wrapped = translator.postProcessAfterInitialization(raw, "probe");
+
+            // 프록시는 원본과 다른 객체다. 한쪽만 true 를 돌려주면 Object.equals 의
+            // 대칭성 위반이라 Set·Map 이 조용히 깨진다.
+            assertThat(wrapped.equals(raw)).isFalse();
+            assertThat(raw.equals(wrapped)).isFalse();
+        }
+
+        @Test
+        @DisplayName("equal 이면 hashCode 도 같다")
+        void hashCode_계약() {
+            ProbeFeign raw = new ProbeFeign() {
+                @Override public String call() { return "ok"; }
+                @Override public void run() { }
+            };
+            Object wrapped = translator.postProcessAfterInitialization(raw, "probe");
+
+            assertThat(wrapped.hashCode()).isEqualTo(wrapped.hashCode());
+        }
     }
 }

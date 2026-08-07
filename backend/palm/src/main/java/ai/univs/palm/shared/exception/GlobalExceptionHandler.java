@@ -112,8 +112,10 @@ public class GlobalExceptionHandler {
      * 경우는 우리 호출 스택이 매번 같아 정보가 없고, 응답을 <b>해석하지 못한</b> 경우는 우리 쪽
      * 파싱 문제일 수 있어 단서가 된다.
      *
-     * <p>응답 본문·상태 코드는 위 핸들러와 동일하다 ({@code SWAGGER-005}, 400). 클라이언트가
-     * 보는 계약을 바꾸지 않기 위해 일부러 맞췄다.
+     * <p>응답 본문은 위 핸들러와 동일하다 ({@code SWAGGER-005}). 상태 코드는 UG-308 에서
+     * 갈렸다 — 하위 모듈이 오류를 <b>응답한</b> 경우는 UG-299 가 맞춘 400 그대로고, 응답을
+     * <b>못 받은</b> 경우({@code NO_RESPONSE})는 500 이다. 두 값 모두 UG-308 이전 거동과
+     * 같으므로 클라이언트가 보는 계약은 바뀌지 않는다. 이유는 아래 분기 주석에 있다.
      */
     @ExceptionHandler(UpstreamCallException.class)
     public ResponseEntity<ResponseApi<?>> handleUpstreamCallException(UpstreamCallException ex) {
