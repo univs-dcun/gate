@@ -100,6 +100,16 @@ dependencies {
     /* API 계약 스펙 생성용 인메모리 DB (openapi 프로파일 전용, UG-238)
        developmentOnly: bootRun 계열(generateOpenApiDocs)에는 포함되고 bootJar(배포 이미지)에서는 제외됨 */
     developmentOnly 'com.h2database:h2'
+    /* JPA 슬라이스 테스트용 (UG-300). developmentOnly 선언은 bootRun 계열만 덮고
+       테스트 클래스패스에는 올라오지 않아, 그동안 @DataJpaTest 를 아예 쓸 수 없었다.
+       두 선언은 서로 대체하지 않으므로 둘 다 둔다 — bootJar(배포 이미지)에는 여전히
+       포함되지 않는다.
+
+       Testcontainers 로 실제 PostgreSQL 을 띄우는 안도 검토했다(티켓 권고). 이 개발
+       환경에서 docker 이미지를 받을 수 없어 채택하지 못했다 — 받을 수 있게 되면
+       방언 차이(UG-296/297)까지 덮을 수 있으므로 그쪽이 낫다. 한계는
+       JpaSliceTest javadoc 에 적었다. */
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 dependencyManagement {
