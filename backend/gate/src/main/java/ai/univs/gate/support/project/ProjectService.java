@@ -31,11 +31,11 @@ public class ProjectService {
      * 삭제가 커밋된 뒤 먼저 시작된 수정이 더티 체킹으로 {@code is_deleted} 를 되써 프로젝트를
      * 부활시킨다.
      *
-     * <p>읽기 전용 경로에는 쓰지 않는다. 상세 조회까지 잠그면 재발급이 도는 동안 조회가 막힌다.
+     * <p>읽기 전용 경로에는 쓰지 않는다. 상세 조회까지 잠그면 쓰기가 도는 동안 조회가 막힌다.
      *
      * <p>잠금을 잡기 <b>전에</b> 삭제 여부를 함께 거르므로 (쿼리의 {@code IsDeletedFalse}),
-     * 삭제가 먼저 커밋되면 뒤에 온 재발급은 잠금을 얻은 뒤 행을 찾지 못해
-     * {@code PROJECT_NOT_FOUND} 로 끝난다 — 삭제된 프로젝트에 활성 키가 다시 생기는 일이 없다.
+     * 삭제가 먼저 커밋되면 뒤에 온 쓰기는 잠금을 얻은 뒤 행을 찾지 못해
+     * {@code PROJECT_NOT_FOUND} 로 끝난다 — 삭제된 프로젝트가 다시 살아나는 일이 없다.
      */
     public Project validateOwnershipForUpdate(Long projectId, Long userId) {
         return validateOwnership(

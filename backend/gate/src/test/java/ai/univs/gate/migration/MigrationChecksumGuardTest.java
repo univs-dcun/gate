@@ -42,6 +42,20 @@ import org.junit.jupiter.api.Test;
  *
  * <p>gate 뿐 아니라 face·match·palm 까지 본다. 네 서비스가 같은 함정을 공유하는데 검사가
  * 하나뿐인 것은 {@code DialectSchemaParityTest} 와 같은 판단이다.
+ *
+ * <p><b>다만 이 검사는 gate 빌드에서만 돈다</b> (반박 리뷰 지적). 젠킨스 파이프라인이 변경
+ * 경로로 서비스를 골라 빌드하므로, {@code backend/face/**} 만 바꾸는 PR 은 이 테스트를 한 번도
+ * 돌리지 않는다. 결과가 두 가지로 갈린다:
+ *
+ * <ul>
+ *   <li>face 가 <b>적용된 파일을 고쳐도</b> 그 PR 에서는 안 잡힌다. 뒤늦게 gate 를 건드린
+ *       PR 이 잡는다 — 없는 것보다는 낫지만 늦다.
+ *   <li>face 가 <b>정상적으로</b> 새 마이그레이션을 추가하면, 그 뒤 처음 gate 를 건드린
+ *       무관한 PR 이 "새 파일" 로 빨간불을 받는다. 지연되고 오귀속되는 실패다.
+ * </ul>
+ *
+ * <p>그래서 실패 메시지가 "새 파일이면 정상" 을 먼저 말한다. 각 서비스가 자기 것을 즉시
+ * 검사하도록 옮기는 것이 옳고, UG-313 으로 분리했다.
  */
 @DisplayName("UG-312: 적용된 마이그레이션 파일 불변")
 class MigrationChecksumGuardTest {
