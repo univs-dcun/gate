@@ -19,7 +19,6 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
-import ai.univs.gate.support.project.ProjectService;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,22 +32,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * 대시보드 summary 의 접근 통제 (UG-281, UG-288).
+ * 대시보드 summary 의 접근 통제 (UG-281, UG-288, UG-301).
  *
  * <p>이 UseCase 에는 테스트가 하나도 없었다. UG-288 반박 리뷰가 변이 하나로 그것을 드러냈다 —
  * {@code findOwnedByApiKey(apiKey, accountId)} 를 {@code (apiKey, 0L)} 로 바꿔도 전 테스트가
  * 초록이었다. 즉 테넌트 격리가 통째로 사라져도 아무도 몰랐다.
  *
- * <p>특히 {@code projectService.validateOwnership} 호출은 지우기 쉬워 보이는 중복이다. UG-288
- * 작업에서 실제로 지웠다가 되돌렸다 — {@code ApiKeyService} 쪽 소유 검증은
- * {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 통과시키는 반면 이쪽은 항상 막기
- * 때문이다. 두 검사는 등가가 아니다.
+ * <p><b>UG-301 에서 검증 위치가 바뀌었다.</b> 예전에는 여기서
+ * {@code projectService.validateOwnership} 을 한 번 더 불러 LOG_ONLY 를 무력화했다. 지금은
+ * {@code ApiKeyService.findStrictlyOwnedByApiKey} 하나로 끝난다. 반박 리뷰가 짚은 대로 옛 방식은
+ * {@code NOT_OWNERSHIP} 이라는 열거 오라클을 만들고 SELECT 를 한 번 더 쳤다.
  *
- * <p><b>요청 계정과 프로젝트 소유자를 다른 값으로 둔다</b> (델타 리뷰 지적). 처음 작성했을 때는
- * 둘 다 {@code OWNER} 하나였다. 그러면 {@code validateOwnership(id, accountId)} 를
- * {@code validateOwnership(id, project.getAccountId())} 로 바꿔도 전 테스트가 초록이다 — 즉
- * "요청자 기준으로 검증한다" 는 이 테스트의 핵심 주장이 검증되지 않았다. 그 변이가 실제로
- * 뚫는 시나리오가 {@link #LOG_ONLY_에서도_요청자_기준으로_막는다()} 다.
+ * <p>그래서 이 클래스는 이제 <b>어느 조회를 부르는가</b>만 본다. 모드별 실제 동작은
+ * {@code ApiKeyOwnershipTest.StrictOwned} 가 목이 아니라 진짜 구현으로 검증한다.
+ *
+ * <p>{@code ATTACKER} 를 {@code OWNER} 와 다른 값으로 유지한다. 거부 경로에서 요청 계정을
+ * 상수로 굳히는 변이를 잡으려면 둘이 달라야 한다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("대시보드 summary 접근 통제")
@@ -62,9 +61,6 @@ class GetDashboardSummaryUseCaseTest {
 
     @Mock
     private ApiKeyService apiKeyService;
-
-    @Mock
-    private ProjectService projectService;
 
     @Mock
     private DashboardStatsService dashboardStatsService;
@@ -87,60 +83,44 @@ class GetDashboardSummaryUseCaseTest {
     @DisplayName("키 조회에 요청 계정을 그대로 넘긴다")
     void 요청_계정을_넘긴다() {
         // 이 인자를 0L 같은 상수로 바꾸면 아무 계정이나 남의 키로 대시보드를 볼 수 있다.
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         getDashboardSummaryUseCase.execute(OWNER, KEY, TrendPeriod.WEEK, FeatureType.FACE);
 
-        verify(apiKeyService).findOwnedByApiKey(KEY, OWNER);
+        verify(apiKeyService).findStrictlyOwnedByApiKey(KEY, OWNER);
     }
 
+    /**
+     * 느슨한 조회({@code findOwnedByApiKey})를 쓰면 안 된다.
+     *
+     * <p>그쪽은 {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 남의 키를
+     * 통과시킨다. 대시보드는 프로젝트 집계를 통째로 내주므로 그 스위치의 영향권 밖에
+     * 있어야 한다. 모드별 실제 동작은 {@code ApiKeyOwnershipTest.StrictOwned} 가 진짜
+     * 구현으로 검증한다 — 여기서는 <b>어느 쪽을 부르는가</b>만 못박는다.
+     */
     @Test
-    @DisplayName("프로젝트 소유 검증을 별도로 한 번 더 한다 — LOG_ONLY 에서도 막기 위해서다")
-    void 프로젝트_소유_검증을_거친다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+    @DisplayName("모드와 무관하게 막는 조회를 쓴다 — 느슨한 쪽이 아니다")
+    void 엄격한_조회를_쓴다() {
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         getDashboardSummaryUseCase.execute(OWNER, KEY, TrendPeriod.WEEK, FeatureType.FACE);
 
-        // ProjectService.validateOwnership 은 모드와 무관하게 항상 던진다. 이 호출이 사라지면
-        // LOG_ONLY 로 되돌리는 순간 남의 집계가 그대로 나간다.
-        verify(projectService).validateOwnership(PROJECT, OWNER);
+        verify(apiKeyService).findStrictlyOwnedByApiKey(KEY, OWNER);
+        verify(apiKeyService, never()).findOwnedByApiKey(any(), any());
     }
 
     @Test
     @DisplayName("소유 검증이 거부하면 집계를 읽지 않는다")
     void 소유_검증_실패는_전파된다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
-        willThrow(new CustomGateException(ErrorType.NOT_OWNERSHIP))
-                .given(projectService).validateOwnership(PROJECT, OWNER);
+        willThrow(new CustomGateException(ErrorType.API_KEY_NOT_FOUND))
+                .given(apiKeyService).findStrictlyOwnedByApiKey(KEY, ATTACKER);
 
-        assertThatThrownBy(() ->
-                getDashboardSummaryUseCase.execute(OWNER, KEY, TrendPeriod.WEEK, FeatureType.FACE))
+        assertThatThrownBy(() -> getDashboardSummaryUseCase.execute(ATTACKER, KEY, TrendPeriod.WEEK, FeatureType.FACE))
                 .isInstanceOf(CustomGateException.class);
 
         verify(dashboardStatsService, never()).countRegistrations(eq(PROJECT), any(), any());
     }
 
-    /**
-     * LOG_ONLY 로 되돌린 상황을 그대로 재현한다.
-     *
-     * <p>{@code findOwnedByApiKey} 가 남의 키를 통과시킨다 — 그게 LOG_ONLY 의 정의다. 그다음 줄의
-     * {@code validateOwnership} 이 요청자({@code ATTACKER}) 기준으로 막아야 한다. 키의 주인
-     * ({@code OWNER}) 기준으로 검증하면 당연히 통과하므로, 그렇게 바뀌면 이 테스트가 깨진다.
-     */
-    @Test
-    @DisplayName("LOG_ONLY 로 남의 키가 통과해도 요청자 기준 소유 검증이 막는다")
-    void LOG_ONLY_에서도_요청자_기준으로_막는다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, ATTACKER)).willReturn(apiKey);
-        willThrow(new CustomGateException(ErrorType.NOT_OWNERSHIP))
-                .given(projectService).validateOwnership(PROJECT, ATTACKER);
-
-        assertThatThrownBy(() ->
-                getDashboardSummaryUseCase.execute(ATTACKER, KEY, TrendPeriod.WEEK, FeatureType.FACE))
-                .isInstanceOf(CustomGateException.class);
-
-        verify(projectService).validateOwnership(PROJECT, ATTACKER);
-        verify(dashboardStatsService, never()).countRegistrations(eq(PROJECT), any(), any());
-    }
 
     /**
      * 집계 10개가 결과의 제자리에 들어가는지 본다.
@@ -151,7 +131,7 @@ class GetDashboardSummaryUseCaseTest {
     @Test
     @DisplayName("집계 결과를 자리에 맞게 담는다")
     void 집계_결과를_자리에_맞게_담는다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         given(dashboardStatsService.countRegistrations(eq(PROJECT), any(LocalDateTime.class), eq(FeatureType.FACE))).willReturn(1L);
         given(dashboardStatsService.countTotalRegistrations(PROJECT, FeatureType.FACE)).willReturn(2L);
@@ -183,7 +163,7 @@ class GetDashboardSummaryUseCaseTest {
     @Test
     @DisplayName("period 와 featureType 을 집계에 그대로 넘긴다")
     void 요청_파라미터를_그대로_넘긴다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         getDashboardSummaryUseCase.execute(OWNER, KEY, TrendPeriod.MONTH, FeatureType.PALM);
 

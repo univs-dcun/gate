@@ -125,6 +125,99 @@ class ApiKeyOwnershipTest {
         }
     }
 
+    /**
+     * UG-301: 모드와 무관하게 막는 조회.
+     *
+     * <p>대시보드 네 엔드포인트가 쓴다. {@link ApiKeyService#findOwnedByApiKey} 는 LOG_ONLY 에서
+     * 통과시키는데, 그 스위치를 켜는 순간 프로젝트 집계가 통째로 나가기 때문이다.
+     *
+     * <p>초판은 이 검증을 UseCase 안에서 {@code ProjectService.validateOwnership} 으로 했다.
+     * 반박 리뷰가 두 가지를 짚어 여기로 옮겼다 — 그쪽은 {@code NOT_OWNERSHIP} 이라는 열거
+     * 오라클을 만들고(이 클래스가 피하려는 바로 그것), SELECT 를 한 번 더 친다. 옮기면서
+     * <b>모드를 실제로 세팅해 진짜 구현으로</b> 검증하게 됐다. UseCase 쪽은 이제 "어느 쪽을
+     * 부르는가" 만 못박는다.
+     */
+    @Nested
+    @DisplayName("findStrictlyOwnedByApiKey — 모드 무관 (UG-301)")
+    class StrictOwned {
+
+        @Test
+        @DisplayName("소유자는 ENFORCE·LOG_ONLY 어느 쪽에서도 통과한다")
+        void 소유자는_통과() {
+            keyExists();
+
+            enforce();
+            assertThat(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).isSameAs(apiKey);
+
+            logOnly();
+            assertThat(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).isSameAs(apiKey);
+        }
+
+        /**
+         * 이 묶음의 본문. 같은 인자로 {@link ApiKeyService#findOwnedByApiKey} 는 통과하는데
+         * 이쪽은 막는다는 <b>대비</b>를 한 테스트 안에서 보인다 — 두 메서드가 갈리는 이유가
+         * 곧 이 티켓이다.
+         */
+        @Test
+        @DisplayName("LOG_ONLY 여도 타 계정을 거부한다 — 느슨한 쪽은 같은 인자로 통과한다")
+        void 로그만이어도_거부() {
+            keyExists();
+            logOnly();
+
+            assertThatCode(() -> apiKeyService.findOwnedByApiKey(KEY, ATTACKER))
+                    .as("느슨한 쪽은 통과해야 한다. 여기가 깨지면 LOG_ONLY 가 이미 죽은 것이다")
+                    .doesNotThrowAnyException();
+
+            assertThatThrownBy(() -> apiKeyService.findStrictlyOwnedByApiKey(KEY, ATTACKER))
+                    .isInstanceOf(CustomGateException.class)
+                    .satisfies(e -> assertThat(((CustomGateException) e).getErrorType())
+                            .isEqualTo(ErrorType.API_KEY_NOT_FOUND));
+        }
+
+        /**
+         * 오류 코드가 느슨한 쪽과 같아야 한다.
+         *
+         * <p>{@code NOT_OWNERSHIP} 을 쓰면 "이 키는 실재하고 남의 것" 을 확인해 주는 열거
+         * 오라클이 된다 — {@link ApiKeyService#validateOwnership} 이 세 문단에 걸쳐 피하는
+         * 것이다. 코드가 같아야 두 모드의 응답도 같아지고, 계약 스펙에 새 코드가 실리지 않는다.
+         */
+        @Test
+        @DisplayName("없는 키·남의 키·ENFORCE 거부가 전부 같은 코드다")
+        void 열거_오라클_없음() {
+            given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
+            keyExists();
+            logOnly();
+
+            ErrorType 없는키 = errorTypeOf(() -> apiKeyService.findStrictlyOwnedByApiKey("없는키", ATTACKER));
+            ErrorType 남의키 = errorTypeOf(() -> apiKeyService.findStrictlyOwnedByApiKey(KEY, ATTACKER));
+
+            enforce();
+            ErrorType 엄격거부 = errorTypeOf(() -> apiKeyService.findStrictlyOwnedByApiKey(KEY, ATTACKER));
+
+            assertThat(남의키).isEqualTo(없는키).isEqualTo(엄격거부).isEqualTo(ErrorType.API_KEY_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("X-Account-Id 부재도 여전히 막는다 — UG-277 가드를 우회하지 않는다")
+        void 계정_부재도_막는다() {
+            logOnly();
+
+            assertThatThrownBy(() -> apiKeyService.findStrictlyOwnedByApiKey(KEY, null))
+                    .isInstanceOf(CustomGateException.class);
+
+            verify(apiKeyRepository, never()).findByApiKeyAndIsActiveTrue(any());
+        }
+
+        private ErrorType errorTypeOf(Runnable call) {
+            try {
+                call.run();
+                throw new AssertionError("예외가 발생하지 않았다");
+            } catch (CustomGateException e) {
+                return e.getErrorType();
+            }
+        }
+    }
+
     @Nested
     @DisplayName("findByApiKey(CallerType, ...) — 데모·인증 공유 UseCase")
     class Shared {

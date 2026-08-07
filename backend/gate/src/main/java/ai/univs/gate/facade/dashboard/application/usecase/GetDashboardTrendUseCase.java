@@ -7,7 +7,6 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
-import ai.univs.gate.support.project.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,24 +16,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class GetDashboardTrendUseCase {
 
     private final ApiKeyService apiKeyService;
-    private final ProjectService projectService;
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
     public DashboardTrendResult execute(Long accountId, String apiKey, TrendPeriod period, FeatureType featureType) {
-        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
+        // UG-301: 모드와 무관하게 막는 조회다. 일반 findOwnedByApiKey 는
+        // gate.security.api-key-ownership.mode = LOG_ONLY 에서 통과시키는데, 그 스위치를
+        // 켜는 순간 이 엔드포인트가 남의 프로젝트 집계를 통째로 내주게 된다.
+        // 사유와 한계(나머지 16곳은 아직 열려 있다)는 ApiKeyService 쪽 주석 참고.
+        ApiKey findApiKey = apiKeyService.findStrictlyOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
 
-        // UG-301: summary 와 같은 이유로 소유 검증을 한 번 더 한다.
-        //
-        // findOwnedByApiKey 의 소유 검증은 gate.security.api-key-ownership.mode 가 LOG_ONLY 면
-        // 경고만 남기고 통과시킨다. ProjectService.validateOwnership 은 모드와 무관하게 항상
-        // 던진다. 두 검사는 등가가 아니다.
-        //
-        // UG-288 에서 summary 에만 이 줄이 있었고 나머지 대시보드 3종에는 없었다 — LOG_ONLY 로
-        // 되돌리는 순간 이 세 엔드포인트만 남의 집계를 그대로 내주게 된다. LOG_ONLY 는 UG-281 의
-        // 비상 되돌림 수단이므로 그걸 쓰는 상황에서 폭발 반경이 넓어지는 것은 받아들일 수 없다.
-        projectService.validateOwnership(project.getId(), accountId);
 
         return dashboardStatsService.getTrend(project.getId(), period, featureType);
     }

@@ -19,7 +19,6 @@ import ai.univs.gate.shared.usecase.result.CustomPageResult;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
-import ai.univs.gate.support.project.ProjectService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,9 +52,6 @@ class GetDashboardDailyStatsUseCaseTest {
     private ApiKeyService apiKeyService;
 
     @Mock
-    private ProjectService projectService;
-
-    @Mock
     private DashboardStatsService dashboardStatsService;
 
     @InjectMocks
@@ -74,59 +70,48 @@ class GetDashboardDailyStatsUseCaseTest {
     @Test
     @DisplayName("키 조회에 요청 계정을 그대로 넘긴다")
     void 요청_계정을_넘긴다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         getDashboardDailyStatsUseCase.execute(OWNER, KEY, PAGE, PAGE_SIZE, FeatureType.FACE);
 
-        verify(apiKeyService).findOwnedByApiKey(KEY, OWNER);
+        verify(apiKeyService).findStrictlyOwnedByApiKey(KEY, OWNER);
     }
 
+    /**
+     * 느슨한 조회({@code findOwnedByApiKey})를 쓰면 안 된다.
+     *
+     * <p>그쪽은 {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 남의 키를
+     * 통과시킨다. 대시보드는 프로젝트 집계를 통째로 내주므로 그 스위치의 영향권 밖에
+     * 있어야 한다. 모드별 실제 동작은 {@code ApiKeyOwnershipTest.StrictOwned} 가 진짜
+     * 구현으로 검증한다 — 여기서는 <b>어느 쪽을 부르는가</b>만 못박는다.
+     */
     @Test
-    @DisplayName("프로젝트 소유 검증을 별도로 한 번 더 한다 — LOG_ONLY 에서도 막기 위해서다")
-    void 프로젝트_소유_검증을_거친다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+    @DisplayName("모드와 무관하게 막는 조회를 쓴다 — 느슨한 쪽이 아니다")
+    void 엄격한_조회를_쓴다() {
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         getDashboardDailyStatsUseCase.execute(OWNER, KEY, PAGE, PAGE_SIZE, FeatureType.FACE);
 
-        verify(projectService).validateOwnership(PROJECT, OWNER);
+        verify(apiKeyService).findStrictlyOwnedByApiKey(KEY, OWNER);
+        verify(apiKeyService, never()).findOwnedByApiKey(any(), any());
     }
 
     @Test
     @DisplayName("소유 검증이 거부하면 집계를 읽지 않는다")
     void 소유_검증_실패는_전파된다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
-        willThrow(new CustomGateException(ErrorType.NOT_OWNERSHIP))
-                .given(projectService).validateOwnership(PROJECT, OWNER);
+        willThrow(new CustomGateException(ErrorType.API_KEY_NOT_FOUND))
+                .given(apiKeyService).findStrictlyOwnedByApiKey(KEY, ATTACKER);
 
-        assertThatThrownBy(() ->
-                getDashboardDailyStatsUseCase.execute(OWNER, KEY, PAGE, PAGE_SIZE, FeatureType.FACE))
+        assertThatThrownBy(() -> getDashboardDailyStatsUseCase.execute(ATTACKER, KEY, PAGE, PAGE_SIZE, FeatureType.FACE))
                 .isInstanceOf(CustomGateException.class);
 
-        verify(dashboardStatsService, never())
-                .getDailyStats(anyLong(), anyInt(), anyInt(), any());
-    }
-
-    /** LOG_ONLY 재현. 상세는 {@link GetDashboardTrendUseCaseTest} 의 같은 이름 테스트 참고. */
-    @Test
-    @DisplayName("LOG_ONLY 로 남의 키가 통과해도 요청자 기준 소유 검증이 막는다")
-    void LOG_ONLY_에서도_요청자_기준으로_막는다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, ATTACKER)).willReturn(apiKey);
-        willThrow(new CustomGateException(ErrorType.NOT_OWNERSHIP))
-                .given(projectService).validateOwnership(PROJECT, ATTACKER);
-
-        assertThatThrownBy(() ->
-                getDashboardDailyStatsUseCase.execute(ATTACKER, KEY, PAGE, PAGE_SIZE, FeatureType.FACE))
-                .isInstanceOf(CustomGateException.class);
-
-        verify(projectService).validateOwnership(PROJECT, ATTACKER);
-        verify(dashboardStatsService, never())
-                .getDailyStats(anyLong(), anyInt(), anyInt(), any());
+        verify(dashboardStatsService, never()).getDailyStats(anyLong(), anyInt(), anyInt(), any());
     }
 
     @Test
     @DisplayName("page·pageSize·featureType 을 그대로 넘기고 결과를 그대로 돌려준다")
     void 요청_파라미터를_그대로_넘긴다() {
-        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         DashboardDailyStatsResult expected =
                 new DashboardDailyStatsResult(

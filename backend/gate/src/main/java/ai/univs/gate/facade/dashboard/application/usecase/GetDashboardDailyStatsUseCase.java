@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
-import ai.univs.gate.support.project.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,16 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class GetDashboardDailyStatsUseCase {
 
     private final ApiKeyService apiKeyService;
-    private final ProjectService projectService;
     private final DashboardStatsService dashboardStatsService;
 
     @Transactional(readOnly = true)
     public DashboardDailyStatsResult execute(Long accountId, String apiKey, int page, int pageSize, FeatureType featureType) {
-        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
+        // UG-301: 모드와 무관하게 막는 조회다. 일반 findOwnedByApiKey 는
+        // gate.security.api-key-ownership.mode = LOG_ONLY 에서 통과시키는데, 그 스위치를
+        // 켜는 순간 이 엔드포인트가 남의 프로젝트 집계를 통째로 내주게 된다.
+        // 사유와 한계(나머지 16곳은 아직 열려 있다)는 ApiKeyService 쪽 주석 참고.
+        ApiKey findApiKey = apiKeyService.findStrictlyOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
 
-        // UG-301: LOG_ONLY 에서도 막기 위한 두 번째 검사. 사유는 GetDashboardTrendUseCase 주석 참고.
-        projectService.validateOwnership(project.getId(), accountId);
 
         return dashboardStatsService.getDailyStats(project.getId(), page, pageSize, featureType);
     }
