@@ -26,9 +26,9 @@ public class DeleteProjectUseCase {
      * 한 번 더 끄는 이유는 <b>의미</b>다 — 삭제된 프로젝트의 키가 DB 에 {@code is_active = true} 로
      * 남아 있으면, 그 행을 보는 사람도 다른 조회 경로도 그것을 살아 있는 키로 읽는다.
      *
-     * <p><b>활성 키가 하나라고 가정하지 않는다</b> (반박 리뷰 지적). 코드베이스 곳곳이 하나를
-     * 전제하지만 그것을 보장하는 제약이 스키마에 없다 — {@code (project_id, is_active)} 부분
-     * 유니크 인덱스가 없다 (UG-302). 여기서 {@code Optional} 조회를 쓰면 활성 키가 2개인 프로젝트는
+     * <p><b>활성 키가 하나라고 가정하지 않는다</b> (반박 리뷰 지적). V24 부분 유니크 인덱스가
+     * 하나를 강제하지만, 그 인덱스는 마이그레이션이 돈 환경에만 있다 — 온프레미스는 버전이
+     * 제각각이다. 여기서 {@code Optional} 조회를 쓰면 활성 키가 2개인 프로젝트는
      * {@code IncorrectResultSizeDataAccessException} 으로 삭제가 롤백돼 <b>영영 지울 수 없게</b>
      * 된다 — 고칠 수단이 사라지는 셈이다. 삭제는 정리 동작이므로 몇 개가 있든 전부 끈다.
      *
@@ -38,9 +38,9 @@ public class DeleteProjectUseCase {
      */
     @Transactional
     public void execute(Long accountId, Long projectId) {
-        // 잠그고 읽는다 (UG-302). 삭제와 키 재발급은 둘 다 "활성 키를 끈다" 를 하므로 서로
-        // 경쟁한다 — 재발급만 잠그면 직렬화가 되지 않고, 삭제가 커밋된 뒤 재발급이 새 활성
-        // 키를 넣어 "삭제된 프로젝트에 활성 키" 라는 UG-288 의 상태가 경합으로 되살아난다.
+        // 잠그고 읽는다 (UG-302). 같은 프로젝트를 고치는 쓰기끼리 직렬화하기 위해서다. 잠금은
+        // 경쟁하는 모든 쓰기 경로가 같이 잡아야 의미가 있는데, UpdateProjectUseCase 가 아직
+        // 잡지 않는다 — 그게 UG-311 이다.
         Project project = projectService.validateOwnershipForUpdate(projectId, accountId);
         project.delete();
 

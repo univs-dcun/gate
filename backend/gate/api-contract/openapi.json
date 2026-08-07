@@ -2937,179 +2937,6 @@
         ]
       }
     },
-    "/api/v1/projects/{projectId}/api-key/regenerate": {
-      "post": {
-        "tags": [
-          "API KEY"
-        ],
-        "summary": "API Key 재발급",
-        "description": "새로운 API Key 를 발급하고 기존 키를 비활성화합니다",
-        "operationId": "regenerateApiKey",
-        "parameters": [
-          {
-            "name": "projectId",
-            "in": "path",
-            "description": "프로젝트 식별 번호",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INVALID_INPUT": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-101",
-                        "type": "INVALID_INPUT",
-                        "message": "The user\u0027s request contains invalid values."
-                      }
-                    }
-                  },
-                  "PROJECT_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-103",
-                        "type": "PROJECT_NOT_FOUND",
-                        "message": "Project not found."
-                      }
-                    }
-                  },
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "NOT_OWNERSHIP": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-104",
-                        "type": "NOT_OWNERSHIP",
-                        "message": "You do not have permission to access this project."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResponseApiApiKeyResponseDTO"
-                }
-              }
-            }
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          }
-        ]
-      }
-    },
     "/api/v1/feature/palm": {
       "get": {
         "tags": [
@@ -9819,55 +9646,6 @@
           "projectName"
         ]
       },
-      "ApiKeyResponseDTO": {
-        "type": "object",
-        "properties": {
-          "apiKeyId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "API KEY 식별 번호"
-          },
-          "apiKey": {
-            "type": "string",
-            "description": "API KEY"
-          },
-          "maskedApiKey": {
-            "type": "string",
-            "description": "보호 처리된 API KEY 정보"
-          },
-          "issuedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "발행 일자"
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "만료 일자"
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "활성화 여부"
-          }
-        }
-      },
-      "ResponseApiApiKeyResponseDTO": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "description": "요청 성공/실패 여부"
-          },
-          "data": {
-            "$ref": "#/components/schemas/ApiKeyResponseDTO",
-            "description": "성공 응답 데이터"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/Errors",
-            "description": "실패 응답 데이터"
-          }
-        }
-      },
       "CreatePalmFeatureRequestDTO": {
         "type": "object",
         "properties": {
@@ -11116,6 +10894,55 @@
           },
           "data": {
             "$ref": "#/components/schemas/ConsentLogListResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "ApiKeyResponseDTO": {
+        "type": "object",
+        "properties": {
+          "apiKeyId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "API KEY 식별 번호"
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "API KEY"
+          },
+          "maskedApiKey": {
+            "type": "string",
+            "description": "보호 처리된 API KEY 정보"
+          },
+          "issuedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "발행 일자"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "만료 일자"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "활성화 여부"
+          }
+        }
+      },
+      "ResponseApiApiKeyResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ApiKeyResponseDTO",
             "description": "성공 응답 데이터"
           },
           "errors": {

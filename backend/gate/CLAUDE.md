@@ -64,7 +64,7 @@ modules/<module>/
 
 - **auth** — Signup, login/logout, JWT tokens, email verification, password reset/change
 - **project** — CRUD for projects with settings (liveness, consent), each project gets auto-generated API keys
-- **api_key** — API key retrieval and regeneration
+- **api_key** — API key retrieval. 프로젝트 1개 = API 키 1개이고, 키는 프로젝트 생성 시에만 만들어진다. 재발급 API 는 UG-312 에서 제거됐다 (V24 부분 유니크 인덱스와 양립하지 않았고 화면에서 도달할 수도 없었다)
 - **company** — Company profile management
 - **match** — e-KYC face matching (`/api/v1/match`): identify (1:N), verify by faceId (1:1), verify by image (1:1), liveness check, match history CRUD. Uses `FaceMatchClient` (Feign). Note: controller class is named `matchController` (lowercase).
 
