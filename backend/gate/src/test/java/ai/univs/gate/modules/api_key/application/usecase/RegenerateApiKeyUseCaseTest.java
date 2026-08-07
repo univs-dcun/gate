@@ -27,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -172,5 +173,62 @@ class RegenerateApiKeyUseCaseTest {
                 .isFalse();
         assertThat(다른활성키.getIsActive()).isFalse();
         verify(apiKeyRepository, times(1)).save(any(ApiKey.class));
+    }
+
+    /**
+     * 잠금이 키 읽기보다 <b>먼저</b>여야 한다 (반박 리뷰 지적).
+     *
+     * <p>{@code verify(projectService).validateOwnershipForUpdate(...)} 는 <b>호출 여부만</b>
+     * 본다. 두 줄의 순서만 뒤집어 키를 먼저 읽게 하면 TOCTOU 가 그대로 부활하는데 테스트는
+     * 초록이었다 — 리뷰어가 그 변이를 심고 실제 H2 2스레드로 활성 키 2개를 만들었다.
+     * 잠금은 "부르기만" 하면 되는 것이 아니라 "먼저" 불러야 한다.
+     */
+    @Test
+    @DisplayName("잠금을 먼저 잡고 그다음 활성 키를 읽는다")
+    void 잠금이_읽기보다_먼저다() {
+        given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID)).willReturn(project);
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID)).willReturn(List.of(oldApiKey));
+        given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
+        given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
+        given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(i -> i.getArgument(0));
+
+        regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID);
+
+        InOrder inOrder = org.mockito.Mockito.inOrder(projectService, apiKeyRepository);
+        inOrder.verify(projectService).validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID);
+        inOrder.verify(apiKeyRepository).findAllActiveByProjectId(PROJECT_ID);
+    }
+
+    /** 활성 키가 2개면 정리했다는 사실을 ERROR 로 남긴다 — 조용히 지나가면 원인을 못 찾는다. */
+    @Test
+    @DisplayName("중복 정리는 ERROR 로 남는다")
+    void 중복_정리는_ERROR_로_남는다() {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
+                org.slf4j.LoggerFactory.getLogger(RegenerateApiKeyUseCase.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            ApiKey 다른활성키 = ApiKey.builder().id(9L).project(project)
+                    .apiKey("gate_DUPDUPDUPDUPDUPDUPDUPDUPDUPDUPD").secretKey("dup")
+                    .issuedAt(LocalDateTime.now(ZoneOffset.UTC)).isActive(true).build();
+            given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID))
+                    .willReturn(project);
+            given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID))
+                    .willReturn(List.of(oldApiKey, 다른활성키));
+            given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
+            given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
+            given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(i -> i.getArgument(0));
+
+            regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID);
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.ERROR);
+                assertThat(event.getFormattedMessage()).contains(String.valueOf(PROJECT_ID));
+            });
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }

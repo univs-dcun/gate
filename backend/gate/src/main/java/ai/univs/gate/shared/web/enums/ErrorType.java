@@ -64,8 +64,9 @@ public enum ErrorType {
      * 막는 것이 이 상수의 핵심 목적이다 — 구분해 주면 키의 실재를 확인해 주는 열거 오라클이
      * 된다 ({@code ApiKeyService} 참고).
      *
-     * <p>우리 쪽 문제: {@code GetApiKeyUseCase}·{@code RegenerateApiKeyUseCase} 의
-     * {@code findActiveByProjectId().orElseThrow}. 두 곳 모두 {@code validateOwnership} 을
+     * <p>우리 쪽 문제: {@code GetApiKeyUseCase} 의 {@code findLatestActiveByProjectId().orElseThrow}
+     * 와 {@code RegenerateApiKeyUseCase} 의 활성 키 목록 부재 분기 (UG-302 에서 두 조회가
+     * 갈렸다). 두 곳 모두 {@code validateOwnership} 계열을
      * 먼저 거치므로, 도달했다는 것은 "소유가 확인된, 삭제되지 않은 프로젝트에 활성 키가 없다"
      * 는 뜻이다 — {@link #SETTINGS_NOT_FOUND} 와 완전히 같은 논리다.
      *

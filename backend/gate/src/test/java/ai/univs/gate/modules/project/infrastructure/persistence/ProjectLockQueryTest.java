@@ -41,6 +41,29 @@ class ProjectLockQueryTest {
     }
 
     /**
+     * 애노테이션이 붙은 메서드가 실제로 <b>불리는지</b> (반박 리뷰 지적).
+     *
+     * <p>구현체가 잠그지 않는 쪽에 위임하도록 한 줄만 바꾸면 애노테이션은 그대로인 채 잠금이
+     * 사라진다. 리뷰어가 그 변이를 심고 383개 테스트가 전부 초록인 것을, 그리고 그 상태에서
+     * 실제 H2 2스레드로 활성 키가 2개가 되는 것을 확인했다.
+     */
+    @Test
+    @DisplayName("구현체가 잠그는 조회에 위임한다")
+    void 구현체가_잠그는_쪽에_위임한다() {
+        ProjectJpaRepository jpa = org.mockito.Mockito.mock(ProjectJpaRepository.class);
+        ProjectRepositoryImpl impl = new ProjectRepositoryImpl(
+                jpa, org.mockito.Mockito.mock(ProjectDSLRepository.class));
+        org.mockito.BDDMockito.given(jpa.findForUpdateByIdAndIsDeletedFalse(1L))
+                .willReturn(java.util.Optional.empty());
+
+        impl.findForUpdateByIdAndIsDeletedFalse(1L);
+
+        org.mockito.Mockito.verify(jpa).findForUpdateByIdAndIsDeletedFalse(1L);
+        org.mockito.Mockito.verify(jpa, org.mockito.Mockito.never())
+                .findByIdAndIsDeletedFalse(1L);
+    }
+
+    /**
      * 잠그지 않는 조회도 그대로 남아 있어야 한다.
      *
      * <p>상세 조회 같은 읽기 경로까지 잠그면 재발급이 도는 동안 조회가 막힌다. 두 메서드가

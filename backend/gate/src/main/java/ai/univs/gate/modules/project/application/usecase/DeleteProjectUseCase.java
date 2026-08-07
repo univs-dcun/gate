@@ -27,8 +27,8 @@ public class DeleteProjectUseCase {
      * 남아 있으면, 그 행을 보는 사람도 다른 조회 경로도 그것을 살아 있는 키로 읽는다.
      *
      * <p><b>활성 키가 하나라고 가정하지 않는다</b> (반박 리뷰 지적). 코드베이스 곳곳이 하나를
-     * 전제하지만({@code findActiveByProjectId} 가 {@code Optional}), 그것을 보장하는 제약이
-     * 스키마에 없다. 여기서 {@code Optional} 조회를 쓰면 활성 키가 2개인 프로젝트는
+     * 전제하지만 그것을 보장하는 제약이 스키마에 없다 — {@code (project_id, is_active)} 부분
+     * 유니크 인덱스가 없다 (UG-302). 여기서 {@code Optional} 조회를 쓰면 활성 키가 2개인 프로젝트는
      * {@code IncorrectResultSizeDataAccessException} 으로 삭제가 롤백돼 <b>영영 지울 수 없게</b>
      * 된다 — 고칠 수단이 사라지는 셈이다. 삭제는 정리 동작이므로 몇 개가 있든 전부 끈다.
      *
