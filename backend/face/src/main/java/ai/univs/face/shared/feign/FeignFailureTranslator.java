@@ -61,10 +61,16 @@ public class FeignFailureTranslator implements BeanPostProcessor {
             return bean;
         }
 
+        // 대상 하나만 넘기지 않고 원본의 인터페이스를 <b>전부</b> 유지한다 (반박 리뷰 지적).
+        // 하나만 넘기면 Feign 이 붙였을 수 있는 다른 인터페이스(Advised·SpringProxy 등)가
+        // 소리 없이 사라진다. 오늘은 LoggingAspect 포인트컷이 @RestController 한정이라
+        // 실제 유실이 없지만, feign 빈에 어드바이스가 붙는 순간 조용히 깨진다.
+        Class<?>[] interfaces = bean.getClass().getInterfaces();
+
         return Proxy.newProxyInstance(
                 target.getClassLoader(),
-                new Class<?>[] {target},
-                (proxy, method, args) -> 번역해서_호출한다(bean, target, method, args));
+                interfaces,
+                (proxy, method, args) -> 번역해서_호출한다(bean, target, proxy, method, args));
     }
 
     /**
@@ -83,8 +89,16 @@ public class FeignFailureTranslator implements BeanPostProcessor {
     }
 
     private static Object 번역해서_호출한다(
-            Object bean, Class<?> target, java.lang.reflect.Method method, Object[] args)
-            throws Throwable {
+            Object bean, Class<?> target, Object proxy,
+            java.lang.reflect.Method method, Object[] args) throws Throwable {
+        // Object.equals 는 프록시 자신을 기준으로 답한다 (반박 리뷰 지적). 그대로 위임하면
+        // Feign 의 FeignInvocationHandler.equals 가 인자에서 InvocationHandler 를 꺼내
+        // 비교하는데 우리 람다는 그 타입이 아니라 bean.equals(bean) 조차 false 가 된다 —
+        // Object.equals 계약의 반사성 위반이다.
+        if ("equals".equals(method.getName()) && args != null && args.length == 1) {
+            return proxy == args[0];
+        }
+
         try {
             return method.invoke(bean, args);
         } catch (InvocationTargetException e) {
@@ -92,11 +106,24 @@ public class FeignFailureTranslator implements BeanPostProcessor {
             if (cause instanceof FeignException feignException) {
                 // operation 은 상태 코드가 없는 실패에서 '어느 호출이 끊겼는가' 를 알려주는
                 // 유일한 단서다. Feign 의 methodKey 와 같은 모양으로 맞춘다.
+                //
+                // cause 는 <b>연결 실패가 아닐 때만</b> 싣는다. 핸들러가 cause 를 slf4j 의
+                // 마지막 인자로 넘기므로 그때만 스택트레이스가 붙는데, 연결 거부·타임아웃의
+                // 스택은 매번 같은 Feign 호출 경로라 정보가 없다. UpstreamCallException 이
+                // 이미 세우고 있는 원칙("오류를 응답한 경우는 스택이 매번 같아 정보가 없다")을
+                // 그대로 적용한 것이다.
+                //
+                // 반박 리뷰가 실측으로 지적한 부분이다 — 초판은 무조건 cause 를 실어서
+                // 스택 프레임이 213 → 223 으로 오히려 늘었고, 그러면서 커밋 메시지는
+                // "90여 줄 스택트레이스를 없앴다" 고 적고 있었다. 반면 디코딩 실패는 우리 쪽
+                // 파싱 문제일 수 있어 스택이 단서가 되므로 그대로 싣는다.
+                boolean 응답을_못_받았다 = feignException instanceof RetryableException;
+
                 throw new UpstreamCallException(
                         UpstreamCallException.NO_RESPONSE,
                         "%s#%s".formatted(target.getSimpleName(), method.getName()),
                         원인_요약(feignException),
-                        feignException);
+                        응답을_못_받았다 ? null : feignException);
             }
             throw cause;
         }

@@ -83,7 +83,9 @@ class FeignFailureTranslatorTest {
                         assertThat(ex.getUpstreamStatus()).isEqualTo(UpstreamCallException.NO_RESPONSE);
                         assertThat(ex.getOperation()).isEqualTo("ProbeFeign#call");
                         assertThat(ex.getReason()).contains("연결 실패·타임아웃");
-                        assertThat(ex.getCause()).isSameAs(원인);
+                        // cause 는 일부러 싣지 않는다 — 연결 거부의 스택은 매번 같아
+                        // 정보가 없다. 상세는 리뷰_보완.연결실패는_cause_없음 참고.
+                        assertThat(ex.getCause()).isNull();
                     });
         }
 
@@ -196,5 +198,106 @@ class FeignFailureTranslatorTest {
                 .as("HTTP 상태 코드는 100 미만이 존재하지 않는다. 그 대역 밖이어야 한다")
                 .isEqualTo(0)
                 .isLessThan(100);
+    }
+
+    @Nested
+    @DisplayName("반박 리뷰가 뚫은 지점")
+    class 리뷰_보완 {
+
+
+        /**
+         * {@code reason} 이 예외 메시지를 옮기지 않는다.
+         *
+         * <p>{@code FeignException.getMessage()} 는 요청 URL·본문 일부를 담고, 이 서비스의
+         * 본문에는 <b>이미지 바이트나 descriptor</b> 가 들어간다. javadoc 이 그걸 피한다고
+         *적어 뒀는데 테스트가 고정하지 않아, 메시지를 덧붙이는 변이가 통과했다(반박 리뷰).
+         */
+        @Test
+        @DisplayName("reason 에 예외 메시지가 섞이지 않는다 — 이미지·descriptor 유출 방지")
+        void reason_은_메시지를_담지_않는다() {
+            String 민감한내용 = "descriptor=AAAABBBBCCCC-비밀";
+            var 원인 = new FeignException.InternalServerError(
+                    민감한내용, 더미요청(), 민감한내용.getBytes(StandardCharsets.UTF_8), Map.of());
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .isInstanceOf(UpstreamCallException.class)
+                    .satisfies(e -> assertThat(((UpstreamCallException) e).getReason())
+                            .doesNotContain("descriptor")
+                            .doesNotContain("비밀"));
+        }
+
+        /** {@code reason} 형식을 통째로 고정한다 — 초판은 contains 만 봐서 원인 클래스명이 빠져도 통과했다. */
+        @Test
+        @DisplayName("reason 이 종류와 원인 클래스명을 모두 담는다")
+        void reason_형식() {
+            var 원인 = new RetryableException(
+                    -1, "refused", Request.HttpMethod.POST,
+                    new IOException("refused"), (Long) null, 더미요청());
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .satisfies(e -> assertThat(((UpstreamCallException) e).getReason())
+                            .isEqualTo("연결 실패·타임아웃 (IOException)"));
+        }
+
+        /**
+         * 연결 실패에는 cause 를 싣지 않는다.
+         *
+         * <p>핸들러가 cause 를 slf4j 마지막 인자로 넘겨 그때만 스택트레이스가 붙는다. 연결
+         * 거부의 스택은 매번 같은 Feign 경로라 정보가 없다. 초판은 무조건 실어서 프레임이
+         * 213 → 223 으로 오히려 늘었다(반박 리뷰 실측).
+         */
+        @Test
+        @DisplayName("연결 실패는 cause 를 싣지 않는다 — 스택트레이스에 정보가 없다")
+        void 연결실패는_cause_없음() {
+            var 원인 = new RetryableException(
+                    -1, "refused", Request.HttpMethod.POST,
+                    new IOException("refused"), (Long) null, 더미요청());
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .satisfies(e -> assertThat(e.getCause()).isNull());
+        }
+
+        /** 디코딩 실패는 우리 쪽 파싱 문제일 수 있어 스택이 단서가 된다. */
+        @Test
+        @DisplayName("디코딩 실패는 cause 를 싣는다")
+        void 디코딩실패는_cause_있음() {
+            var 원인 = new FeignException.InternalServerError(
+                    "broken", 더미요청(), new byte[0], Map.of());
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .satisfies(e -> assertThat(e.getCause()).isSameAs(원인));
+        }
+
+        /**
+         * 원본이 구현하던 인터페이스가 프록시에도 전부 남는다.
+         *
+         * <p>대상 하나만 넘기면 Feign 이 붙였을 수 있는 다른 인터페이스가 소리 없이 사라진다.
+         */
+        @Test
+        @DisplayName("원본의 인터페이스를 전부 유지한다")
+        void 인터페이스를_잃지_않는다() {
+            class 둘다 implements ProbeFeign, PlainBean {
+                @Override public String call() { return "ok"; }
+                @Override public void run() { }
+            }
+
+            Object wrapped = translator.postProcessAfterInitialization(new 둘다(), "probe");
+
+            assertThat(wrapped).isInstanceOf(ProbeFeign.class).isInstanceOf(PlainBean.class);
+        }
+
+        /** {@code Object.equals} 반사성. 위임하면 Feign 의 equals 구현 때문에 자기 자신과도 다르다. */
+        @Test
+        @DisplayName("감싼 빈이 자기 자신과 같다")
+        void equals_반사성() {
+            ProbeFeign raw = new ProbeFeign() {
+                @Override public String call() { return "ok"; }
+                @Override public void run() { }
+            };
+            Object wrapped = translator.postProcessAfterInitialization(raw, "probe");
+
+            assertThat(wrapped.equals(wrapped)).isTrue();
+        }
+
     }
 }
