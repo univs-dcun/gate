@@ -23,7 +23,7 @@ public class GetApiKeyUseCase {
     public ApiKeyResult execute(Long accountId, Long projectId) {
         projectService.validateOwnership(projectId, accountId);
 
-        ApiKey apiKey = apiKeyRepository.findActiveByProjectId(projectId)
+        ApiKey apiKey = apiKeyRepository.findLatestActiveByProjectId(projectId)
                 .orElseThrow(() -> {
                     // UG-298 리뷰 지적. 여기까지 왔다는 것은 "소유가 확인된, 삭제되지 않은
                     // 프로젝트에 활성 API 키가 없다" 는 뜻이다. CreateProjectUseCase 가 키를

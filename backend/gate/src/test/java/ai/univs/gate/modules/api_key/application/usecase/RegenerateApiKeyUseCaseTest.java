@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -19,12 +20,14 @@ import ai.univs.gate.support.api_key.ApiKeyGenerator;
 import ai.univs.gate.support.project.ProjectService;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -76,7 +79,8 @@ class RegenerateApiKeyUseCaseTest {
     @DisplayName("재발급 성공 시 기존 키는 비활성화되고 새 키가 활성 상태로 저장된다")
     void execute_success() {
         // given
-        given(apiKeyRepository.findActiveByProjectId(PROJECT_ID)).willReturn(Optional.of(oldApiKey));
+        given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID)).willReturn(project);
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID)).willReturn(List.of(oldApiKey));
         given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
         given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
         given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(invocation -> {
@@ -114,14 +118,16 @@ class RegenerateApiKeyUseCaseTest {
         assertThat(result.isActive()).isTrue();
 
         // then: 소유권 검증 호출 (projectId, accountId 순서)
-        verify(projectService).validateOwnership(PROJECT_ID, ACCOUNT_ID);
+        // UG-302: 잠그는 쪽을 써야 한다. 잠그지 않으면 동시 재발급이 활성 키를 2개로
+        // 만들고, 그 순간 상세 조회와 재발급이 둘 다 막힌다.
+        verify(projectService).validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID);
     }
 
     @Test
     @DisplayName("활성 키가 없으면 API_KEY_NOT_FOUND 예외가 발생하고 저장은 일어나지 않는다")
     void execute_activeKeyNotFound_throwsException() {
         // given
-        given(apiKeyRepository.findActiveByProjectId(PROJECT_ID)).willReturn(Optional.empty());
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID)).willReturn(List.of());
 
         // when & then
         assertThatThrownBy(() -> regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID))
@@ -132,5 +138,97 @@ class RegenerateApiKeyUseCaseTest {
         // then: 새 키 발급/저장이 일어나지 않아야 한다
         verify(apiKeyRepository, never()).save(any(ApiKey.class));
         verifyNoInteractions(apiKeyGenerator);
+    }
+
+    /**
+     * 활성 키가 2개인 프로젝트도 재발급 한 번으로 정상으로 돌아온다 (UG-302).
+     *
+     * <p>예전에는 이 상황에서 재발급이 {@code IncorrectResultSizeDataAccessException} 으로 500 이
+     * 됐다. 상세 조회도 같은 이유로 500 이었으므로, 그 프로젝트는 <b>스스로 빠져나올 방법이
+     * 없었다</b> — 고칠 유일한 수단이 고쳐야 할 상태 때문에 막히는 구조였다.
+     */
+    @Test
+    @DisplayName("활성 키가 2개여도 전부 끄고 하나만 새로 발급한다 — 어긋난 상태가 이 호출로 정리된다")
+    void 활성_두개도_정리된다() {
+        ApiKey 다른활성키 = ApiKey.builder()
+                .id(9L)
+                .project(project)
+                .apiKey("gate_DUPDUPDUPDUPDUPDUPDUPDUPDUPDUPD")
+                .secretKey("dup-secret")
+                .issuedAt(LocalDateTime.now(ZoneOffset.UTC).minusDays(1))
+                .isActive(true)
+                .build();
+
+        given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID)).willReturn(project);
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID))
+                .willReturn(List.of(oldApiKey, 다른활성키));
+        given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
+        given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
+        given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(i -> i.getArgument(0));
+
+        regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID);
+
+        assertThat(oldApiKey.getIsActive())
+                .as("하나만 끄면 활성 2개 상태가 그대로 남아 다음 조회가 또 어긋난다")
+                .isFalse();
+        assertThat(다른활성키.getIsActive()).isFalse();
+        verify(apiKeyRepository, times(1)).save(any(ApiKey.class));
+    }
+
+    /**
+     * 잠금이 키 읽기보다 <b>먼저</b>여야 한다 (반박 리뷰 지적).
+     *
+     * <p>{@code verify(projectService).validateOwnershipForUpdate(...)} 는 <b>호출 여부만</b>
+     * 본다. 두 줄의 순서만 뒤집어 키를 먼저 읽게 하면 TOCTOU 가 그대로 부활하는데 테스트는
+     * 초록이었다 — 리뷰어가 그 변이를 심고 실제 H2 2스레드로 활성 키 2개를 만들었다.
+     * 잠금은 "부르기만" 하면 되는 것이 아니라 "먼저" 불러야 한다.
+     */
+    @Test
+    @DisplayName("잠금을 먼저 잡고 그다음 활성 키를 읽는다")
+    void 잠금이_읽기보다_먼저다() {
+        given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID)).willReturn(project);
+        given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID)).willReturn(List.of(oldApiKey));
+        given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
+        given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
+        given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(i -> i.getArgument(0));
+
+        regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID);
+
+        InOrder inOrder = org.mockito.Mockito.inOrder(projectService, apiKeyRepository);
+        inOrder.verify(projectService).validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID);
+        inOrder.verify(apiKeyRepository).findAllActiveByProjectId(PROJECT_ID);
+    }
+
+    /** 활성 키가 2개면 정리했다는 사실을 ERROR 로 남긴다 — 조용히 지나가면 원인을 못 찾는다. */
+    @Test
+    @DisplayName("중복 정리는 ERROR 로 남는다")
+    void 중복_정리는_ERROR_로_남는다() {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger)
+                org.slf4j.LoggerFactory.getLogger(RegenerateApiKeyUseCase.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            ApiKey 다른활성키 = ApiKey.builder().id(9L).project(project)
+                    .apiKey("gate_DUPDUPDUPDUPDUPDUPDUPDUPDUPDUPD").secretKey("dup")
+                    .issuedAt(LocalDateTime.now(ZoneOffset.UTC)).isActive(true).build();
+            given(projectService.validateOwnershipForUpdate(PROJECT_ID, ACCOUNT_ID))
+                    .willReturn(project);
+            given(apiKeyRepository.findAllActiveByProjectId(PROJECT_ID))
+                    .willReturn(List.of(oldApiKey, 다른활성키));
+            given(apiKeyGenerator.generateApiKey()).willReturn(NEW_API_KEY);
+            given(apiKeyGenerator.generateSecretKey()).willReturn(NEW_SECRET_KEY);
+            given(apiKeyRepository.save(any(ApiKey.class))).willAnswer(i -> i.getArgument(0));
+
+            regenerateApiKeyUseCase.execute(ACCOUNT_ID, PROJECT_ID);
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.ERROR);
+                assertThat(event.getFormattedMessage()).contains(String.valueOf(PROJECT_ID));
+            });
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }

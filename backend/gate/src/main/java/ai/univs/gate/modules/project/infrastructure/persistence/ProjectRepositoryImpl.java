@@ -34,6 +34,11 @@ public class ProjectRepositoryImpl implements ProjectRepository {
     }
 
     @Override
+    public Optional<Project> findForUpdateByIdAndIsDeletedFalse(Long id) {
+        return projectJpaRepository.findForUpdateByIdAndIsDeletedFalse(id);
+    }
+
+    @Override
     public long countByAccountIdAndIsDeletedFalse(Long userId) {
         return projectJpaRepository.countByAccountIdAndIsDeletedFalse(userId);
     }

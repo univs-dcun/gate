@@ -27,8 +27,8 @@ public class DeleteProjectUseCase {
      * 남아 있으면, 그 행을 보는 사람도 다른 조회 경로도 그것을 살아 있는 키로 읽는다.
      *
      * <p><b>활성 키가 하나라고 가정하지 않는다</b> (반박 리뷰 지적). 코드베이스 곳곳이 하나를
-     * 전제하지만({@code findActiveByProjectId} 가 {@code Optional}), 그것을 보장하는 제약이
-     * 스키마에 없다. 여기서 {@code Optional} 조회를 쓰면 활성 키가 2개인 프로젝트는
+     * 전제하지만 그것을 보장하는 제약이 스키마에 없다 — {@code (project_id, is_active)} 부분
+     * 유니크 인덱스가 없다 (UG-302). 여기서 {@code Optional} 조회를 쓰면 활성 키가 2개인 프로젝트는
      * {@code IncorrectResultSizeDataAccessException} 으로 삭제가 롤백돼 <b>영영 지울 수 없게</b>
      * 된다 — 고칠 수단이 사라지는 셈이다. 삭제는 정리 동작이므로 몇 개가 있든 전부 끈다.
      *
@@ -38,7 +38,10 @@ public class DeleteProjectUseCase {
      */
     @Transactional
     public void execute(Long accountId, Long projectId) {
-        Project project = projectService.validateOwnership(projectId, accountId);
+        // 잠그고 읽는다 (UG-302). 삭제와 키 재발급은 둘 다 "활성 키를 끈다" 를 하므로 서로
+        // 경쟁한다 — 재발급만 잠그면 직렬화가 되지 않고, 삭제가 커밋된 뒤 재발급이 새 활성
+        // 키를 넣어 "삭제된 프로젝트에 활성 키" 라는 UG-288 의 상태가 경합으로 되살아난다.
+        Project project = projectService.validateOwnershipForUpdate(projectId, accountId);
         project.delete();
 
         List<ApiKey> activeKeys = apiKeyRepository.findAllActiveByProjectId(projectId);

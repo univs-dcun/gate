@@ -287,7 +287,7 @@ public class ApiKeyService {
             throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
         }
 
-        return apiKeyRepository.findActiveByProjectId(project.getId())
+        return apiKeyRepository.findLatestActiveByProjectId(project.getId())
                 .orElseThrow(() -> new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
     }
 
