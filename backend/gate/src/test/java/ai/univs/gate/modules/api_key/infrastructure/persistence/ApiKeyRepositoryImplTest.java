@@ -53,10 +53,39 @@ class ApiKeyRepositoryImplTest {
     @DisplayName("활성 키 단건 조회도 is_active = true 로 묻는다")
     void 활성_단건조회도_true로_묻는다() {
         ApiKey 활성키 = ApiKey.builder().isActive(true).build();
-        given(apiKeyJpaRepository.findByProjectIdAndIsActive(PROJECT, true))
-                .willReturn(Optional.of(활성키));
+        given(apiKeyJpaRepository.findAllByProjectIdAndIsActiveOrderByIssuedAtDescIdDesc(
+                PROJECT, true)).willReturn(List.of(활성키));
 
-        assertThat(apiKeyRepositoryImpl.findActiveByProjectId(PROJECT)).contains(활성키);
+        assertThat(apiKeyRepositoryImpl.findLatestActiveByProjectId(PROJECT)).contains(활성키);
+    }
+
+    /**
+     * 활성 키가 2개여도 예외가 아니라 <b>가장 최근 것</b>이 나온다 (UG-302).
+     *
+     * <p>예전에는 {@code Optional} 파생 쿼리라 이 상황에서
+     * {@code IncorrectResultSizeDataAccessException} 이 났고, 그러면 프로젝트 상세 조회와 키
+     * 재발급이 둘 다 500 이 됐다 — 상태를 고칠 유일한 수단인 재발급이 그 상태 때문에 막혔다.
+     */
+    @Test
+    @DisplayName("활성 키가 2개면 예외 대신 가장 최근 것을 돌려준다")
+    void 활성_두개면_최신을_고른다() {
+        ApiKey 최신 = ApiKey.builder().id(2L).isActive(true).build();
+        ApiKey 옛것 = ApiKey.builder().id(1L).isActive(true).build();
+        given(apiKeyJpaRepository.findAllByProjectIdAndIsActiveOrderByIssuedAtDescIdDesc(
+                PROJECT, true)).willReturn(List.of(최신, 옛것));
+
+        assertThat(apiKeyRepositoryImpl.findLatestActiveByProjectId(PROJECT))
+                .as("여기서 예외가 나면 그 프로젝트는 상세 조회도 재발급도 못 하게 된다")
+                .contains(최신);
+    }
+
+    @Test
+    @DisplayName("활성 키가 없으면 비어 있다")
+    void 활성이_없으면_비어있다() {
+        given(apiKeyJpaRepository.findAllByProjectIdAndIsActiveOrderByIssuedAtDescIdDesc(
+                PROJECT, true)).willReturn(List.of());
+
+        assertThat(apiKeyRepositoryImpl.findLatestActiveByProjectId(PROJECT)).isEmpty();
     }
 
     @Test

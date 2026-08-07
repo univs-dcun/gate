@@ -81,7 +81,7 @@ class DeleteProjectUseCaseTest {
     }
 
     private void givenOwnedProject() {
-        given(projectService.validateOwnership(PROJECT, ACCOUNT)).willReturn(project);
+        given(projectService.validateOwnershipForUpdate(PROJECT, ACCOUNT)).willReturn(project);
     }
 
     private void givenActiveKeys(ApiKey... keys) {
@@ -199,7 +199,7 @@ class DeleteProjectUseCaseTest {
             // 끌 키가 없으면 굳이 남기지 않는다. 조건이 뒤집히면 이쪽이 깨진다.
             Project 다른프로젝트 = Project.builder().accountId(ACCOUNT).isDeleted(false).build();
             ReflectionTestUtils.setField(다른프로젝트, "id", 43L);
-            given(projectService.validateOwnership(43L, ACCOUNT)).willReturn(다른프로젝트);
+            given(projectService.validateOwnershipForUpdate(43L, ACCOUNT)).willReturn(다른프로젝트);
             given(apiKeyRepository.findAllActiveByProjectId(43L)).willReturn(List.of());
 
             deleteProjectUseCase.execute(ACCOUNT, 43L);
@@ -214,7 +214,7 @@ class DeleteProjectUseCaseTest {
     @DisplayName("소유자가 아니면 아무것도 바꾸지 않는다")
     void 타계정은_아무것도_못_바꾼다() {
         willThrow(new CustomGateException(ErrorType.NOT_OWNERSHIP))
-                .given(projectService).validateOwnership(PROJECT, ACCOUNT);
+                .given(projectService).validateOwnershipForUpdate(PROJECT, ACCOUNT);
 
         assertThatThrownBy(() -> deleteProjectUseCase.execute(ACCOUNT, PROJECT))
                 .isInstanceOf(CustomGateException.class);

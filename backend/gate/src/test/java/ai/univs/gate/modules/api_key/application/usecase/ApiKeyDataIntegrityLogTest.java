@@ -76,7 +76,7 @@ class ApiKeyDataIntegrityLogTest {
     void 활성_키_부재는_ERROR() {
         given(projectService.validateOwnership(PROJECT, ACCOUNT))
                 .willReturn(Project.builder().accountId(ACCOUNT).isDeleted(false).build());
-        given(apiKeyRepository.findActiveByProjectId(PROJECT)).willReturn(Optional.empty());
+        given(apiKeyRepository.findLatestActiveByProjectId(PROJECT)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> getApiKeyUseCase.execute(ACCOUNT, PROJECT))
                 .isInstanceOf(CustomGateException.class)

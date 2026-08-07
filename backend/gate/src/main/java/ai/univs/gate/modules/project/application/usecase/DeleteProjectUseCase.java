@@ -38,7 +38,10 @@ public class DeleteProjectUseCase {
      */
     @Transactional
     public void execute(Long accountId, Long projectId) {
-        Project project = projectService.validateOwnership(projectId, accountId);
+        // 잠그고 읽는다 (UG-302). 삭제와 키 재발급은 둘 다 "활성 키를 끈다" 를 하므로 서로
+        // 경쟁한다 — 재발급만 잠그면 직렬화가 되지 않고, 삭제가 커밋된 뒤 재발급이 새 활성
+        // 키를 넣어 "삭제된 프로젝트에 활성 키" 라는 UG-288 의 상태가 경합으로 되살아난다.
+        Project project = projectService.validateOwnershipForUpdate(projectId, accountId);
         project.delete();
 
         List<ApiKey> activeKeys = apiKeyRepository.findAllActiveByProjectId(projectId);

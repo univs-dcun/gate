@@ -201,7 +201,7 @@ class ApiKeyDeletedProjectTest {
             // 빈 Optional 을 돌려주며 같은 API_KEY_NOT_FOUND 를 던지기 때문이다 (델타 리뷰의
             // R1 변이가 그렇게 살아남았다). "리포지토리까지 가지 않는다" 와 "흔적을 남긴다" 로
             // 못박는다.
-            verify(apiKeyRepository, never()).findActiveByProjectId(anyLong());
+            verify(apiKeyRepository, never()).findLatestActiveByProjectId(anyLong());
             assertThat(appender.list)
                     .as("삭제된 프로젝트로 키를 찾으려 한 것은 조사 단서다")
                     .anyMatch(event -> event.getFormattedMessage().contains("42"));
@@ -217,7 +217,7 @@ class ApiKeyDeletedProjectTest {
         // 응답으로 구분할 수 있어, 이 클래스가 findByApiKeyUnverified 에서 세 문단에 걸쳐 피한
         // 열거 오라클을 이 메서드만 다시 만든다.
         Project 살아있음 = project(false);
-        given(apiKeyRepository.findActiveByProjectId(42L)).willReturn(Optional.empty());
+        given(apiKeyRepository.findLatestActiveByProjectId(42L)).willReturn(Optional.empty());
 
         ErrorType 키없음 = errorTypeOf(() -> apiKeyService.findByProject(살아있음));
         ErrorType 삭제된프로젝트 = errorTypeOf(() -> apiKeyService.findByProject(project(true)));
@@ -230,7 +230,7 @@ class ApiKeyDeletedProjectTest {
     void 프로젝트_조회경로_대조군() {
         Project 살아있음 = project(false);
         ApiKey apiKey = ApiKey.builder().project(살아있음).apiKey(KEY).isActive(true).build();
-        given(apiKeyRepository.findActiveByProjectId(42L)).willReturn(Optional.of(apiKey));
+        given(apiKeyRepository.findLatestActiveByProjectId(42L)).willReturn(Optional.of(apiKey));
 
         assertThat(apiKeyService.findByProject(살아있음)).isSameAs(apiKey);
     }
