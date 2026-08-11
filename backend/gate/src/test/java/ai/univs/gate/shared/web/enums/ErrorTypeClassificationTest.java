@@ -132,7 +132,7 @@ class ErrorTypeClassificationTest {
      * 원인이 섞인 채로 남겨 둔 것들 — <b>셋</b>이다.
      *
      * <p>초판은 둘이라고 적었는데 리뷰가 세 번째를 찾았다. {@code API_KEY_NOT_FOUND} 는
-     * {@code GetApiKeyUseCase}·{@code RegenerateApiKeyUseCase} 에서 {@code SETTINGS_NOT_FOUND}
+     * {@code GetApiKeyUseCase} 에서 {@code SETTINGS_NOT_FOUND}
      * 와 <b>완전히 같은 논리</b>로 데이터 정합성 문제를 나타낸다. 그런데도 4xx 인 이유는 없는 키·
      * 남의 키와 같은 코드를 써서 열거 오라클을 막아야 하기 때문이다 — 나눌 수 없는 코드다.
      *

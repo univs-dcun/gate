@@ -133,7 +133,7 @@ class DeleteProjectUseCaseTest {
     @DisplayName("활성 키가 여러 개여도 전부 끄고 삭제된다")
     void 활성_키가_둘이어도_삭제된다() {
         // 반박 리뷰 지적. api_keys 에는 (project_id, is_active) 부분 유니크 인덱스가 없고,
-        // RegenerateApiKeyUseCase 가 잠금 없이 '기존 끄기 → 새로 넣기' 를 하므로 동시 호출이면
+        // UG-302 당시 RegenerateApiKeyUseCase 가 잠금 없이 '기존 끄기 → 새로 넣기' 를 해서 동시 호출이면
         // 활성 키 2개가 남을 수 있다. Optional 조회를 쓰면 그 프로젝트는
         // IncorrectResultSizeDataAccessException 으로 삭제까지 롤백돼 영영 지울 수 없게 된다.
         ApiKey second = activeKey(10L, "univs_live_qrstuvwxyz012345");

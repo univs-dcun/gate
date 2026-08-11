@@ -4,6 +4,8 @@ import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface BiometricFeatureJpaRepository extends JpaRepository<BiometricFeature, Long> {
@@ -12,6 +14,9 @@ public interface BiometricFeatureJpaRepository extends JpaRepository<BiometricFe
 
     Optional<BiometricFeature> findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
             String featureId, Long projectId, FeatureType type);
+
+    List<BiometricFeature> findAllByFeatureIdInAndProjectIdAndTypeAndIsDeletedFalse(
+            Collection<String> featureIds, Long projectId, FeatureType type);
 
     long countByProjectIdAndTypeAndIsDeletedFalse(Long projectId, FeatureType type);
 }

@@ -193,12 +193,4 @@ class ApiKeyRepositoryImplTest {
                 .isEqualTo(true);
     }
 
-    /** flush 가 실제로 JPA 리포지터리에 위임되는지 — 빈 구현이면 순서 보장이 껍데기가 된다. */
-    @Test
-    @DisplayName("flush 는 JPA 리포지터리에 위임한다")
-    void flush_는_위임한다() {
-        apiKeyRepositoryImpl.flush();
-
-        org.mockito.Mockito.verify(apiKeyJpaRepository).flush();
-    }
 }

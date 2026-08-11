@@ -5,6 +5,7 @@ import ai.univs.face.api.v1.dto.IdentifyResponseDTO;
 import ai.univs.face.api.v2.dto.*;
 import ai.univs.face.application.usecase.ExtractUseCase;
 import ai.univs.face.application.usecase.IdentifyByDescriptorUseCase;
+import ai.univs.face.application.usecase.IdentifyCandidatesByDescriptorUseCase;
 import ai.univs.face.application.usecase.LivenessUseCase;
 import ai.univs.face.application.usecase.RegisterByDescriptorUseCase;
 import ai.univs.face.application.usecase.RegisterUseCase;
@@ -35,6 +36,7 @@ public class FaceController {
     private final ExtractUseCase extractUseCase;
     private final RegisterByDescriptorUseCase registerByDescriptorUseCase;
     private final IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
+    private final IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
 
     @Operation(summary = "사용자 얼굴 등록 V2 - faceId 서버 측에서 관리")
     @SwaggerErrorExample({
@@ -78,6 +80,20 @@ public class FaceController {
         var input = request.toIdentifyByDescriptorInput();
         var result = identifyByDescriptorUseCase.execute(input);
         var response = IdentifyResponseDTO.from(result);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "1:N 후보 목록 매칭 (특징점 기반) - 임계치·최대 인원 수를 요청에서 지정")
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+    })
+    @PostMapping(value = "/identify/descriptor/candidates", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<IdentifyCandidatesResponseDTO>> identifyCandidatesByDescriptor(
+            @RequestBody @Valid IdentifyCandidatesByDescriptorRequestDTO request
+    ) {
+        var input = request.toIdentifyCandidatesByDescriptorInput();
+        var result = identifyCandidatesByDescriptorUseCase.execute(input);
+        var response = IdentifyCandidatesResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 

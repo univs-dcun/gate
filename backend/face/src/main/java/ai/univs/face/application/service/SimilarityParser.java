@@ -30,6 +30,20 @@ public class SimilarityParser {
         return similarity >= FACE_MATCH_THRESHOLD;
     }
 
+    /**
+     * 클라이언트가 지정한 임계치로 판정한다 (UG-314).
+     *
+     * <p>비교 연산자가 {@link #isMatchingBySimilarity} 와 <b>같아야</b> 한다. 한쪽만
+     * {@code >} 로 바뀌면 같은 유사도·같은 임계치에 두 API 가 다른 답을 낸다.
+     *
+     * <p>스케일은 0.0 ~ 1.0 이다. 클라이언트가 보내는 백분율(0 초과 100 이하)을 이 스케일로
+     * 바꾸는 것은 gate 의 몫이다 — 백분율은 클라이언트 대면 표현이고, face 와 match 는 도메인
+     * 스케일만 다룬다.
+     */
+    public boolean isMatchingBySimilarity(Double similarity, double threshold) {
+        return similarity >= threshold;
+    }
+
     public double getThreshold() {
         return FACE_MATCH_THRESHOLD;
     }
