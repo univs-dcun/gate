@@ -46,6 +46,12 @@ public class FaceService {
         return RemoteCalls.data("face.identifyByDescriptor", () -> faceClient.identifyByDescriptor(feignRequest));
     }
 
+    public IdentifyCandidatesFaceFeignResponseDTO identifyCandidatesByDescriptor(
+            IdentifyCandidatesFaceFeignRequestDTO feignRequest) {
+        return RemoteCalls.data("face.identifyCandidatesByDescriptor",
+                () -> faceClient.identifyCandidatesByDescriptor(feignRequest));
+    }
+
     public MatchFaceFeignResponseDTO verifyByFaceId(VerifyFaceByFaceIdFeignRequestDTO feignRequest) {
         return RemoteCalls.data("face.verifyByFaceId", () -> faceClient.verifyByFaceId(feignRequest));
     }

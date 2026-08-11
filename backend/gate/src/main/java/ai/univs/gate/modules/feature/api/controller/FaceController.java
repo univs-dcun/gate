@@ -50,6 +50,7 @@ public class FaceController {
     private final LivenessFaceUseCase livenessFaceUseCase;
     private final CreateFaceFeatureByDescriptorUseCase createFaceFeatureByDescriptorUseCase;
     private final IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
+    private final IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
     private final MessageService messageService;
 
     @Operation(summary = "특징점 얼굴 등록")
@@ -354,6 +355,33 @@ public class FaceController {
         var result = identifyByDescriptorUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = IdentifyByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(
+            summary = "얼굴 1:N 후보 목록 매칭 (특징점 기반)",
+            description = "기존 1:N 매칭이 가장 가까운 1명을 돌려주는 것과 달리, 요청에서 지정한 "
+                    + "임계값을 넘는 대상자를 최대 maxCandidates 명까지 목록으로 돌려줍니다. "
+                    + "조건을 만족하는 인원이 없으면 빈 목록이며 success 는 false 입니다."
+    )
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key"),
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
+    })
+    @PostMapping(value = "/identify/descriptor/candidates", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<IdentifyCandidatesByDescriptorResponseDTO>> identifyCandidatesByDescriptor(
+            @org.springframework.web.bind.annotation.RequestBody @Valid IdentifyCandidatesByDescriptorRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = request.toIdentifyCandidatesByDescriptorInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
+        var result = identifyCandidatesByDescriptorUseCase.execute(input);
+        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
+        var response = IdentifyCandidatesByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 

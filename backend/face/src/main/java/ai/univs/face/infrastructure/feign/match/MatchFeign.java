@@ -29,6 +29,10 @@ public interface MatchFeign {
     @PostMapping(value = "/api/v1/match/identify", consumes = MediaType.APPLICATION_JSON_VALUE)
     FeignResponseApi<IdentifyFeignResponseDTO> identify(IdentifyFeignRequestDTO request);
 
+    @PostMapping(value = "/api/v1/match/identify/candidates", consumes = MediaType.APPLICATION_JSON_VALUE)
+    FeignResponseApi<IdentifyCandidatesFeignResponseDTO> identifyCandidates(
+            IdentifyCandidatesFeignRequestDTO request);
+
     @PostMapping(value = "/api/v1/match/verify/id", consumes = MediaType.APPLICATION_JSON_VALUE)
     FeignResponseApi<VerifyFeignResponseDTO> verifyById(VerifyByIdFeignRequestDTO request);
 

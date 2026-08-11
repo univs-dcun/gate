@@ -146,6 +146,10 @@ public class SwaggerDescriptions {
     public static final String TARGET_FEATURE_IMAGE_PATH = "대상 이미지 경로";
     public static final String EXTERNAL_KEY = "외부 연결 키 (face ↔ palm 연결용)";
     public static final String THRESHOLD = "판정 임계값";
+    public static final String MATCH_THRESHOLD =
+            "매칭 성공/실패 기준 점수. 백분율이며 0 초과 100 이하, 소수점 입력 가능 (예: 85.00)";
+    public static final String MAX_CANDIDATES =
+            "후보 목록으로 받을 최대 인원 수 (1 ~ 100). 조건을 만족하는 인원이 적으면 그만큼만 반환된다";
     public static final String LIVENESS_SCORE = "라이브니스 점수";
 
     /* Feature 타입 / 통합 목록 */
