@@ -22,6 +22,8 @@ public class SwaggerDescriptions {
     public static final String BRANCH_NAME = "얼굴 관리를 위한 바운더리 이름";
     public static final String DESCRIPTOR = "얼굴 특징점";
     public static final String TARGET_DESCRIPTOR = "얼굴 비교 특징점";
+    public static final String MATCH_THRESHOLD = "매칭 성공/실패 기준 점수 (0.0 초과 1.0 이하)";
+    public static final String MAX_CANDIDATES = "1 ~ 100, 후보 목록으로 받을 최대 인원 수";
     public static final String CLIENT_ID = "얼굴 관련 요청자 ID";
     public static final String LIVENESS_SUCCESS_BOOLEAN = "라이브니스 성공 여부 (true or false)";
     public static final String LIVENESS_SCORE = "라이브니스 점수";

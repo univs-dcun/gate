@@ -47,6 +47,9 @@ public interface FaceClient {
     @PostMapping(value = "/api/v2/face/identify/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
     FeignResponseApi<MatchFaceFeignResponseDTO> identifyByDescriptor(@RequestBody IdentifyFaceByDescriptorFeignRequestDTO request);
 
+    @PostMapping(value = "/api/v2/face/identify/descriptor/candidates", consumes = MediaType.APPLICATION_JSON_VALUE)
+    FeignResponseApi<IdentifyCandidatesFaceFeignResponseDTO> identifyCandidatesByDescriptor(@RequestBody IdentifyCandidatesFaceFeignRequestDTO request);
+
     @PostMapping(value = "/api/v2/face/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<LivenessFaceFeignResponseDTO> liveness(@ModelAttribute LivenessFaceFeignRequestDTO request);
 }
