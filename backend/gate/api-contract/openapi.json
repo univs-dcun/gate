@@ -5012,6 +5012,172 @@
         ]
       }
     },
+    "/api/v1/feature/face/identify/descriptor/candidates": {
+      "post": {
+        "tags": [
+          "특징점 얼굴 관리"
+        ],
+        "summary": "얼굴 1:N 후보 목록 매칭 (특징점 기반)",
+        "description": "기존 1:N 매칭이 가장 가까운 1명을 돌려주는 것과 달리, 요청에서 지정한 임계값을 넘는 대상자를 최대 maxCandidates 명까지 목록으로 돌려줍니다. 조건을 만족하는 인원이 없으면 빈 목록이며 success 는 false 입니다.",
+        "operationId": "identifyCandidatesByDescriptor",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifyCandidatesByDescriptorRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiIdentifyCandidatesByDescriptorResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      }
+    },
     "/api/v1/feature/face/extract": {
       "post": {
         "tags": [
@@ -10456,6 +10622,135 @@
           },
           "data": {
             "$ref": "#/components/schemas/IdentifyByDescriptorResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
+      },
+      "IdentifyCandidatesByDescriptorRequestDTO": {
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "type": "string",
+            "description": "특징점",
+            "maxLength": 696,
+            "minLength": 696
+          },
+          "threshold": {
+            "type": "number",
+            "description": "매칭 성공/실패 기준 점수. 백분율이며 0 초과 100 이하, 소수점 입력 가능 (예: 85.00)",
+            "example": 85.0,
+            "maximum": 100.0,
+            "minimum": 0.0
+          },
+          "maxCandidates": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1,
+            "description": "후보 목록으로 받을 최대 인원 수 (1 ~ 100). 조건을 만족하는 인원이 적으면 그만큼만 반환된다",
+            "example": 10,
+            "maximum": 100,
+            "minimum": 1
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        },
+        "required": [
+          "descriptor",
+          "threshold"
+        ]
+      },
+      "Candidate": {
+        "type": "object",
+        "properties": {
+          "featureId": {
+            "type": "string",
+            "description": "특징점 아이디"
+          },
+          "userDescription": {
+            "type": "string",
+            "description": "특징점 설명"
+          },
+          "similarity": {
+            "type": "number",
+            "description": "매칭 유사도"
+          }
+        }
+      },
+      "IdentifyCandidatesByDescriptorResponseDTO": {
+        "type": "object",
+        "properties": {
+          "matchingHistoryId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "매칭 이력 식별 번호"
+          },
+          "projectId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "프로젝트 식별 번호"
+          },
+          "matchType": {
+            "type": "string",
+            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
+            "enum": [
+              "REGISTER",
+              "VERIFY",
+              "VERIFY_ID",
+              "VERIFY_IMAGE",
+              "VERIFY_DESCRIPTOR",
+              "IDENTIFY",
+              "LIVENESS"
+            ]
+          },
+          "matchingTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "매칭 시간"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "후보가 1명 이상이면 true"
+          },
+          "candidates": {
+            "type": "array",
+            "description": "임계값을 넘은 후보 목록. 유사도가 높은 순이며 비어 있을 수 있다",
+            "items": {
+              "$ref": "#/components/schemas/Candidate"
+            }
+          },
+          "threshold": {
+            "type": "number",
+            "description": "매칭 성공/실패 기준 점수. 백분율이며 0 초과 100 이하, 소수점 입력 가능 (예: 85.00)"
+          },
+          "failureType": {
+            "type": "string",
+            "description": "매칭 실패 타입"
+          },
+          "failureReason": {
+            "type": "string",
+            "description": "매칭 실패 이유"
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        }
+      },
+      "ResponseApiIdentifyCandidatesByDescriptorResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/IdentifyCandidatesByDescriptorResponseDTO",
             "description": "성공 응답 데이터"
           },
           "errors": {

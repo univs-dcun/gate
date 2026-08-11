@@ -1,6 +1,8 @@
 package ai.univs.match.api.controller;
 
 import ai.univs.match.api.dto.*;
+import ai.univs.match.application.result.IdentifyCandidateResult;
+import ai.univs.match.application.result.IdentifyCandidatesResult;
 import ai.univs.match.application.result.IdentifyResult;
 import ai.univs.match.application.result.MatchResult;
 import ai.univs.match.application.result.VerifyResult;
@@ -21,7 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -45,6 +49,7 @@ class MatcherControllerTest {
     @MockBean private VerifyByFaceIdUseCase verifyByFaceIdUseCase;
     @MockBean private VerifyByDescriptorUseCase verifyByDescriptorUseCase;
     @MockBean private IdentifyUseCase identifyUseCase;
+    @MockBean private IdentifyCandidatesUseCase identifyCandidatesUseCase;
     @MockBean private MessageService messageService;
 
     private static final String BRANCH_NAME = "testBranch";
@@ -545,6 +550,125 @@ class MatcherControllerTest {
         @DisplayName("descriptor가 null이면 400을 반환한다")
         void whenDescriptorIsNull_thenReturns400() throws Exception {
             var request = new IdentifyRequestDTO(BRANCH_NAME, null);
+
+            perform(post(URL), request)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.type").value("INVALID_INPUT"));
+        }
+    }
+
+    // =========================================================================
+    // POST /api/v1/match/identify/candidates (UG-314)
+    // =========================================================================
+
+    @Nested
+    @DisplayName("POST /api/v1/match/identify/candidates - 1:N 후보 목록 매칭")
+    class IdentifyCandidates {
+
+        private static final String URL = "/api/v1/match/identify/candidates";
+
+        private static IdentifyCandidatesResult 결과(String... faceIdAndSimilarity) {
+            var candidates = new java.util.ArrayList<IdentifyCandidateResult>();
+            for (int i = 0; i < faceIdAndSimilarity.length; i += 2) {
+                candidates.add(new IdentifyCandidateResult(faceIdAndSimilarity[i], faceIdAndSimilarity[i + 1]));
+            }
+            return new IdentifyCandidatesResult(candidates);
+        }
+
+        @Test
+        @DisplayName("유효한 요청이면 200과 후보 목록을 순서대로 반환한다")
+        void whenValidRequest_thenReturns200WithCandidates() throws Exception {
+            when(identifyCandidatesUseCase.execute(anyString(), anyString(), anyInt()))
+                    .thenReturn(결과("face-a", "0.97000", "face-b", "0.91000"));
+            var request = new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, 5);
+
+            perform(post(URL), request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.candidates.length()").value(2))
+                    .andExpect(jsonPath("$.data.candidates[0].faceId").value("face-a"))
+                    .andExpect(jsonPath("$.data.candidates[0].similarity").value("0.97000"))
+                    .andExpect(jsonPath("$.data.candidates[1].faceId").value("face-b"));
+        }
+
+        @Test
+        @DisplayName("요청받은 maxCandidates 를 use case 로 그대로 넘긴다")
+        void whenValidRequest_thenDelegatesMaxCandidates() throws Exception {
+            when(identifyCandidatesUseCase.execute(anyString(), anyString(), anyInt()))
+                    .thenReturn(결과());
+            var request = new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, 37);
+
+            perform(post(URL), request);
+
+            verify(identifyCandidatesUseCase).execute(BRANCH_NAME, DESCRIPTOR, 37);
+        }
+
+        @Test
+        @DisplayName("후보가 없어도 200과 빈 목록이다 — 실패가 아니다")
+        void whenNoCandidates_thenReturns200WithEmptyList() throws Exception {
+            when(identifyCandidatesUseCase.execute(anyString(), anyString(), anyInt()))
+                    .thenReturn(결과());
+            var request = new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, 5);
+
+            perform(post(URL), request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.candidates").isArray())
+                    .andExpect(jsonPath("$.data.candidates.length()").value(0));
+        }
+
+        @Test
+        @DisplayName("maxCandidates 가 null 이면 400을 반환한다")
+        void whenMaxCandidatesIsNull_thenReturns400() throws Exception {
+            // 래퍼 타입이라 미전송이 0 으로 둔갑하지 않는다. int 로 바꾸면 이 테스트가
+            // "0 은 @Min 위반" 이라는 다른 이유로 통과해 버리므로 use case 미호출까지 본다.
+            var request = new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, null);
+
+            perform(post(URL), request)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.type").value("INVALID_INPUT"));
+            verify(identifyCandidatesUseCase, never()).execute(anyString(), anyString(), anyInt());
+        }
+
+        @Test
+        @DisplayName("maxCandidates 가 0 이면 400을 반환한다")
+        void whenMaxCandidatesIsZero_thenReturns400() throws Exception {
+            var request = new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, 0);
+
+            perform(post(URL), request)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.type").value("INVALID_INPUT"));
+        }
+
+        @Test
+        @DisplayName("maxCandidates 가 100 이면 통과하고, 101 이면 400을 반환한다")
+        void whenMaxCandidatesExceedsUpperBound_thenReturns400() throws Exception {
+            when(identifyCandidatesUseCase.execute(anyString(), anyString(), anyInt()))
+                    .thenReturn(결과());
+
+            perform(post(URL), new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, 100))
+                    .andExpect(status().isOk());
+
+            // 상한이 없으면 갤러리 전체를 한 번에 끌어올 수 있다 (palm pageSize 사고와 같은 형태).
+            perform(post(URL), new IdentifyCandidatesRequestDTO(BRANCH_NAME, DESCRIPTOR, 101))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.type").value("INVALID_INPUT"));
+        }
+
+        @Test
+        @DisplayName("branchName 이 null 이면 400을 반환한다")
+        void whenBranchNameIsNull_thenReturns400() throws Exception {
+            var request = new IdentifyCandidatesRequestDTO(null, DESCRIPTOR, 5);
+
+            perform(post(URL), request)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.type").value("INVALID_INPUT"));
+        }
+
+        @Test
+        @DisplayName("descriptor 가 null 이면 400을 반환한다")
+        void whenDescriptorIsNull_thenReturns400() throws Exception {
+            var request = new IdentifyCandidatesRequestDTO(BRANCH_NAME, null, 5);
 
             perform(post(URL), request)
                     .andExpect(status().isBadRequest())
