@@ -14,6 +14,7 @@ import ai.univs.gate.modules.feature.api.dto.face.CreateFaceFeatureByDescriptorR
 import ai.univs.gate.modules.feature.api.dto.face.ExtractRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.FaceFeatureSelectCondition;
 import ai.univs.gate.modules.feature.api.dto.face.IdentifyByDescriptorRequestDTO;
+import ai.univs.gate.modules.feature.api.dto.face.IdentifyCandidatesByDescriptorRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.IdentifyRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.LivenessRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.UpdateFaceFeatureRequestDTO;
@@ -36,6 +37,7 @@ import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeatureByFa
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeaturesUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.IdentifyByDescriptorUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.IdentifyCandidatesByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.IdentifyFaceUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.LivenessFaceUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.UpdateFaceFeatureUseCase;
@@ -115,6 +117,7 @@ class ApiKeyPropagationTest {
     @Mock private LivenessFaceUseCase livenessFaceUseCase;
     @Mock private CreateFaceFeatureByDescriptorUseCase createFaceFeatureByDescriptorUseCase;
     @Mock private IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
+    @Mock private IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
 
     @Mock private CreatePalmFeatureUseCase createPalmFeatureUseCase;
     @Mock private UpdatePalmFeatureUseCase updatePalmFeatureUseCase;
@@ -215,6 +218,15 @@ class ApiKeyPropagationTest {
             given(identifyByDescriptorUseCase.execute(any())).willAnswer(captureFirstArg());
             var request = new IdentifyByDescriptorRequestDTO("d1", "tx-identify-descriptor");
             assertApiKeyPropagated(capture(() -> faceController.identifyByDescriptor(request)));
+        }
+
+        @Test
+        @DisplayName("1:N 후보 목록 — descriptor 기반 (UG-314)")
+        void 후보목록_descriptor() {
+            given(identifyCandidatesByDescriptorUseCase.execute(any())).willAnswer(captureFirstArg());
+            var request = new IdentifyCandidatesByDescriptorRequestDTO(
+                    "d1", new java.math.BigDecimal("85.00"), 5, "tx-identify-candidates");
+            assertApiKeyPropagated(capture(() -> faceController.identifyCandidatesByDescriptor(request)));
         }
 
         @Test

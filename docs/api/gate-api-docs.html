@@ -164,6 +164,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('face-match-verify-descriptor',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-verify-descriptor">1:1 확인 (특징점)</span></li>
       <li class="sb-item" onclick="show('face-match-identify',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-identify">1:N 매칭</span></li>
       <li class="sb-item" onclick="show('face-match-identify-descriptor',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-identify-descriptor">1:N 매칭 (특징점)</span></li>
+      <li class="sb-item" onclick="show('face-match-identify-candidates',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-identify-candidates">1:N 후보 목록 (특징점)</span></li>
       <li class="sb-item" onclick="show('face-match-liveness',this)"><span class="mb-sm mb-post-sm">POST</span><span data-i18n="nav-face-match-liveness">라이브니스</span></li>
     </ul>
   </div>
@@ -230,7 +231,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         </div>
         <div class="info-card">
           <h3><span class="iico" style="background:#eff6ff">🔑</span>API Key</h3>
-          <p>프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 합니다</strong> — 다른 계정의 키를 사용하면 <code>PJ-105</code>로 거부됩니다.<br><br><code>X-Api-Key: {apiKey}</code></p>
+          <p>프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 하며, 그 프로젝트가 삭제되지 않은 상태여야 합니다</strong> — 다른 계정의 키를 사용하거나 삭제된 프로젝트의 키를 사용하면 <code>PJ-105</code>로 거부됩니다. 프로젝트를 삭제하면 그 프로젝트의 API Key는 즉시 비활성화됩니다.<br><br><code>X-Api-Key: {apiKey}</code></p>
         </div>
       </div>
     </div>
@@ -1452,6 +1453,137 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
+<!-- FACE MATCH: IDENTIFY CANDIDATES (DESCRIPTOR) -->
+<div class="page" id="p-face-match-identify-candidates">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>Face Match</span> › 1:N 후보 목록 (특징점)</div>
+    <div class="ep-title">얼굴 1:N 후보 목록 — 디스크립터 기반</div>
+    <div class="ep-desc"><code>1:N 매칭 (특징점)</code>과 같은 방식으로 비교하되, 가장 유사한 한 명이 아니라 <b>지정한 유사도 이상인 대상자 목록</b>을 반환합니다. 판정 기준(<code>threshold</code>)과 최대 인원 수(<code>maxCandidates</code>)를 요청에서 직접 지정한다는 점이 다릅니다. 라이브니스 검사는 수행하지 않습니다.</div>
+    <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/feature/face/identify/descriptor/candidates</span></div>
+  </div>
+  <div class="ep-body">
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Authorization</div>
+        <span class="auth-req">🔐 &nbsp;JWT Bearer + X-Api-Key 필요</span>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Body</div>
+        <p class="ct-note">Content-Type: application/json</p>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)</td></tr>
+            <tr><td><span class="pname">threshold</span></td><td><span class="ptyp">decimal</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">후보로 인정할 최소 유사도 (0 초과 100 이하, 백분율). 응답의 <code>similarity</code> 와 같은 척도이며 소수점을 쓸 수 있습니다 (예: <code>85.5</code>). 이 값 <b>이상</b>인 대상자만 반환됩니다</td></tr>
+            <tr><td><span class="pname">maxCandidates</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">반환받을 최대 인원 수 (1 이상 100 이하, 기본값 1). 조건을 만족하는 대상자가 이보다 적으면 그만큼만 반환됩니다</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Fields</div>
+        <table class="tbl">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 ID. 후보가 여러 명이어도 요청 하나당 이력은 한 건이며, 대표값으로 유사도가 가장 높은 후보가 기록됩니다</td></tr>
+            <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 ID</td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 유형 — <code>IDENTIFY</code> (다른 1:N API와 동일한 값입니다)</td></tr>
+            <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 수행 일시</td></tr>
+            <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">후보가 1명 이상이면 <code>true</code></td></tr>
+            <tr><td><span class="pname">candidates</span></td><td><span class="ptyp">array</span></td><td class="pdsc">조건을 만족한 대상자 목록. 유사도가 높은 순으로 정렬되며 비어 있을 수 있습니다</td></tr>
+            <tr><td><span class="pname">candidates[].featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">대상자의 특징점 featureId</td></tr>
+            <tr><td><span class="pname">candidates[].userDescription</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 등록 시 저장한 설명. 등록 시 지정하지 않았으면 <code>null</code></td></tr>
+            <tr><td><span class="pname">candidates[].similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
+            <tr><td><span class="pname">threshold</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">요청에 사용된 판정 기준 (요청값을 그대로 반환)</td></tr>
+            <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (NOT_MATCH 등, 성공 시 빈 문자열)</td></tr>
+            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
+            <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Request Example</div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Body</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"descriptor"</span>: <span class="js">"AAABAAAAAAAAAAAA..."</span>,
+  <span class="jk">"threshold"</span>: <span class="jn">85.00</span>,
+  <span class="jk">"maxCandidates"</span>: <span class="jn">5</span>,
+  <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+}</pre>
+        </div>
+      </div>
+      <div class="sec-blk">
+        <div class="sec-ttl">Response Example</div>
+        <div class="rs"><span class="st st200">200</span><span class="st-desc">후보 2명</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Candidates Found</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matchingHistoryId"</span>: <span class="jn">412</span>,
+    <span class="jk">"projectId"</span>: <span class="jn">5</span>,
+    <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
+    <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:30:00"</span>,
+    <span class="jk">"success"</span>: <span class="jb">true</span>,
+    <span class="jk">"candidates"</span>: [
+      {
+        <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
+        <span class="jk">"userDescription"</span>: <span class="js">"description"</span>,
+        <span class="jk">"similarity"</span>: <span class="jn">97.00</span>
+      },
+      {
+        <span class="jk">"featureId"</span>: <span class="js">"ghi789-jkl012"</span>,
+        <span class="jk">"userDescription"</span>: <span class="js">"description2"</span>,
+        <span class="jk">"similarity"</span>: <span class="jn">88.32</span>
+      }
+    ],
+    <span class="jk">"threshold"</span>: <span class="jn">85.00</span>,
+    <span class="jk">"failureType"</span>: <span class="js">""</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">""</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st200">200</span><span class="st-desc">조건을 만족한 대상자 없음</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">No Candidates</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">true</span>,
+  <span class="jk">"data"</span>: {
+    <span class="jk">"matchingHistoryId"</span>: <span class="jn">413</span>,
+    <span class="jk">"projectId"</span>: <span class="jn">5</span>,
+    <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
+    <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T18:31:00"</span>,
+    <span class="jk">"success"</span>: <span class="jb">false</span>,
+    <span class="jk">"candidates"</span>: [],
+    <span class="jk">"threshold"</span>: <span class="jn">85.00</span>,
+    <span class="jk">"failureType"</span>: <span class="js">"NOT_MATCH"</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">"얼굴이 일치하지 않습니다."</span>,
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
+  },
+  <span class="jk">"errors"</span>: <span class="jnu">null</span>
+}</pre>
+        </div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">threshold 범위를 벗어남</span></div>
+        <div class="cblk">
+          <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
+          <pre>{
+  <span class="jk">"success"</span>: <span class="jb">false</span>,
+  <span class="jk">"data"</span>: <span class="jnu">null</span>,
+  <span class="jk">"errors"</span>: {
+    <span class="jk">"code"</span>: <span class="js">"PJ-101"</span>,
+    <span class="jk">"message"</span>: <span class="js">"매칭 임계값은 0 초과 100 이하로 입력 가능합니다."</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- FACE MATCH: LIVENESS -->
 <div class="page" id="p-face-match-liveness">
   <div class="ep-hdr">
@@ -1743,6 +1875,7 @@ var T = {
     'nav-face-match-verify-descriptor': '1:1 확인 (특징점)',
     'nav-face-match-identify': '1:N 매칭',
     'nav-face-match-identify-descriptor': '1:N 매칭 (특징점)',
+    'nav-face-match-identify-candidates': '1:N 후보 목록 (특징점)',
     'nav-face-match-liveness': '라이브니스',
     'nav-history-list': '매칭 이력 목록',
     'nav-history-get': '이력 단건 조회'
@@ -1763,6 +1896,7 @@ var T = {
     'nav-face-match-verify-descriptor': '1:1 Verify (descriptor)',
     'nav-face-match-identify': '1:N Identify',
     'nav-face-match-identify-descriptor': '1:N Identify (descriptor)',
+    'nav-face-match-identify-candidates': '1:N Candidates (descriptor)',
     'nav-face-match-liveness': 'Liveness',
     'nav-history-list': 'Match History',
     'nav-history-get': 'History by UUID'
@@ -1790,7 +1924,9 @@ var CODE_MSGS = {
   '얼굴이 일치하지 않습니다.':                  'Face does not match.',
   '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
   '특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다.':
-      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.'
+      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.',
+  '매칭 임계값은 0 초과 100 이하로 입력 가능합니다.':
+      'Match threshold must be greater than 0 and at most 100.'
 };
 var CODE_MSGS_REV = {};
 Object.keys(CODE_MSGS).forEach(function(k) { CODE_MSGS_REV[CODE_MSGS[k]] = k; });
@@ -1815,7 +1951,7 @@ var INTRO = {
     cards: [
       { h3: '<span class="iico" style="background:#EBF4FF">👤</span>얼굴 인식 (Face)', p: '얼굴 특징점 등록/관리 및 매칭(1:1 확인, 1:N 매칭, 라이브니스)을 지원합니다.<br><br>Base: <code>/api/v1/feature/face</code>' },
       { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: '로그인 후 발급된 accessToken을 Authorization 헤더에 포함합니다.<br><br><code>Authorization: Bearer {accessToken}</code>' },
-      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 합니다</strong> — 다른 계정의 키를 사용하면 <code>PJ-105</code>로 거부됩니다.<br><br><code>X-Api-Key: {apiKey}</code>' },
+      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: '프로젝트별로 발급된 API Key를 X-Api-Key 헤더에 포함합니다. <strong>accessToken을 발급받은 계정이 소유한 프로젝트의 키여야 하며, 그 프로젝트가 삭제되지 않은 상태여야 합니다</strong> — 다른 계정의 키를 사용하거나 삭제된 프로젝트의 키를 사용하면 <code>PJ-105</code>로 거부됩니다. 프로젝트를 삭제하면 그 프로젝트의 API Key는 즉시 비활성화됩니다.<br><br><code>X-Api-Key: {apiKey}</code>' },
       { h3: '✅ 성공 응답', p: null },
       { h3: '❌ 오류 응답', p: null }
     ]
@@ -1839,7 +1975,7 @@ var INTRO = {
     cards: [
       { h3: '<span class="iico" style="background:#EBF4FF">👤</span>Face Recognition', p: 'Supports face feature registration/management and matching (1:1 verification, 1:N matching, liveness).<br><br>Base: <code>/api/v1/feature/face</code>' },
       { h3: '<span class="iico" style="background:#fffbeb">🔐</span>JWT Bearer Token', p: 'Include the accessToken issued after login in the Authorization header.<br><br><code>Authorization: Bearer {accessToken}</code>' },
-      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: 'Include the project-specific API Key in the X-Api-Key header. <strong>The key must belong to a project owned by the account that issued the accessToken</strong> — using an API Key owned by a different account is rejected with <code>PJ-105</code>.<br><br><code>X-Api-Key: {apiKey}</code>' },
+      { h3: '<span class="iico" style="background:#eff6ff">🔑</span>API Key', p: 'Include the project-specific API Key in the X-Api-Key header. <strong>The key must belong to a project that is owned by the account that issued the accessToken and has not been deleted</strong> — using an API Key owned by a different account, or one belonging to a deleted project, is rejected with <code>PJ-105</code>. Deleting a project deactivates its API Key immediately.<br><br><code>X-Api-Key: {apiKey}</code>' },
       { h3: '✅ Success Response', p: null },
       { h3: '❌ Error Response', p: null }
     ]
@@ -2187,6 +2323,38 @@ var PAGES = {
       { ko: '매칭 성공', en: 'Match successful' },
       { ko: '매칭 실패 (미인식)', en: 'Match failed (not recognized)' },
       { ko: '유효하지 않은 디스크립터', en: 'Invalid descriptor' }
+    ]
+  },
+  'p-face-match-identify-candidates': {
+    crumb: { ko: '<span>Face Match</span> › 1:N 후보 목록 (특징점)', en: '<span>Face Match</span> › 1:N Candidates (descriptor)' },
+    title: { ko: '얼굴 1:N 후보 목록 — 디스크립터 기반', en: 'Face 1:N Candidates — Descriptor' },
+    desc: {
+      ko: '<code>1:N 매칭 (특징점)</code>과 같은 방식으로 비교하되, 가장 유사한 한 명이 아니라 <b>지정한 유사도 이상인 대상자 목록</b>을 반환합니다. 판정 기준(<code>threshold</code>)과 최대 인원 수(<code>maxCandidates</code>)를 요청에서 직접 지정한다는 점이 다릅니다. 라이브니스 검사는 수행하지 않습니다.',
+      en: 'Compares the same way as <code>1:N Identify (descriptor)</code>, but returns <b>every subject at or above a similarity you specify</b> rather than the single closest one. The difference is that the threshold (<code>threshold</code>) and the maximum number of results (<code>maxCandidates</code>) are given in the request. No liveness check is performed.'
+    },
+    pdsc: [
+      { ko: '매칭할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)', en: 'Feature descriptor to match. Pass the <code>Extract</code> API response verbatim (fixed 696 base64 chars = 520 bytes)' },
+      { ko: '후보로 인정할 최소 유사도 (0 초과 100 이하, 백분율). 응답의 <code>similarity</code> 와 같은 척도이며 소수점을 쓸 수 있습니다 (예: <code>85.5</code>). 이 값 <b>이상</b>인 대상자만 반환됩니다', en: 'Minimum similarity for a subject to be returned (greater than 0, up to 100; percentage). Same scale as <code>similarity</code> in the response, and decimals are allowed (e.g. <code>85.5</code>). Only subjects <b>at or above</b> this value are returned' },
+      { ko: '반환받을 최대 인원 수 (1 이상 100 이하, 기본값 1). 조건을 만족하는 대상자가 이보다 적으면 그만큼만 반환됩니다', en: 'Maximum number of subjects to return (1–100, default 1). If fewer subjects meet the threshold, only those are returned' },
+      { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
+      { ko: '매칭 이력 ID. 후보가 여러 명이어도 요청 하나당 이력은 한 건이며, 대표값으로 유사도가 가장 높은 후보가 기록됩니다', en: 'Match history ID. One history record per request even with multiple candidates; the highest-similarity candidate is recorded as its representative value' },
+      { ko: '프로젝트 ID', en: 'Project ID' },
+      { ko: '매칭 유형 — <code>IDENTIFY</code> (다른 1:N API와 동일한 값입니다)', en: 'Match type — <code>IDENTIFY</code> (same value as the other 1:N APIs)' },
+      { ko: '매칭 수행 일시', en: 'Match execution timestamp' },
+      { ko: '후보가 1명 이상이면 <code>true</code>', en: '<code>true</code> if at least one candidate was found' },
+      { ko: '조건을 만족한 대상자 목록. 유사도가 높은 순으로 정렬되며 비어 있을 수 있습니다', en: 'Subjects meeting the threshold, sorted by descending similarity. May be empty' },
+      { ko: '대상자의 특징점 featureId', en: 'The subject\'s feature featureId' },
+      { ko: '특징점 등록 시 저장한 설명. 등록 시 지정하지 않았으면 <code>null</code>', en: 'Description saved when the feature was registered. <code>null</code> if none was given' },
+      { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
+      { ko: '요청에 사용된 판정 기준 (요청값을 그대로 반환)', en: 'The threshold used for this request (echoed back)' },
+      { ko: '실패 코드 (NOT_MATCH 등, 성공 시 빈 문자열)', en: 'Failure code (NOT_MATCH etc., empty string on success)' },
+      { ko: '실패 원인 메시지', en: 'Failure reason message' },
+      { ko: '요청 식별 UUID', en: 'Request UUID' }
+    ],
+    stDesc: [
+      { ko: '후보 2명', en: '2 candidates' },
+      { ko: '조건을 만족한 대상자 없음', en: 'No subject met the threshold' },
+      { ko: 'threshold 범위를 벗어남', en: 'threshold out of range' }
     ]
   },
   'p-face-match-liveness': {

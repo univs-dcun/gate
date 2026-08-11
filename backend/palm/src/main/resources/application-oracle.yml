@@ -2,10 +2,15 @@ spring:
   config:
     activate:
       on-profile: oracle
+  # UG-296: 서비스마다 오라클 계정이 달라야 한다. 오라클은 계정과 스키마가 1:1 이라
+  # 한 계정을 나눠 쓰면 flyway_schema_history 까지 공유하게 되고, 두 번째로 뜨는
+  # 서비스가 자기 V1 의 체크섬 불일치로 기동에 실패한다 (PostgreSQL 은 서비스별
+  # 데이터베이스를 쓰고 있어 이 문제가 없다). 계정 생성 절차는
+  # docs/onpremise-oracle-setup.md 참고.
   datasource:
     driverClassName: oracle.jdbc.OracleDriver
     url: jdbc:oracle:thin:@192.168.79.9:1521:ORCL
-    username: univs
+    username: univs_palm
     password: univs0411
   jpa:
     show-sql: false

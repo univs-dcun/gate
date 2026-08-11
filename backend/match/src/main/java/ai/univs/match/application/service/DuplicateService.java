@@ -28,7 +28,9 @@ public class DuplicateService {
         double similarity = parseDoubleSimilarity(matchingResult.similarity());
 
         if (similarity >= 0.85 && (!isUpdate || !matchingResult.faceId().equals(faceId))) {
-            log.error("ALREADY_REGISTERED_DESCRIPTOR. similarity: {}", similarity);
+            // UG-299: 수준 판정은 GlobalExceptionHandler 가 한다. 여기서는 핸들러가
+            // 알 수 없는 값만 남긴다 — ERROR 로 두면 한 사건에 ERROR 두 줄이 된다.
+            log.warn("이미 등록된 descriptor 다 — similarity={}", similarity);
             throw new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
         }
     }

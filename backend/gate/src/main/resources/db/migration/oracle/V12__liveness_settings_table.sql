@@ -4,7 +4,7 @@ CREATE TABLE project_liveness_settings (
     project_settings_id NUMBER NOT NULL,
     module_type         VARCHAR2(10) NOT NULL,
     operation           VARCHAR2(20) NOT NULL,
-    enabled             NUMBER(1) NOT NULL DEFAULT 0,
+    enabled             NUMBER(1) DEFAULT 0 NOT NULL,
     CONSTRAINT uq_project_liveness UNIQUE (project_settings_id, module_type, operation),
     CONSTRAINT fk_project_liveness_settings FOREIGN KEY (project_settings_id)
         REFERENCES project_settings(setting_id)

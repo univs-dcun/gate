@@ -79,8 +79,13 @@ public class ProjectSettingsController {
             @SecurityRequirement(name = "Authentication"),
     })
     @SwaggerErrorExample({
+            // projectId 가 숫자가 아니면 MethodArgumentTypeMismatchException 으로 여기서도
+            // INVALID_INPUT 이 난다. 같은 컨트롤러의 나머지 3개는 선언하는데 이것만 빠져 있었다.
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
+            // SETTINGS_NOT_FOUND 는 일부러 없다 — GetConsentLogsUseCase 는 설정을 읽지 않고
+            // validateOwnership 후 consentLogRepository 로 바로 간다 (UG-295 에서 확인).
     })
     @GetMapping("/consent/logs")
     public ResponseEntity<ResponseApi<ConsentLogListResponseDTO>> getConsentLogs(

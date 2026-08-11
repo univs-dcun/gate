@@ -50,6 +50,7 @@ public class FaceController {
     private final LivenessFaceUseCase livenessFaceUseCase;
     private final CreateFaceFeatureByDescriptorUseCase createFaceFeatureByDescriptorUseCase;
     private final IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
+    private final IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
     private final MessageService messageService;
 
     @Operation(summary = "특징점 얼굴 등록")
@@ -60,6 +61,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> create(
@@ -84,6 +87,10 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UseCase 자체에는 settings 참조가 없고 FaceFeatureService.createFaceFeatureByDescriptor
+            // 가 projectSettingsService.findByProject 를 부른다. 한 단계 위임돼 있어 처음에 빠졌다.
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureByDescriptorResponseDTO>> createByDescriptor(
@@ -105,6 +112,10 @@ public class FaceController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // UpdateFaceFeatureUseCase 는 projectSettingsService 가 아니라
+            // projectSettingsRepository.findByProject 로 직접 조회하고 같은 예외를 던진다.
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PutMapping(value = "/{faceFeatureId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> update(
@@ -126,6 +137,7 @@ public class FaceController {
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @DeleteMapping("/{faceFeatureId}")
     public ResponseEntity<Void> delete(
@@ -144,6 +156,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping("/{faceFeatureId}")
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> get(
@@ -163,6 +177,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping("/faceId/{faceId}")
     public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> getByFeatureId(
@@ -182,6 +198,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @GetMapping
     public ResponseEntity<ResponseApi<FaceFeaturesResponseDTO>> list(
@@ -208,13 +226,14 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<ExtractResponseDTO>> extract(
             @ModelAttribute @Valid ExtractRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
-        var input = request.toExtractInput(ctx.getApiKey(), ctx.getAccountIdAsLong());
+        var input = request.toExtractInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = extractUseCase.execute(input);
         var response = ExtractResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
@@ -228,6 +247,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/verify/id", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByFaceIdResponseDTO>> verifyById(
@@ -249,6 +270,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/verify/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<VerifyByImageResponseDTO>> verifyByImage(
@@ -269,13 +292,17 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            // SETTINGS_NOT_FOUND 는 여기 넣지 않는다. VerifyByDescriptorUseCase 는
+            // project_settings 를 아예 조회하지 않는다 — UG-279 가 "새 실패 지점을 만들지
+            // 않겠다"고 의도적으로 뺀 호출이며 그 판단이 UseCase 주석에 남아 있다.
     })
     @PostMapping(value = "/verify/descriptor")
     public ResponseEntity<ResponseApi<VerifyByDescriptorResponseDTO>> verifyByDescriptor(
             @org.springframework.web.bind.annotation.RequestBody @Valid VerifyByDescriptorRequestDTO request
     ) {
         UserContext ctx = UserContext.get();
-        var input = request.toVerifyByDescriptorInput(ctx.getApiKey(), ctx.getAccountIdAsLong());
+        var input = request.toVerifyByDescriptorInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = verifyByDescriptorUseCase.execute(input);
         String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
         var response = VerifyByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
@@ -290,6 +317,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/identify", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<IdentifyResponseDTO>> identify(
@@ -314,6 +343,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/identify/descriptor", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseApi<IdentifyByDescriptorResponseDTO>> identifyByDescriptor(
@@ -327,6 +358,33 @@ public class FaceController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
+    @Operation(
+            summary = "얼굴 1:N 후보 목록 매칭 (특징점 기반)",
+            description = "기존 1:N 매칭이 가장 가까운 1명을 돌려주는 것과 달리, 요청에서 지정한 "
+                    + "임계값을 넘는 대상자를 최대 maxCandidates 명까지 목록으로 돌려줍니다. "
+                    + "조건을 만족하는 인원이 없으면 빈 목록이며 success 는 false 입니다."
+    )
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key"),
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
+    })
+    @PostMapping(value = "/identify/descriptor/candidates", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<IdentifyCandidatesByDescriptorResponseDTO>> identifyCandidatesByDescriptor(
+            @org.springframework.web.bind.annotation.RequestBody @Valid IdentifyCandidatesByDescriptorRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = request.toIdentifyCandidatesByDescriptorInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
+        var result = identifyCandidatesByDescriptorUseCase.execute(input);
+        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
+        var response = IdentifyCandidatesByDescriptorResponseDTO.from(result, failureReason, ctx.getTimezone());
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
     @Operation(summary = "얼굴 라이브니스")
     @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = LivenessRequestDTO.class)))
     @SecurityRequirements({
@@ -335,6 +393,8 @@ public class FaceController {
     })
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
     })
     @PostMapping(value = "/liveness", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResponseApi<LivenessResponseDTO>> liveness(

@@ -32,7 +32,9 @@ public class SimilarityCalculator {
         try {
             return Double.parseDouble(similarity);
         } catch (NumberFormatException e) {
-            log.error("Failed to parse the similarity string as a double type. similarity: {}", similarity);
+            // UG-299: 수준 판정은 GlobalExceptionHandler 가 한다. 여기서는 핸들러가
+            // 알 수 없는 값만 남긴다 — ERROR 로 두면 한 사건에 ERROR 두 줄이 된다.
+            log.warn("similarity 를 실수로 해석하지 못했다 — similarity={}", similarity);
             throw new CustomFaceMatcherException(INTERNAL_SERVER_ERROR);
         }
     }

@@ -18,10 +18,11 @@ public record ExtractRequestDTO(
         String transactionUuid
 ) {
 
-    public ExtractInput toExtractInput(String apiKey, Long accountId) {
+    // UG-278: 인자 순서를 (accountId, apiKey) 로 통일한다. 다른 to*Input 은 모두 이 순서다.
+    public ExtractInput toExtractInput(Long accountId, String apiKey) {
         return new ExtractInput(
-                apiKey,
                 accountId,
+                apiKey,
                 featureImage,
                 TransactionUtil.useOrCreate(transactionUuid));
     }

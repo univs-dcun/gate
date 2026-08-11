@@ -27,6 +27,7 @@ public class MatcherController {
     private final VerifyByFaceIdUseCase verifyByFaceIdUseCase;
     private final VerifyByDescriptorUseCase verifyByDescriptorUseCase;
     private final IdentifyUseCase identifyUseCase;
+    private final IdentifyCandidatesUseCase identifyCandidatesUseCase;
 
     @Operation(summary = "클라이언트측에서 제공한 faceId 값으로 사용자 특징점 등록")
     @SwaggerErrorExample({
@@ -130,6 +131,21 @@ public class MatcherController {
     ) {
         var result = identifyUseCase.execute(request.branchName(), request.descriptor());
         var response = IdentifyResponseDTO.from(result);
+        return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    @Operation(summary = "1:N 후보 목록 매칭 (유사도 상위 N건)")
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = EMPTY_GALLERY, status = 400),
+    })
+    @PostMapping("/identify/candidates")
+    public ResponseEntity<ResponseApi<IdentifyCandidatesResponseDTO>> identifyCandidates(
+            @RequestBody @Valid IdentifyCandidatesRequestDTO request
+    ) {
+        var result = identifyCandidatesUseCase.execute(
+                request.branchName(), request.descriptor(), request.maxCandidates());
+        var response = IdentifyCandidatesResponseDTO.from(result);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 }

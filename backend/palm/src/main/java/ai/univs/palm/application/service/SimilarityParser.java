@@ -18,7 +18,9 @@ public class SimilarityParser {
         try {
             return Double.parseDouble(similarity);
         } catch (NumberFormatException e) {
-            log.error("Failure to parse to the Double type similarity: {}", similarity);
+            // UG-299: 수준 판정은 GlobalExceptionHandler 가 한다. 여기서는 핸들러가
+            // 알 수 없는 값만 남긴다 — ERROR 로 두면 한 사건에 ERROR 두 줄이 된다.
+            log.warn("similarity 를 실수로 해석하지 못했다 — similarity={}", similarity);
 
             throw new InvalidPalmImageException(NO_DOUBLE_SIMILARITY);
         }

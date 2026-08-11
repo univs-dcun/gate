@@ -16,4 +16,5 @@ public class SwaggerDescriptions {
     public static final String FACE_ID = "1 ~ 255 문자열, 사용자 고유 키";
     public static final String SIMILARITY = "소수점 유사도";
     public static final String TARGET_DESCRIPTOR = "1:1 매칭 시 매칭 대상의 특징점";
+    public static final String MAX_CANDIDATES = "1 ~ 100, 1:N 후보 목록으로 받을 최대 인원 수";
 }

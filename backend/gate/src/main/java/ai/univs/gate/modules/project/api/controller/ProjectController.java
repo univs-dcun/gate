@@ -84,6 +84,9 @@ public class ProjectController {
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
+            // GetProjectUseCase 가 apiKeyService.findByProject 로 키를 함께 실어 보낸다.
+            // 활성 키가 없는 프로젝트면 여기서 PJ-105 가 나간다.
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
     })
     @GetMapping("/{projectId}")
     public ResponseEntity<ResponseApi<ProjectResponseDTO>> getProject(

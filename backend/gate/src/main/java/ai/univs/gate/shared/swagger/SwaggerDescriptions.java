@@ -12,7 +12,11 @@ public class SwaggerDescriptions {
 
     /* 페이징 */
     public static final String PAGE = "1 ~ n, 페이지 번호, 기본 값 1";
-    public static final String PAGE_SIZE = "1 ~ n, 한 페이지에 보여줄 컨텐츠 수, 기본 값 10";
+    // UG-270: 기본값을 문구에 넣지 않는다. 이 상수를 Face/Palm/Match/Project/Feature 조건 DTO 가
+    // 공유하는데 팜은 @Schema(defaultValue = "20") 이라, "기본 값 10" 이 박혀 있으면 같은
+    // 파라미터에 설명과 기본값이 서로 다른 값을 말한다. 스프링독이 default 를 별도 필드로
+    // 내보내므로 설명에 중복해 적을 이유도 없다.
+    public static final String PAGE_SIZE = "1 ~ n, 한 페이지에 보여줄 컨텐츠 수";
     public static final String TOTAL_ELEMENTS = "전체 컨텐츠 수 (검색 필터 적용)";
     public static final String TOTAL_PAGES = "전체 페이지 수";
     public static final String TOTAL_COUNT = "기준 전체 컨텐츠 수 (검색 필터 미적용)";
@@ -142,6 +146,10 @@ public class SwaggerDescriptions {
     public static final String TARGET_FEATURE_IMAGE_PATH = "대상 이미지 경로";
     public static final String EXTERNAL_KEY = "외부 연결 키 (face ↔ palm 연결용)";
     public static final String THRESHOLD = "판정 임계값";
+    public static final String MATCH_THRESHOLD =
+            "매칭 성공/실패 기준 점수. 백분율이며 0 초과 100 이하, 소수점 입력 가능 (예: 85.00)";
+    public static final String MAX_CANDIDATES =
+            "후보 목록으로 받을 최대 인원 수 (1 ~ 100). 조건을 만족하는 인원이 적으면 그만큼만 반환된다";
     public static final String LIVENESS_SCORE = "라이브니스 점수";
 
     /* Feature 타입 / 통합 목록 */
