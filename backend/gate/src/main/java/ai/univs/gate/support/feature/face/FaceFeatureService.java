@@ -13,6 +13,7 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.shared.exception.CustomFeignException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -46,7 +47,10 @@ public class FaceFeatureService {
      */
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
-            noRollbackFor = CustomFeignException.class
+            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
+            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
+            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
+            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
     )
     public CreateFaceFeatureServiceResult createFaceFeature(CallerType callerType,
                                                             Long accountId,
@@ -82,6 +86,11 @@ public class FaceFeatureService {
                 project.getBranchName(),
                 featureImage,
                 transactionUuid,
+                // UG-277 반박 리뷰: 등록은 데모로도 도달하므로 호출자 accountId 를 그대로 보낸다.
+                // 데모 DTO 가 0L 을 넘기고, 그 "0" 이 face/palm 이력에서 데모에서 온 행임을
+                // 알려주는 유일한 흔적이다. 소유자 id 로 통일하면 데모 등록과 인증 등록이
+                // 구분되지 않는다 — 은행권 e-KYC 에서 감사 해상도가 떨어진다.
+                // 인증 경로에서는 소유 검증(ENFORCE)이 호출자 == 소유자를 보장하므로 값이 같다.
                 String.valueOf(accountId),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER),
                 projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
@@ -90,6 +99,11 @@ public class FaceFeatureService {
             featureId = faceService.createFace(createRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        } catch (RemoteCallException e) {
+            // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
+            // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
+            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             throw e;
         }
 
@@ -127,7 +141,10 @@ public class FaceFeatureService {
      */
     @Transactional(
             propagation = Propagation.REQUIRES_NEW,
-            noRollbackFor = CustomFeignException.class
+            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
+            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
+            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
+            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
     )
     public BiometricFeature createFaceFeatureByDescriptor(Long accountId,
                                                          String apiKey,
@@ -156,12 +173,22 @@ public class FaceFeatureService {
                 project.getBranchName(),
                 descriptor,
                 transactionUuid,
-                String.valueOf(accountId));
+                // UG-277: 프로젝트 소유자 accountId 를 보낸다. 이 경로는 데모 DTO 가 없어 인증 전용이며,
+                // 소유 검증이 호출자 == 소유자를 보장하므로 값이 달라지지 않는다. 호출자 값을 쓰지
+                // 않는 이유는 X-Account-Id 가 없을 때 null.toString() 이 되기 때문이다 — 기본
+                // ENFORCE 에서는 소유 검증이 먼저 거부하므로(Long.equals(null) 은 false) 도달하지
+                // 않지만, mode=LOG_ONLY 로 되돌린 동안에는 통과해 여기서 터진다.
+                String.valueOf(project.getAccountId()));
         String featureId;
         try {
             featureId = faceService.createFaceByDescriptor(createRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            throw e;
+        } catch (RemoteCallException e) {
+            // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
+            // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
+            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             throw e;
         }
 

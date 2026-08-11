@@ -37,11 +37,26 @@ dependencies {
     /* DB */
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'org.postgresql:postgresql'
-    runtimeOnly 'com.oracle.database.jdbc:ojdbc8'
+    // UG-296: 나머지 세 서비스와 같은 아티팩트(ojdbc11)로 맞춘다. ojdbc8 은 JDK 8 타깃
+    // 산출물이고 이 서비스는 Java 21 에서 돈다. 오라클 19 지원은 둘 다 되므로 기능 변화는
+    // 없고, 전이 의존성도 그대로다 (해석 결과 202개 동일).
+    //
+    // 다만 버전까지 같아지는 것은 아니다. 버전은 Spring Boot BOM 이 정하는데 서비스마다
+    // Boot 가 갈려 있어 gate·palm(3.5.x)은 23.7.x, face·match(3.3.x)는 21.9.x 로 해석된다.
+    // Boot 버전 정렬은 이 티켓 범위 밖이다.
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
 
     /* DB Migration (Flyway) */
     implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
+    // Flyway 10 부터 DB 지원이 모듈로 분리됐다. 아래 두 줄이 없으면 해당 DB 로 기동할 때
+    // Flyway 가 JDBC URL 을 처리할 DatabaseType 을 못 찾아 부팅 시점에 죽는다 —
+    // db/migration 의 SQL 은 한 줄도 파싱되지 않는다 (UG-296).
+    //
+    // 컴파일 시점에 참조하는 코드가 없는 순수 SPI 플러그인이라 runtimeOnly 로 둔다
+    // (바로 위 JDBC 드라이버들과 같다). 버전은 Spring Boot BOM 이 flyway-core 와 함께
+    // 관리하므로 명시하지 않는다.
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.flywaydb:flyway-database-oracle'
 
     /* Docs */
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'

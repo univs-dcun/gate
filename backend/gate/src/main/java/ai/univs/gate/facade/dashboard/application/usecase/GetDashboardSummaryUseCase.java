@@ -7,9 +7,9 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.dashboard.DashboardStatsService;
-import ai.univs.gate.support.project.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -18,18 +18,17 @@ import java.time.LocalDateTime;
 public class GetDashboardSummaryUseCase {
 
     private final ApiKeyService apiKeyService;
-    private final ProjectService projectService;
     private final DashboardStatsService dashboardStatsService;
 
+    @Transactional(readOnly = true)
     public DashboardSummaryResult execute(Long accountId, String apiKey, TrendPeriod period, FeatureType featureType) {
-        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
+        // UG-301: 모드와 무관하게 막는 조회다. 일반 findOwnedByApiKey 는
+        // gate.security.api-key-ownership.mode = LOG_ONLY 에서 통과시키는데, 그 스위치를
+        // 켜는 순간 이 엔드포인트가 남의 프로젝트 집계를 통째로 내주게 된다.
+        // 사유와 한계(나머지 16곳은 아직 열려 있다)는 ApiKeyService 쪽 주석 참고.
+        ApiKey findApiKey = apiKeyService.findStrictlyOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
-        // UG-281: 소유 검증은 findOwnedByApiKey 로 옮겼다. 이 호출을 남겨 둔 것은 소유가 아니라
-        // '삭제되지 않은 프로젝트인가'(findByIdAndIsDeletedFalse) 때문이다. 프로젝트를 소프트
-        // 삭제해도 api_key.is_active 는 그대로라(DeleteProjectUseCase 는 project.delete() 만
-        // 호출한다) 키가 계속 유효하고, 이 검사만 그것을 막고 있다. 나머지 대시보드 3종과
-        // 특징점·이력 경로에는 이 검사가 없어 삭제된 프로젝트도 조회된다 — 별건으로 분리한다.
-        projectService.validateOwnership(project.getId(), accountId);
+
 
         Long projectId = project.getId();
         LocalDateTime from = DashboardStatsService.periodFrom(period);

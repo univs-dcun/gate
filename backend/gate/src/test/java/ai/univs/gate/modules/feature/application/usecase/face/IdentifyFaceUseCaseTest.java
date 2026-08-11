@@ -23,6 +23,7 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -339,5 +340,81 @@ class IdentifyFaceUseCaseTest {
         MatchHistory saved = capturedMatchHistory();
         assertThat(saved.getConsentSnapshot()).isFalse();
         assertThat(saved.getMatchedFeatureImagePath()).isNull();
+    }
+
+    @Test
+    @DisplayName("UG-277: 무인증 데모의 clientId 는 데모 출처를 보존하기 위해 호출자 값(0)을 유지한다")
+    void execute_demoCaller_keepsCallerAsClientId() {
+        // given: 데모 DTO 는 accountId 자리에 0L 을 하드코딩한다 (DemoIdentifyRequestDTO).
+        // 처음에는 이 "0" 을 버그로 보고 소유자 id 로 바꿨는데, 반박 리뷰에서 그 값이
+        // face/palm 이력에서 데모 출처를 알려주는 유일한 흔적이라는 지적이 나왔다 —
+        // gate 의 MatchHistory 에는 callerType·accountId 컬럼이 없다. 소유자 id 로 통일하면
+        // 데모 요청과 인증 요청이 구분되지 않으므로 유지한다.
+        IdentifyInput demoInput =
+                new IdentifyInput(CallerType.DEMO, 0L, API_KEY, matchingImage, TRANSACTION_UUID);
+        ProjectSettings settings = ProjectSettings.builder()
+                .id(2L).project(project).consentEnabled(true).build();
+        given(apiKeyService.findByApiKey(CallerType.DEMO, API_KEY, 0L)).willReturn(apiKey);
+        given(projectSettingsService.findByProject(project)).willReturn(settings);
+        given(fileService.uploadIfConsent(matchingImage, true)).willReturn(UPLOADED_IMAGE_PATH);
+        given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.IDENTIFY))
+                .willReturn(true);
+        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class)))
+                .willReturn(MatchFaceFeignResponseDTO.builder()
+                        .transactionUuid(TRANSACTION_UUID)
+                        .faceId("registered-face-id")
+                        .similarity(new BigDecimal("0.95"))
+                        .result(true)
+                        .build());
+        given(faceFeatureService.getFaceFeatureByFaceIdAndProjectId("registered-face-id", PROJECT_ID))
+                .willReturn(registeredFeature());
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+
+        // when
+        identifyFaceUseCase.execute(demoInput);
+
+        // then: 데모 출처가 보존돼야 한다. 소유자 id 로 바뀌면 감사 해상도가 떨어진다.
+        ArgumentCaptor<IdentifyFaceFeignRequestDTO> captor =
+                ArgumentCaptor.forClass(IdentifyFaceFeignRequestDTO.class);
+        verify(faceService).identify(captor.capture());
+        assertThat(captor.getValue().getClientId()).isEqualTo("0");
+        assertThat(captor.getValue().getClientId()).isNotEqualTo(ACCOUNT_ID.toString());
+    }
+
+    @Test
+    @DisplayName("UG-280: 라이브니스 계열이 아닌 4xx 는 실패 사유를 남긴 뒤 예외를 전파한다")
+    void execute_nonLivenessFeignError_recordsReasonThenPropagates() {
+        // given: 예전에는 사유를 남기지 않고 곧바로 rethrow 했다. noRollbackFor 로 행은
+        // 커밋되는데 failure_type 이 NULL 이라, 응답을 받지 못하고 끊긴 요청과 구분되지 않았다.
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        CustomFeignException exception = new CustomFeignException("ML-900", "UNKNOWN_ERROR", "boom");
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class))).willThrow(exception);
+
+        // when & then: 응답 계약은 그대로 — 흡수하지 않고 전파한다
+        assertThatThrownBy(() -> identifyFaceUseCase.execute(input)).isSameAs(exception);
+
+        MatchHistory saved = capturedMatchHistory();
+        assertThat(saved.getSuccess()).isFalse();
+        assertThat(saved.getFailureType()).isEqualTo("UNKNOWN_ERROR");
+        verifyNoInteractions(useCaseNotifyService);
+    }
+
+    @Test
+    @DisplayName("UG-280: 하위 서비스 5xx(RemoteCallException)도 실패 사유를 남긴 뒤 전파한다")
+    void execute_remoteCallException_recordsReasonThenPropagates() {
+        // given: 예전에는 CustomGateException 이라 noRollbackFor 에 걸리지 않아
+        // REQUIRES_NEW 트랜잭션이 롤백되고 이력 행 자체가 사라졌다
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        RemoteCallException exception = new RemoteCallException(502);
+        given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class))).willThrow(exception);
+
+        // when & then
+        assertThatThrownBy(() -> identifyFaceUseCase.execute(input)).isSameAs(exception);
+
+        MatchHistory saved = capturedMatchHistory();
+        assertThat(saved.getSuccess()).isFalse();
+        assertThat(saved.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        verifyNoInteractions(useCaseNotifyService);
     }
 }

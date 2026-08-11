@@ -186,7 +186,8 @@ class IdentifyPalmUseCaseTest {
         assertThat(saved.getMatchedFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
         assertThat(saved.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
 
-        // then: feign 요청 파라미터 검증 (clientId는 호출자 accountId)
+        // then: feign 요청 파라미터 검증 — clientId 는 호출자 accountId 다 (UG-277 반박 리뷰).
+        // 데모가 0L 을 넘기므로 이 값이 데모 출처를 알려주는 유일한 흔적이다.
         ArgumentCaptor<IdentifyPalmFeignRequestDTO> requestCaptor =
                 ArgumentCaptor.forClass(IdentifyPalmFeignRequestDTO.class);
         verify(palmService).identify(requestCaptor.capture());

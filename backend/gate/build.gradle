@@ -69,7 +69,15 @@ dependencies {
 
     /* DB Migration (Flyway) */
     implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
+    // Flyway 10 부터 DB 지원이 모듈로 분리됐다. 아래 두 줄이 없으면 해당 DB 로 기동할 때
+    // Flyway 가 JDBC URL 을 처리할 DatabaseType 을 못 찾아 부팅 시점에 죽는다 —
+    // db/migration 의 SQL 은 한 줄도 파싱되지 않는다 (UG-296).
+    //
+    // 컴파일 시점에 참조하는 코드가 없는 순수 SPI 플러그인이라 runtimeOnly 로 둔다
+    // (바로 위 JDBC 드라이버들과 같다). 버전은 Spring Boot BOM 이 flyway-core 와 함께
+    // 관리하므로 명시하지 않는다.
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.flywaydb:flyway-database-oracle'
 
     // QueryDsl (Support version of spring boot 3.x)
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
@@ -92,6 +100,16 @@ dependencies {
     /* API 계약 스펙 생성용 인메모리 DB (openapi 프로파일 전용, UG-238)
        developmentOnly: bootRun 계열(generateOpenApiDocs)에는 포함되고 bootJar(배포 이미지)에서는 제외됨 */
     developmentOnly 'com.h2database:h2'
+    /* JPA 슬라이스 테스트용 (UG-300). developmentOnly 선언은 bootRun 계열만 덮고
+       테스트 클래스패스에는 올라오지 않아, 그동안 @DataJpaTest 를 아예 쓸 수 없었다.
+       두 선언은 서로 대체하지 않으므로 둘 다 둔다 — bootJar(배포 이미지)에는 여전히
+       포함되지 않는다.
+
+       Testcontainers 로 실제 PostgreSQL 을 띄우는 안도 검토했다(티켓 권고). 이 개발
+       환경에서 docker 이미지를 받을 수 없어 채택하지 못했다 — 받을 수 있게 되면
+       방언 차이(UG-296/297)까지 덮을 수 있으므로 그쪽이 낫다. 한계는
+       JpaSliceTest javadoc 에 적었다. */
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 dependencyManagement {
@@ -124,8 +142,18 @@ pitest {
 
 // API 계약 스펙 생성 (UG-238): ./gradlew generateOpenApiDocs
 // openapi 프로파일로 앱을 잠깐 띄워 스펙을 뽑는다 — DB/config-server/eureka 불필요
-// 생성물은 build/openapi/ 에 떨어지며, 계약 기준선(api-contract/openapi.json)과
-// CI(L1b Contract Check)에서 비교된다. 의도된 스펙 변경 시에만 생성물을 기준선으로 복사해 커밋한다.
+// 생성물은 build/openapi/ 에 떨어진다. 의도된 스펙 변경 시에만 기준선(api-contract/openapi.json)
+// 으로 복사해 커밋한다.
+//
+// UG-309: 예전 주석은 "CI(L1b Contract Check)에서 비교된다" 고 적고 있었는데 사실상 아니었다.
+// L1b 는 BRANCH_NAME == 'dev' 조건이라 PR 이 아니라 머지 후에 돌고, Jenkinsfile 이
+// contract: 'observe' 라 깨져도 빌드가 안 죽는다. enforce 로 바꿔도 비교기(openapi-diff)는
+// operation·parameter·schema·응답 코드만 보므로 @SwaggerError 가 사는
+// responses.<code>.content.application/json.examples 안쪽을 구조적으로 못 본다.
+//
+// 그래서 그 부분은 CI 가 아니라 test 단계가 지킨다 — SwaggerErrorContractTest 가 커밋된
+// 기준선과 어노테이션을 대조하고, SwaggerConfigCommonExampleTest 가 공통 예시를 지킨다.
+// 둘 다 앱을 띄우지 않으므로 이 태스크를 check 에 걸지 않았다 (빌드 시간을 늘리지 않는다).
 openApi {
     apiDocsUrl = "http://localhost:18099/api-docs/gate"
     outputDir = file("build/openapi")

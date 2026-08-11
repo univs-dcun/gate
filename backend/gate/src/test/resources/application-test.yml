@@ -1,0 +1,64 @@
+# JPA 슬라이스 테스트 전용 프로파일 (UG-300)
+#
+# @DataJpaTest 가 이 프로파일로 뜬다 (JpaSliceTest 참고). 외부 의존성 없이 인메모리로 끝난다.
+#
+# 이 파일이 생기기 전까지 gate 에는 @DataJpaTest 도 @SpringBootTest 도 하나도 없었다.
+# 파생 쿼리 이름·QueryDSL where 절·연관 매핑·소프트 삭제 조건이 전부 무검증이었고,
+# UG-288 에서는 그 때문에 "삭제된 프로젝트의 키 거부" 를 쿼리가 아니라 자바 조건으로
+# 되돌렸다 — 검증할 수 없는 자리라서 더 나은 자리를 포기한 것이다.
+spring:
+  # config-server·eureka 를 끄지 않으면 슬라이스가 뜨다가 외부를 찾는다.
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+  datasource:
+    # PostgreSQL 호환 모드. 운영은 PostgreSQL(온프레미스는 Oracle)이라 방언을 최대한 맞춘다.
+    #
+    # DATABASE_TO_LOWER=TRUE 는 식별자를 소문자로 눕힌다 — 엔티티가 snake_case 컬럼을
+    # 쓰는데 H2 기본은 대문자로 접기 때문이다.
+    #
+    # 한계를 분명히 해 둔다. H2 의 PostgreSQL 모드는 흉내이지 PostgreSQL 이 아니다.
+    # 부분 유니크 인덱스(UG-302), 타입 강제, Oracle 의 빈 문자열=NULL(UG-297) 같은 것은
+    # 여기서 재현되지 않는다. 그런 검증이 필요해지면 Testcontainers 로 실제 DB 를
+    # 띄워야 한다 (build.gradle 의 h2 주석 참고).
+    url: jdbc:h2:mem:gate-slice;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      # 엔티티에서 스키마를 만든다. Flyway 마이그레이션은 PostgreSQL·Oracle 전용이라
+      # H2 에서 그대로 돌지 않는다.
+      #
+      # 그래서 이 인프라는 '마이그레이션과 엔티티의 정합' 은 검증하지 못한다.
+      # 쿼리·매핑·조회 조건까지가 사정권이다.
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        # 슬라이스 테스트가 실패했을 때 어떤 SQL 이 나갔는지 바로 보이게 한다.
+        format_sql: true
+    show-sql: true
+
+  flyway:
+    enabled: false
+
+  # 슬라이스에는 뜨지 않지만, 혹시 @SpringBootTest 가 이 프로파일을 재사용할 때를 위해 꺼 둔다.
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace   # 바인딩 파라미터까지 찍는다
