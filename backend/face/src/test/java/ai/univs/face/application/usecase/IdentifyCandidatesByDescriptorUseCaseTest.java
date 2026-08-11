@@ -248,6 +248,39 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
         }
 
         @Test
+        @DisplayName("통과자가 없어도 최근접 유사도를 응답에 담아 보낸다 — gate 가 이력에 쓴다")
+        void 최근접_유사도_전달() {
+            // 반박 리뷰 지적. 이 값을 face 가 갖고만 있고 안 내려보내면 gate 는 0 을 남길 수밖에
+            // 없고, 그러면 gate 이력에서 "아깝게 미달" 이 "아무도 근접 안 함" 과 같아 보인다.
+            매처가_돌려준다("face-a", "0.84900", "face-b", "0.50000");
+
+            IdentifyCandidatesResult result = useCase.execute(입력(0.85, 10));
+
+            assertThat(result.candidates()).isEmpty();
+            assertThat(result.nearestSimilarity()).isEqualTo("0.84900");
+        }
+
+        @Test
+        @DisplayName("통과자가 있으면 최근접은 곧 최상위다")
+        void 최근접은_최상위() {
+            매처가_돌려준다("face-a", "0.97000", "face-b", "0.60000");
+
+            IdentifyCandidatesResult result = useCase.execute(입력(0.85, 10));
+
+            assertThat(result.nearestSimilarity()).isEqualTo("0.97000");
+        }
+
+        @Test
+        @DisplayName("후보가 아예 없으면 최근접은 null 이다 — 0 은 '0% 였다' 는 거짓말이다")
+        void 최근접_null() {
+            매처가_돌려준다();
+
+            IdentifyCandidatesResult result = useCase.execute(입력(0.85, 10));
+
+            assertThat(result.nearestSimilarity()).isNull();
+        }
+
+        @Test
         @DisplayName("응답의 threshold 는 요청값이다")
         void 응답_임계치() {
             매처가_돌려준다("face-a", "0.97000");

@@ -1531,12 +1531,12 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"candidates"</span>: [
       {
         <span class="jk">"featureId"</span>: <span class="js">"abc123-def456"</span>,
-        <span class="jk">"userDescription"</span>: <span class="js">"홍길동"</span>,
+        <span class="jk">"userDescription"</span>: <span class="js">"description"</span>,
         <span class="jk">"similarity"</span>: <span class="jn">97.00</span>
       },
       {
         <span class="jk">"featureId"</span>: <span class="js">"ghi789-jkl012"</span>,
-        <span class="jk">"userDescription"</span>: <span class="js">"김철수"</span>,
+        <span class="jk">"userDescription"</span>: <span class="js">"description2"</span>,
         <span class="jk">"similarity"</span>: <span class="jn">88.32</span>
       }
     ],
@@ -1924,7 +1924,9 @@ var CODE_MSGS = {
   '얼굴이 일치하지 않습니다.':                  'Face does not match.',
   '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
   '특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다.':
-      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.'
+      'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.',
+  '매칭 임계값은 0 초과 100 이하로 입력 가능합니다.':
+      'Match threshold must be greater than 0 and at most 100.'
 };
 var CODE_MSGS_REV = {};
 Object.keys(CODE_MSGS).forEach(function(k) { CODE_MSGS_REV[CODE_MSGS[k]] = k; });

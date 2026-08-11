@@ -15,6 +15,10 @@ public record IdentifyCandidatesResponseDTO(
         @Schema(description = "임계치를 넘은 후보 목록. 유사도가 높은 순이며 비어 있을 수 있다")
         List<Candidate> candidates,
 
+        @Schema(description = "임계치 통과 여부와 무관하게 가장 가까웠던 후보의 유사도. "
+                + "후보가 아예 없으면 null. candidates 가 비었을 때 호출자가 이력에 남길 값이다")
+        String nearestSimilarity,
+
         @Schema(description = SwaggerDescriptions.MATCH_THRESHOLD)
         String threshold,
 
@@ -37,6 +41,7 @@ public record IdentifyCandidatesResponseDTO(
                 result.candidates().stream()
                         .map(candidate -> new Candidate(candidate.faceId(), candidate.similarity()))
                         .toList(),
+                result.nearestSimilarity(),
                 result.threshold(),
                 result.result());
     }

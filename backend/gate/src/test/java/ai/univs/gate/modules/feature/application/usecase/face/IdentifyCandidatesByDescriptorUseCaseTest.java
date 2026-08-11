@@ -45,8 +45,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -150,8 +148,22 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
                 .willReturn(IdentifyCandidatesFaceFeignResponseDTO.builder()
                         .transactionUuid(TX)
                         .candidates(list)
+                        // face 는 임계치 통과자가 없어도 최근접 유사도를 함께 준다.
+                        .nearestSimilarity(list.isEmpty() ? null : list.getFirst().getSimilarity())
                         .threshold("0.85")
                         .result(!list.isEmpty())
+                        .build());
+    }
+
+    /** 임계치 통과자는 없지만 근접자는 있었던 응답 (face 가 목록을 잘라 보낸 상태). */
+    private void face가_통과자없이_근접만_알려준다(String nearestSimilarity) {
+        given(faceService.identifyCandidatesByDescriptor(any()))
+                .willReturn(IdentifyCandidatesFaceFeignResponseDTO.builder()
+                        .transactionUuid(TX)
+                        .candidates(List.of())
+                        .nearestSimilarity(nearestSimilarity)
+                        .threshold("0.85")
+                        .result(false)
                         .build());
     }
 
@@ -170,13 +182,6 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
         }
         given(biometricFeatureRepository.findAllByFeatureIdInAndProjectIdAndTypeAndIsDeletedFalse(
                 any(), any(), any())).willReturn(features);
-
-        // 대표값 조회 — 최상위 후보 한 건을 다시 찾는다.
-        lenient().when(biometricFeatureRepository
-                        .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(anyString(), anyLong(), any()))
-                .thenAnswer(invocation -> features.stream()
-                        .filter(f -> f.getFeatureId().equals(invocation.getArgument(0)))
-                        .findFirst());
     }
 
     private MatchHistory 저장된_이력() {
@@ -294,22 +299,26 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
         @Test
         @DisplayName("소수점 백분율은 BigDecimal 로 나눈다 — double 나눗셈은 값이 어긋난다")
         void 소수점_백분율() {
-            // 70.02 는 두 경로가 실제로 갈리는 값이다.
-            //   BigDecimal("70.02").divide(100, 10, HALF_UP).doubleValue() → 0.7002
-            //   70.02d / 100.0d                                            → 0.7001999999999999
-            // 0.01 단위 백분율 10,000개 중 2,760개가 이렇게 1 ULP 어긋난다. 유사도가 소수점
-            // 5자리 반올림 후 비교되는 경로라, 경계에 정확히 걸친 후보 하나가 조용히 빠질 수 있다.
+            // 70.01 은 두 경로가 갈리고, 갈리는 방향이 실제로 해로운 값이다.
+            //   BigDecimal("70.01").divide(100, 10, HALF_UP).doubleValue() → 0.7001
+            //   70.01d / 100.0d                                            → 0.7001000000000001
+            // double 쪽이 1 ULP 더 엄격해서, 유사도 "0.70010" 인 후보가 BigDecimal 경로에서는
+            // 통과하고 double 경로에서는 탈락한다. 유사도가 5자리 반올림 후 비교되는 경로라
+            // 경계에 정확히 걸린 사람이 조용히 빠진다.
             //
-            // 주의: 85.33 같은 값은 두 경로가 우연히 같은 double 이 되어 이 검사를 통과한다.
-            // 값을 바꾸려면 실제로 갈리는 값인지 먼저 확인할 것.
+            // 값을 바꾸려면 두 가지를 확인할 것 (반박 리뷰 지적).
+            //   1) 두 경로가 실제로 갈리는가 — 85.33 은 우연히 같은 double 이라 무의미하다
+            //   2) 갈리는 방향이 double 이 더 엄격한 쪽인가 — 70.02 는 더 관대한 쪽이라
+            //      아무도 빠지지 않는다. 70.00~100.00 구간에 해로운 값은 480개 있다
             face가_돌려준다("face-a", "0.97000");
             gate에_있다("face-a", "홍길동");
 
-            useCase.execute(입력("70.02", 10));
+            useCase.execute(입력("70.01", 10));
 
             assertThat(face로_보낸_요청().getThreshold())
-                    .as("double 로 나누면 0.7001999999999999 가 되어 face 로 다른 값이 넘어간다")
-                    .isEqualTo(0.7002);
+                    .as("double 로 나누면 0.7001000000000001 이 되어 face 로 더 엄격한 값이 "
+                            + "넘어가고, 유사도 0.70010 인 후보가 조용히 빠진다")
+                    .isEqualTo(0.7001);
         }
 
         @Test
@@ -367,6 +376,32 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
         }
 
         @Test
+        @DisplayName("아깝게 미달한 경우 이력에 그 유사도가 남는다 — 0 으로 눕히지 않는다")
+        void 근접_유사도_보존() {
+            // 반박 리뷰 지적. 기존 1:N 은 fail(data.getSimilarity(), NOT_MATCH) 로 근접값을
+            // 남긴다. 여기서 0 을 남기면 이 엔드포인트의 모든 근접 실패가 대시보드에서 0% 로
+            // 보이고, "아무도 근접하지 않았다" 와 구분되지 않는다.
+            face가_통과자없이_근접만_알려준다("0.84900");
+
+            IdentifyCandidatesByDescriptorResult result = useCase.execute(입력("85.00", 10));
+
+            assertThat(result.success()).isFalse();
+            assertThat(저장된_이력().getSimilarity())
+                    .as("84.90 이 남아야 '85 에 0.1 모자랐다' 를 이력만 보고 알 수 있다")
+                    .isEqualByComparingTo("84.90");
+        }
+
+        @Test
+        @DisplayName("근접자 자체가 없으면 유사도는 null 이다 — 0.00 은 '0% 였다' 는 거짓말이다")
+        void 근접자_없음() {
+            face가_통과자없이_근접만_알려준다(null);
+
+            useCase.execute(입력("85.00", 10));
+
+            assertThat(저장된_이력().getSimilarity()).isNull();
+        }
+
+        @Test
         @DisplayName("face 응답이 null 이어도 깨지지 않는다")
         void 응답_null() {
             given(faceService.identifyCandidatesByDescriptor(any())).willReturn(null);
@@ -402,6 +437,27 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
             assertThat(경고들().getFirst())
                     .contains("ghost")
                     .doesNotContain("face-a", "face-b");
+        }
+
+        @Test
+        @DisplayName("최상위가 gate 에 없으면 이력의 유사도도 2등 것이라야 한다")
+        void 대표값_유사도가_featureId와_같은_사람() {
+            // 반박 리뷰 지적. featureId 는 '살아 있는 최상위' 로 고르면서 유사도만 '전체
+            // 최상위' 에서 가져오면, 한 행 안에 A 의 featureId 와 B 의 유사도가 섞인다.
+            face가_돌려준다("ghost", "0.99000", "face-b", "0.88000");
+            gate에_있다("face-b", "김철수");
+
+            IdentifyCandidatesByDescriptorResult result = useCase.execute(입력("85.00", 10));
+
+            assertThat(result.candidates())
+                    .extracting(IdentifyCandidatesByDescriptorResult.Candidate::featureId)
+                    .containsExactly("face-b");
+
+            MatchHistory saved = 저장된_이력();
+            assertThat(saved.getFeatureId()).isEqualTo("face-b");
+            assertThat(saved.getSimilarity())
+                    .as("99.00 이 남으면 face-b 가 99% 로 매칭된 것처럼 보인다 — 실제로는 88% 다")
+                    .isEqualByComparingTo("88.00");
         }
 
         @Test

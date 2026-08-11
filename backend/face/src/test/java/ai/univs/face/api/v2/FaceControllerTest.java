@@ -370,7 +370,7 @@ class FaceControllerTest {
                     .willReturn(new IdentifyCandidatesResult("txn-003", List.of(
                             new IdentifyCandidatesResult.Candidate("face-a", "0.97000"),
                             new IdentifyCandidatesResult.Candidate("face-b", "0.89000")),
-                            "0.85", true));
+                            "0.97000", "0.85", true));
 
             mockMvc.perform(post(URL)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -389,7 +389,7 @@ class FaceControllerTest {
         @DisplayName("후보가 0명이어도 200 OK — result 만 false 다")
         void 후보_0명() throws Exception {
             given(identifyCandidatesByDescriptorUseCase.execute(any()))
-                    .willReturn(new IdentifyCandidatesResult("txn-003", List.of(), "0.85", false));
+                    .willReturn(new IdentifyCandidatesResult("txn-003", List.of(), "0.60000", "0.85", false));
 
             mockMvc.perform(post(URL)
                             .contentType(MediaType.APPLICATION_JSON)

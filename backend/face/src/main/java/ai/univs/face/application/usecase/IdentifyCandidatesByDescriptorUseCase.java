@@ -43,6 +43,10 @@ import static ai.univs.face.shared.web.enums.ErrorType.NOT_MATCH;
  * <p><b>이력은 요청 하나에 한 행이다</b> (패턴 A). {@link FaceMatch} 는 "요청 하나 = faceId 하나
  * + similarity 하나" 를 전제하므로 후보를 N행으로 넣으면 기존 조회·통계가 깨진다. 대표값으로
  * <b>최상위 후보</b>를 남기고, 후보 목록 전체는 응답에만 둔다.
+ *
+ * <p><b>통과자가 없어도 최근접 유사도는 남긴다</b> (이력·응답 양쪽). 0 으로 눕히면 "아무도
+ * 근접하지 않았다" 와 "84.9 로 아깝게 미달했다" 가 구분되지 않는다. 응답에도 실어야 gate 가
+ * 자기 이력에 같은 값을 남길 수 있다 — 기존 1:N 은 이미 그렇게 하고 있다.
  */
 @Slf4j
 @Component
@@ -78,12 +82,17 @@ public class IdentifyCandidatesByDescriptorUseCase {
 
             List<IdentifyCandidatesResult.Candidate> matched = 임계치를_넘는_후보(data, input.threshold());
 
-            // 이력의 대표값은 최상위 후보다. 목록이 비면 최상위 자체가 없으므로 유사도 0 으로 남긴다.
-            // 그래야 "후보가 없었다" 와 "유사도를 못 구했다" 가 이력에서 구분되지 않는 일이 없다.
+            // 임계치와 무관하게 가장 가까웠던 후보. 통과자가 없을 때 이력에 남길 값이고,
+            // gate 도 이 값으로 자기 이력을 남긴다 — 0 으로 눕히면 "아무도 근접하지 않았다" 와
+            // "아깝게 미달했다" 가 이력에서 같아 보인다.
+            String nearestSimilarity = 최근접_유사도(data);
+
+            // 이력의 대표값은 최상위 후보다. 통과자가 없으면 최근접 값을 대신 남긴다.
             IdentifyCandidatesResult.Candidate top = matched.isEmpty() ? null : matched.getFirst();
-            double topSimilarity = top == null
-                    ? 최상위_유사도(data)
-                    : similarityParser.parseDoubleSimilarity(top.similarity());
+            double topSimilarity = similarityParser.parseDoubleSimilarity(
+                    top == null
+                            ? (nearestSimilarity == null ? "0.0" : nearestSimilarity)
+                            : top.similarity());
 
             FaceMatch faceMatch = FaceMatch.create(
                     faceHistory,
@@ -97,14 +106,14 @@ public class IdentifyCandidatesByDescriptorUseCase {
             if (top == null) {
                 faceHistory.fail(NOT_MATCH.name(), input.clientId());
                 return new IdentifyCandidatesResult(
-                        input.transactionUuid(), List.of(), thresholdText, false);
+                        input.transactionUuid(), List.of(), nearestSimilarity, thresholdText, false);
             }
 
             faceMatch.updateFaceId(top.faceId(), input.clientId());
             faceHistory.successMatch(true, input.clientId());
 
             return new IdentifyCandidatesResult(
-                    input.transactionUuid(), matched, thresholdText, true);
+                    input.transactionUuid(), matched, nearestSimilarity, thresholdText, true);
 
         } catch (CustomFeignException e) {
             faceHistory.fail(e.getType(), input.clientId());
@@ -126,12 +135,16 @@ public class IdentifyCandidatesByDescriptorUseCase {
                 .toList();
     }
 
-    /** 임계치를 넘은 후보가 없을 때 이력에 남길 값. 가장 가까웠던 후보의 유사도다. */
-    private double 최상위_유사도(IdentifyCandidatesFeignResponseDTO data) {
+    /**
+     * 임계치와 무관하게 가장 가까웠던 후보의 유사도. 후보가 아예 없으면 {@code null}.
+     *
+     * <p>match-server 가 유사도 내림차순으로 주므로 첫 원소가 곧 최근접이다.
+     */
+    private static String 최근접_유사도(IdentifyCandidatesFeignResponseDTO data) {
         return 후보들(data).stream()
                 .findFirst()
-                .map(candidate -> similarityParser.parseDoubleSimilarity(candidate.getSimilarity()))
-                .orElse(0.0);
+                .map(IdentifyCandidatesFeignResponseDTO.Candidate::getSimilarity)
+                .orElse(null);
     }
 
     /** match-server 가 candidates 를 null 로 줄 수 있다 — 빈 목록과 같게 다룬다. */

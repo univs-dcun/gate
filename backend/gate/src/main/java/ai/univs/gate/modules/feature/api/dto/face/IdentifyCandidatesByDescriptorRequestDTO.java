@@ -30,12 +30,23 @@ public record IdentifyCandidatesByDescriptorRequestDTO(
                 example = "85.00")
         // 백분율이다. 응답의 similarity 와 같은 스케일이라야 클라이언트가 둘을 나란히 놓고
         // 판단할 수 있다. 0 은 막는다 — 모든 후보가 통과해 임계치의 의미가 사라진다.
+        //
+        // 알려진 간극 (반박 리뷰 지적): 생성되는 openapi.json 에는
+        // "minimum: 0" 만 남고 배타 여부가 빠진다. 즉 스펙만 보면 0 이 합법으로 보인다.
+        // springdoc 이 OpenAPI 3.1 로 낼 때 @DecimalMin 의 inclusive=false 도,
+        // @Schema(exclusiveMinimum = true) 도 옮기지 못한다 (@Positive 로 바꾸면 하한 자체가
+        // 통째로 사라져 더 나쁘다 — 셋 다 실제로 생성해 확인했다).
+        //
+        // 런타임 계약을 스펙 생성기의 한계에 맞춰 바꾸지는 않는다. 영향은 생성 클라이언트가
+        // 0 을 보냈을 때 클라이언트단이 아니라 서버가 INVALID_THRESHOLD 로 막는다는 것뿐이고,
+        // 고객이 실제로 읽는 docs/api/gate-api-docs.html 은 "0 초과" 로 정확하다.
         @NotNull(message = "REQUIRED_THRESHOLD")
         @DecimalMin(value = "0.0", inclusive = false, message = "INVALID_THRESHOLD")
         @DecimalMax(value = "100.0", message = "INVALID_THRESHOLD")
         BigDecimal threshold,
 
-        @Schema(description = SwaggerDescriptions.MAX_CANDIDATES, defaultValue = "1", example = "10")
+        @Schema(description = SwaggerDescriptions.MAX_CANDIDATES, defaultValue = "1", example = "10",
+                minimum = "1", maximum = "100")
         // 안 보내면 1 이다 — 기존 1:N 과 같은 모양이 된다. 상한이 없으면 갤러리 전체를 한 번에
         // 끌어올 수 있어 반드시 막는다 (palm 목록 조회 pageSize 사고와 같은 형태).
         @Min(value = 1, message = "INVALID_MAX_CANDIDATES")

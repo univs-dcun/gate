@@ -106,43 +106,49 @@ public class IdentifyCandidatesByDescriptorUseCase {
 
         List<IdentifyCandidatesFaceFeignResponseDTO.Candidate> 후보 = 후보들(data);
         if (후보.isEmpty()) {
-            matchHistory.fail(BigDecimal.ZERO, ErrorType.NOT_MATCH.name());
+            // 0 이 아니라 최근접 유사도를 남긴다. 기존 1:N 도 그렇게 하고 있고, 0 으로 눕히면
+            // "아무도 근접하지 않았다" 와 "아깝게 미달했다" 가 이력에서 같아 보인다.
+            matchHistory.fail(최근접_유사도(data), ErrorType.NOT_MATCH.name());
             return IdentifyCandidatesByDescriptorResult.failResult(
                     matchHistory, input.thresholdPercent());
         }
 
-        List<IdentifyCandidatesByDescriptorResult.Candidate> candidates =
-                gate에_있는_후보만(후보, project.getId());
+        Map<String, BiometricFeature> found = gate에_살아있는_특징점(후보, project.getId());
 
         // 하위 서비스는 찾았는데 gate 에는 하나도 없는 경우다. 데이터가 어긋난 상태라
         // 매칭 실패와 구분되어야 하므로 INVALID_USER 로 남긴다.
-        if (candidates.isEmpty()) {
-            matchHistory.fail(BigDecimal.ZERO, ErrorType.INVALID_USER.name());
+        if (found.isEmpty()) {
+            matchHistory.fail(최근접_유사도(data), ErrorType.INVALID_USER.name());
             return IdentifyCandidatesByDescriptorResult.failResult(
                     matchHistory, input.thresholdPercent());
         }
 
+        List<IdentifyCandidatesByDescriptorResult.Candidate> candidates = 후보.stream()
+                .filter(candidate -> found.containsKey(candidate.getFaceId()))
+                .map(candidate -> new IdentifyCandidatesByDescriptorResult.Candidate(
+                        found.get(candidate.getFaceId()).getFeatureId(),
+                        found.get(candidate.getFaceId()).getDescription(),
+                        백분율로(candidate.getSimilarity())))
+                .toList();
+
         // 이력의 대표값은 최상위 후보다. MatchHistory 가 백분율로 바꿔 저장한다.
+        // 방금 조회한 엔티티를 그대로 쓴다 — 다시 조회하면 그 사이 삭제됐을 때 예외가 나고,
+        // 그 예외는 noRollbackFor 에 없어 REQUIRES_NEW 트랜잭션째 롤백되어 이력 행이 사라진다.
         IdentifyCandidatesByDescriptorResult.Candidate top = candidates.getFirst();
-        BiometricFeature topFeature = biometricFeatureRepository
-                .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
-                        top.featureId(), project.getId(), FeatureType.FACE)
-                .orElseThrow(() -> new IllegalStateException(
-                        "방금 조회한 특징점을 다시 찾지 못했다: " + top.featureId()));
-        matchHistory.success(topFeature, 도메인_스케일_유사도(후보, top.featureId()));
+        matchHistory.success(found.get(top.featureId()), 도메인_스케일_유사도(후보, top.featureId()));
 
         return IdentifyCandidatesByDescriptorResult.successResult(
                 matchHistory, input.thresholdPercent(), candidates);
     }
 
     /**
-     * gate 에 살아 있는 특징점만 남긴다. 순서는 유사도 순 그대로다.
+     * 후보 featureId 를 한 번에 조회해 featureId → 엔티티 로 돌려준다.
      *
      * <p>하위 서비스에는 있는데 gate 에서 삭제된 faceId 는 <b>그 후보만 빼고</b> 진행한다. 한
      * 명 때문에 목록 전체를 실패시키는 것은 이 API 의 용도에 맞지 않는다. 다만 두 저장소가
      * 어긋났다는 신호이므로 조용히 넘기지 않고 WARN 으로 남긴다.
      */
-    private List<IdentifyCandidatesByDescriptorResult.Candidate> gate에_있는_후보만(
+    private Map<String, BiometricFeature> gate에_살아있는_특징점(
             List<IdentifyCandidatesFaceFeignResponseDTO.Candidate> 후보, Long projectId) {
 
         List<String> featureIds = 후보.stream()
@@ -162,16 +168,17 @@ public class IdentifyCandidatesByDescriptorUseCase {
                     projectId, missing, 후보.size(), missing.size());
         }
 
-        return 후보.stream()
-                .filter(candidate -> found.containsKey(candidate.getFaceId()))
-                .map(candidate -> {
-                    BiometricFeature feature = found.get(candidate.getFaceId());
-                    return new IdentifyCandidatesByDescriptorResult.Candidate(
-                            feature.getFeatureId(),
-                            feature.getDescription(),
-                            백분율로(candidate.getSimilarity()));
-                })
-                .toList();
+        return found;
+    }
+
+    /**
+     * 하위 서비스가 알려준 최근접 유사도 (0.0 ~ 1.0). 없으면 {@code null} 이고,
+     * {@link MatchHistory#fail} 이 null 을 그대로 null 로 남긴다 — 0.00 은 "근접자가 0% 였다"
+     * 는 거짓말이 된다.
+     */
+    private static BigDecimal 최근접_유사도(IdentifyCandidatesFaceFeignResponseDTO data) {
+        if (data == null || data.getNearestSimilarity() == null) return null;
+        return new BigDecimal(data.getNearestSimilarity());
     }
 
     /** 하위 서비스가 준 0.0 ~ 1.0 유사도를 그대로 찾아 준다 — MatchHistory 가 곱해 저장한다. */
