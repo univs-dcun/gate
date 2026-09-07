@@ -132,6 +132,31 @@ print('\n;\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', t, re.S)))
 3) 브라우저로 열어 nav 가 `AUTH / FACE FEATURE / FACE MATCH / HISTORY` 인지, 한/영 토글이
    정상인지, 콘솔 에러가 없는지 확인한다.
 
+## ERRORS 두 페이지는 데이터에서 렌더링된다 (UG-321)
+
+`오류 응답 형식` · `오류 코드 목록` 두 페이지와 **엔드포인트 18개 페이지의 `Errors` 표**는
+정적 마크업이 아니라 인라인 스크립트의 데이터에서 그려진다.
+
+| 데이터 | 내용 |
+|---|---|
+| `ERR_CATALOG` | 오류 코드 카탈로그 (그룹 · code · type · 발생 조건 · 대응, ko/en) |
+| `ERR_ENDPOINT` | 페이지 id → 그 엔드포인트가 낼 수 있는 코드 목록 |
+| `ERR_ABSORB` | 얼굴 감지·라이브니스 오류를 200 + `failureReason` 으로 흡수하는 페이지 (이미지 3개) |
+| `ERR_THRESHOLD` | 임계값 미달만 200 인 페이지 (descriptor 3개) |
+| `ERR_REASONS` | `failureReason` 에 실리는 사유와 그 메시지 |
+| `ERR_FMT` | `오류 응답 형식` 페이지 본문 (언어별 마크업 통째로) |
+
+**코드를 추가·변경할 때 고칠 곳은 이 배열뿐이다.** 표를 HTML 로 박으면 위치 매핑 배열이
+수십 행 늘어나 UG-242 가 재발하므로 그렇게 만들었다. 렌더는 `renderErrorDocs(lang)` 이
+`setLang` 진입부와 초기화(IIFE 앞)에서 호출한다 — 저장된 언어가 `ko` 면 `setLang` 이
+호출되지 않으므로 초기 호출이 별도로 필요하다.
+
+근거가 되는 코드는 gate `ErrorType` · `GlobalExceptionHandler` · `CommonErrorDecoder` ·
+`LivenessErrorType`, face·match `ErrorType`, 그리고 별도 레포 `msa-scaffold` 의
+auth `ErrorType` 과 gateway `AuthenticationFilter` 다. **컨트롤러의 `@SwaggerError` 선언만
+믿으면 안 된다** — 선언되어 있으나 실제로 던져지지 않는 코드(face `NOT_FACE_IMAGE`,
+`NOT_MATCH` 등)와, 선언에 없지만 하위 서비스에서 그대로 전달되는 코드가 양쪽으로 있다.
+
 ## 수정 시 주의
 
 - **문서와 코드는 같은 커밋으로 묶는다.** 컨트롤러 매핑을 바꾸는 리팩토링이면 이 파일도 함께 고친다.
@@ -139,4 +164,7 @@ print('\n;\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', t, re.S)))
 - **i18n 은 DOM 순서 기반 위치 매핑이다.** `PAGES[pageId].pdsc` 배열의 n 번째 항목이 그 페이지의
   n 번째 `.pdsc` 요소에 들어간다. 표에 행을 추가하면 배열에도 같은 위치에 추가해야 한다.
   빠뜨리면 그 뒤 설명이 전부 한 칸씩 밀린다 (UG-242 에서 실제 발생, UG-265 에서 수정).
+- **스크립트가 생성하는 마크업에는 `.pdsc` · `.st-desc` 를 쓰지 않는다. `.edsc` 를 쓴다** (UG-321).
+  두 클래스는 위치 매핑의 대상이므로, 생성 마크업이 엔드포인트 페이지에 그것을 하나라도
+  추가하면 그 페이지의 `pdsc` 배열이 통째로 밀린다. `.edsc` 는 모양만 같고 매핑 대상이 아니다.
 - 같은 이유로 `stDesc` 도 `.st-desc` 요소 개수와 맞아야 한다.
