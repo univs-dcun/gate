@@ -5,14 +5,11 @@ infra/docker/
 ├── compose/  ★ 공유 compose 레이어 파일 세트 (UG-246) — 이것이 진실
 ├── dev/      개발 서버 192.168.0.135 — .env.example
 ├── stage/    스테이징 서버 192.168.0.136 — .env.example
-├── master/   운영 서버 192.168.79.8 — .env.example
-└── onpremise/ 고객사 납품 템플릿 — .env.example (UG-320)
+└── master/   운영 서버 192.168.79.8 — .env.example
 ```
 
-⚠️ `onpremise/` 는 특정 서버가 아니라 **고객사 공통 템플릿**이다. 폐쇄망 전제라
-`CONFIG_SERVER_PROFILE=native`(GitHub 클론 불가), 오라클 서비스별 계정, `onpremise`
-프로파일, 최초 관리자 부트스트랩 값이 master 와 다르다.
-절차: [../../docs/onpremise-admin-bootstrap.md](../../docs/onpremise-admin-bootstrap.md)
+온프레미스 납품 구성은 `univs-dcun/onprem` 저장소가 단일 진실이다. 이 폴더의 compose
+레이어는 dev/stage/master 서버 전용이다. (UG-323)
 
 ## 서버 표준 디렉토리 구조 (UG-247)
 

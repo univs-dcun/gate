@@ -3,7 +3,16 @@
 온프레미스 납품에서 **최초 관리자 계정이 생기는 절차**를 적는다. DB 준비는
 [onpremise-oracle-setup.md](onpremise-oracle-setup.md) 를 본다.
 
-관련 티켓: UG-320 / msa-scaffold UMS-3
+> **이 문서는 설치 절차다. 계약 문서가 아니다** (UG-323).
+>
+> 최초 관리자 부트스트랩은 **auth-service 기능이고 auth-service 는 `univs-dcun/msa-scaffold`
+> 소유다.** 아래에 적힌 환경변수 이름·오류 코드·유효 시간은 **설명을 위한 것이고 단일 진실이
+> 아니다.** 정확한 값은 msa-scaffold 의 온프레미스 계약 문서를 본다 — 그쪽이 바뀌면 이 문서는
+> 모른다.
+>
+> 배포 구성(compose, `.env`, 설치 스크립트)은 `univs-dcun/onprem` 저장소를 본다.
+
+관련 티켓: UG-320 / UG-323 / msa-scaffold UMS-3
 
 ---
 
@@ -117,8 +126,8 @@ Content-Type: application/json
 
 ```
 [ ] 오라클 계정 5개 생성 (onpremise-oracle-setup.md)
-[ ] 이미지 사내 레지스트리 반입, .env 의 *_VERSION 을 반입 태그와 일치
-[ ] gate-config 를 {WORKING_DIR}/spring-config/ 에 클론 (CONFIG_SERVER_PROFILE=native)
+[ ] 이미지 사내 레지스트리 반입, 버전 값을 반입 태그와 일치 (목록은 onprem)
+[ ] gate-config 클론 + config-server 를 native 프로파일로 (경로·변수는 onprem 설치 절차)
 [ ] JWT_SECRET 생성 (openssl rand -base64 48)
 [ ] AUTH_BOOTSTRAP_INSTALL_TOKEN 생성 (openssl rand -hex 16)
 [ ] 내부 NTP 설정 확인 — 시계가 어긋나면 토큰 만료·JWT exp 검증이 깨진다
