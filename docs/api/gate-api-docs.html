@@ -90,6 +90,20 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
 .preq{display:inline-block;background:#fef2f2;color:#ef4444;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.05em}
 .popt{display:inline-block;background:#f0fdf4;color:#22c55e;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.05em}
 .pdsc{color:var(--text-sec);font-size:12.5px}
+/* ERRORS 페이지 (UG-321). .edsc 는 .pdsc 와 같은 모양이지만 위치 기반 i18n 매핑의
+   대상이 아니다 — 엔드포인트 페이지에 .pdsc 를 추가하면 PAGES[pageId].pdsc 배열이
+   한 칸씩 밀린다 (UG-242). */
+.edsc{color:var(--text-sec);font-size:12.5px;line-height:1.65}
+.err-single{grid-template-columns:1fr!important;max-width:1180px}
+.err-wide{grid-column:1/-1}
+.err-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ecode{font-family:'Consolas','Fira Code',monospace;font-size:12px;font-weight:600;color:#dc2626;white-space:nowrap}
+.etype{display:inline-block;background:#F8FAFF;border:1px solid var(--border);color:var(--text-sec);padding:1px 7px;border-radius:4px;font-size:11px;font-family:'Consolas',monospace;white-space:nowrap}
+.err-note{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:13px 17px;font-size:13px;color:#92400e;line-height:1.7;margin-bottom:16px}
+.err-p{font-size:13.5px;color:#475569;line-height:1.75;margin-bottom:12px}
+.err-foot{font-size:12.5px;color:var(--text-muted);line-height:1.7;margin-top:10px}
+.err-ul{margin:0 0 0 18px;font-size:13.5px;color:#475569;line-height:1.8}
+.err-ul li{margin-bottom:7px}
 .ct-note{font-size:11.5px;color:var(--text-muted);margin-bottom:9px}
 .cblk{background:var(--code-bg);border-radius:9px;overflow:hidden;margin-bottom:4px}
 .cblk-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 15px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.06)}
@@ -175,6 +189,13 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       <li class="sb-item" onclick="show('history-get',this)"><span class="mb-sm mb-get-sm">GET</span><span data-i18n="nav-history-get">이력 단건 조회</span></li>
     </ul>
   </div>
+  <div class="sb-sec">
+    <div class="sb-grp" onclick="tog('g-errors')">ERRORS <span class="sb-arr open" id="arr-g-errors">▶</span></div>
+    <ul class="sb-list" id="g-errors">
+      <li class="sb-item" onclick="show('errors-format',this)"><span data-i18n="nav-errors-format">오류 응답 형식</span></li>
+      <li class="sb-item" onclick="show('errors-catalog',this)"><span data-i18n="nav-errors-catalog">오류 코드 목록</span></li>
+    </ul>
+  </div>
   <div class="lang-wrap">
     <div class="lang-popup" id="lang-popup">
       <div class="lang-opt active" data-lang="ko" onclick="setLang('ko')">🇰🇷 &nbsp;한국어 / Korean <span class="lang-opt-check">✓</span></div>
@@ -237,7 +258,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
     <div class="intro-sec">
       <h2>응답 구조</h2>
-      <p>성공/실패 모두 HTTP 200으로 응답합니다. <code>success</code> 필드로 처리 결과를 구분합니다.</p>
+      <p>모든 응답은 <code>success</code> · <code>data</code> · <code>errors</code> 세 필드로 감싸 반환됩니다. 실패는 대부분 <strong>HTTP 400</strong>이며, 액세스 토큰이 무효로 판정된 경우에는 <strong>본문 없이 401</strong>이 반환됩니다. 상태 코드별 정리와 처리 방법은 <strong>ERRORS › 오류 응답 형식</strong> 페이지를 참고하세요.</p>
       <div class="info-grid">
         <div class="info-card">
           <h3>✅ 성공 응답</h3>
@@ -254,6 +275,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
     <span class="jk">"code"</span>: <span class="js">"ERROR_CODE"</span>,
+    <span class="jk">"type"</span>: <span class="js">"ERROR_TYPE"</span>,
     <span class="jk">"message"</span>: <span class="js">"..."</span>
   }
 }</pre></div>
@@ -351,7 +373,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">false</span>,
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
-    <span class="jk">"code"</span>: <span class="js">"AUTH-001"</span>,
+    <span class="jk">"code"</span>: <span class="js">"AUTH-110"</span>,
+    <span class="jk">"type"</span>: <span class="js">"FAILED_WRONG_PASSWORD"</span>,
     <span class="jk">"message"</span>: <span class="js">"이메일 또는 비밀번호가 올바르지 않습니다."</span>
   }
 }</pre>
@@ -365,7 +388,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Auth</span> › 토큰 재발급</div>
     <div class="ep-title">Access Token 재발급</div>
-    <div class="ep-desc">만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 재발급 시 리프레시 토큰도 함께 회전(rotation)됩니다 — 사용한 리프레시 토큰은 즉시 폐기되고 응답의 새 <code>refreshToken</code>으로 교체해 저장해야 합니다. 폐기된 토큰을 다시 사용하면 보안을 위해 해당 계정의 모든 세션이 종료될 수 있습니다.</div>
+    <div class="ep-desc">만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 재발급 시 리프레시 토큰도 함께 회전(rotation)됩니다 — 사용한 리프레시 토큰은 즉시 폐기되고 응답의 새 <code>refreshToken</code>으로 교체해 저장해야 합니다. 폐기된 토큰을 다시 사용하면 보안을 위해 해당 계정의 모든 세션이 종료될 수 있습니다. 리프레시 토큰이 <b>만료된 경우도 <code>AUTH-107</code></b>로 응답합니다 — 만료를 구분하는 별도 코드는 없습니다.</div>
     <div class="ep-url"><span class="mb mb-post">POST</span><span class="ep-path">/api/v1/auth/token/refresh</span></div>
   </div>
   <div class="ep-body">
@@ -430,20 +453,22 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">false</span>,
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
-    <span class="jk">"code"</span>: <span class="js">"AUTH-005"</span>,
-    <span class="jk">"message"</span>: <span class="js">"유효하지 않은 리프레시 토큰입니다."</span>
+    <span class="jk">"code"</span>: <span class="js">"AUTH-107"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_REFRESH_TOKEN"</span>,
+    <span class="jk">"message"</span>: <span class="js">"리프레시 토큰이 유효하지 않습니다."</span>
   }
 }</pre>
         </div>
-        <div class="rs" style="margin-top:14px"><span class="st st401">401</span><span class="st-desc">만료된 리프레시 토큰</span></div>
+        <div class="rs" style="margin-top:14px"><span class="st st400">400</span><span class="st-desc">리프레시 토큰 유형 불일치</span></div>
         <div class="cblk">
           <div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div>
           <pre>{
   <span class="jk">"success"</span>: <span class="jb">false</span>,
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
-    <span class="jk">"code"</span>: <span class="js">"AUTH-006"</span>,
-    <span class="jk">"message"</span>: <span class="js">"토큰이 만료되었습니다."</span>
+    <span class="jk">"code"</span>: <span class="js">"AUTH-109"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_REFRESH_TOKEN_TYPE"</span>,
+    <span class="jk">"message"</span>: <span class="js">"리프레시 토큰 유형이 유효하지 않습니다."</span>
   }
 }</pre>
         </div>
@@ -530,7 +555,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">false</span>,
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
-    <span class="jk">"code"</span>: <span class="js">"FILE-101"</span>,
+    <span class="jk">"code"</span>: <span class="js">"PJ-101"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_INPUT"</span>,
     <span class="jk">"message"</span>: <span class="js">"업로드된 파일이 유효하지 않습니다."</span>
   }
 }</pre>
@@ -622,6 +648,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
     <span class="jk">"code"</span>: <span class="js">"PJ-101"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_INPUT"</span>,
     <span class="jk">"message"</span>: <span class="js">"특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다."</span>
   }
 }</pre>
@@ -745,6 +772,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
     <span class="jk">"code"</span>: <span class="js">"USER-101"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_USER"</span>,
     <span class="jk">"message"</span>: <span class="js">"사용자 정보가 유효하지 않습니다."</span>
   }
 }</pre>
@@ -951,7 +979,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">false</span>,
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
-    <span class="jk">"code"</span>: <span class="js">"ID-201"</span>,
+    <span class="jk">"code"</span>: <span class="js">"FACE-008"</span>,
+    <span class="jk">"type"</span>: <span class="js">"FACE_NOT_FOUND"</span>,
     <span class="jk">"message"</span>: <span class="js">"이미지에서 얼굴을 찾을 수 없습니다."</span>
   }
 }</pre>
@@ -1050,7 +1079,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"success"</span>: <span class="jb">false</span>,
     <span class="jk">"similarity"</span>: <span class="jn">42.00</span>,
     <span class="jk">"failureType"</span>: <span class="js">"MISMATCH"</span>,
-    <span class="jk">"failureReason"</span>: <span class="js">"얼굴이 일치하지 않습니다."</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">"얼굴 매칭 결과가 불일치합니다."</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
@@ -1233,7 +1262,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"featureId"</span>: <span class="js">""</span>,
     <span class="jk">"similarity"</span>: <span class="jn">12.40</span>,
     <span class="jk">"failureType"</span>: <span class="js">"MISMATCH"</span>,
-    <span class="jk">"failureReason"</span>: <span class="js">"얼굴이 일치하지 않습니다."</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">"얼굴 매칭 결과가 불일치합니다."</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
@@ -1445,6 +1474,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
     <span class="jk">"code"</span>: <span class="js">"PJ-101"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_INPUT"</span>,
     <span class="jk">"message"</span>: <span class="js">"특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다."</span>
   }
 }</pre>
@@ -1576,6 +1606,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"data"</span>: <span class="jnu">null</span>,
   <span class="jk">"errors"</span>: {
     <span class="jk">"code"</span>: <span class="js">"PJ-101"</span>,
+    <span class="jk">"type"</span>: <span class="js">"INVALID_INPUT"</span>,
     <span class="jk">"message"</span>: <span class="js">"매칭 임계값은 0 초과 100 이하로 입력 가능합니다."</span>
   }
 }</pre>
@@ -1834,6 +1865,28 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </div>
   </div>
 </div>
+<!-- ERRORS: RESPONSE FORMAT -->
+<div class="page" id="p-errors-format">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>Errors</span> › 오류 응답 형식</div>
+    <div class="ep-title">오류 응답 형식</div>
+    <div class="ep-desc">API 를 호출했을 때 클라이언트가 받을 수 있는 실패의 종류와 그 형태입니다. 코드 하나하나의 의미는 <b>오류 코드 목록</b> 페이지에 있습니다.</div>
+  </div>
+  <div class="ep-body err-single">
+    <div id="err-format-body"></div>
+  </div>
+</div>
+<!-- ERRORS: CODE CATALOG -->
+<div class="page" id="p-errors-catalog">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>Errors</span> › 오류 코드 목록</div>
+    <div class="ep-title">오류 코드 목록</div>
+    <div class="ep-desc">문서에 있는 엔드포인트에서 내려올 수 있는 오류 코드 전체입니다. 각 엔드포인트에서 어떤 코드가 나오는지는 해당 페이지의 <b>Errors</b> 표에 있습니다.</div>
+  </div>
+  <div class="ep-body err-single">
+    <div id="err-catalog-body"></div>
+  </div>
+</div>
 </main>
 <script>
 function show(id, el) {
@@ -1878,7 +1931,9 @@ var T = {
     'nav-face-match-identify-candidates': '1:N 후보 목록 (특징점)',
     'nav-face-match-liveness': '라이브니스',
     'nav-history-list': '매칭 이력 목록',
-    'nav-history-get': '이력 단건 조회'
+    'nav-history-get': '이력 단건 조회',
+    'nav-errors-format': '오류 응답 형식',
+    'nav-errors-catalog': '오류 코드 목록'
   },
   en: {
     'nav-overview': 'Overview',
@@ -1899,7 +1954,9 @@ var T = {
     'nav-face-match-identify-candidates': '1:N Candidates (descriptor)',
     'nav-face-match-liveness': 'Liveness',
     'nav-history-list': 'Match History',
-    'nav-history-get': 'History by UUID'
+    'nav-history-get': 'History by UUID',
+    'nav-errors-format': 'Response Format',
+    'nav-errors-catalog': 'Error Codes'
   }
 };
 
@@ -1916,11 +1973,13 @@ var TH = {
 
 var CODE_MSGS = {
   '이메일 또는 비밀번호가 올바르지 않습니다.': 'Invalid email or password.',
-  '유효하지 않은 리프레시 토큰입니다.':        'Invalid refresh token.',
-  '토큰이 만료되었습니다.':                    'Token has expired.',
+  '리프레시 토큰이 유효하지 않습니다.':          'Refresh token is invalid.',
+  '리프레시 토큰 유형이 유효하지 않습니다.':      'Refresh token type is invalid.',
+  'API KEY 를 찾을 수 없습니다.':               'API key not found.',
+  '얼굴 매칭 결과가 불일치합니다.':              'Face matching result is a mismatch.',
   '업로드된 파일이 유효하지 않습니다.':          'The uploaded file is invalid.',
   '사용자 정보가 유효하지 않습니다.':            'Invalid user information.',
-  '이미지에서 얼굴을 찾을 수 없습니다.':         'No face detected in the image.',
+  '이미지에서 얼굴을 찾을 수 없습니다.':         'No faces are found on the image.',
   '얼굴이 일치하지 않습니다.':                  'Face does not match.',
   '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
   '특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다.':
@@ -1944,7 +2003,7 @@ var INTRO = {
       [],
       [],
       ['특징점 관리 및 매칭 API는 두 가지 인증 헤더가 모두 필요합니다. 로그인 API는 인증이 불필요합니다.'],
-      ['성공/실패 모두 HTTP 200으로 응답합니다. <code>success</code> 필드로 처리 결과를 구분합니다.'],
+      ['모든 응답은 <code>success</code> · <code>data</code> · <code>errors</code> 세 필드로 감싸 반환됩니다. 실패는 대부분 <strong>HTTP 400</strong>이며, 액세스 토큰이 무효로 판정된 경우에는 <strong>본문 없이 401</strong>이 반환됩니다. 상태 코드별 정리와 처리 방법은 <strong>ERRORS › 오류 응답 형식</strong> 페이지를 참고하세요.'],
       ['응답의 날짜/시간 필드는 기본적으로 UTC 기준입니다. <code>Accept-TimeZone</code> 헤더로 원하는 타임존을 지정하면 자동 변환됩니다.'],
       ['한국어/영어를 지원합니다. <code>Accept-Language</code> 헤더로 원하는 언어를 지정하면 자동 변환됩니다.']
     ],
@@ -1968,7 +2027,7 @@ var INTRO = {
       [],
       [],
       ['Feature management and matching APIs require both authentication headers. The login API does not require authentication.'],
-      ['Both success and failure return HTTP 200. Use the <code>success</code> field to determine the result.'],
+      ['Every response is wrapped in the same three fields — <code>success</code>, <code>data</code> and <code>errors</code>. Failures are almost always <strong>HTTP 400</strong>; when the access token is judged invalid, a <strong>401 with no body</strong> is returned. See <strong>ERRORS › Response Format</strong> for the status codes and how to handle them.'],
       ['Date/time fields in responses default to UTC. Specify your preferred timezone using the <code>Accept-TimeZone</code> header for automatic conversion.'],
       ['Korean and English are supported. Specify your preferred language using the <code>Accept-Language</code> header for automatic conversion.']
     ],
@@ -1982,7 +2041,437 @@ var INTRO = {
   }
 };
 
+/* ── 오류 레퍼런스 (UG-321) ──────────────────────────────────────────────
+   ERRORS 두 페이지와 엔드포인트별 Errors 표를 아래 데이터에서 렌더링한다.
+
+   왜 정적 HTML 이 아닌가. 표를 마크업으로 박으면 PAGES[pageId].pdsc 위치
+   매핑에 수십 행이 추가되고, 한 칸만 밀리는 순간 그 뒤 설명이 전부 어긋난다
+   (UG-242 에서 실제로 발생). 여기서는 ko/en 이 같은 객체에 붙어 있어 위치가
+   어긋날 수 없다.
+
+   생성 마크업에 .pdsc / .st-desc 를 쓰지 않는다. 그 두 클래스가 위치 매핑의
+   대상이므로, 엔드포인트 페이지에 하나라도 추가하면 기존 매핑이 밀린다.
+   대신 .edsc 를 쓴다.
+
+   근거: gate ErrorType / GlobalExceptionHandler / CommonErrorDecoder,
+   face·match ErrorType, msa-scaffold auth ErrorType·AuthenticationFilter. */
+
+var ERR_GROUPS = [
+  { key: 'common',   ko: '공통 — 모든 엔드포인트',        en: 'Common — all endpoints' },
+  { key: 'auth',     ko: '인증 (로그인 · 토큰 재발급)',    en: 'Authentication (login · token refresh)' },
+  { key: 'gate',     ko: 'Gate',                          en: 'Gate' },
+  { key: 'upstream', ko: '하위 서비스 — 코드가 그대로 전달된다', en: 'Upstream services — codes are passed through as-is' }
+];
+
+var ERR_CATALOG = [
+  { g: 'common', code: 'PJ-101', type: 'INVALID_INPUT',
+    ko: { when: '요청 본문·파라미터 검증 실패. <code>message</code> 에는 위반된 필드의 메시지가 <b>공백으로 이어붙어</b> 온다 (여러 필드가 동시에 틀리면 여러 문장). 이미지가 아닌 파일, 형식이 어긋난 <code>descriptor</code>, 범위를 벗어난 <code>threshold</code>·<code>maxCandidates</code> 도 모두 이 코드다.',
+          act: '요청 값을 고쳐 다시 보낸다. 같은 요청을 재시도해도 결과가 같다.' },
+    en: { when: 'Request body or parameter validation failed. <code>message</code> carries the messages of the violated fields <b>concatenated with spaces</b> (several sentences when several fields fail). A non-image file, a malformed <code>descriptor</code>, and out-of-range <code>threshold</code> / <code>maxCandidates</code> all return this code.',
+          act: 'Fix the request values and send again. Retrying the same request gives the same result.' } },
+  { g: 'common', code: 'PJ-005', type: 'INTERNAL_SERVER_ERROR',
+    ko: { when: '서버 내부 오류, 또는 하위 서비스 호출이 실패했다(연결 거부·타임아웃·하위 5xx). <b>이 경우에도 HTTP 상태는 400 이다</b> — 하위 서비스의 500 이 gate 에서 이 코드로 바뀐다. 처리하지 못한 예외만 HTTP 500 으로 온다.',
+          act: '요청을 고쳐도 해결되지 않는다. 잠시 후 재시도하고, 계속되면 <code>transactionUuid</code> 와 함께 문의한다.' },
+    en: { when: 'An internal server error, or a failed upstream call (connection refused, timeout, upstream 5xx). <b>The HTTP status is 400 even then</b> — an upstream 500 is translated into this code by gate. Only unhandled exceptions arrive as HTTP 500.',
+          act: 'Changing the request will not help. Retry after a moment; if it persists, contact support with the <code>transactionUuid</code>.' } },
+  { g: 'common', code: 'PJ-003', type: 'NOT_FOUND',
+    ko: { when: '존재하지 않는 경로로 요청했다. <b>HTTP 404</b> 로 온다.', act: '경로와 메서드를 확인한다.' },
+    en: { when: 'The requested path does not exist. It arrives as <b>HTTP 404</b>.', act: 'Check the path and method.' } },
+  { g: 'common', code: 'PJ-004', type: 'METHOD_NOT_ALLOWED',
+    ko: { when: '경로는 맞지만 메서드나 <code>Content-Type</code> 이 맞지 않다. <b>HTTP 405</b> 다 — <code>multipart/form-data</code> 로 보내야 하는 엔드포인트에 JSON 을 보내면 여기로 온다.',
+          act: '해당 엔드포인트의 메서드와 Content-Type 을 확인한다.' },
+    en: { when: 'The path is right but the method or <code>Content-Type</code> is not. This is <b>HTTP 405</b> — sending JSON to an endpoint that expects <code>multipart/form-data</code> lands here.',
+          act: 'Check the method and Content-Type for that endpoint.' } },
+
+  { g: 'auth', code: 'AUTH-110', type: 'FAILED_WRONG_PASSWORD',
+    ko: { when: '비밀번호가 틀렸다. <b>가입되지 않은 이메일도 같은 코드로 응답한다</b> — 계정의 존재 여부를 알려주지 않기 위한 것이다.',
+          act: '이메일과 비밀번호를 확인한다. 이 코드로 계정 존재 여부를 판별할 수 없다.' },
+    en: { when: 'Wrong password. <b>An unregistered email returns the same code</b> — deliberately, so the response does not reveal whether an account exists.',
+          act: 'Check the email and password. This code cannot tell you whether the account exists.' } },
+  { g: 'auth', code: 'AUTH-111', type: 'FAILED_ACCOUNT_LOCKED',
+    ko: { when: '계정이 잠겼거나 비활성 상태다.', act: '재시도해도 같다. 관리자에게 문의한다.' },
+    en: { when: 'The account is locked or inactive.', act: 'Retrying will not help. Contact your administrator.' } },
+  { g: 'auth', code: 'AUTH-107', type: 'INVALID_REFRESH_TOKEN',
+    ko: { when: '리프레시 토큰이 유효하지 않다 — 없는 토큰, <b>만료된 토큰</b>, 서명 불일치, 이미 회전되어 폐기된 토큰이 모두 이 코드다. 폐기된 토큰을 유예 시간이 지나 다시 제시하면 탈취로 간주해 <b>그 계정의 모든 세션을 폐기한다.</b>',
+          act: '다시 로그인한다. 재발급에 성공하면 응답의 새 <code>refreshToken</code> 으로 반드시 교체해 저장한다 — 이전 토큰은 그 즉시 무효다.' },
+    en: { when: 'The refresh token is not valid — unknown, <b>expired</b>, signature mismatch, or already rotated and revoked all return this code. Presenting a revoked token after the grace window is treated as theft and <b>revokes every session of that account.</b>',
+          act: 'Log in again. On a successful refresh, always replace the stored token with the new <code>refreshToken</code> from the response — the previous one is invalid immediately.' } },
+  { g: 'auth', code: 'AUTH-109', type: 'INVALID_REFRESH_TOKEN_TYPE',
+    ko: { when: '리프레시 토큰 자리에 액세스 토큰을 보냈다.', act: '로그인 응답의 <code>refreshToken</code> 을 보낸다.' },
+    en: { when: 'An access token was sent where a refresh token is expected.', act: 'Send the <code>refreshToken</code> from the login response.' } },
+  { g: 'auth', code: 'AUTH-150', type: 'CONCURRENT_MODIFICATION',
+    ko: { when: '동시 요청이 충돌했다. <b>이 코드만 HTTP 409</b> 다 — 같은 리프레시 토큰으로 재발급을 병렬 호출할 때 나올 수 있다.',
+          act: '잠깐 뒤 한 번 재시도한다. 재발급은 <b>직렬로</b> 호출하는 것이 안전하다 — 회전 때문에 병렬 호출은 어차피 하나만 성공한다.' },
+    en: { when: 'Concurrent requests collided. <b>This is the only code that returns HTTP 409</b> — it can occur when parallel refresh calls use the same refresh token.',
+          act: 'Retry once after a moment. Refresh calls are best serialized: because of rotation, only one parallel call can succeed anyway.' } },
+  { g: 'auth', code: 'AUTH-112', type: 'FAILED_ACCOUNT_NOT_FOUND',
+    ko: { when: '토큰은 유효하지만 그 계정이 존재하지 않는다 (삭제된 계정).', act: '다시 로그인한다.' },
+    en: { when: 'The token is valid but the account no longer exists (deleted).', act: 'Log in again.' } },
+
+  { g: 'gate', code: 'PJ-105', type: 'API_KEY_NOT_FOUND',
+    ko: { when: '<code>X-Api-Key</code> 로 프로젝트를 찾을 수 없다. <b>없는 키, 다른 계정이 소유한 키, 삭제된 프로젝트의 키를 구분하지 않는다</b> — 구분해 주면 키의 실재를 확인해 주는 수단이 되기 때문이다.',
+          act: '관리 페이지에서 <code>accessToken</code> 을 발급받은 계정이 소유한, 삭제되지 않은 프로젝트의 키인지 확인한다.' },
+    en: { when: 'No project matches the <code>X-Api-Key</code>. <b>An unknown key, a key owned by another account, and a key of a deleted project are not distinguished</b> — telling them apart would confirm whether a key exists.',
+          act: 'Verify the key belongs to a non-deleted project owned by the account that issued the <code>accessToken</code>.' } },
+  { g: 'gate', code: 'PJ-106', type: 'SETTINGS_NOT_FOUND',
+    ko: { when: '프로젝트에 설정 행이 없다. 프로젝트 생성 시 함께 만들어지므로, 이 오류는 <b>서버 쪽 문제</b>다.',
+          act: '요청을 고쳐도 해결되지 않는다. 프로젝트 ID 와 함께 문의한다.' },
+    en: { when: 'The project has no settings row. It is created together with the project, so this indicates a <b>server-side problem</b>.',
+          act: 'Changing the request will not help. Contact support with the project ID.' } },
+  { g: 'gate', code: 'USER-101', type: 'INVALID_USER',
+    ko: { when: '수정·삭제 대상 얼굴 특징점이 이 프로젝트에 없다 (다른 프로젝트의 <code>faceFeatureId</code> 이거나 이미 삭제됨).',
+          act: '목록 조회로 <code>faceFeatureId</code> 를 다시 확인한다.' },
+    en: { when: 'The face feature to update or delete does not belong to this project (a <code>faceFeatureId</code> from another project, or already deleted).',
+          act: 'Re-check the <code>faceFeatureId</code> with the list endpoint.' } },
+  { g: 'gate', code: 'ID-101', type: 'NOT_FOUND_MATCHING_HISTORY',
+    ko: { when: '<code>transactionUuid</code> 에 해당하는 매칭 이력이 이 프로젝트에 없다.', act: '이력 목록 조회로 UUID 를 확인한다.' },
+    en: { when: 'No matching history for that <code>transactionUuid</code> in this project.', act: 'Check the UUID with the history list endpoint.' } },
+  { g: 'gate', code: 'CMMN-101', type: 'INVALID_PAGE_COUNT',
+    ko: { when: '<code>page</code>·<code>size</code> 가 허용 범위(1~1000)를 벗어났다.', act: '페이징 값을 범위 안으로 고친다.' },
+    en: { when: '<code>page</code> or <code>size</code> is outside the allowed range (1–1000).', act: 'Bring the paging values into range.' } },
+  { g: 'gate', code: 'CMMN-102', type: 'INVALID_TRANSACTION_UUID_LENGTH',
+    ko: { when: '<code>transactionUuid</code> 가 36자를 넘었다.', act: '36자 이하로 보내거나 생략한다 (생략 시 서버가 생성한다).' },
+    en: { when: '<code>transactionUuid</code> exceeds 36 characters.', act: 'Send 36 characters or fewer, or omit it (the server generates one).' } },
+
+  { g: 'upstream', code: 'COMMON-001', type: 'INVALID_INPUT',
+    ko: { when: '하위 서비스의 검증에서 걸렸다. gate 검증은 통과했지만 하위 서비스가 거부한 값이다.',
+          act: '요청 값을 확인한다. 반복되면 <code>transactionUuid</code> 와 함께 문의한다.' },
+    en: { when: 'Rejected by an upstream service’s validation — the value passed gate’s validation but not the upstream one.',
+          act: 'Check the request values. If it repeats, contact support with the <code>transactionUuid</code>.' } },
+  { g: 'upstream', code: 'FACE-008', type: 'FACE_NOT_FOUND',
+    ko: { when: '이미지에서 얼굴을 찾지 못했다. <b>등록·수정·추출·라이브니스에서는 이 오류로 온다.</b> 1:1 확인과 1:N 매칭에서는 오류가 아니라 HTTP 200 + <code>failureReason</code> 으로 흡수된다.',
+          act: '얼굴이 정면으로 담긴 이미지로 재시도한다.' },
+    en: { when: 'No face was found in the image. <b>Register, update, extract and liveness return this error.</b> On 1:1 verify and 1:N identify it is absorbed into HTTP 200 with <code>failureReason</code> instead.',
+          act: 'Retry with an image containing a front-facing face.' } },
+  { g: 'upstream', code: 'FACE-007', type: 'TOO_MANY_FACES',
+    ko: { when: '이미지에 얼굴이 두 개 이상이다. FACE-008 과 같은 규칙으로, 매칭 계열에서는 HTTP 200 + <code>failureReason</code> 이 된다.',
+          act: '얼굴이 하나만 담긴 이미지로 재시도한다.' },
+    en: { when: 'More than one face in the image. Same rule as FACE-008: on matching endpoints it becomes HTTP 200 with <code>failureReason</code>.',
+          act: 'Retry with an image containing a single face.' } },
+  { g: 'upstream', code: 'FACE-004', type: 'MISMATCH',
+    ko: { when: '얼굴 이미지 수정에서, 새 이미지가 <b>기존에 등록된 인물과 다른 사람</b>이다. 수정은 같은 인물의 이미지 교체만 허용한다.',
+          act: '같은 인물의 이미지로 수정하거나, 다른 인물이면 새로 등록한다.' },
+    en: { when: 'On face image update, the new image is <b>a different person</b> from the one registered. Update only allows replacing an image of the same person.',
+          act: 'Update with an image of the same person, or register a new feature for a different person.' } },
+  { g: 'upstream', code: 'FACE-005', type: 'NO_DOUBLE_SIMILARITY',
+    ko: { when: '매처가 돌려준 유사도 값을 해석할 수 없었다.', act: '다른 이미지로 재시도하고, 반복되면 문의한다.' },
+    en: { when: 'The similarity value returned by the matcher could not be parsed.', act: 'Retry with another image; contact support if it repeats.' } },
+  { g: 'upstream', code: 'MATCH-001', type: 'EMPTY_GALLERY',
+    ko: { when: '이 프로젝트 갤러리에 등록된 사용자가 없다. 1:N 매칭과 대상 지정 연산에서 발생한다.', act: '먼저 사용자를 등록한 뒤 다시 시도한다.' },
+    en: { when: 'The project gallery has no registered users. Occurs on 1:N identify and on operations that target an entry.', act: 'Register a user first, then retry.' } },
+  { g: 'upstream', code: 'MATCH-004', type: 'INVALID_FACE_ID',
+    ko: { when: '갤러리에 그 <code>faceId</code> 로 등록된 사용자가 없다.', act: '등록 여부와 <code>faceId</code> 를 확인한다.' },
+    en: { when: 'No user is registered in the gallery under that <code>faceId</code>.', act: 'Check that the user is registered and the <code>faceId</code> is right.' } },
+  { g: 'upstream', code: 'MATCH-003', type: 'ALREADY_REGISTERED_DESCRIPTOR',
+    ko: { when: '이미 등록된 인물이다. 같은 사람을 두 번 등록하려 했다.', act: '기존 등록을 조회해 재사용하거나, 교체가 목적이면 수정 API 를 쓴다.' },
+    en: { when: 'That person is already registered — a duplicate registration was attempted.', act: 'Look up the existing entry and reuse it, or use the update API to replace it.' } },
+  { g: 'upstream', code: 'MATCH-002', type: 'NOT_SUPPORTED_VERSION',
+    ko: { when: '<code>descriptor</code> 의 추출 버전을 지원하지 않는다. 오래 보관해 둔 특징점을 보낼 때 발생한다.',
+          act: '특징점 추출 API 로 다시 추출해 보낸다.' },
+    en: { when: 'The extraction version of the <code>descriptor</code> is not supported — typically a descriptor kept from an older run.',
+          act: 'Re-extract it with the extraction API and send the new value.' } },
+  { g: 'upstream', code: '-777', type: 'FAKE · EYES_CLOSED · …',
+    ko: { when: '라이브니스 검증에 실패했다. <code>code</code> 는 사유와 무관하게 <code>-777</code> 이고, 실패 사유는 <code>type</code> 에 담긴다. <b>라이브니스를 켠 프로젝트의 등록·수정에서 이 오류로 온다</b> — 1:1 확인·1:N 매칭(이미지)에서는 오류가 아니라 HTTP 200 + <code>failureReason</code> 으로 흡수된다.',
+          act: '<code>type</code> 문자열을 그대로 사용자에게 보여주지 않는다. 사유별 안내가 필요하면 <b>오류 응답 형식</b> 페이지의 사유 목록을 참고해 매핑한다.' },
+    en: { when: 'The liveness check failed. <code>code</code> is <code>-777</code> regardless of the reason, and the reason itself is carried in <code>type</code>. <b>Register and update return this error on projects with liveness enabled</b> — on 1:1 verify and 1:N identify (image) it is absorbed into HTTP 200 with <code>failureReason</code> instead.',
+          act: 'Do not show the raw <code>type</code> string to users. If you need a per-reason message, map it using the reason list on the <b>Response Format</b> page.' } },
+  { g: 'upstream', code: 'MATCH-005', type: 'DIFFERENT_EXTRACTION_TYPE',
+    ko: { when: '비교하는 두 특징점의 추출 버전이 달라 매칭할 수 없다.', act: '두 값을 같은 버전으로 다시 추출한다.' },
+    en: { when: 'The two descriptors being compared were extracted with different versions.', act: 'Re-extract both with the same version.' } }
+];
+
+/* 엔드포인트별 오류. 근거는 컨트롤러의 @SwaggerError 선언과, gate 가 하위 서비스
+   오류를 되던지는지(rethrow) 흡수하는지의 실제 코드다. */
+var ERR_ENDPOINT = {
+  'p-auth-login':                        ['PJ-101', 'AUTH-110', 'AUTH-111', 'PJ-005'],
+  'p-auth-refresh':                      ['PJ-101', 'AUTH-107', 'AUTH-109', 'AUTH-112', 'AUTH-150', 'PJ-005'],
+  'p-face-feature-create':               ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'FACE-008', 'FACE-007', 'MATCH-003', '-777', 'PJ-005'],
+  'p-face-feature-create-descriptor':    ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'MATCH-002', 'MATCH-003', 'PJ-005'],
+  'p-face-feature-update':               ['PJ-101', 'USER-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'FACE-008', 'FACE-007', 'FACE-004', 'MATCH-001', 'MATCH-004', '-777', 'PJ-005'],
+  'p-face-feature-delete':               ['PJ-101', 'USER-101', 'PJ-105', 'COMMON-001', 'MATCH-001', 'MATCH-004', 'PJ-005'],
+  'p-face-feature-get':                  ['PJ-101', 'PJ-105', 'PJ-106'],
+  'p-face-feature-list':                 ['PJ-101', 'CMMN-101', 'PJ-105', 'PJ-106'],
+  'p-face-match-extract':                ['PJ-101', 'PJ-105', 'COMMON-001', 'FACE-008', 'PJ-005'],
+  'p-face-match-verify-id':              ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'FACE-005', 'MATCH-001', 'MATCH-004', 'MATCH-005', 'PJ-005'],
+  'p-face-match-verify-image':           ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'FACE-005', 'PJ-005'],
+  'p-face-match-verify-descriptor':      ['PJ-101', 'PJ-105', 'COMMON-001', 'MATCH-002', 'FACE-005', 'PJ-005'],
+  'p-face-match-identify':               ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'FACE-005', 'MATCH-001', 'PJ-005'],
+  'p-face-match-identify-descriptor':    ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'MATCH-002', 'MATCH-001', 'FACE-005', 'PJ-005'],
+  'p-face-match-identify-candidates':    ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'MATCH-002', 'MATCH-001', 'FACE-005', 'PJ-005'],
+  'p-face-match-liveness':               ['PJ-101', 'PJ-105', 'PJ-106', 'COMMON-001', 'FACE-008', 'FACE-007', 'PJ-005'],
+  'p-history-list':                      ['PJ-101', 'CMMN-101', 'CMMN-102', 'PJ-105', 'PJ-106'],
+  'p-history-get':                       ['PJ-101', 'CMMN-102', 'ID-101', 'PJ-105', 'PJ-106']
+};
+
+/* 이 엔드포인트들은 얼굴 감지·라이브니스 실패를 오류가 아니라 HTTP 200 +
+   failureReason 으로 돌려준다. 표만 보고 "감지 실패는 400" 이라고 읽으면
+   틀리므로 표 아래에 한 줄 붙인다. */
+var ERR_ABSORB = [
+  'p-face-match-verify-id', 'p-face-match-verify-image', 'p-face-match-identify'
+];
+
+/* descriptor 계열은 흡수 분기가 없다 — 라이브니스를 수행하지 않으므로 흡수할 것이
+   없고, 하위 오류는 그대로 되던진다 (IdentifyByDescriptorUseCase 주석). 임계값 미달만
+   200 + failureReason 이다. */
+var ERR_THRESHOLD = [
+  'p-face-match-verify-descriptor', 'p-face-match-identify-descriptor', 'p-face-match-identify-candidates'
+];
+
+/* HTTP 200 으로 오는 실패 사유. errors 가 아니라 failureReason 필드에
+   지역화된 메시지 문자열로 실린다 — 코드가 아니므로 문자열 비교로 분기하면 안 된다. */
+var ERR_REASONS = [
+  { key: 'MISMATCH',        where: { ko: '1:1 확인', en: '1:1 verify' },
+    ko: '얼굴 매칭 결과가 불일치합니다.', en: 'Face matching result is a mismatch.' },
+  { key: 'NOT_MATCH',       where: { ko: '1:N 매칭', en: '1:N identify' },
+    ko: '얼굴이 일치하지 않습니다.', en: 'Face does not match.' },
+  { key: 'INVALID_USER',    where: { ko: '1:1 · 1:N', en: '1:1 · 1:N' },
+    ko: '사용자 정보가 유효하지 않습니다.', en: 'User information is invalid.' },
+  { key: 'FACE_NOT_FOUND',  where: { ko: '1:1 · 1:N (이미지) · 라이브니스', en: '1:1 · 1:N (image) · liveness' },
+    ko: '이미지에서 얼굴을 찾을 수 없습니다.', en: 'No faces are found on the image.' },
+  { key: 'TOO_MANY_FACES',  where: { ko: '1:1 · 1:N (이미지) · 라이브니스', en: '1:1 · 1:N (image) · liveness' },
+    ko: '이미지에 두 개 이상의 얼굴이 있습니다.', en: 'There is more than one face on the image.' },
+  { key: 'FAKE',            where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '실제 얼굴 이미지로 확인되지 않습니다. 다시 시도해 주시기 바랍니다.', en: 'Not verified with a real face image. Please try again.' },
+  { key: 'EYES_CLOSED',     where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '눈이 감겨 있습니다.', en: 'The eyes are closed.' },
+  { key: 'DARK_IMAGE',      where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '이미지가 너무 어둡습니다.', en: 'The image is too dark.' },
+  { key: 'FACE_OCCLUDED',   where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴이 가려졌습니다. (예: 의료용 마스크)', en: 'The face is occluded, for example with a medical mask.' },
+  { key: 'FACE_CROPPED',    where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴이 잘렸습니다.', en: 'The face is cropped.' },
+  { key: 'FACE_TOO_CLOSE',  where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴이 카메라에 너무 가깝습니다.', en: 'The face is too close to the camera.' },
+  { key: 'FACE_CLOSE_TO_BORDER', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴이 이미지 가장자리에 너무 가깝습니다.', en: 'The face is too close to one or more image borders.' },
+  { key: 'LARGE_FACE_ROTATION_ANGLE', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '머리(얼굴)의 회전 각도가 너무 큽니다.', en: 'The rotation angle of the head is too big.' },
+  { key: 'SMALL_FACE_SIZE', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴 크기가 너무 작습니다.', en: 'The face box is too small.' },
+  { key: 'SMALL_RELATIVE_FACE_SIZE', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴의 상대적인 크기가 너무 작습니다.', en: 'The face relative size is too small.' },
+  { key: 'SMALL_PUPILLARY_DISTANCE', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '동공 간 거리가 너무 짧습니다.', en: 'The distance between pupils on the face is too small.' },
+  { key: 'FACE_IS_OCCLUDED', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴이 가려졌습니다.', en: 'The face is occluded.' },
+  { key: 'FACE_TOO_SMALL',  where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴 이미지가 너무 작습니다.', en: 'Face size is too small.' },
+  { key: 'FACE_ANGLE_TOO_LARGE', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '얼굴의 회전 각도가 너무 큽니다.', en: 'Face angle is too large.' },
+  { key: 'LIVENESS_FAILED', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '라이브니스 검증에 실패하였습니다.', en: 'Liveness verification has failed.' }
+];
+
+var ERR_T = {
+  ko: {
+    epTitle: 'Errors',
+    thCode: 'Code', thType: 'Type', thWhen: '발생 조건', thAct: '클라이언트 대응',
+    thKey: 'failureType', thWhere: '엔드포인트', thMsg: 'failureReason (ko)',
+    epNote: '위 표의 오류는 <b>대부분 HTTP 400</b> 으로 온다. 예외는 <code>PJ-003</code>(404), <code>PJ-004</code>(405), 그리고 <code>PJ-005</code> 다 — 같은 코드로 하위 서비스 장애는 400, 처리하지 못한 서버 예외는 500 이 온다. 상태 코드 전체 정리는 <b>오류 응답 형식</b>, 코드별 상세는 <b>오류 코드 목록</b> 페이지에 있다.',
+    absorbNote: '이 엔드포인트는 <b>얼굴 감지 실패와 라이브니스 실패를 오류로 응답하지 않는다.</b> 봉투의 <code>success</code> 는 <code>true</code> 이고 <code>data.success</code> 가 <code>false</code> 로 오며, <code>failureReason</code> 에 사유 메시지가 실린다 (임계값 미달도 같다). 오류 처리 코드가 아니라 정상 응답 처리 코드에서 걸러야 한다.',
+    thresholdNote: '<b>임계값 미달은 오류가 아니다.</b> 봉투의 <code>success</code> 는 <code>true</code> 이고 <code>data.success</code> 가 <code>false</code>, <code>failureReason</code> 에 사유가 실린다. 단 이 엔드포인트는 얼굴 감지·라이브니스 오류를 흡수하지 않는다 — 그쪽은 위 표대로 오류로 온다.',
+    catalogNote: '<b><code>errors.code</code> 로 분기하고 <code>errors.message</code> 로 분기하지 않는다.</b> 메시지는 <code>Accept-Language</code> 에 따라 바뀌고 문구도 변경될 수 있다. <code>errors.type</code> 은 그 코드에 붙은 상수 이름이라 로그·모니터링에 쓰기 좋다 — 다만 <b>코드와 1:1 은 아니다.</b> <code>INVALID_INPUT</code> 처럼 gate(<code>PJ-101</code>)와 하위 서비스(<code>COMMON-001</code>) 양쪽에 같은 이름이 붙은 것이 있으므로, 분기는 코드로 한다.'
+  },
+  en: {
+    epTitle: 'Errors',
+    thCode: 'Code', thType: 'Type', thWhen: 'When it happens', thAct: 'What to do',
+    thKey: 'failureType', thWhere: 'Endpoint', thMsg: 'failureReason (en)',
+    epNote: 'The errors above arrive as <b>HTTP 400 in most cases</b>. The exceptions are <code>PJ-003</code> (404), <code>PJ-004</code> (405), and <code>PJ-005</code> — under that one code, an upstream outage is a 400 while an unhandled server exception is a 500. See <b>Response Format</b> for the full status-code table and <b>Error Codes</b> for details on each code.',
+    absorbNote: 'This endpoint <b>does not report face-detection or liveness failures as errors.</b> The envelope <code>success</code> stays <code>true</code> while <code>data.success</code> is <code>false</code>, with the reason in <code>failureReason</code> (a below-threshold score behaves the same). Handle them in your success path, not in your error path.',
+    thresholdNote: '<b>A below-threshold score is not an error.</b> The envelope <code>success</code> stays <code>true</code> while <code>data.success</code> is <code>false</code>, with the reason in <code>failureReason</code>. This endpoint does not absorb face-detection or liveness errors, though — those arrive as the errors listed above.',
+    catalogNote: '<b>Branch on <code>errors.code</code>, never on <code>errors.message</code>.</b> The message changes with <code>Accept-Language</code> and its wording may change. <code>errors.type</code> is the constant name attached to that code, which makes it useful in logs and monitoring — but it is <b>not 1:1 with the code.</b> Some names, such as <code>INVALID_INPUT</code>, appear on both a gate code (<code>PJ-101</code>) and an upstream one (<code>COMMON-001</code>), so branch on the code.'
+  }
+};
+
+function errFind(code) {
+  for (var i = 0; i < ERR_CATALOG.length; i++) {
+    if (ERR_CATALOG[i].code === code) return ERR_CATALOG[i];
+  }
+  return null;
+}
+
+function errRows(list, lang) {
+  return list.map(function(e) {
+    return '<tr><td><span class="ecode">' + e.code + '</span></td>'
+         + '<td><span class="etype">' + e.type + '</span></td>'
+         + '<td class="edsc">' + e[lang].when + '</td>'
+         + '<td class="edsc">' + e[lang].act + '</td></tr>';
+  }).join('');
+}
+
+function errTable(list, lang) {
+  var t = ERR_T[lang];
+  return '<table class="tbl"><thead><tr>'
+       + '<th>' + t.thCode + '</th><th>' + t.thType + '</th>'
+       + '<th style="width:38%">' + t.thWhen + '</th><th style="width:30%">' + t.thAct + '</th>'
+       + '</tr></thead><tbody>' + errRows(list, lang) + '</tbody></table>';
+}
+
+function renderEndpointErrors(lang) {
+  Object.keys(ERR_ENDPOINT).forEach(function(pageId) {
+    var page = document.getElementById(pageId);
+    if (!page) return;
+
+    var host = page.querySelector('.err-host');
+    if (!host) {
+      var body = page.querySelector('.ep-body');
+      if (!body) return;
+      host = document.createElement('div');
+      host.className = 'sec-blk err-wide err-host';
+      body.appendChild(host);
+    }
+
+    var list = ERR_ENDPOINT[pageId].map(errFind).filter(function(e) { return e; });
+    var note = '<p class="err-foot">' + ERR_T[lang].epNote + '</p>';
+    if (ERR_ABSORB.indexOf(pageId) !== -1) {
+      note = '<div class="err-note">' + ERR_T[lang].absorbNote + '</div>' + note;
+    } else if (ERR_THRESHOLD.indexOf(pageId) !== -1) {
+      note = '<div class="err-note">' + ERR_T[lang].thresholdNote + '</div>' + note;
+    }
+    host.innerHTML = '<div class="sec-ttl">' + ERR_T[lang].epTitle + '</div>'
+                   + errTable(list, lang) + note;
+  });
+}
+
+function renderErrorCatalog(lang) {
+  var host = document.getElementById('err-catalog-body');
+  if (!host) return;
+
+  var html = '<div class="err-note">' + ERR_T[lang].catalogNote + '</div>';
+  ERR_GROUPS.forEach(function(g) {
+    var list = ERR_CATALOG.filter(function(e) { return e.g === g.key; });
+    if (!list.length) return;
+    html += '<div class="sec-blk"><div class="sec-ttl">' + g[lang] + '</div>'
+          + errTable(list, lang) + '</div>';
+  });
+  host.innerHTML = html;
+}
+
+function renderFailureReasons(lang) {
+  var host = document.getElementById('err-reason-body');
+  if (!host) return;
+
+  var t = ERR_T[lang];
+  var rows = ERR_REASONS.map(function(r) {
+    return '<tr><td><span class="etype">' + r.key + '</span></td>'
+         + '<td class="edsc">' + r.where[lang] + '</td>'
+         + '<td class="edsc">' + r[lang] + '</td></tr>';
+  }).join('');
+
+  host.innerHTML = '<table class="tbl"><thead><tr>'
+       + '<th>' + t.thKey + '</th><th style="width:22%">' + t.thWhere + '</th>'
+       + '<th style="width:50%">' + t.thMsg + '</th>'
+       + '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+
+/* 오류 응답 형식 페이지 본문. 문단이 많아 위치 배열로 관리하면 어긋나기 쉬우므로
+   언어별 마크업을 통째로 둔다 — 두 문서가 나란히 있어 한쪽만 고치는 실수가 눈에 띈다. */
+var ERR_FMT = {
+  ko: '<div class="sec-blk"><div class="sec-ttl">응답 봉투</div>'
+    + '<p class="err-p">성공과 실패 모두 같은 세 필드로 감싸 돌려준다. <code>success</code> 로 구분하고, 실패면 <code>errors</code> 에 <code>code</code>·<code>type</code>·<code>message</code> 세 값이 함께 온다.</p>'
+    + '<div class="err-cols">'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: { ... },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">false</span>,\n  <span class="jk">"data"</span>: <span class="jnu">null</span>,\n  <span class="jk">"errors"</span>: {\n    <span class="jk">"code"</span>: <span class="js">"PJ-105"</span>,\n    <span class="jk">"type"</span>: <span class="js">"API_KEY_NOT_FOUND"</span>,\n    <span class="jk">"message"</span>: <span class="js">"API KEY 를 찾을 수 없습니다."</span>\n  }\n}</pre></div>'
+    + '</div>'
+    + '<p class="err-foot"><code>message</code> 는 <code>Accept-Language</code> 헤더에 따라 한국어·영어로 내려온다.</p></div>'
+
+    + '<div class="sec-blk"><div class="sec-ttl">HTTP 상태 코드</div>'
+    + '<div class="err-note"><b>실패가 HTTP 200 으로 오지 않는다.</b> 업무 오류는 거의 모두 400 이고, 게이트웨이 단계에서 막히면 <b>본문이 아예 없다.</b></div>'
+    + '<table class="tbl"><thead><tr><th style="width:12%">Status</th><th style="width:52%">언제</th><th>본문</th></tr></thead><tbody>'
+    + '<tr><td><span class="ecode">400</span></td><td class="edsc">오류의 대부분. 요청 검증 실패, 로그인 실패, API Key 오류, 하위 서비스 오류까지 모두 여기로 온다. <b><code>Authorization</code> 헤더를 아예 보내지 않았거나 <code>Bearer</code> 형식이 아닌 경우</b>도 401 이 아니라 여기다 (<code>PJ-101</code>, message <span class="js">"액세스 토큰은 필수 입력 값입니다."</span>).</td><td class="edsc">위 봉투</td></tr>'
+    + '<tr><td><span class="ecode">404</span></td><td class="edsc">존재하지 않는 경로 (<code>PJ-003</code>).</td><td class="edsc">위 봉투</td></tr>'
+    + '<tr><td><span class="ecode">405</span></td><td class="edsc">메서드나 <code>Content-Type</code> 이 맞지 않다 (<code>PJ-004</code>).</td><td class="edsc">위 봉투</td></tr>'
+    + '<tr><td><span class="ecode">409</span></td><td class="edsc">동시 요청이 충돌했다 (<code>AUTH-150</code>). 같은 리프레시 토큰으로 재발급을 병렬 호출할 때 나올 수 있다.</td><td class="edsc">위 봉투</td></tr>'
+    + '<tr><td><span class="ecode">500</span></td><td class="edsc">처리하지 못한 서버 예외 (<code>PJ-005</code>). <b>액세스 토큰의 서명이 맞지 않는 경우</b>도 여기다. 반면 하위 서비스 장애는 500 이 아니라 <b>400 + <code>PJ-005</code></b> 로 온다.</td><td class="edsc">위 봉투</td></tr>'
+    + '<tr><td><span class="ecode">401</span></td><td class="edsc">인증 서비스가 액세스 토큰을 <b>무효로 판정</b>했다 — 만료, 형식 오류, 토큰 유형 불일치. 인증이 필요한 모든 엔드포인트에서 가능하다.</td><td class="edsc"><b>없음</b></td></tr>'
+    + '<tr><td><span class="ecode">503</span></td><td class="edsc">게이트웨이가 인증 서비스에 닿지 못했다.</td><td class="edsc"><b>없음</b></td></tr>'
+    + '<tr><td><span class="ecode">200</span></td><td class="edsc">요청은 정상 처리됐고 <b>매칭·라이브니스가 실패</b>했다. 오류가 아니다 — 아래 참고.</td><td class="edsc"><code>success: true</code> + <code>failureReason</code></td></tr>'
+    + '</tbody></table></div>'
+
+    + '<div class="sec-blk"><div class="sec-ttl">처리 지침</div><ul class="err-ul">'
+    + '<li><b><code>errors.code</code> 로 분기한다.</b> <code>message</code> 는 언어에 따라 달라지고 문구도 변경될 수 있다. <code>errors.type</code> 은 그 코드에 붙은 상수 이름이라 로그·알림에 쓰기 좋다 (코드와 1:1 은 아니다 — 같은 이름이 gate 와 하위 서비스 양쪽에 있을 수 있다).</li>'
+    + '<li><b>401·503 은 본문이 없다.</b> JSON 파싱을 먼저 하는 클라이언트는 여기서 파싱 오류를 만난다. 상태 코드로 먼저 갈라야 한다.</li>'
+    + '<li><b>인증 실패는 상태 코드가 세 갈래로 갈린다.</b> 헤더 누락·형식 오류는 400(<code>PJ-101</code>), 토큰이 무효로 판정되면 본문 없는 401, 서명 불일치는 500 이다. <b>재발급으로 해결되는 것은 401 뿐이다</b> — 400 은 요청 헤더를 고쳐야 하고, 500 은 토큰이 서버와 다른 환경에서 발급된 것이므로 다시 로그인해야 한다.</li>'
+    + '<li>401 을 받으면 <b>토큰 재발급 후 한 번 재시도</b>한다. 재발급까지 실패하면 (<code>AUTH-107</code>) 다시 로그인한다.</li>'
+    + '<li>재시도가 의미 있는 것은 <code>PJ-005</code>·503 뿐이다. <code>PJ-101</code>·<code>PJ-105</code>·<code>PJ-106</code> 는 요청이나 설정을 고치지 않으면 결과가 같다.</li>'
+    + '<li>요청마다 <code>transactionUuid</code> 를 직접 지정해 보관하면, 문의 시 서버 이력과 대조할 수 있다.</li>'
+    + '</ul></div>'
+
+    + '<div class="sec-blk"><div class="sec-ttl">매칭·라이브니스 실패는 오류가 아니다</div>'
+    + '<p class="err-p">얼굴이 일치하지 않거나 라이브니스에 실패한 것은 <b>정상적으로 처리된 요청의 결과</b>다. 그래서 <code>errors</code> 가 아니라 <b>HTTP 200</b> 으로 온다 — 봉투의 <code>success</code> 는 <code>true</code> 이고, <b><code>data.success</code> 가 <code>false</code></b> 이며 <code>failureReason</code> 에 사유가 실린다. 봉투와 <code>data</code> 의 <code>success</code> 는 <b>이름이 같고 의미가 다르다</b> — 봉투는 요청 처리 성공, <code>data</code> 는 매칭·라이브니스 결과다. 봉투만 보면 이 실패를 놓친다.</p>'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">200 · 매칭 실패</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: {\n    <span class="jk">"success"</span>: <span class="jb">false</span>,\n    <span class="jk">"failureReason"</span>: <span class="js">"얼굴 매칭 결과가 불일치합니다."</span>,\n    <span class="jk">"transactionUuid"</span>: <span class="js">"..."</span>\n  },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
+    + '<p class="err-p"><b><code>failureReason</code> 은 코드가 아니라 지역화된 메시지 문자열이다.</b> 문자열 비교로 분기하면 언어 설정이나 문구 변경에 함께 깨진다. 아래는 주로 내려오는 사유들이다 — 각 사유가 어떤 문장으로 오는지 확인하는 용도이며, 프로그램 분기의 근거로 쓰지 않는다.</p>'
+    + '<div id="err-reason-body"></div>'
+    + '<p class="err-foot">정의되지 않은 사유는 <b>키 문자열이 그대로</b> 실린다 — 사람에게 보여주기 전에 알려진 사유인지 확인해야 한다. 그리고 <b>이 목록은 위 세 계열(1:1 확인·1:N 매칭·라이브니스)에만 적용된다.</b> 라이브니스를 켠 프로젝트의 <b>등록·수정</b>에서는 같은 사유가 흡수되지 않고 <code>code</code> 가 <code>-777</code> 인 <b>오류</b>로 온다 (사유는 <code>type</code>).</p></div>',
+
+  en: '<div class="sec-blk"><div class="sec-ttl">Response Envelope</div>'
+    + '<p class="err-p">Success and failure share the same three fields. Use <code>success</code> to tell them apart; on failure, <code>errors</code> carries <code>code</code>, <code>type</code> and <code>message</code>.</p>'
+    + '<div class="err-cols">'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: { ... },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">false</span>,\n  <span class="jk">"data"</span>: <span class="jnu">null</span>,\n  <span class="jk">"errors"</span>: {\n    <span class="jk">"code"</span>: <span class="js">"PJ-105"</span>,\n    <span class="jk">"type"</span>: <span class="js">"API_KEY_NOT_FOUND"</span>,\n    <span class="jk">"message"</span>: <span class="js">"API key not found."</span>\n  }\n}</pre></div>'
+    + '</div>'
+    + '<p class="err-foot"><code>message</code> is returned in Korean or English according to the <code>Accept-Language</code> header.</p></div>'
+
+    + '<div class="sec-blk"><div class="sec-ttl">HTTP Status Codes</div>'
+    + '<div class="err-note"><b>Failures do not arrive as HTTP 200.</b> Almost every business error is a 400, and requests stopped at the gateway come back <b>with no body at all.</b></div>'
+    + '<table class="tbl"><thead><tr><th style="width:12%">Status</th><th style="width:52%">When</th><th>Body</th></tr></thead><tbody>'
+    + '<tr><td><span class="ecode">400</span></td><td class="edsc">Most errors: request validation, failed login, API Key problems, and upstream service errors all land here. <b>A missing <code>Authorization</code> header, or one that is not in <code>Bearer</code> form</b>, also lands here rather than as a 401 (<code>PJ-101</code>, message <span class="js">"Access token is required."</span>).</td><td class="edsc">Envelope above</td></tr>'
+    + '<tr><td><span class="ecode">404</span></td><td class="edsc">The path does not exist (<code>PJ-003</code>).</td><td class="edsc">Envelope above</td></tr>'
+    + '<tr><td><span class="ecode">405</span></td><td class="edsc">Wrong method or <code>Content-Type</code> (<code>PJ-004</code>).</td><td class="edsc">Envelope above</td></tr>'
+    + '<tr><td><span class="ecode">409</span></td><td class="edsc">Concurrent requests collided (<code>AUTH-150</code>). Possible when the same refresh token is used by parallel refresh calls.</td><td class="edsc">Envelope above</td></tr>'
+    + '<tr><td><span class="ecode">500</span></td><td class="edsc">An unhandled server exception (<code>PJ-005</code>). <b>A signature mismatch on the access token</b> also lands here. Upstream outages, by contrast, arrive as <b>400 with <code>PJ-005</code></b> rather than a 500.</td><td class="edsc">Envelope above</td></tr>'
+    + '<tr><td><span class="ecode">401</span></td><td class="edsc">The authentication service judged the access token <b>invalid</b> — expired, malformed, or the wrong token type. Possible on every authenticated endpoint.</td><td class="edsc"><b>None</b></td></tr>'
+    + '<tr><td><span class="ecode">503</span></td><td class="edsc">The gateway could not reach the authentication service.</td><td class="edsc"><b>None</b></td></tr>'
+    + '<tr><td><span class="ecode">200</span></td><td class="edsc">The request succeeded and <b>the match or liveness check failed</b>. This is not an error — see below.</td><td class="edsc"><code>success: true</code> + <code>failureReason</code></td></tr>'
+    + '</tbody></table></div>'
+
+    + '<div class="sec-blk"><div class="sec-ttl">Handling Guidelines</div><ul class="err-ul">'
+    + '<li><b>Branch on <code>errors.code</code>.</b> <code>message</code> varies by language and its wording may change. <code>errors.type</code> is the constant name attached to that code, which makes it useful in logs and alerts (it is not 1:1 with the code — the same name can appear on a gate code and an upstream one).</li>'
+    + '<li><b>401 and 503 have no body.</b> A client that parses JSON first will hit a parse error here. Branch on the status code before parsing.</li>'
+    + '<li><b>Authentication failures split across three status codes.</b> A missing or malformed header is a 400 (<code>PJ-101</code>), a token judged invalid is a bodiless 401, and a signature mismatch is a 500. <b>Only the 401 is fixed by refreshing</b> — the 400 needs the request header corrected, and the 500 means the token was issued against a different environment, so log in again.</li>'
+    + '<li>On a 401, <b>refresh the token and retry once</b>. If the refresh also fails (<code>AUTH-107</code>), log in again.</li>'
+    + '<li>Only <code>PJ-005</code> and 503 are worth retrying. <code>PJ-101</code>, <code>PJ-105</code> and <code>PJ-106</code> return the same result until the request or the configuration changes.</li>'
+    + '<li>Send your own <code>transactionUuid</code> on every request and keep it — it lets support match your call against the server-side history.</li>'
+    + '</ul></div>'
+
+    + '<div class="sec-blk"><div class="sec-ttl">Match and Liveness Failures Are Not Errors</div>'
+    + '<p class="err-p">A face that does not match, or a failed liveness check, is <b>the result of a request that was processed normally</b>. So it arrives as <b>HTTP 200</b> rather than in <code>errors</code>: the envelope <code>success</code> is <code>true</code>, while <b><code>data.success</code> is <code>false</code></b> and <code>failureReason</code> carries the reason. The two <code>success</code> fields <b>share a name but not a meaning</b> — the envelope one means the request was processed, the <code>data</code> one is the match or liveness outcome. Code that only reads the envelope will miss these.</p>'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">200 · match failed</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: {\n    <span class="jk">"success"</span>: <span class="jb">false</span>,\n    <span class="jk">"failureReason"</span>: <span class="js">"Face matching result is a mismatch."</span>,\n    <span class="jk">"transactionUuid"</span>: <span class="js">"..."</span>\n  },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
+    + '<p class="err-p"><b><code>failureReason</code> is a localized message, not a code.</b> Comparing strings breaks as soon as the language setting or the wording changes. The list below shows the reasons returned most often, so you can recognize them — not as a basis for branching.</p>'
+    + '<div id="err-reason-body"></div>'
+    + '<p class="err-foot">An undefined reason is returned <b>as the raw key string</b>, so check that a reason is known before showing it to a person. Note also that <b>this list applies only to the three families above</b> (1:1 verify, 1:N identify, liveness). On <b>register and update</b> with liveness enabled, the same reasons are not absorbed: they arrive as an <b>error</b> with <code>code</code> <code>-777</code> and the reason in <code>type</code>.</p></div>'
+};
+
+function renderErrorFormat(lang) {
+  var host = document.getElementById('err-format-body');
+  if (host) host.innerHTML = ERR_FMT[lang];
+}
+
+function renderErrorDocs(lang) {
+  renderEndpointErrors(lang);
+  renderErrorCatalog(lang);
+  renderErrorFormat(lang);
+  renderFailureReasons(lang);
+}
+
 var PAGES = {
+  'p-errors-format': {
+    crumb: { ko: '<span>Errors</span> › 오류 응답 형식', en: '<span>Errors</span> › Response Format' },
+    title: { ko: '오류 응답 형식', en: 'Error Response Format' },
+    desc: {
+      ko: 'API 를 호출했을 때 클라이언트가 받을 수 있는 실패의 종류와 그 형태입니다. 코드 하나하나의 의미는 <b>오류 코드 목록</b> 페이지에 있습니다.',
+      en: 'The kinds of failure a client can receive from this API, and the shape each one arrives in. What each individual code means is on the <b>Error Codes</b> page.'
+    }
+  },
+  'p-errors-catalog': {
+    crumb: { ko: '<span>Errors</span> › 오류 코드 목록', en: '<span>Errors</span> › Error Codes' },
+    title: { ko: '오류 코드 목록', en: 'Error Codes' },
+    desc: {
+      ko: '문서에 있는 엔드포인트에서 내려올 수 있는 오류 코드 전체입니다. 각 엔드포인트에서 어떤 코드가 나오는지는 해당 페이지의 <b>Errors</b> 표에 있습니다.',
+      en: 'Every error code the documented endpoints can return. Which codes a given endpoint returns is listed in the <b>Errors</b> table on that endpoint’s page.'
+    }
+  },
   'p-auth-login': {
     crumb: { ko: '<span>Auth</span> › 로그인', en: '<span>Auth</span> › Login' },
     title: { ko: '로그인', en: 'Login' },
@@ -2010,8 +2499,8 @@ var PAGES = {
     crumb: { ko: '<span>Auth</span> › 토큰 재발급', en: '<span>Auth</span> › Token Refresh' },
     title: { ko: 'Access Token 재발급', en: 'Refresh Access Token' },
     desc: {
-      ko: '만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 리프레시 토큰은 로그인 시 발급되며, 유효한 경우 새로운 <code>accessToken</code>이 반환됩니다.',
-      en: 'Issue a new access token using a refresh token. The refresh token is provided at login and a new <code>accessToken</code> is returned if it is still valid.'
+      ko: '만료된 액세스 토큰을 리프레시 토큰을 통해 새로 발급받습니다. 재발급 시 리프레시 토큰도 함께 회전(rotation)됩니다 — 사용한 리프레시 토큰은 즉시 폐기되고 응답의 새 <code>refreshToken</code>으로 교체해 저장해야 합니다. 폐기된 토큰을 다시 사용하면 보안을 위해 해당 계정의 모든 세션이 종료될 수 있습니다. 리프레시 토큰이 <b>만료된 경우도 <code>AUTH-107</code></b>로 응답합니다 — 만료를 구분하는 별도 코드는 없습니다.',
+      en: 'Issue a new access token using a refresh token. The refresh token is rotated as well — the token you used is revoked immediately, so store the new <code>refreshToken</code> from the response in its place. Presenting a revoked token again may end every session of that account for security. An <b>expired refresh token also returns <code>AUTH-107</code></b>; there is no separate code for expiry.'
     },
     pdsc: [
       { ko: '로그인 시 발급받은 리프레시 토큰 (최대 255자)', en: 'Refresh token issued at login (max 255 chars)' },
@@ -2023,7 +2512,7 @@ var PAGES = {
     stDesc: [
       { ko: 'OK', en: 'OK' },
       { ko: '유효하지 않은 리프레시 토큰', en: 'Invalid refresh token' },
-      { ko: '만료된 리프레시 토큰', en: 'Expired refresh token' }
+      { ko: '리프레시 토큰 유형 불일치', en: 'Wrong refresh token type' }
     ]
   },
   'p-face-feature-create': {
@@ -2440,6 +2929,10 @@ var PAGES = {
 };
 
 function setLang(lang) {
+  // 오류 표를 먼저 그린다. 아래 CODE_MSGS 루프가 .js 요소를 훑으므로 순서가 중요하다 —
+  // 다만 여기서 생성되는 값은 이미 해당 언어라 그 루프에서 그냥 통과한다.
+  renderErrorDocs(lang);
+
   document.querySelectorAll('[data-i18n]').forEach(function(el) {
     var key = el.dataset.i18n;
     if (T[lang][key] !== undefined) el.textContent = T[lang][key];
@@ -2513,7 +3006,7 @@ function setLang(lang) {
   });
   document.getElementById('lang-popup').classList.remove('show');
   document.getElementById('lang-chevron').classList.remove('open');
-  localStorage.setItem('docs-lang', lang);
+  try { localStorage.setItem('docs-lang', lang); } catch (e) { /* 저장이 막힌 브라우저 */ }
 }
 
 function toggleLang() {
@@ -2528,10 +3021,15 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// 오류 표는 정적 마크업이 아니라 아래 데이터에서 그린다. setLang 이 호출되지 않는
+// 경로(저장값이 'ko')도 있으므로 여기서 한 번 그려 둔다.
+renderErrorDocs(currentLang);
+
 (function() {
   var urlLang = new URLSearchParams(location.search).get('lang');
   if (urlLang === 'ko' || urlLang === 'en') { currentLang = urlLang; setLang(urlLang); return; }
-  var saved = localStorage.getItem('docs-lang');
+  var saved = null;
+  try { saved = localStorage.getItem('docs-lang'); } catch (e) { /* 저장이 막힌 브라우저 */ }
   if (saved) {
     if (saved !== 'ko') { currentLang = saved; setLang(saved); }
   } else {

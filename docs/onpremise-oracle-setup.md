@@ -3,7 +3,13 @@
 온프레미스 납품에서 백엔드를 오라클로 기동할 때 **DB 쪽에서 먼저 준비되어야 하는 것들**을 적는다.
 애플리케이션 배포 절차가 아니라 DBA 에게 요청할 항목과 설치 담당자가 채울 값의 목록에 가깝다.
 
-관련 티켓: UG-296
+> **배포 구성(compose, `.env`, 설치 스크립트, 이미지 태그)은 `univs-dcun/onprem` 저장소를 본다** (UG-323).
+> 이 문서는 **gate 저장소의 네 서비스(gate · face · match · palm)가 요구하는 계약**만 기술한다.
+> auth · config · discovery · gateway 의 계약은 `univs-dcun/msa-scaffold` 소유다.
+>
+> 아래 §4 의 표가 계약이다. **이 표가 바뀌는 커밋은 onprem 저장소에 알린다.**
+
+관련 티켓: UG-296, UG-323
 
 ---
 
@@ -125,56 +131,68 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 
 ---
 
-## 4. 접속 정보를 어디에 넣는가 — `.env` 가 정답이다
+## 4. 앱이 요구하는 것 — 환경변수 계약
 
-여기가 함정이다. gate-config 만 고치면 **아무것도 바뀌지 않는다.**
+**이 절이 계약이다.** `.env` 변수 이름이나 compose 의 폴백 로직은 여기에 적지 않는다 —
+그것은 `onprem` 저장소가 정한다. 여기 적는 것은 **컨테이너가 실제로 읽는 이름**이다.
+
+### 왜 환경변수인가 — gate-config 만 고치면 아무것도 안 바뀐다
 
 서비스는 `spring.config.import: optional:configserver:…` 로 설정을 읽는다. 레거시 bootstrap 이
 아니라 **config-data** 경로이고 (`spring-cloud-starter-bootstrap` 없음, `bootstrap.yml` 없음),
-이 경로에서 config-server 프로퍼티는 **OS 환경변수보다 아래**다. `compose.*.yml` 이
-`SPRING_DATASOURCE_USERNAME` 을 환경변수로 넘기는 한 그쪽이 이긴다.
+이 경로에서 config-server 프로퍼티는 **OS 환경변수보다 아래**다. 환경변수를 주면 그쪽이 이긴다.
 
 > 근거: gate-config 의 `application-postgresql.yml` 은 지금 `url: url` / `username: username`
 > 이라는 리터럴 자리표시자를 담고 있는데 dev·stage·prod 가 정상 기동한다.
 
-### 채울 곳
+### 네 서비스 공통
 
-각 서버의 `WORKING_DIR` 에 있는 **`.env`** 에 서비스별 변수를 넣는다.
+| 컨테이너 환경변수 | Spring 속성 | 필수 | 비고 |
+|---|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | — | ✅ | 온프레미스 오라클: `prod, oracle, onpremise` |
+| `SPRING_DATASOURCE_URL` | `spring.datasource.url` | ✅ | 오라클은 **전체 URL**. §2 참고 |
+| `SPRING_DATASOURCE_USERNAME` | `spring.datasource.username` | ✅ | 서비스마다 **다른 계정** |
+| `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | ✅ | |
+| `MANAGEMENT_SERVER_PORT` | `management.server.port` | | actuator 분리 포트 |
 
-```bash
-# 오라클 설치 — 서비스마다 계정이 다르다
-GATE_DB_URL=jdbc:oracle:thin:@<host>:1521/<service_name>
-GATE_DB_USERNAME=univs_gate
-GATE_DB_PASSWORD=<비밀번호>
+⚠️ **`SPRING_DATASOURCE_*` 는 안 주면 기동이 실패하지 않는다.** 앱 소스의
+`application-{postgresql,oracle}.yml` 에 사내 개발 서버 주소가 기본값으로 들어 있어 그쪽으로
+붙으려 한다. 폐쇄망에서는 연결 실패로 끝나지만 **설정 누락이 조용히 지나간다는 뜻**이므로
+설치 검증에서 실제 접속 대상을 반드시 확인한다.
 
-FACE_DB_URL=jdbc:oracle:thin:@<host>:1521/<service_name>
-FACE_DB_USERNAME=univs_face
-FACE_DB_PASSWORD=<비밀번호>
+### gate-service 추가
 
-PALM_DB_URL=…    PALM_DB_USERNAME=univs_palm     PALM_DB_PASSWORD=…
-MATCH_DB_URL=…   MATCH_DB_USERNAME=univs_match   MATCH_DB_PASSWORD=…
-AUTH_DB_URL=…    AUTH_DB_USERNAME=univs_auth     AUTH_DB_PASSWORD=…
-```
+| 컨테이너 환경변수 | Spring 속성 | 필수 | 비고 |
+|---|---|---|---|
+| `SPRING_DATA_REDIS_HOST` / `_PORT` / `_PASSWORD` | `spring.data.redis.*` | ✅ | |
+| `GATEWAY_URL` | `gateway.url` | ✅ | 폐쇄망 내부 주소 |
+| `FILE_ENABLE_UPLOAD` | `file.enable.upload` | ✅ | |
+| `FILE_ROOT_PATH` | `file.root-path` | ✅ | 컨테이너 내부 경로 |
+| `FILE_SECRET_KEY` | `file.secret-key` | ✅ | 비밀값 |
+| `FILE_ALGORITHM_WAY` / `FILE_ALGORITHM_MOD` | `file.algorithm.way` / `.mod` | ✅ | 예: `AES` / `AES/ECB/PKCS5Padding` |
+| `FILE_API-ENDPOINT_GET` | `file.api-endpoint.get` | | ⚠️ 이 변수만 이름에 **하이픈**이 들어간다. Spring 의 legacy 환경변수 해석으로 동작하지만 셸에서 `export` 가 안 되므로, 형태를 바꾼다면 실제 컨테이너로 확인할 것 |
 
-`compose.*.yml` 은 이렇게 읽는다.
+### palm-service / match-server 추가
 
-```yaml
-SPRING_DATASOURCE_URL: ${GATE_DB_URL:-${CORE_DB_URL}/gate}
-SPRING_DATASOURCE_USERNAME: ${GATE_DB_USERNAME:-${CORE_DB_USERNAME}}
-SPRING_DATASOURCE_PASSWORD: ${GATE_DB_PASSWORD:-${CORE_DB_PASSWORD}}
-```
+| 서비스 | 컨테이너 환경변수 | 비고 |
+|---|---|---|
+| palm | `PALM_MODULE_URL` | 폐쇄망 내부 palm 모듈 주소 |
+| match | `LICENSE_SERVER_HOST` | 라이선스 서버 |
 
-**`{서비스}_DB_*` 를 안 넣으면 기존 `CORE_DB_*` 로 떨어진다.** PostgreSQL 환경(dev/stage/prod)은
-`CORE_DB_*` 만 쓰므로 동작이 그대로다. `docker compose config` 로 양쪽을 확인했다.
+### 이 문서가 다루지 않는 것
 
-`CORE_DB_URL` 은 `${CORE_DB_URL}/gate` 처럼 뒤에 DB 이름을 붙이는 PostgreSQL 형태다.
-**오라클 URL 에는 이 형태를 쓸 수 없으므로 `{서비스}_DB_URL` 로 전체 URL 을 준다.**
+| 항목 | 단일 진실 |
+|---|---|
+| `AUTH_*`, 최초 관리자 부트스트랩, `POST /api/v1/auth/admin/init` 계약 | **msa-scaffold** |
+| config / discovery / gateway 환경변수, `CONFIG_SERVER_PROFILE` | **msa-scaffold** |
+| `.env` 변수 이름, compose 폴백, 호스트 포트, 이미지 태그 | **onprem** |
+| Spring 설정 yml 자체 | **gate-config** (UG-233) |
 
 ### gate-config 는 무엇을 하나
 
-`{서비스}-oracle.yml` 다섯 개가 같은 값을 갖고 있다. 환경변수가 우선하므로 평소에는 쓰이지
-않지만, 환경변수를 주지 않는 구성(로컬 실행 등)에서 폴백으로 동작하고 무엇보다 **의도를
-기록**한다. 두 곳의 계정 이름은 항상 같게 유지한다.
+`{서비스}-oracle.yml` 이 같은 값을 갖고 있다. 환경변수가 우선하므로 평소에는 쓰이지 않지만,
+환경변수를 주지 않는 구성(로컬 실행 등)에서 폴백으로 동작하고 무엇보다 **의도를 기록**한다.
+두 곳의 계정 이름은 항상 같게 유지한다.
 
 ---
 
