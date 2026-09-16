@@ -30,6 +30,21 @@ services:
       GOOGLE_OAUTH2_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
       GOOGLE_OAUTH2_REFRESH_TOKEN: ${GOOGLE_OAUTH2_REFRESH_TOKEN}
       GOOGLE_OAUTH2_ACCESS_TOKEN_URL: ${GOOGLE_OAUTH2_ACCESS_TOKEN_URL}
+      # UG-320: 온프레미스 최초 관리자 부트스트랩 (msa-scaffold UMS-3).
+      #
+      # 서비스는 spring.config.import 로 config-server 를 읽는 config-data 경로라 컨테이너
+      # 환경변수가 config-server 값을 이긴다 (위 UG-296 주석과 같은 사정). 그래서 gate-config
+      # 가 아니라 여기가 값을 정하는 자리다. Spring relaxed binding 이
+      # AUTH_BOOTSTRAP_INSTALL_TOKEN -> auth.bootstrap.install-token 으로 매핑한다.
+      #
+      # INSTALL_TOKEN 이 비어 있으면 관리자 초기화 API 가 통째로 막힌다(fail closed) —
+      # 설정을 빼먹었을 때 조용히 무방비가 되는 쪽이 훨씬 위험하다. 초기화 API 자체가
+      # onpremise 프로파일 전용이므로 dev/stage/prod 에서는 비워 두는 것이 정상이다.
+      # 절차: docs/onpremise-admin-bootstrap.md
+      AUTH_BOOTSTRAP_INSTALL_TOKEN: ${AUTH_BOOTSTRAP_INSTALL_TOKEN:-}
+      AUTH_BOOTSTRAP_ADMIN_APP_ROLES: ${AUTH_BOOTSTRAP_ADMIN_APP_ROLES:-}
+      AUTH_BOOTSTRAP_ADMIN_EMAIL: ${AUTH_BOOTSTRAP_ADMIN_EMAIL:-}
+      AUTH_BOOTSTRAP_TENANT_CODE: ${AUTH_BOOTSTRAP_TENANT_CODE:-}
       JWT_SECRET: ${JWT_SECRET}
       JWT_CREATE_USER_TOKEN_EXPIRY: ${JWT_CREATE_USER_TOKEN_EXPIRY}
       JWT_ACCESS_TOKEN_EXPIRY: ${JWT_ACCESS_TOKEN_EXPIRY}

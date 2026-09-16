@@ -53,6 +53,7 @@
 ## Spring 환경 파일 수정 규칙
 - Spring 설정(yml)의 단일 진실은 별도 레포 `univs-dcun/gate-config`의 `main` 브랜치다 (UG-233). 설정 수정은 gate-config 레포에서 main에 직접 커밋 + push 로 완료한다. (PR + Merge 사용 안함)
 - 온프레미스(native) 납품 시 config-server가 마운트하는 `/config-repo` 볼륨의 내용물은 gate-config 레포를 클론하여 준비한다. (모노레포에 있던 config-repo 폴더는 UG-233에서 제거됨 — 스냅샷이 낡은 채 납품되는 사고 방지)
+- 온프레미스 배포 구성(compose, .env, 설치 스크립트, 이미지 태그)은 `univs-dcun/onprem` 저장소가 단일 진실이다 (UG-323). 이 레포에는 앱이 요구하는 환경변수·프로파일 계약만 문서로 유지한다 (`docs/onpremise-*.md`). 계약이 바뀌면 onprem 쪽에 알린다. auth·config·discovery·gateway 의 온프레미스 계약은 `univs-dcun/msa-scaffold` 소유다.
 
 ## CI/CD 파일 수정 규칙
 - 파이프라인 로직의 단일 진실은 별도 레포 `univs-dcun/gate-jenkins-library`의 `main` 브랜치다 (UG-237). 로직 수정은 library 레포에 직접 커밋 + push 로 완료한다 (gate-config와 동일 방식, PR 사용 안함).

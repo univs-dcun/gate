@@ -8,6 +8,9 @@ infra/docker/
 └── master/   운영 서버 192.168.79.8 — .env.example
 ```
 
+온프레미스 납품 구성은 `univs-dcun/onprem` 저장소가 단일 진실이다. 이 폴더의 compose
+레이어는 dev/stage/master 서버 전용이다. (UG-323)
+
 ## 서버 표준 디렉토리 구조 (UG-247)
 
 세 서버 공통 (계정만 환경별로 다름 — 현재 WORKING_DIR은 deploy-targets/{env}.env가 진실):
