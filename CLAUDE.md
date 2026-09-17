@@ -56,7 +56,8 @@
 - 온프레미스 계약의 소유 경계 (UG-323): 이 레포는 앱이 요구하는 환경변수·프로파일 계약만 문서로 유지한다 (`docs/onpremise-*.md`). gate·face·match·palm 이 이 레포 소유이고, auth·config·discovery·gateway 는 `univs-dcun/msa-scaffold` 소유다. 배포 구성 자체와 통지 방법은 아래 「온프레미스 패키지(onprem 저장소)와의 연동」을 따른다.
 
 ## 온프레미스 패키지(onprem 저장소)와의 연동
-- 온프레미스 납품에 영향을 주는 변경(환경변수 이름·기본값, Spring 프로파일, API 계약, 이미지 태그 규칙, config-repo yml)을 마치면 **작업 종료 전에** `ListAgents`로 onprem 세션(이름에 "온프레미스" 또는 "onprem")을 찾아 `SendMessage`로 알린다. 첫 줄은 한 문장 요약, 본문에는 바뀐 항목, 커밋/PR, onprem이 해야 할 일을 적는다. 세션이 없으면 그냥 넘어간다 — Stop 훅이 수신함(~/.claude/onprem-inbox)에 기록을 남기고, onprem 빌드가 상위 저장소 드리프트를 별도로 검사한다.
+- 온프레미스 납품에 영향을 주는 변경(환경변수 이름·기본값, Spring 프로파일, API 계약, 이미지 태그 규칙, config-repo yml)을 마치면 **작업 종료 전에** `SendMessage`로 `On-prem` 세션에 알린다. 첫 줄은 한 문장 요약, 본문에는 바뀐 항목, 커밋/PR, onprem이 해야 할 일을 적는다. `ListAgents`에 `On-prem`이 없으면 그냥 넘어간다 — Stop 훅이 수신함(~/.claude/onprem-inbox)에 기록을 남기고, onprem 빌드가 상위 저장소 드리프트를 별도로 검사한다.
+- 세션 이름은 저장소마다 고정돼 있다 (2026-09-17 확정): gate = `Gate`, onprem = `On-prem`, msa-scaffold = `MSA Scaffold`, vca = `VCA`. 이름으로 찾으므로 임의로 바꾸지 않는다. 바꿔야 하면 각 저장소 CLAUDE.md 의 이 표를 함께 고친다.
 - 온프레미스 배포 구성(compose, .env, 설치 스크립트)은 이 저장소에 만들지 않는다. onprem 저장소가 단일 진실이다.
 
 ## CI/CD 파일 수정 규칙
