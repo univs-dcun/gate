@@ -7,8 +7,9 @@
 >
 > 최초 관리자 부트스트랩은 **auth-service 기능이고 auth-service 는 `univs-dcun/msa-scaffold`
 > 소유다.** 아래에 적힌 환경변수 이름·오류 코드·유효 시간은 **설명을 위한 것이고 단일 진실이
-> 아니다.** 정확한 값은 msa-scaffold 의 온프레미스 계약 문서를 본다 — 그쪽이 바뀌면 이 문서는
-> 모른다.
+> 아니다.** 정확한 값은
+> [`msa-scaffold docs/onpremise-contract.md`](https://github.com/univs-dcun/msa-scaffold/blob/dev/docs/onpremise-contract.md)
+> **§5.4 「최초 관리자 생성 API」** 를 본다 (UMS-16). 그쪽이 바뀌면 이 문서는 모른다.
 >
 > 배포 구성(compose, `.env`, 설치 스크립트)은 `univs-dcun/onprem` 저장소를 본다.
 

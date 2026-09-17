@@ -5,7 +5,8 @@
 
 > **배포 구성(compose, `.env`, 설치 스크립트, 이미지 태그)은 `univs-dcun/onprem` 저장소를 본다** (UG-323).
 > 이 문서는 **gate 저장소의 네 서비스(gate · face · match · palm)가 요구하는 계약**만 기술한다.
-> auth · config · discovery · gateway 의 계약은 `univs-dcun/msa-scaffold` 소유다.
+> auth · config · discovery · gateway 의 계약은 `univs-dcun/msa-scaffold` 의
+> [`docs/onpremise-contract.md`](https://github.com/univs-dcun/msa-scaffold/blob/dev/docs/onpremise-contract.md) 이 단일 진실이다 (UMS-16).
 >
 > 아래 §4 의 표가 계약이다. **이 표가 바뀌는 커밋은 onprem 저장소에 알린다.**
 
@@ -183,8 +184,9 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 
 | 항목 | 단일 진실 |
 |---|---|
-| `AUTH_*`, 최초 관리자 부트스트랩, `POST /api/v1/auth/admin/init` 계약 | **msa-scaffold** |
-| config / discovery / gateway 환경변수, `CONFIG_SERVER_PROFILE` | **msa-scaffold** |
+| `AUTH_*`, 최초 관리자 부트스트랩, `POST /api/v1/auth/admin/init` 계약 | **msa-scaffold** `docs/onpremise-contract.md` §5 |
+| config / discovery / gateway 환경변수, `CONFIG_SERVER_PROFILE` | **msa-scaffold** `docs/onpremise-contract.md` §1~§4 |
+| gateway 인증 실패 시 상태 코드 | **msa-scaffold** `docs/onpremise-contract.md` §4.2 (UMS-15) |
 | `.env` 변수 이름, compose 폴백, 호스트 포트, 이미지 태그 | **onprem** |
 | Spring 설정 yml 자체 | **gate-config** (UG-233) |
 
