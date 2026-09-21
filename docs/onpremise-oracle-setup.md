@@ -66,7 +66,7 @@ Migration checksum mismatch for migration version 1
 
 | 계정 | 서비스 | 마이그레이션 | PostgreSQL 에서의 DB 이름 |
 |---|---|---|---|
-| `univs_gate` | gate-service | V1 ~ V22 | `gate` |
+| `univs_gate` | gate-service | V1 ~ V26 | `gate` |
 | `univs_face` | face-service | V1 | `faces` |
 | `univs_palm` | palm-service | V1 | `palm` |
 | `univs_match` | match-server | V1 ~ V3 | `match` |
@@ -264,6 +264,11 @@ UG-302 는 이 함정을 피하려고 정리(V23, DML)와 인덱스 생성(V24, 
 돌지 않는다. 새 마이그레이션을 쓸 때도 같은 원칙을 따르는 편이 안전하다 — **DML 과 DDL 을
 한 파일에 섞지 않는다.**
 
+UG-325 도 같은 규칙을 따른다 — `feature_history` 테이블 생성(V25, DDL)과 `match_history` 의
+REGISTER 행 복사(V26, DML — `INSERT … SELECT` 한 문장)를 나눴다. V26 이 중간에 실패하면 이
+절의 절차대로 `feature_history` 를 비운 뒤 재시도한다. 복사만 하고 원본은 지우지 않으므로
+재시도해도 `match_history` 는 그대로다.
+
 ---
 
 ## 6. 설치 후 검증
@@ -289,7 +294,7 @@ SELECT vlmatch(HEXTORAW('00'), HEXTORAW('00'), 60) FROM dual;
 
 ## 7. 아직 검증되지 않은 것
 
-**실제 오라클 인스턴스에서 V1 ~ V22 를 끝까지 돌려 본 적이 없다.** UG-296 이 열려 있는 이유다.
+**실제 오라클 인스턴스에서 V1 ~ V26 을 끝까지 돌려 본 적이 없다.** UG-296 이 열려 있는 이유다.
 
 지금까지 확인한 것은 여기까지다.
 

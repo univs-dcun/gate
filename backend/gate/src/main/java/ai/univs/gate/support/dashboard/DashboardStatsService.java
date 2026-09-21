@@ -6,10 +6,12 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
-import ai.univs.gate.modules.feature.domain.entity.QBiometricFeature;
+import ai.univs.gate.modules.feature.domain.entity.QFeatureHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
 import ai.univs.gate.modules.feature.domain.entity.QMatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.StringTemplate;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -29,7 +31,11 @@ public class DashboardStatsService {
     private final JPAQueryFactory queryFactory;
 
     private final QMatchHistory mh = QMatchHistory.matchHistory;
-    private final QBiometricFeature bf = QBiometricFeature.biometricFeature;
+    // UG-325: 등록·삭제는 feature_history(append-only)에서 센다. 예전에는 biometric_feature 를
+    // is_deleted=false 로 세어 "등록" 이라 불렀는데, 그건 현재 잔존 수다 — 삭제하면 과거 달의
+    // 등록 수가 소급해서 줄고, "전체 총 누적" 은 누적이 아니었고, 등록/삭제 비율의 삭제 건수는
+    // 삭제 시각이 아니라 등록 시각으로 걸러졌다 (7월 등록·9월 삭제가 9월에 안 잡힘).
+    private final QFeatureHistory fh = QFeatureHistory.featureHistory;
 
     public DashboardStatsService(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
@@ -38,10 +44,11 @@ public class DashboardStatsService {
     // ── 단순 건수 집계 (기간 필터) ─────────────────────────────────────────────────
 
     public long countRegistrations(Long projectId, LocalDateTime from, FeatureType featureType) {
-        Long count = queryFactory.select(bf.count()).from(bf)
-                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false), bf.createdAt.goe(from))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
+        return countFeatureEvents(projectId, from, featureType, FeatureActionType.REGISTER);
+    }
+
+    public long countDeletions(Long projectId, LocalDateTime from, FeatureType featureType) {
+        return countFeatureEvents(projectId, from, featureType, FeatureActionType.DELETE);
     }
 
     public long countVerifyById(Long projectId, LocalDateTime from, FeatureType featureType) {
@@ -74,11 +81,13 @@ public class DashboardStatsService {
 
     // ── 단순 건수 집계 (전체 누적) ─────────────────────────────────────────────────
 
+    /** 진짜 누적이다 — 지워진 특징점의 등록도 셈에 남는다. */
     public long countTotalRegistrations(Long projectId, FeatureType featureType) {
-        Long count = queryFactory.select(bf.count()).from(bf)
-                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false))
-                .fetchOne();
-        return Optional.ofNullable(count).orElse(0L);
+        return countFeatureEvents(projectId, null, featureType, FeatureActionType.REGISTER);
+    }
+
+    public long countTotalDeletions(Long projectId, FeatureType featureType) {
+        return countFeatureEvents(projectId, null, featureType, FeatureActionType.DELETE);
     }
 
     public long countTotalVerifyById(Long projectId, FeatureType featureType) {
@@ -205,16 +214,37 @@ public class DashboardStatsService {
 
     // ── private 헬퍼: 비율 집계 ─────────────────────────────────────────────────────
 
+    /**
+     * 등록/삭제 비율. 양쪽 모두 <b>사건이 일어난 시각</b>으로 기간을 거른다.
+     *
+     * <p>예전 구현은 {@code total(created_at>=from) - active(created_at>=from)} 이었다 — 즉
+     * "이 기간에 등록된 것 중 지금 지워진 것" 이지 "이 기간에 지워진 것" 이 아니었다. 삭제 시각을
+     * 아무도 기록하지 않아 셀 방법이 없었던 것이고, feature_history 가 그 시각을 준다.
+     */
     private DashboardRatiosResult.RatioItem queryRegistrationRatio(Long projectId, LocalDateTime from, FeatureType featureType) {
-        Long active = queryFactory.select(bf.count()).from(bf)
-                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false), bf.createdAt.goe(from))
+        return new DashboardRatiosResult.RatioItem(
+                countFeatureEvents(projectId, from, featureType, FeatureActionType.REGISTER),
+                countFeatureEvents(projectId, from, featureType, FeatureActionType.DELETE));
+    }
+
+    /** 성공한 사건만 센다 — 실패한 등록·삭제 시도는 목록에는 남되 지표에는 잡히지 않는다. */
+    private long countFeatureEvents(Long projectId, LocalDateTime from, FeatureType featureType, FeatureActionType action) {
+        Long count = queryFactory.select(fh.count()).from(fh)
+                .where(featureEvents(projectId, from, featureType, action))
                 .fetchOne();
-        Long total = queryFactory.select(bf.count()).from(bf)
-                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.createdAt.goe(from))
-                .fetchOne();
-        long activeCount = Optional.ofNullable(active).orElse(0L);
-        long totalCount  = Optional.ofNullable(total).orElse(0L);
-        return new DashboardRatiosResult.RatioItem(activeCount, totalCount - activeCount);
+        return Optional.ofNullable(count).orElse(0L);
+    }
+
+    private BooleanBuilder featureEvents(Long projectId, LocalDateTime from, FeatureType featureType, FeatureActionType action) {
+        BooleanBuilder where = new BooleanBuilder()
+                .and(fh.project.id.eq(projectId))
+                .and(fh.featureType.eq(featureType))
+                .and(fh.actionType.eq(action))
+                .and(fh.success.isTrue());
+        if (from != null) {
+            where.and(fh.createdAt.goe(from));
+        }
+        return where;
     }
 
     private DashboardRatiosResult.RatioItem queryVerifyByIdRatio(Long projectId, LocalDateTime from) {
@@ -245,14 +275,14 @@ public class DashboardStatsService {
 
     private Map<String, Long> queryRegistrationByDate(Long projectId, LocalDateTime from, boolean byMonth, boolean byHour, FeatureType featureType) {
         StringTemplate label = byHour
-                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        bf.createdAt)
+                ? Expressions.stringTemplate("TO_CHAR({0}, 'HH24')",        fh.createdAt)
                 : byMonth
-                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    bf.createdAt)
-                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", bf.createdAt);
-        return queryFactory.select(label, bf.count()).from(bf)
-                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false), bf.createdAt.goe(from))
+                    ? Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM')",    fh.createdAt)
+                    : Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", fh.createdAt);
+        return queryFactory.select(label, fh.count()).from(fh)
+                .where(featureEvents(projectId, from, featureType, FeatureActionType.REGISTER))
                 .groupBy(label).fetch().stream()
-                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(bf.count())).orElse(0L)));
+                .collect(Collectors.toMap(t -> t.get(label), t -> Optional.ofNullable(t.get(fh.count())).orElse(0L)));
     }
 
     private Map<String, Long> queryMatchByDate(
@@ -286,11 +316,11 @@ public class DashboardStatsService {
     // ── private 헬퍼: 일일통계용 (전체 기간, LocalDate 키) ──────────────────────────
 
     private Map<LocalDate, Long> queryAllRegistrationByDate(Long projectId, FeatureType featureType) {
-        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", bf.createdAt);
-        return queryFactory.select(dateStr, bf.count()).from(bf)
-                .where(bf.project.id.eq(projectId), bf.type.eq(featureType), bf.isDeleted.eq(false))
+        StringTemplate dateStr = Expressions.stringTemplate("TO_CHAR({0}, 'YYYY-MM-DD')", fh.createdAt);
+        return queryFactory.select(dateStr, fh.count()).from(fh)
+                .where(featureEvents(projectId, null, featureType, FeatureActionType.REGISTER))
                 .groupBy(dateStr).fetch().stream()
-                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(bf.count())).orElse(0L)));
+                .collect(Collectors.toMap(t -> LocalDate.parse(t.get(dateStr)), t -> Optional.ofNullable(t.get(fh.count())).orElse(0L)));
     }
 
     private Map<LocalDate, Long> queryAllMatchByDate(Long projectId, FeatureType featureType, MatchType matchType) {

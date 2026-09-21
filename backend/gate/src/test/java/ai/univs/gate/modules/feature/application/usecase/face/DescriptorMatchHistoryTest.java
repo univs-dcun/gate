@@ -10,6 +10,8 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
+import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
@@ -234,6 +236,7 @@ class DescriptorMatchHistoryTest {
 
         @Mock private BiometricFeatureRepository biometricFeatureRepository;
         @Mock private MatchHistoryRepository matchHistoryRepository;
+        @Mock private FeatureHistoryRepository featureHistoryRepository;
         @Mock private ApiKeyService apiKeyService;
         @Mock private FileService fileService;
         @Mock private FaceService faceService;
@@ -246,6 +249,13 @@ class DescriptorMatchHistoryTest {
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
             stubSave(matchHistoryRepository);
+            given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        }
+
+        private FeatureHistory 저장된_특징점_이력() {
+            ArgumentCaptor<FeatureHistory> c = ArgumentCaptor.forClass(FeatureHistory.class);
+            verify(featureHistoryRepository).save(c.capture());
+            return c.getValue();
         }
 
         @Test
@@ -272,6 +282,14 @@ class DescriptorMatchHistoryTest {
             assertThat(saved.getSuccess()).isTrue();
             assertThat(saved.getConsentSnapshot()).isTrue();
 
+            // UG-325: feature_history 에도 같은 사실이 남는다 — descriptor 등록은 이미지·라이브니스가 없다
+            FeatureHistory fh = 저장된_특징점_이력();
+            assertThat(fh.isSuccess()).isTrue();
+            assertThat(fh.isCheckLiveness()).isFalse();
+            assertThat(fh.getFeatureImagePath()).isNull();
+            assertThat(fh.getFeatureId()).isEqualTo("issued-face-id");
+            assertThat(fh.getConsentSnapshot()).isTrue();
+
             verifyNoInteractions(fileService);
         }
 
@@ -287,6 +305,9 @@ class DescriptorMatchHistoryTest {
                     .isInstanceOf(CustomFeignException.class);
 
             assertThat(captureSaved(matchHistoryRepository).getFailureType())
+                    .isEqualTo(ErrorType.FACE_NOT_FOUND.name());
+            assertThat(저장된_특징점_이력().getFailureType())
+                    .as("UG-325: 실패 사유는 feature_history 에도 남는다")
                     .isEqualTo(ErrorType.FACE_NOT_FOUND.name());
             verify(biometricFeatureRepository, never()).save(any());
             verifyNoInteractions(fileService);
