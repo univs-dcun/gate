@@ -37,13 +37,14 @@ import org.hibernate.annotations.Synchronize;
  * 원본을 지운다. 그래도 필터를 둔 이유는 어떤 경로로든 남은 REGISTER 행이 두 번 세어지지 않게 하려는
  * 것이다.
  *
- * <p>{@code id} 는 {@code M<match_history_id>} / {@code F<feature_history_id>} — 두 시퀀스가 겹치므로
- * 접두어가 필요하다. 응답의 {@code matchingHistoryId} 는 원 테이블의 숫자 id({@link #sourceId})다.
+ * <p>{@code id} 는 두 테이블이 공유하는 사건 시퀀스 {@code activity_seq} (UG-328, V29) — 통합 목록에서 유일하고
+ * 시간순으로 단조 증가한다. 응답의 {@code sequence} 가 이것이고, {@code matchingHistoryId} 는 원 테이블의
+ * 숫자 id({@link #sourceId})로 인증 API 응답의 같은 이름 필드와 뜻이 같다.
  */
 @Entity
 @Immutable
 @Subselect("""
-        SELECT 'M' || CAST(mh.match_history_id AS VARCHAR(20)) AS activity_id,
+        SELECT mh.activity_seq                  AS activity_seq,
                'MATCH'                          AS source,
                mh.match_history_id              AS source_id,
                mh.project_id                    AS project_id,
@@ -65,7 +66,7 @@ import org.hibernate.annotations.Synchronize;
           FROM match_history mh
          WHERE mh.match_type <> 'REGISTER'
         UNION ALL
-        SELECT 'F' || CAST(fh.feature_history_id AS VARCHAR(20)),
+        SELECT fh.activity_seq,
                'FEATURE',
                fh.feature_history_id,
                fh.project_id,
@@ -91,9 +92,10 @@ import org.hibernate.annotations.Synchronize;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ActivityLog {
 
+    /** UG-328: 두 테이블이 공유하는 사건 시퀀스 (V29). 통합 목록의 일련번호이자 정렬 키. */
     @Id
-    @Column(name = "activity_id")
-    private String id;
+    @Column(name = "activity_seq")
+    private Long id;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "source")
