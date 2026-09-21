@@ -14,6 +14,9 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
+import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -56,6 +59,7 @@ class FaceFeatureServiceTest {
 
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
     @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private FeatureHistoryRepository featureHistoryRepository;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
     @Mock private FaceService faceService;
@@ -105,6 +109,13 @@ class FaceFeatureServiceTest {
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
         });
+        given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private FeatureHistory capturedFeatureHistory() {
+        ArgumentCaptor<FeatureHistory> captor = ArgumentCaptor.forClass(FeatureHistory.class);
+        verify(featureHistoryRepository).save(captor.capture());
+        return captor.getValue();
     }
 
     private MatchHistory capturedMatchHistory() {
@@ -155,6 +166,21 @@ class FaceFeatureServiceTest {
         assertThat(savedHistory.getMatchedFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
         assertThat(savedHistory.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
 
+        // then (UG-325): feature_history 에도 REGISTER 가 성공 상태 + 스냅샷으로 남는다.
+        // 과도기 이중 기록이다 — match_history 쪽 REGISTER 는 통합 조회(UG-326)가 나가면 지운다.
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.getActionType()).isEqualTo(FeatureActionType.REGISTER);
+        assertThat(featureHistory.getFeatureType()).isEqualTo(FeatureType.FACE);
+        assertThat(featureHistory.isSuccess()).isTrue();
+        assertThat(featureHistory.isCheckLiveness()).isTrue();
+        assertThat(featureHistory.getConsentSnapshot()).isTrue();
+        assertThat(featureHistory.getFeatureSeq()).isEqualTo(SAVED_FEATURE_ID);
+        assertThat(featureHistory.getFeatureId()).isEqualTo(CREATED_FACE_ID);
+        assertThat(featureHistory.getUserDescription()).isEqualTo("홍길동");
+        assertThat(featureHistory.getFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
+        assertThat(featureHistory.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
+        assertThat(featureHistory.getFailureType()).isNull();
+
         // then: feign 요청 파라미터 검증
         ArgumentCaptor<CreateFaceFeignRequestDTO> requestCaptor =
                 ArgumentCaptor.forClass(CreateFaceFeignRequestDTO.class);
@@ -191,6 +217,13 @@ class FaceFeatureServiceTest {
         assertThat(savedHistory.getFailureType()).isEqualTo("FAKE");
         assertThat(savedHistory.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
 
+        // then (UG-325): 실패한 등록 시도도 feature_history 에 남는다 — 스냅샷은 비고 사유만 있다
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.isSuccess()).isFalse();
+        assertThat(featureHistory.getFailureType()).isEqualTo("FAKE");
+        assertThat(featureHistory.getFeatureSeq()).isNull();
+        assertThat(featureHistory.getFeatureId()).isNull();
+
         // then: 특징은 저장되지 않아야 한다
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
     }
@@ -218,6 +251,11 @@ class FaceFeatureServiceTest {
         assertThat(savedHistory.getCheckLiveness()).isFalse();
         assertThat(savedHistory.getConsentSnapshot()).isFalse();
         assertThat(savedHistory.getMatchedFeatureImagePath()).isNull();
+
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.isCheckLiveness()).isFalse();
+        assertThat(featureHistory.getConsentSnapshot()).isFalse();
+        assertThat(featureHistory.getFeatureImagePath()).isNull();
 
         ArgumentCaptor<CreateFaceFeignRequestDTO> requestCaptor =
                 ArgumentCaptor.forClass(CreateFaceFeignRequestDTO.class);
@@ -284,6 +322,7 @@ class FaceFeatureServiceTest {
         // 거부해도 남의 갤러리에는 이미 특징점과 REGISTER 이력이 남고, 이미지까지 업로드된 뒤였다.
         // 검증을 맨 앞으로 옮겨 그 창을 없앴다.
         verify(matchHistoryRepository, never()).save(any(MatchHistory.class));
+        verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
         verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
         verify(faceService, never()).createFace(any(CreateFaceFeignRequestDTO.class));
