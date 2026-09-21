@@ -351,7 +351,7 @@ class ApiKeyPropagationTest {
         void 이력목록() {
             given(getMatchHistoriesUseCase.execute(any())).willAnswer(captureFirstArg());
             var condition = new MatchingHistorySelectCondition(
-                    null, null, null, null, 1, 10, null, null, null, null);
+                    null, null, null, null, 1, 10, null, null, null /* includeDeletions */, null, null);
             assertApiKeyPropagated(capture(() -> matchController.getView(condition)));
         }
 

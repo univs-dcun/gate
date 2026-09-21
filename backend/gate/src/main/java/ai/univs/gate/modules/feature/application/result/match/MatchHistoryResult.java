@@ -1,8 +1,9 @@
 package ai.univs.gate.modules.feature.application.result.match;
 
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
-import ai.univs.gate.modules.feature.domain.enums.MatchType;
+import ai.univs.gate.modules.feature.domain.entity.ActivityLog;
+import ai.univs.gate.modules.feature.domain.enums.ActivitySource;
+import ai.univs.gate.modules.feature.domain.enums.ActivityType;
 import ai.univs.gate.shared.utils.ImagePathUtil;
 import org.springframework.util.StringUtils;
 
@@ -13,7 +14,8 @@ public record MatchHistoryResult(
         Long matchingHistoryId,
         Long projectId,
         FeatureType featureType,
-        MatchType matchType,
+        ActivityType matchType,
+        ActivitySource source,
         LocalDateTime matchingTime,
         Boolean checkLiveness,
         Boolean success,
@@ -29,24 +31,29 @@ public record MatchHistoryResult(
         LocalDateTime createdAt
 ) {
 
-    public static MatchHistoryResult from(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
+    /**
+     * UG-326: 원본이 match_history 든 feature_history 든 같은 형태로 내려준다. matchingHistoryId 는 원
+     * 테이블의 숫자 id 이고, 어느 테이블인지는 source 가 말한다.
+     */
+    public static MatchHistoryResult from(ActivityLog log, String prefixImagePath, boolean consentEnabled) {
         return new MatchHistoryResult(
-                matchHistory.getId(),
-                matchHistory.getProject().getId(),
-                matchHistory.getFeatureType(),
-                matchHistory.getMatchType(),
-                matchHistory.getMatchTime(),
-                matchHistory.getCheckLiveness(),
-                matchHistory.getSuccess(),
-                matchHistory.getFeatureId(),
-                matchHistory.getFeatureSeq(),
-                matchHistory.getUserDescription(),
-                matchHistory.getSimilarity(),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
-                matchHistory.getFailureType(),
-                matchHistory.getTransactionUuid(),
-                matchHistory.getConsentSnapshot(),
-                matchHistory.getCreatedAt());
+                log.getSourceId(),
+                log.getProjectId(),
+                log.getFeatureType(),
+                log.getActivityType(),
+                log.getSource(),
+                log.getEventTime(),
+                log.getCheckLiveness(),
+                log.getSuccess(),
+                log.getFeatureId(),
+                log.getFeatureSeq(),
+                log.getUserDescription(),
+                log.getSimilarity(),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, log.getFeatureImagePath()),
+                ImagePathUtil.get(consentEnabled, prefixImagePath, log.getMatchedFeatureImagePath()),
+                log.getFailureType(),
+                log.getTransactionUuid(),
+                log.getConsentSnapshot(),
+                log.getCreatedAt());
     }
 }
