@@ -14,6 +14,9 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
+import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
+import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -56,6 +59,7 @@ class PalmFeatureServiceTest {
 
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
     @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private FeatureHistoryRepository featureHistoryRepository;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
     @Mock private PalmService palmService;
@@ -105,6 +109,13 @@ class PalmFeatureServiceTest {
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
         });
+        given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private FeatureHistory capturedFeatureHistory() {
+        ArgumentCaptor<FeatureHistory> captor = ArgumentCaptor.forClass(FeatureHistory.class);
+        verify(featureHistoryRepository).save(captor.capture());
+        return captor.getValue();
     }
 
     private MatchHistory capturedMatchHistory() {
@@ -155,6 +166,21 @@ class PalmFeatureServiceTest {
         assertThat(savedHistory.getMatchedFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
         assertThat(savedHistory.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
 
+        // then (UG-325): feature_history 에도 REGISTER 가 성공 상태 + 스냅샷으로 남는다.
+        // 과도기 이중 기록이다 — match_history 쪽 REGISTER 는 통합 조회(UG-326)가 나가면 지운다.
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.getActionType()).isEqualTo(FeatureActionType.REGISTER);
+        assertThat(featureHistory.getFeatureType()).isEqualTo(FeatureType.PALM);
+        assertThat(featureHistory.isSuccess()).isTrue();
+        assertThat(featureHistory.isCheckLiveness()).isTrue();
+        assertThat(featureHistory.getConsentSnapshot()).isTrue();
+        assertThat(featureHistory.getFeatureSeq()).isEqualTo(SAVED_FEATURE_ID);
+        assertThat(featureHistory.getFeatureId()).isEqualTo(CREATED_PALM_ID);
+        assertThat(featureHistory.getUserDescription()).isEqualTo("홍길동");
+        assertThat(featureHistory.getFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
+        assertThat(featureHistory.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
+        assertThat(featureHistory.getFailureType()).isNull();
+
         // then: feign 요청 파라미터 검증 (face와 달리 checkMultiFace 없음)
         ArgumentCaptor<RegisterPalmFeignRequestDTO> requestCaptor =
                 ArgumentCaptor.forClass(RegisterPalmFeignRequestDTO.class);
@@ -190,6 +216,13 @@ class PalmFeatureServiceTest {
         assertThat(savedHistory.getFailureType()).isEqualTo("FAKE");
         assertThat(savedHistory.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
 
+        // then (UG-325): 실패한 등록 시도도 feature_history 에 남는다 — 스냅샷은 비고 사유만 있다
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.isSuccess()).isFalse();
+        assertThat(featureHistory.getFailureType()).isEqualTo("FAKE");
+        assertThat(featureHistory.getFeatureSeq()).isNull();
+        assertThat(featureHistory.getFeatureId()).isNull();
+
         // then: 특징은 저장되지 않아야 한다
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
     }
@@ -217,6 +250,11 @@ class PalmFeatureServiceTest {
         assertThat(savedHistory.getCheckLiveness()).isFalse();
         assertThat(savedHistory.getConsentSnapshot()).isFalse();
         assertThat(savedHistory.getMatchedFeatureImagePath()).isNull();
+
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.isCheckLiveness()).isFalse();
+        assertThat(featureHistory.getConsentSnapshot()).isFalse();
+        assertThat(featureHistory.getFeatureImagePath()).isNull();
 
         ArgumentCaptor<RegisterPalmFeignRequestDTO> requestCaptor =
                 ArgumentCaptor.forClass(RegisterPalmFeignRequestDTO.class);
@@ -278,6 +316,7 @@ class PalmFeatureServiceTest {
         // then: FaceFeatureService 와 짝을 이루는 테스트다. 얼굴 쪽에만 있으면 손바닥 등록에서
         // 검증이 뒤로 밀려도 아무도 모른다 — 이 메서드도 REQUIRES_NEW 라 같은 고아 위험을 갖는다.
         verify(matchHistoryRepository, never()).save(any(MatchHistory.class));
+        verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
         verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
     }

@@ -8,6 +8,8 @@ import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceFe
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
+import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
@@ -36,6 +38,7 @@ public class FaceFeatureService {
 
     private final BiometricFeatureRepository biometricFeatureRepository;
     private final MatchHistoryRepository matchHistoryRepository;
+    private final FeatureHistoryRepository featureHistoryRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final FaceService faceService;
@@ -81,6 +84,12 @@ public class FaceFeatureService {
                 .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
         matchHistoryRepository.save(matchHistory);
+        // UG-325: 등록은 인증 시도가 아니라 특징점의 생애주기 사건이다. feature_history 에도 쓴다.
+        // match_history 쓰기를 아직 지우지 않는 이유는 통합 조회(UG-326)가 나가기 전까지 기존 목록
+        // API 가 match_history 의 REGISTER 를 읽기 때문이다 — 과도기 이중 기록이며 UG-326 이 정리한다.
+        FeatureHistory featureHistory = featureHistoryRepository.save(FeatureHistory.register(
+                project, FeatureType.FACE, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER), imagePath, transactionUuid,
+                findProjectSettings.getConsentEnabled()));
 
         var createRequest = new CreateFaceFeignRequestDTO(
                 project.getBranchName(),
@@ -99,11 +108,13 @@ public class FaceFeatureService {
             featureId = faceService.createFace(createRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            featureHistory.fail(e.getType());
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            featureHistory.fail(e.getErrorType().name());
             throw e;
         }
 
@@ -119,6 +130,7 @@ public class FaceFeatureService {
         biometricFeatureRepository.save(biometricFeature);
 
         matchHistory.success(biometricFeature, BigDecimal.ZERO);
+        featureHistory.successRegister(biometricFeature);
 
         return new CreateFaceFeatureServiceResult(biometricFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
     }
@@ -168,6 +180,12 @@ public class FaceFeatureService {
                 .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
         matchHistoryRepository.save(matchHistory);
+        // UG-325: 등록은 인증 시도가 아니라 특징점의 생애주기 사건이다. feature_history 에도 쓴다.
+        // match_history 쓰기를 아직 지우지 않는 이유는 통합 조회(UG-326)가 나가기 전까지 기존 목록
+        // API 가 match_history 의 REGISTER 를 읽기 때문이다 — 과도기 이중 기록이며 UG-326 이 정리한다.
+        FeatureHistory featureHistory = featureHistoryRepository.save(FeatureHistory.register(
+                project, FeatureType.FACE, false, null, transactionUuid,
+                findProjectSettings.getConsentEnabled()));
 
         var createRequest = new CreateFaceByDescriptorFeignRequestDTO(
                 project.getBranchName(),
@@ -184,11 +202,13 @@ public class FaceFeatureService {
             featureId = faceService.createFaceByDescriptor(createRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            featureHistory.fail(e.getType());
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            featureHistory.fail(e.getErrorType().name());
             throw e;
         }
 
@@ -202,6 +222,7 @@ public class FaceFeatureService {
         biometricFeatureRepository.save(biometricFeature);
 
         matchHistory.success(biometricFeature, BigDecimal.ZERO);
+        featureHistory.successRegister(biometricFeature);
 
         return biometricFeature;
     }
