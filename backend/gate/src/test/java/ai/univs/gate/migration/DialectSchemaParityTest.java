@@ -93,7 +93,15 @@ class DialectSchemaParityTest {
             "palm_history.result 와 같다.",
 
             "palm/V1__init.sql palm_liveness.passed default",
-            "palm_history.result 와 같다.");
+            "palm_history.result 와 같다.",
+
+            "gate/V29__activity_seq_shared_sequence.sql match_history.activity_seq 변경",
+            "시퀀스 기본값 표기가 방언마다 다르다 — postgresql nextval('activity_seq') / oracle activity_seq.NEXTVAL. "
+                    + "postgresql 은 SET DEFAULT 와 SET NOT NULL 을 두 문장으로 나눠 파서가 마지막 것만 보고, 오라클은 "
+                    + "MODIFY 한 문장이다. 세 DB 에서 만드는 의미(NOT NULL, 공유 시퀀스 기본값)는 같다 (UG-328).",
+
+            "gate/V29__activity_seq_shared_sequence.sql feature_history.activity_seq 변경",
+            "match_history.activity_seq 와 같은 이유 (UG-328).");
 
     // ─────────────────────────────────────────────────────────────────────────
     // 테스트

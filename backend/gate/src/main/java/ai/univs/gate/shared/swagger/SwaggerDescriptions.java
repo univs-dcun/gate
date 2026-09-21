@@ -88,6 +88,7 @@ public class SwaggerDescriptions {
     
     /* Match 요청/응답 DTO */
     public static final String MATCHING_HISTORY_ID = "매칭 이력 식별 번호";
+    public static final String ACTIVITY_SEQUENCE = "이력 일련번호. 인증 시도와 특징점 등록·삭제가 하나의 시퀀스에서 번호를 받는다 — 전체 이력에서 유일하고 시간순으로 증가한다. 화면의 일련번호가 이 값이다";
     public static final String MATCHING_TYPE = "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]";
     public static final String MATCHING_HISTORY_TYPE = "검색용 이력 타입. 인증: IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL";
     public static final String ACTIVITY_TYPE = "이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE";

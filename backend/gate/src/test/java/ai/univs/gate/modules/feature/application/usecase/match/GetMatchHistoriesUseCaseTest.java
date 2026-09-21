@@ -83,6 +83,7 @@ class GetMatchHistoriesUseCaseTest {
     private static ActivityLog 행(ActivitySource source, ActivityType type, Long sourceId, BigDecimal similarity) {
         ActivityLog l = mock(ActivityLog.class);
         given(l.getSourceId()).willReturn(sourceId);
+        given(l.getId()).willReturn(sourceId + 1000);   // 공유 시퀀스 (UG-328)
         given(l.getProjectId()).willReturn(1L);
         given(l.getFeatureType()).willReturn(FeatureType.FACE);
         given(l.getActivityType()).willReturn(type);
@@ -125,12 +126,14 @@ class GetMatchHistoriesUseCaseTest {
         assertThat(r0.source()).isEqualTo(ActivitySource.MATCH);
         assertThat(r0.matchType()).isEqualTo(ActivityType.IDENTIFY);
         assertThat(r0.matchingHistoryId()).isEqualTo(100L);
+        assertThat(r0.sequence()).as("UG-328: 일련번호 = 공유 시퀀스").isEqualTo(1100L);
         assertThat(r0.similarity()).isEqualByComparingTo("88.50");
         assertThat(r0.featureImagePath()).as("동의 ON 이면 파일 서버 경로가 앞에 붙는다").startsWith("https://files/");
         MatchHistoryResult r1 = result.results().get(1);
         assertThat(r1.source()).isEqualTo(ActivitySource.FEATURE);
         assertThat(r1.matchType()).isEqualTo(ActivityType.DELETE);
         assertThat(r1.matchingHistoryId()).isEqualTo(3L);
+        assertThat(r1.sequence()).isEqualTo(1003L);
         assertThat(r1.similarity()).isNull();
         assertThat(result.page().totalCount()).as("전체 건수는 목록과 같은 모집단(삭제 포함)").isEqualTo(42L);
     }
@@ -157,6 +160,7 @@ class GetMatchHistoriesUseCaseTest {
         assertThat(r.source()).isEqualTo(ActivitySource.FEATURE);
         assertThat(r.matchType()).isEqualTo(ActivityType.REGISTER);
         assertThat(r.matchingHistoryId()).isEqualTo(9L);
+        assertThat(r.sequence()).isEqualTo(1009L);
         assertThat(r.transactionUuid()).isEqualTo(TX);
     }
 

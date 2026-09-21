@@ -1747,6 +1747,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"contents"</span>: [
       {
         <span class="jk">"matchingHistoryId"</span>: <span class="jn">1</span>,
+        <span class="jk">"sequence"</span>: <span class="jn">1001</span>,
         <span class="jk">"projectId"</span>: <span class="jn">1</span>,
         <span class="jk">"featureType"</span>: <span class="js">"FACE"</span>,
         <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
@@ -1810,7 +1811,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">이력 식별 번호. source 와 함께 유일하다 — MATCH 와 FEATURE 는 번호 공간이 다르므로 목록에서 같은 숫자가 두 번 나올 수 있다</td></tr>
+            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">원 테이블의 식별 번호. source 와 함께 유일하다 — 인증 API 응답의 matchingHistoryId 와 같은 값. 화면 표시용 번호는 sequence 를 쓴다</td></tr>
+            <tr><td><span class="pname">sequence</span></td><td><span class="ptyp">long</span></td><td class="pdsc">이력 일련번호. 인증 시도와 특징점 등록·삭제가 하나의 시퀀스에서 번호를 받는다 — 전체 이력에서 유일하고 시간순으로 증가. 목록은 이 값의 내림차순</td></tr>
             <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 식별 번호</td></tr>
             <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 타입 (FACE)</td></tr>
             <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE</td></tr>
@@ -1843,6 +1845,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"matchingHistoryId"</span>: <span class="jn">1</span>,
+    <span class="jk">"sequence"</span>: <span class="jn">1001</span>,
     <span class="jk">"projectId"</span>: <span class="jn">1</span>,
     <span class="jk">"featureType"</span>: <span class="js">"FACE"</span>,
     <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
@@ -2908,7 +2911,8 @@ var PAGES = {
     },
     pdsc: [
       { ko: '매칭 요청 시 전달한 요청 식별 UUID', en: 'Request UUID sent with the original matching request' },
-      { ko: '이력 식별 번호. source 와 함께 유일하다 — MATCH 와 FEATURE 는 번호 공간이 다르므로 목록에서 같은 숫자가 두 번 나올 수 있다', en: 'Record ID. Unique together with source — MATCH and FEATURE use separate ID spaces, so the same number may appear twice in a list' },
+      { ko: '원 테이블의 식별 번호. source 와 함께 유일하다 — 인증 API 응답의 matchingHistoryId 와 같은 값. 화면 표시용 번호는 sequence 를 쓴다', en: 'Source-table record ID. Unique together with source — same value as matchingHistoryId in the matching API responses. Use sequence for display' },
+      { ko: '이력 일련번호. 인증 시도와 특징점 등록·삭제가 하나의 시퀀스에서 번호를 받는다 — 전체 이력에서 유일하고 시간순으로 증가. 목록은 이 값의 내림차순', en: 'History sequence number. Authentication attempts and feature registration/deletion draw from one sequence — unique across all history and increasing over time. Lists are ordered by this value descending' },
       { ko: '프로젝트 식별 번호', en: 'Project ID' },
       { ko: '특징점 타입 (FACE)', en: 'Feature type (FACE)' },
       { ko: '이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE', en: 'History type. Authentication: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / Feature management: REGISTER | DELETE' },

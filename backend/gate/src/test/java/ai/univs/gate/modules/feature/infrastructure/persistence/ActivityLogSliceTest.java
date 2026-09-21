@@ -135,6 +135,26 @@ class ActivityLogSliceTest {
     }
 
     @Test
+    @DisplayName("UG-328: 일련번호(id)는 두 출처에 걸쳐 하나의 시퀀스 — 유일하고, 목록 순서(최신순)와 단조 일치한다")
+    void 일련번호는_공유_시퀀스() {
+        // 인증 → 특징점 → 인증 → 특징점 순으로 번갈아 넣어 두 테이블의 PK 가 각자 오르는데도 id 는 하나의 축인지 본다.
+        인증(project, MatchType.IDENTIFY, FeatureType.FACE, true, "a", 0);
+        FeatureHistory reg = 등록(project, FeatureType.FACE, "a", 1);
+        인증(project, MatchType.VERIFY_ID, FeatureType.FACE, true, "a", 2);
+        삭제(project, reg, true, 3);
+        인증(project, MatchType.LIVENESS, FeatureType.FACE, true, "a", 4);
+
+        Page<ActivityLog> page = repo.findAllByQuery(조회("ALL", true), project.getId());
+        List<Long> ids = page.getContent().stream().map(ActivityLog::getId).toList();
+
+        assertThat(ids).hasSize(5).doesNotContainNull().doesNotHaveDuplicates();
+        assertThat(ids).as("최신순 목록이면 id 도 내림차순 — 시퀀스가 시간과 단조 일치").isSortedAccordingTo(java.util.Comparator.reverseOrder());
+        assertThat(타입들(page)).containsExactly(ActivityType.LIVENESS, ActivityType.DELETE, ActivityType.VERIFY_ID, ActivityType.REGISTER, ActivityType.IDENTIFY);
+        // 원 테이블 PK(sourceId) 는 두 출처가 서로 겹칠 수 있다 — 실측에서 [12, 11, 11, 10, 10] 처럼 나왔고,
+        // 그게 이 시퀀스를 둔 이유다. 값 자체는 H2 IDENTITY 가 컨텍스트 안에서 이어져 환경 의존이라 단언하지 않는다.
+    }
+
+    @Test
     @DisplayName("matchType=DELETE 를 명시하면 includeDeletions 와 무관하게 삭제 행이 나온다")
     void 삭제를_명시하면_나온다() {
         FeatureHistory reg = 등록(project, FeatureType.FACE, "a", 0);
@@ -237,7 +257,8 @@ class ActivityLogSliceTest {
                 .satisfies(l -> {
                     assertThat(l.getActivityType()).isEqualTo(ActivityType.DELETE);
                     assertThat(l.getSourceId()).isEqualTo(del.getId());
-                    assertThat(l.getId()).isEqualTo("F" + del.getId());
+                    assertThat(l.getId()).as("UG-328: id 는 공유 시퀀스").isNotNull()
+                            .isEqualTo(em.find(FeatureHistory.class, del.getId()).getActivitySeq());
                 });
         assertThat(repo.findLatestByProjectIdAndTransactionUuid(other.getId(), del.getTransactionUuid()))
                 .as("다른 프로젝트에서는 보이지 않는다").isEmpty();
