@@ -2,8 +2,8 @@ package ai.univs.gate.modules.feature.application.usecase.match;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.result.match.MatchHistoryResult;
-import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.domain.entity.ActivityLog;
+import ai.univs.gate.modules.feature.domain.repository.ActivityLogRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomGateException;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetMatchHistoryByTransactionUuidUseCase {
 
-    private final MatchHistoryRepository matchHistoryRepository;
+    private final ActivityLogRepository activityLogRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final ProjectSettingsService projectSettingsService;
@@ -29,9 +29,8 @@ public class GetMatchHistoryByTransactionUuidUseCase {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
 
-        MatchHistory matchHistory = matchHistoryRepository.findTopByProjectAndTransactionUuidOrderByCreatedAtDesc(
-                        project,
-                        transactionUuid)
+        // UG-326: 등록·삭제 트랜잭션도 이 엔드포인트로 찾을 수 있다 (feature_history 포함).
+        ActivityLog matchHistory = activityLogRepository.findLatestByProjectIdAndTransactionUuid(project.getId(), transactionUuid)
                 .orElseThrow(() -> new CustomGateException(ErrorType.NOT_FOUND_MATCHING_HISTORY));
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);

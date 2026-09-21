@@ -2,7 +2,8 @@ package ai.univs.gate.modules.feature.api.dto.match;
 
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.application.result.match.MatchHistoryResult;
-import ai.univs.gate.modules.feature.domain.enums.MatchType;
+import ai.univs.gate.modules.feature.domain.enums.ActivitySource;
+import ai.univs.gate.modules.feature.domain.enums.ActivityType;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -14,6 +15,8 @@ import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_ID)
         Long matchingHistoryId,
+        @Schema(description = SwaggerDescriptions.ACTIVITY_SEQUENCE)
+        Long sequence,
 
         @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
@@ -21,8 +24,10 @@ public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.FEATURE_TYPE)
         FeatureType featureType,
 
-        @Schema(description = SwaggerDescriptions.MATCHING_TYPE)
-        MatchType matchType,
+        @Schema(description = SwaggerDescriptions.ACTIVITY_TYPE)
+        ActivityType matchType,
+        @Schema(description = SwaggerDescriptions.ACTIVITY_SOURCE)
+        ActivitySource source,
 
         @Schema(description = SwaggerDescriptions.MATCHING_TIME)
         LocalDateTime matchingTime,
@@ -73,9 +78,11 @@ public record MatchingHistoryResponseDTO(
     ) {
         return new MatchingHistoryResponseDTO(
                 result.matchingHistoryId(),
+                result.sequence(),
                 result.projectId(),
                 result.featureType(),
                 result.matchType(),
+                result.source(),
                 fromUtc(result.matchingTime(), timezone),
                 result.checkLiveness(),
                 result.success(),

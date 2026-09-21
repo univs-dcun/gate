@@ -15,5 +15,7 @@ public record MatchHistoryQuery(
         LocalDateTime startDateTime,
         LocalDateTime endDateTime,
         String direction,
-        String sortBy
+        String sortBy,
+        /** UG-326: 삭제 이력 포함 여부. matchType=ALL 일 때만 의미가 있다 (DELETE 를 명시하면 항상 포함). */
+        boolean includeDeletions
 ) {}

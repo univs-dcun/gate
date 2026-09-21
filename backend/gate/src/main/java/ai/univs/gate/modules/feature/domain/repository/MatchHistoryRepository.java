@@ -1,20 +1,11 @@
 package ai.univs.gate.modules.feature.domain.repository;
 
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
-import ai.univs.gate.modules.feature.infrastructure.persistence.query.MatchHistoryQuery;
-import ai.univs.gate.modules.project.domain.entity.Project;
-import org.springframework.data.domain.Page;
 
-import java.util.Optional;
-
+/**
+ * 인증 시도 이력 저장. 조회는 UG-326 부터 {@link ActivityLogRepository} 가 맡는다 — match_history 와
+ * feature_history 를 함께 읽어야 하므로 이 리포지토리의 조회 메서드는 제거했다.
+ */
 public interface MatchHistoryRepository {
-
     MatchHistory save(MatchHistory matchHistory);
-
-    Optional<MatchHistory> findTopByProjectAndTransactionUuidOrderByCreatedAtDesc(Project project,
-                                                                                  String transactionUuid);
-
-    Page<MatchHistory> findAllByQuery(MatchHistoryQuery query, Project project);
-
-    long countByProject(Project project);
 }

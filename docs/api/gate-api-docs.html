@@ -1693,7 +1693,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>History</span> › 매칭 이력 목록</div>
     <div class="ep-title">매칭 이력 목록 조회</div>
-    <div class="ep-desc">프로젝트에서 발생한 e-KYC 매칭 이력을 페이지네이션으로 조회합니다. <code>featureType</code>으로 모듈별 필터링이 가능합니다.</div>
+    <div class="ep-desc">프로젝트에서 발생한 e-KYC 이력을 페이지네이션으로 조회합니다. 인증 시도(1:1·1:N·라이브니스)와 특징점 관리 사건(등록·삭제)이 한 목록에 시간순으로 섞여 내려오며, 항목의 <code>source</code>로 구분합니다. <code>matchType</code>으로 기능별, <code>featureType</code>으로 모듈별 필터링이 가능합니다.</div>
     <div class="ep-url"><span class="mb mb-get">GET</span><span class="ep-path">/api/v1/match</span></div>
   </div>
   <div class="ep-body">
@@ -1708,7 +1708,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td><span class="pname">matchingKeyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 검색 키워드</td></tr>
-            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 타입 필터 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS | ALL, 기본값: ALL)</td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">이력 타입 필터. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL (기본값: ALL — DELETE 는 includeDeletions=true 일 때만 포함)</td></tr>
+            <tr><td><span class="pname">includeDeletions</span></td><td><span class="ptyp">boolean</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">matchType=ALL 일 때 삭제(DELETE) 이력을 포함할지 (기본값: false — 기존 클라이언트 호환). matchType=DELETE 를 명시하면 이 값과 무관하게 조회됨</td></tr>
             <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 타입 필터 (FACE | ALL, 기본값: ALL)</td></tr>
             <tr><td><span class="pname">matchResultType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 결과 필터 (SUCCESS | FAILURE | ALL, 기본값: SUCCESS)</td></tr>
             <tr><td><span class="pname">page</span></td><td><span class="ptyp">integer</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">페이지 번호 (기본값: 1, 범위: 1~1000)</td></tr>
@@ -1746,9 +1747,11 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"contents"</span>: [
       {
         <span class="jk">"matchingHistoryId"</span>: <span class="jn">1</span>,
+        <span class="jk">"sequence"</span>: <span class="jn">1001</span>,
         <span class="jk">"projectId"</span>: <span class="jn">1</span>,
         <span class="jk">"featureType"</span>: <span class="js">"FACE"</span>,
         <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
+        <span class="jk">"source"</span>: <span class="js">"MATCH"</span>,
         <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
         <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
         <span class="jk">"success"</span>: <span class="jb">true</span>,
@@ -1808,23 +1811,25 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 식별 번호</td></tr>
+            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">원 테이블의 식별 번호. source 와 함께 유일하다 — 인증 API 응답의 matchingHistoryId 와 같은 값. 화면 표시용 번호는 sequence 를 쓴다</td></tr>
+            <tr><td><span class="pname">sequence</span></td><td><span class="ptyp">long</span></td><td class="pdsc">이력 일련번호. 인증 시도와 특징점 등록·삭제가 하나의 시퀀스에서 번호를 받는다 — 전체 이력에서 유일하고 시간순으로 증가. 목록은 이 값의 내림차순</td></tr>
             <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 식별 번호</td></tr>
             <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 타입 (FACE)</td></tr>
-            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 타입 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS)</td></tr>
+            <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE</td></tr>
+            <tr><td><span class="pname">source</span></td><td><span class="ptyp">string</span></td><td class="pdsc">이력 출처 (MATCH: 인증 시도 | FEATURE: 특징점 등록·삭제). FEATURE 행에는 similarity·matchingFeatureImagePath 가 null</td></tr>
             <tr><td><span class="pname">matchingTime</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">매칭 시간</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
             <tr><td><span class="pname">featureSeq</span></td><td><span class="ptyp">long</span></td><td class="pdsc">특징점 식별 번호 (faceFeatureId)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
-            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">number</span></td><td class="pdsc">매칭 유사도</td></tr>
+            <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">number</span></td><td class="pdsc">매칭 유사도 (source=FEATURE 이면 null)</td></tr>
             <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로</td></tr>
-            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 시도 이미지 경로</td></tr>
+            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 시도 이미지 경로 (source=FEATURE 이면 null)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 타입 (성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-            <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 시점의 개인정보 수집 동의 설정값</td></tr>
+            <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">이력 생성 일시</td></tr>
           </tbody>
         </table>
@@ -1840,9 +1845,11 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"matchingHistoryId"</span>: <span class="jn">1</span>,
+    <span class="jk">"sequence"</span>: <span class="jn">1001</span>,
     <span class="jk">"projectId"</span>: <span class="jn">1</span>,
     <span class="jk">"featureType"</span>: <span class="js">"FACE"</span>,
     <span class="jk">"matchType"</span>: <span class="js">"IDENTIFY"</span>,
+    <span class="jk">"source"</span>: <span class="js">"MATCH"</span>,
     <span class="jk">"matchingTime"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
     <span class="jk">"success"</span>: <span class="jb">true</span>,
@@ -2870,12 +2877,13 @@ var PAGES = {
     crumb: { ko: '<span>History</span> › 매칭 이력 목록', en: '<span>History</span> › Match History' },
     title: { ko: '매칭 이력 목록 조회', en: 'List Match History' },
     desc: {
-      ko: '프로젝트에서 발생한 e-KYC 매칭 이력을 페이지네이션으로 조회합니다. <code>featureType</code>으로 모듈별 필터링이 가능합니다.',
-      en: 'Retrieve a paginated list of e-KYC match history for the project. Records can be filtered by module using <code>featureType</code>.'
+      ko: '프로젝트에서 발생한 e-KYC 이력을 페이지네이션으로 조회합니다. 인증 시도(1:1·1:N·라이브니스)와 특징점 관리 사건(등록·삭제)이 한 목록에 시간순으로 섞여 내려오며, 항목의 <code>source</code>로 구분합니다. <code>matchType</code>으로 기능별, <code>featureType</code>으로 모듈별 필터링이 가능합니다.',
+      en: 'Retrieve a paginated e-KYC history for the project. Authentication attempts (1:1, 1:N, liveness) and feature-management events (registration, deletion) are interleaved in one chronological list; each item\'s <code>source</code> tells them apart. Filter by function with <code>matchType</code> and by module with <code>featureType</code>.'
     },
     pdsc: [
       { ko: '매칭 검색 키워드', en: 'Match search keyword' },
-      { ko: '매칭 타입 필터 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS | ALL, 기본값: ALL)', en: 'Match type filter (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS | ALL, default: ALL)' },
+      { ko: '이력 타입 필터. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL (기본값: ALL — DELETE 는 includeDeletions=true 일 때만 포함)', en: 'History type filter. Authentication: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / Feature management: REGISTER | DELETE / ALL (default: ALL — DELETE is included only when includeDeletions=true)' },
+      { ko: 'matchType=ALL 일 때 삭제(DELETE) 이력을 포함할지 (기본값: false — 기존 클라이언트 호환). matchType=DELETE 를 명시하면 이 값과 무관하게 조회됨', en: 'Whether to include deletion (DELETE) records when matchType=ALL (default: false — for existing clients). Explicit matchType=DELETE is returned regardless of this flag' },
       { ko: '특징점 타입 필터 (FACE | ALL, 기본값: ALL)', en: 'Feature type filter (FACE | ALL, default: ALL)' },
       { ko: '매칭 결과 필터 (SUCCESS | FAILURE | ALL, 기본값: SUCCESS)', en: 'Match result filter (SUCCESS | FAILURE | ALL, default: SUCCESS)' },
       { ko: '페이지 번호 (기본값: 1, 범위: 1~1000)', en: 'Page number (default: 1, range: 1–1000)' },
@@ -2903,23 +2911,25 @@ var PAGES = {
     },
     pdsc: [
       { ko: '매칭 요청 시 전달한 요청 식별 UUID', en: 'Request UUID sent with the original matching request' },
-      { ko: '매칭 이력 식별 번호', en: 'Match history ID' },
+      { ko: '원 테이블의 식별 번호. source 와 함께 유일하다 — 인증 API 응답의 matchingHistoryId 와 같은 값. 화면 표시용 번호는 sequence 를 쓴다', en: 'Source-table record ID. Unique together with source — same value as matchingHistoryId in the matching API responses. Use sequence for display' },
+      { ko: '이력 일련번호. 인증 시도와 특징점 등록·삭제가 하나의 시퀀스에서 번호를 받는다 — 전체 이력에서 유일하고 시간순으로 증가. 목록은 이 값의 내림차순', en: 'History sequence number. Authentication attempts and feature registration/deletion draw from one sequence — unique across all history and increasing over time. Lists are ordered by this value descending' },
       { ko: '프로젝트 식별 번호', en: 'Project ID' },
       { ko: '특징점 타입 (FACE)', en: 'Feature type (FACE)' },
-      { ko: '매칭 타입 (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS)', en: 'Match type (REGISTER | VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS)' },
+      { ko: '이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE', en: 'History type. Authentication: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / Feature management: REGISTER | DELETE' },
+      { ko: '이력 출처 (MATCH: 인증 시도 | FEATURE: 특징점 등록·삭제). FEATURE 행에는 similarity·matchingFeatureImagePath 가 null', en: 'Record source (MATCH: authentication attempt | FEATURE: feature registration/deletion). FEATURE rows have null similarity and matchingFeatureImagePath' },
       { ko: '매칭 시간', en: 'Match time' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '매칭 성공 여부', en: 'Whether the match succeeded' },
       { ko: 'AI 서버 특징점 식별 ID', en: 'AI server feature ID' },
       { ko: '특징점 식별 번호 (faceFeatureId)', en: 'Feature sequence ID (faceFeatureId)' },
       { ko: '특징점 설명', en: 'Feature description' },
-      { ko: '매칭 유사도', en: 'Match similarity' },
+      { ko: '매칭 유사도 (source=FEATURE 이면 null)', en: 'Match similarity (null when source=FEATURE)' },
       { ko: '등록된 특징점 이미지 경로', en: 'Registered feature image path' },
-      { ko: '매칭 시도 이미지 경로', en: 'Matching attempt image path' },
+      { ko: '매칭 시도 이미지 경로 (source=FEATURE 이면 null)', en: 'Matching attempt image path (null when source=FEATURE)' },
       { ko: '매칭 실패 타입 (성공 시 null)', en: 'Failure type (null on success)' },
       { ko: '매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)', en: 'Failure reason (localized via Accept-Language; empty string on success)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
-      { ko: '매칭 시점의 개인정보 수집 동의 설정값', en: 'Consent setting snapshot at match time' },
+      { ko: '사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)', en: 'Consent setting snapshot at event time (null when matchType=DELETE)' },
       { ko: '이력 생성 일시', en: 'History creation time' }
     ],
     stDesc: [

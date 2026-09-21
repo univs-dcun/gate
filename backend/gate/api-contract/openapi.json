@@ -7284,13 +7284,13 @@
           {
             "name": "matchType",
             "in": "query",
-            "description": "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS | ALL]",
+            "description": "검색용 이력 타입. 인증: IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL",
             "required": false,
             "schema": {
               "type": "string",
               "default": "ALL",
-              "description": "검색용 매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS | ALL]",
-              "pattern": "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|VERIFY_DESCRIPTOR|IDENTIFY|LIVENESS|ALL)$"
+              "description": "검색용 이력 타입. 인증: IDENTIFY(1:N) | VERIFY(1:1 레거시) | VERIFY_ID(1:1 촬영) | VERIFY_IMAGE(1:1 사진) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL",
+              "pattern": "^(REGISTER|DELETE|VERIFY|VERIFY_ID|VERIFY_IMAGE|VERIFY_DESCRIPTOR|IDENTIFY|LIVENESS|ALL)$"
             }
           },
           {
@@ -7363,6 +7363,17 @@
             "schema": {
               "type": "string",
               "description": "검색 종료 일자"
+            }
+          },
+          {
+            "name": "includeDeletions",
+            "in": "query",
+            "description": "matchType\u003dALL 일 때 삭제(DELETE) 이력을 포함할지 [기본 false — 기존 클라이언트 호환]. matchType\u003dDELETE 를 명시하면 이 값과 무관하게 조회된다",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "description": "matchType\u003dALL 일 때 삭제(DELETE) 이력을 포함할지 [기본 false — 기존 클라이언트 호환]. matchType\u003dDELETE 를 명시하면 이 값과 무관하게 조회된다"
             }
           },
           {
@@ -11270,6 +11281,11 @@
             "format": "int64",
             "description": "매칭 이력 식별 번호"
           },
+          "sequence": {
+            "type": "integer",
+            "format": "int64",
+            "description": "이력 일련번호. 인증 시도와 특징점 등록·삭제가 하나의 시퀀스에서 번호를 받는다 — 전체 이력에서 유일하고 시간순으로 증가한다. 화면의 일련번호가 이 값이다"
+          },
           "projectId": {
             "type": "integer",
             "format": "int64",
@@ -11285,15 +11301,24 @@
           },
           "matchType": {
             "type": "string",
-            "description": "매칭 타입 [IDENTIFY(1:N) | VERIFY(1:1) | VERIFY_DESCRIPTOR(1:1 특징점) | LIVENESS]",
+            "description": "이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE",
             "enum": [
               "REGISTER",
+              "DELETE",
               "VERIFY",
               "VERIFY_ID",
               "VERIFY_IMAGE",
               "VERIFY_DESCRIPTOR",
               "IDENTIFY",
               "LIVENESS"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "이력 출처 [MATCH(인증 시도) | FEATURE(특징점 등록·삭제)]. FEATURE 행에는 유사도·매칭 이미지가 없다",
+            "enum": [
+              "MATCH",
+              "FEATURE"
             ]
           },
           "matchingTime": {

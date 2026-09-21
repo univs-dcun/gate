@@ -2,6 +2,8 @@ package ai.univs.gate.modules.feature.domain.enums;
 
 public enum MatchType {
 
+    // UG-326: 더 이상 match_history 에 저장하지 않는다. 등록은 feature_history(FeatureActionType.REGISTER) 의
+    // 사건이고 V27 이 기존 행을 지웠다. 값을 남긴 이유는 어떤 경로로든 남은 행이 있을 때 읽기에서 터지지 않게.
     REGISTER,
     VERIFY,        // 레거시 (기존 데이터 보존용, 신규 저장 안 함)
     VERIFY_ID,     // /verify/id  - 촬영 인증

@@ -19,7 +19,8 @@ public record MatchingHistorySelectCondition(
 
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_TYPE, defaultValue = "ALL")
         // UG-279: VERIFY_DESCRIPTOR 를 넣지 않으면 새로 쌓이는 특징점 1:1 이력을 조회할 방법이 없다.
-        @Pattern(regexp = "^(REGISTER|VERIFY|VERIFY_ID|VERIFY_IMAGE|VERIFY_DESCRIPTOR|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
+        // UG-326: DELETE 추가 — 특징점 삭제 이력(feature_history). REGISTER 도 이제 같은 테이블에서 온다.
+        @Pattern(regexp = "^(REGISTER|DELETE|VERIFY|VERIFY_ID|VERIFY_IMAGE|VERIFY_DESCRIPTOR|IDENTIFY|LIVENESS|ALL)$", message = "INVALID_MATCH_TYPE_CONDITION")
         String matchType,
 
         @Schema(description = SwaggerDescriptions.FEATURE_TYPE_ALL, defaultValue = "ALL")
@@ -45,6 +46,8 @@ public record MatchingHistorySelectCondition(
         @Schema(description = SwaggerDescriptions.SELECT_END_DATE)
         String endDate,
 
+        @Schema(description = SwaggerDescriptions.INCLUDE_DELETIONS, defaultValue = "false")
+        Boolean includeDeletions,
         @Hidden
         String direction,
         @Hidden
@@ -67,6 +70,7 @@ public record MatchingHistorySelectCondition(
                         StringUtils.hasText(startDate) ? toStartOfDay(startDate, userContext.getTimezone()) : null,
                         StringUtils.hasText(endDate) ? toEndOfDay(endDate, userContext.getTimezone()) : null,
                         !StringUtils.hasText(direction) ? "DESC" : direction,
-                        !StringUtils.hasText(sortBy) ? "identifyTime" : sortBy);
+                        !StringUtils.hasText(sortBy) ? "identifyTime" : sortBy,
+                        Boolean.TRUE.equals(includeDeletions));
         }
 }
