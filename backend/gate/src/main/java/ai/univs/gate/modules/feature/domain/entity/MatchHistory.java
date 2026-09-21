@@ -82,6 +82,15 @@ public class MatchHistory extends BaseEntity {
     @Column(name = "feature_seq")
     private Long featureSeq;
 
+    /**
+     * UG-328: 인증 시도와 특징점 사건이 공유하는 사건 시퀀스 — 로그 상세의 "일련번호". DB 기본값
+     * ({@code activity_seq.NEXTVAL}, V29)이 채우므로 애플리케이션은 쓰지 않는다. H2 슬라이스는
+     * {@code @ColumnDefault} 로 같은 기본값을 만들고 시퀀스는 test resources 의 schema.sql 이 만든다.
+     */
+    @Column(name = "activity_seq", insertable = false, updatable = false)
+    @ColumnDefault("nextval('activity_seq')")
+    private Long activitySeq;
+
     public void updateBiometricFeature(BiometricFeature biometricFeature) {
         this.featureId = biometricFeature.getFeatureId();
         this.userDescription = biometricFeature.getDescription();

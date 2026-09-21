@@ -15,6 +15,8 @@ import static ai.univs.gate.shared.utils.DateTimeUtil.fromUtc;
 public record MatchingHistoryResponseDTO(
         @Schema(description = SwaggerDescriptions.MATCHING_HISTORY_ID)
         Long matchingHistoryId,
+        @Schema(description = SwaggerDescriptions.ACTIVITY_SEQUENCE)
+        Long sequence,
 
         @Schema(description = SwaggerDescriptions.PROJECT_ID)
         Long projectId,
@@ -76,6 +78,7 @@ public record MatchingHistoryResponseDTO(
     ) {
         return new MatchingHistoryResponseDTO(
                 result.matchingHistoryId(),
+                result.sequence(),
                 result.projectId(),
                 result.featureType(),
                 result.matchType(),

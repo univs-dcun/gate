@@ -66,7 +66,7 @@ Migration checksum mismatch for migration version 1
 
 | 계정 | 서비스 | 마이그레이션 | PostgreSQL 에서의 DB 이름 |
 |---|---|---|---|
-| `univs_gate` | gate-service | V1 ~ V27 | `gate` |
+| `univs_gate` | gate-service | V1 ~ V29 | `gate` |
 | `univs_face` | face-service | V1 | `faces` |
 | `univs_palm` | palm-service | V1 | `palm` |
 | `univs_match` | match-server | V1 ~ V3 | `match` |
@@ -270,6 +270,11 @@ REGISTER 행 복사(V26, DML — `INSERT … SELECT` 한 문장)를 나눴다. V
 재시도해도 `match_history` 는 그대로다. UG-326 의 V27 은 그 복사가 끝난 뒤 `match_history` 의
 REGISTER 원본을 지우는 DML 한 문장이며, 짝이 되는 `feature_history` 행이 있는 것만 지우므로 재시도해도 안전하다.
 
+UG-328 의 V29 는 DDL 과 DML 이 한 파일이다 — 시퀀스·컬럼 추가(DDL), 기존 행 백필(MERGE, DML), PL/SQL 로
+시퀀스 재시작, 그리고 `MODIFY (… NOT NULL)`. 오라클은 DDL 을 자동 커밋하므로 백필이 중간에 실패하면 컬럼과
+시퀀스는 남은 채 Flyway 에 실패로 기록된다. 재시도 전에 `activity_seq` 컬럼·시퀀스·유니크 인덱스를 지우고
+`flyway_schema_history` 의 실패 행을 정리한다 (이 절 앞부분의 절차). 백필 자체는 재실행해도 같은 결과다.
+
 ---
 
 ## 6. 설치 후 검증
@@ -295,7 +300,7 @@ SELECT vlmatch(HEXTORAW('00'), HEXTORAW('00'), 60) FROM dual;
 
 ## 7. 아직 검증되지 않은 것
 
-**실제 오라클 인스턴스에서 V1 ~ V27 을 끝까지 돌려 본 적이 없다.** UG-296 이 열려 있는 이유다.
+**실제 오라클 인스턴스에서 V1 ~ V29 를 끝까지 돌려 본 적이 없다.** UG-296 이 열려 있는 이유다.
 
 지금까지 확인한 것은 여기까지다.
 

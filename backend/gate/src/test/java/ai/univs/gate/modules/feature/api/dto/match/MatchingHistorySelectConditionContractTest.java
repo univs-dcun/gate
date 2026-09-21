@@ -95,7 +95,7 @@ class MatchingHistorySelectConditionContractTest {
     @Test
     @DisplayName("응답 DTO 는 source 와 이력 타입을 그대로 옮기고 실패 사유를 붙인다")
     void 응답_DTO_매핑() {
-        MatchHistoryResult r = new MatchHistoryResult(3L, 1L, FeatureType.FACE, ActivityType.DELETE, ActivitySource.FEATURE,
+        MatchHistoryResult r = new MatchHistoryResult(3L, 1003L, 1L, FeatureType.FACE, ActivityType.DELETE, ActivitySource.FEATURE,
                 LocalDateTime.of(2026, 9, 21, 1, 0), false, false, "fid", 7L, "홍길동", (BigDecimal) null, "img", null,
                 "INTERNAL_SERVER_ERROR", "tx-1", true, LocalDateTime.of(2026, 9, 21, 1, 0));
         MatchingHistoryResponseDTO dto = MatchingHistoryResponseDTO.from(r, "서버 오류", "Asia/Seoul");
@@ -103,6 +103,7 @@ class MatchingHistorySelectConditionContractTest {
         assertThat(dto.source()).isEqualTo(ActivitySource.FEATURE);
         assertThat(dto.matchType()).isEqualTo(ActivityType.DELETE);
         assertThat(dto.matchingHistoryId()).isEqualTo(3L);
+        assertThat(dto.sequence()).isEqualTo(1003L);
         assertThat(dto.failureReason()).isEqualTo("서버 오류");
         assertThat(dto.similarity()).isNull();
         assertThat(dto.matchingTime()).isNotNull();

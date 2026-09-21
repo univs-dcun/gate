@@ -35,12 +35,12 @@ public class ActivityLogDSLRepository {
         Pageable pageable = CustomPageable.of(query.page(), query.pageSize());
         BooleanBuilder where = where(query, projectId);
 
-        // 정렬 키는 created_at 하나다 — 인증(match_time)과 특징점 사건(created_at)을 섞어 정렬하려면
-        // 양쪽에 다 있는 시각이어야 한다. 같은 시각이면 id 로 고정해 페이지 경계에서 행이 흔들리지 않게 한다.
+        // 정렬 키는 사건 시퀀스(activity_seq) — 두 테이블이 공유하므로 시간순과 단조 일치하고(UG-328),
+        // 동시각에도 유일해 페이지 경계에서 행이 흔들리지 않는다.
         List<ActivityLog> fetch = queryFactory
                 .selectFrom(log)
                 .where(where)
-                .orderBy(log.createdAt.desc(), log.id.desc())
+                .orderBy(log.id.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -52,7 +52,7 @@ public class ActivityLogDSLRepository {
         return Optional.ofNullable(queryFactory
                 .selectFrom(log)
                 .where(log.projectId.eq(projectId), log.transactionUuid.eq(transactionUuid))
-                .orderBy(log.createdAt.desc(), log.id.desc())
+                .orderBy(log.id.desc())
                 .fetchFirst());
     }
 

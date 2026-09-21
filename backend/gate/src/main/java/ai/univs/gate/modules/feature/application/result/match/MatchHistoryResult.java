@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 
 public record MatchHistoryResult(
         Long matchingHistoryId,
+        Long sequence,
         Long projectId,
         FeatureType featureType,
         ActivityType matchType,
@@ -38,6 +39,7 @@ public record MatchHistoryResult(
     public static MatchHistoryResult from(ActivityLog log, String prefixImagePath, boolean consentEnabled) {
         return new MatchHistoryResult(
                 log.getSourceId(),
+                log.getId(),
                 log.getProjectId(),
                 log.getFeatureType(),
                 log.getActivityType(),
