@@ -21,6 +21,7 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
@@ -186,6 +187,22 @@ class FaceFeatureServiceTest {
         assertThat(featureHistory.getFeatureId()).isNull();
 
         // then: 특징은 저장되지 않아야 한다
+        verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+    }
+
+    @Test
+    @DisplayName("face 가 응답을 못 주면(RemoteCallException) 이력은 INTERNAL_SERVER_ERROR 로 남고 특징은 저장하지 않는다")
+    void 하위_장애_이력보존() {
+        // PIT 가 잡아낸 구멍: CustomFeignException 경로만 테스트돼 RemoteCallException 쪽 fail() 호출을 지워도 초록이었다.
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        RemoteCallException exception = new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFace", new RuntimeException("timeout"));
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willThrow(exception);
+
+        assertThatThrownBy(() -> faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID)).isSameAs(exception);
+
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.isSuccess()).isFalse();
+        assertThat(featureHistory.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
     }
 

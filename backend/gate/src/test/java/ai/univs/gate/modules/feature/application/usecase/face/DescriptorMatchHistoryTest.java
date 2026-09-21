@@ -22,6 +22,7 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
@@ -281,6 +282,20 @@ class DescriptorMatchHistoryTest {
             assertThat(fh.getConsentSnapshot()).isTrue();
 
             verifyNoInteractions(fileService);
+        }
+
+        @Test
+        @DisplayName("응답 없음(RemoteCallException) — INTERNAL_SERVER_ERROR 사유를 남기고 특징점은 저장하지 않는다")
+        void 장애() {
+            공통();
+            given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
+                    .willThrow(new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFaceByDescriptor", new RuntimeException("reset")));
+
+            assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX))
+                    .isInstanceOf(RemoteCallException.class);
+
+            assertThat(저장된_특징점_이력().getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+            verify(biometricFeatureRepository, never()).save(any());
         }
 
         @Test

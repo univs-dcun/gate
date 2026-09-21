@@ -1810,7 +1810,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">매칭 이력 식별 번호</td></tr>
+            <tr><td><span class="pname">matchingHistoryId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">이력 식별 번호. source 와 함께 유일하다 — MATCH 와 FEATURE 는 번호 공간이 다르므로 목록에서 같은 숫자가 두 번 나올 수 있다</td></tr>
             <tr><td><span class="pname">projectId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">프로젝트 식별 번호</td></tr>
             <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 타입 (FACE)</td></tr>
             <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE</td></tr>
@@ -1827,7 +1827,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 타입 (성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
-            <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">매칭 시점의 개인정보 수집 동의 설정값</td></tr>
+            <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">이력 생성 일시</td></tr>
           </tbody>
         </table>
@@ -2908,7 +2908,7 @@ var PAGES = {
     },
     pdsc: [
       { ko: '매칭 요청 시 전달한 요청 식별 UUID', en: 'Request UUID sent with the original matching request' },
-      { ko: '매칭 이력 식별 번호', en: 'Match history ID' },
+      { ko: '이력 식별 번호. source 와 함께 유일하다 — MATCH 와 FEATURE 는 번호 공간이 다르므로 목록에서 같은 숫자가 두 번 나올 수 있다', en: 'Record ID. Unique together with source — MATCH and FEATURE use separate ID spaces, so the same number may appear twice in a list' },
       { ko: '프로젝트 식별 번호', en: 'Project ID' },
       { ko: '특징점 타입 (FACE)', en: 'Feature type (FACE)' },
       { ko: '이력 타입. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE', en: 'History type. Authentication: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / Feature management: REGISTER | DELETE' },
@@ -2925,7 +2925,7 @@ var PAGES = {
       { ko: '매칭 실패 타입 (성공 시 null)', en: 'Failure type (null on success)' },
       { ko: '매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)', en: 'Failure reason (localized via Accept-Language; empty string on success)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
-      { ko: '매칭 시점의 개인정보 수집 동의 설정값', en: 'Consent setting snapshot at match time' },
+      { ko: '사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)', en: 'Consent setting snapshot at event time (null when matchType=DELETE)' },
       { ko: '이력 생성 일시', en: 'History creation time' }
     ],
     stDesc: [

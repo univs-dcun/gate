@@ -19,8 +19,4 @@ public enum ActivityType {
     IDENTIFY,
     LIVENESS,
     ;
-
-    public boolean isFeatureEvent() {
-        return this == REGISTER || this == DELETE;
-    }
 }

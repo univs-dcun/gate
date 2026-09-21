@@ -10,6 +10,7 @@ import ai.univs.gate.modules.feature.domain.enums.ActivitySource;
 import ai.univs.gate.modules.feature.domain.enums.ActivityType;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
+import ai.univs.gate.modules.feature.domain.repository.ActivityLogRepository;
 import ai.univs.gate.modules.feature.infrastructure.persistence.query.MatchHistoryQuery;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
@@ -41,13 +42,14 @@ class ActivityLogSliceTest {
     private static final LocalDateTime T0 = LocalDateTime.of(2026, 9, 1, 9, 0);
 
     @Autowired private EntityManager em;
-    private ActivityLogDSLRepository repo;
+    /** Impl 을 거친다 — 위임 계층까지 한 번에 검증 (PIT 가 위임 메서드의 null 반환 뮤턴트를 생존시켰다). */
+    private ActivityLogRepository repo;
     private Project project;
     private Project other;
 
     @BeforeEach
     void setUp() {
-        repo = new ActivityLogDSLRepository(em);
+        repo = new ActivityLogRepositoryImpl(new ActivityLogDSLRepository(em));
         project = 프로젝트("branch-1");
         other = 프로젝트("branch-2");
     }
