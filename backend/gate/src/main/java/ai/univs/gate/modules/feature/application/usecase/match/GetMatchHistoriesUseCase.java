@@ -3,8 +3,8 @@ package ai.univs.gate.modules.feature.application.usecase.match;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.result.match.MatchHistoriesResult;
 import ai.univs.gate.modules.feature.application.result.match.MatchHistoryResult;
-import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
+import ai.univs.gate.modules.feature.domain.entity.ActivityLog;
+import ai.univs.gate.modules.feature.domain.repository.ActivityLogRepository;
 import ai.univs.gate.modules.feature.infrastructure.persistence.query.MatchHistoryQuery;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetMatchHistoriesUseCase {
 
-    private final MatchHistoryRepository matchHistoryRepository;
+    private final ActivityLogRepository activityLogRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final ProjectSettingsService projectSettingsService;
@@ -33,8 +33,9 @@ public class GetMatchHistoriesUseCase {
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
         boolean consentEnabled = projectSettings.getConsentEnabled();
 
-        long totalCount = matchHistoryRepository.countByProject(project);
-        Page<MatchHistory> pagedMatchingHistories = matchHistoryRepository.findAllByQuery(query, project);
+        // UG-326: match_history ∪ feature_history. 전체 수도 목록과 같은 모집단(includeDeletions)으로 센다.
+        long totalCount = activityLogRepository.countByProjectId(project.getId(), query.includeDeletions());
+        Page<ActivityLog> pagedMatchingHistories = activityLogRepository.findAllByQuery(query, project.getId());
 
         var results = pagedMatchingHistories.getContent().stream()
                 .map(matchingHistory -> MatchHistoryResult.from(matchingHistory, fileService.getFileServerPath(), consentEnabled))
