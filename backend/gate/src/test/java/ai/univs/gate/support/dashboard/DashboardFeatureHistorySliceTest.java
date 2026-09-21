@@ -6,11 +6,19 @@ import ai.univs.gate.facade.dashboard.application.result.DashboardRatiosResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
+import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
+import ai.univs.gate.modules.feature.infrastructure.persistence.FeatureHistoryJpaRepository;
+import ai.univs.gate.modules.feature.infrastructure.persistence.FeatureHistoryRepositoryImpl;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.support.jpa.JpaSliceTest;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import ai.univs.gate.facade.dashboard.application.result.DashboardTrendResult;
+import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +56,9 @@ class DashboardFeatureHistorySliceTest {
 
     @Autowired
     private EntityManager em;
+    @Autowired
+    private FeatureHistoryJpaRepository featureHistoryJpaRepository;
+    private FeatureHistoryRepository featureHistories;
 
     private DashboardStatsService stats;
     private Project project;
@@ -55,6 +66,7 @@ class DashboardFeatureHistorySliceTest {
     @BeforeEach
     void setUp() {
         stats = new DashboardStatsService(em);
+        featureHistories = new FeatureHistoryRepositoryImpl(featureHistoryJpaRepository);
         project = Project.builder()
                 .accountId(100L)
                 .projectName("테스트")
@@ -87,7 +99,7 @@ class DashboardFeatureHistorySliceTest {
         } else {
             h.fail("FAKE");
         }
-        em.persist(h);
+        h = featureHistories.save(h);
         시각을_덮어쓴다(h, at);
         return h;
     }
@@ -100,7 +112,7 @@ class DashboardFeatureHistorySliceTest {
         } else {
             h.fail("INTERNAL_SERVER_ERROR");
         }
-        em.persist(h);
+        h = featureHistories.save(h);
         시각을_덮어쓴다(h, at);
         return h;
     }
@@ -189,6 +201,31 @@ class DashboardFeatureHistorySliceTest {
 
         assertThat(stats.countTotalRegistrations(project.getId(), FeatureType.FACE)).isEqualTo(1);
         assertThat(stats.countTotalRegistrations(project.getId(), FeatureType.PALM)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("등록 추이 — 시간(TODAY)·일(WEEK)·월(YEAR) 라벨 자리에 등록 건수가 놓이고, 지워도 줄지 않는다")
+    void 등록_추이() {
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        FeatureHistory a = 등록(FeatureType.FACE, "t-1", today.atTime(3, 0), true);
+        등록(FeatureType.FACE, "t-2", today.atTime(3, 30), true);
+        등록(FeatureType.FACE, "t-3", today.minusDays(2).atTime(9, 0), true);
+        등록(FeatureType.PALM, "t-p", today.atTime(3, 0), true);
+        삭제(em.find(BiometricFeature.class, a.getFeatureSeq()), today.atTime(4, 0), true);
+
+        DashboardTrendResult day = stats.getTrend(project.getId(), TrendPeriod.TODAY, FeatureType.FACE);
+        assertThat(day.registration().get(day.labels().indexOf("03"))).as("03시 등록 2건 — 하나를 지웠어도").isEqualTo(2L);
+        assertThat(day.registration().get(day.labels().indexOf("04"))).as("삭제는 등록 계열에 안 든다").isEqualTo(0L);
+
+        DashboardTrendResult week = stats.getTrend(project.getId(), TrendPeriod.WEEK, FeatureType.FACE);
+        DateTimeFormatter d = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        assertThat(week.registration().get(week.labels().indexOf(today.format(d)))).isEqualTo(2L);
+        assertThat(week.registration().get(week.labels().indexOf(today.minusDays(2).format(d)))).isEqualTo(1L);
+        assertThat(week.registration().stream().mapToLong(Long::longValue).sum()).as("PALM 은 FACE 추이에 안 섞인다").isEqualTo(3L);
+
+        DashboardTrendResult year = stats.getTrend(project.getId(), TrendPeriod.YEAR, FeatureType.FACE);
+        long thisMonth = year.registration().get(year.labels().indexOf(today.format(DateTimeFormatter.ofPattern("yyyy-MM"))));
+        assertThat(thisMonth).isGreaterThanOrEqualTo(2L);
     }
 
     @Test

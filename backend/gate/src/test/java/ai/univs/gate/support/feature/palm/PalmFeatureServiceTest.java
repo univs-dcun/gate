@@ -9,11 +9,8 @@ import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
-import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
-import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
 import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
@@ -24,12 +21,12 @@ import ai.univs.gate.modules.project.domain.enums.LivenessOperation;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -42,7 +39,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PalmFeatureService 단위 테스트")
@@ -50,7 +46,6 @@ class PalmFeatureServiceTest {
 
     private static final Long PROJECT_ID = 1L;
     private static final Long ACCOUNT_ID = 10L;
-    private static final Long SAVED_MATCH_HISTORY_ID = 100L;
     private static final Long SAVED_FEATURE_ID = 7L;
     private static final String API_KEY = "gate_test-api-key";
     private static final String TRANSACTION_UUID = "550e8400-e29b-41d4-a716-446655440000";
@@ -58,7 +53,6 @@ class PalmFeatureServiceTest {
     private static final String CREATED_PALM_ID = "new-palm-id";
 
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
-    @Mock private MatchHistoryRepository matchHistoryRepository;
     @Mock private FeatureHistoryRepository featureHistoryRepository;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
@@ -104,11 +98,6 @@ class PalmFeatureServiceTest {
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.REGISTER))
                 .willReturn(livenessEnabled);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
-            MatchHistory saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
-            return saved;
-        });
         given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -118,14 +107,8 @@ class PalmFeatureServiceTest {
         return captor.getValue();
     }
 
-    private MatchHistory capturedMatchHistory() {
-        ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
-        return captor.getValue();
-    }
-
     @Test
-    @DisplayName("등록 성공 시 특징이 저장되고 매칭 이력이 REGISTER success 상태로 갱신된다")
+    @DisplayName("등록 성공 시 특징이 저장되고 특징점 이력(feature_history)이 REGISTER success 상태로 갱신된다")
     void createPalmFeature_success() {
         // given
         givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
@@ -152,22 +135,7 @@ class PalmFeatureServiceTest {
         assertThat(savedFeature.isDeleted()).isFalse();
         assertThat(savedFeature.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
 
-        // then: 매칭 이력 상태 전이 검증
-        MatchHistory savedHistory = capturedMatchHistory();
-        assertThat(savedHistory.getSuccess()).isTrue();
-        assertThat(savedHistory.getMatchType()).isEqualTo(MatchType.REGISTER);
-        assertThat(savedHistory.getFeatureType()).isEqualTo(FeatureType.PALM);
-        assertThat(savedHistory.getCheckLiveness()).isTrue();
-        assertThat(savedHistory.getConsentSnapshot()).isTrue();
-        assertThat(savedHistory.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
-        assertThat(savedHistory.getFeatureId()).isEqualTo(CREATED_PALM_ID);
-        assertThat(savedHistory.getUserDescription()).isEqualTo("홍길동");
-        assertThat(savedHistory.getFeatureSeq()).isEqualTo(SAVED_FEATURE_ID);
-        assertThat(savedHistory.getMatchedFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
-        assertThat(savedHistory.getTransactionUuid()).isEqualTo(TRANSACTION_UUID);
-
-        // then (UG-325): feature_history 에도 REGISTER 가 성공 상태 + 스냅샷으로 남는다.
-        // 과도기 이중 기록이다 — match_history 쪽 REGISTER 는 통합 조회(UG-326)가 나가면 지운다.
+        // then (UG-325/326): feature_history 에 REGISTER 가 성공 상태 + 스냅샷으로 남는다. match_history 에는 쓰지 않는다.
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.getActionType()).isEqualTo(FeatureActionType.REGISTER);
         assertThat(featureHistory.getFeatureType()).isEqualTo(FeatureType.PALM);
@@ -210,12 +178,6 @@ class PalmFeatureServiceTest {
                 palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
                 .isSameAs(exception);
 
-        // then: 이력 fail 상태 검증
-        MatchHistory savedHistory = capturedMatchHistory();
-        assertThat(savedHistory.getSuccess()).isFalse();
-        assertThat(savedHistory.getFailureType()).isEqualTo("FAKE");
-        assertThat(savedHistory.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
-
         // then (UG-325): 실패한 등록 시도도 feature_history 에 남는다 — 스냅샷은 비고 사유만 있다
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.isSuccess()).isFalse();
@@ -224,6 +186,22 @@ class PalmFeatureServiceTest {
         assertThat(featureHistory.getFeatureId()).isNull();
 
         // then: 특징은 저장되지 않아야 한다
+        verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+    }
+
+    @Test
+    @DisplayName("palm 가 응답을 못 주면(RemoteCallException) 이력은 INTERNAL_SERVER_ERROR 로 남고 특징은 저장하지 않는다")
+    void 하위_장애_이력보존() {
+        // PIT 가 잡아낸 구멍: CustomFeignException 경로만 테스트돼 RemoteCallException 쪽 fail() 호출을 지워도 초록이었다.
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        RemoteCallException exception = new RemoteCallException(RemoteCallException.NO_RESPONSE, "palm.registerPalm", new RuntimeException("timeout"));
+        given(palmService.registerPalm(any(RegisterPalmFeignRequestDTO.class))).willThrow(exception);
+
+        assertThatThrownBy(() -> palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID)).isSameAs(exception);
+
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.isSuccess()).isFalse();
+        assertThat(featureHistory.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
     }
 
@@ -245,11 +223,6 @@ class PalmFeatureServiceTest {
 
         // then
         verify(fileService).uploadIfConsent(featureImage, false);
-
-        MatchHistory savedHistory = capturedMatchHistory();
-        assertThat(savedHistory.getCheckLiveness()).isFalse();
-        assertThat(savedHistory.getConsentSnapshot()).isFalse();
-        assertThat(savedHistory.getMatchedFeatureImagePath()).isNull();
 
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.isCheckLiveness()).isFalse();
@@ -315,7 +288,6 @@ class PalmFeatureServiceTest {
 
         // then: FaceFeatureService 와 짝을 이루는 테스트다. 얼굴 쪽에만 있으면 손바닥 등록에서
         // 검증이 뒤로 밀려도 아무도 모른다 — 이 메서드도 REQUIRES_NEW 라 같은 고아 위험을 갖는다.
-        verify(matchHistoryRepository, never()).save(any(MatchHistory.class));
         verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
         verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));

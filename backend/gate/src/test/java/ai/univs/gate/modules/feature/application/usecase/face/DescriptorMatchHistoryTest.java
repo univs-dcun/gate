@@ -22,6 +22,7 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
@@ -235,7 +236,6 @@ class DescriptorMatchHistoryTest {
     class 등록 {
 
         @Mock private BiometricFeatureRepository biometricFeatureRepository;
-        @Mock private MatchHistoryRepository matchHistoryRepository;
         @Mock private FeatureHistoryRepository featureHistoryRepository;
         @Mock private ApiKeyService apiKeyService;
         @Mock private FileService fileService;
@@ -248,7 +248,6 @@ class DescriptorMatchHistoryTest {
             given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
-            stubSave(matchHistoryRepository);
             given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
         }
 
@@ -259,7 +258,7 @@ class DescriptorMatchHistoryTest {
         }
 
         @Test
-        @DisplayName("성공 — REGISTER 이력, checkLiveness=false, 파일 업로드 미호출")
+        @DisplayName("성공 — feature_history REGISTER, checkLiveness=false, 파일 업로드 미호출")
         void 성공() {
             공통();
             given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
@@ -274,15 +273,7 @@ class DescriptorMatchHistoryTest {
             assertThat(feature.getTransactionUuid()).isEqualTo(TX);
             verify(biometricFeatureRepository).save(feature);
 
-            MatchHistory saved = captureSaved(matchHistoryRepository);
-            assertThat(saved.getMatchType()).isEqualTo(MatchType.REGISTER);
-            assertThat(saved.getCheckLiveness())
-                    .as("descriptor 등록은 라이브니스를 수행하지 않는다")
-                    .isFalse();
-            assertThat(saved.getSuccess()).isTrue();
-            assertThat(saved.getConsentSnapshot()).isTrue();
-
-            // UG-325: feature_history 에도 같은 사실이 남는다 — descriptor 등록은 이미지·라이브니스가 없다
+            // UG-325/326: REGISTER 는 feature_history 에만 남는다 — descriptor 등록은 이미지·라이브니스가 없다
             FeatureHistory fh = 저장된_특징점_이력();
             assertThat(fh.isSuccess()).isTrue();
             assertThat(fh.isCheckLiveness()).isFalse();
@@ -291,6 +282,20 @@ class DescriptorMatchHistoryTest {
             assertThat(fh.getConsentSnapshot()).isTrue();
 
             verifyNoInteractions(fileService);
+        }
+
+        @Test
+        @DisplayName("응답 없음(RemoteCallException) — INTERNAL_SERVER_ERROR 사유를 남기고 특징점은 저장하지 않는다")
+        void 장애() {
+            공통();
+            given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
+                    .willThrow(new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFaceByDescriptor", new RuntimeException("reset")));
+
+            assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX))
+                    .isInstanceOf(RemoteCallException.class);
+
+            assertThat(저장된_특징점_이력().getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+            verify(biometricFeatureRepository, never()).save(any());
         }
 
         @Test
@@ -304,10 +309,8 @@ class DescriptorMatchHistoryTest {
                     ACCOUNT_ID, API_KEY, DESCRIPTOR, TX))
                     .isInstanceOf(CustomFeignException.class);
 
-            assertThat(captureSaved(matchHistoryRepository).getFailureType())
-                    .isEqualTo(ErrorType.FACE_NOT_FOUND.name());
             assertThat(저장된_특징점_이력().getFailureType())
-                    .as("UG-325: 실패 사유는 feature_history 에도 남는다")
+                    .as("UG-325/326: 실패 사유는 feature_history 에 남는다")
                     .isEqualTo(ErrorType.FACE_NOT_FOUND.name());
             verify(biometricFeatureRepository, never()).save(any());
             verifyNoInteractions(fileService);
