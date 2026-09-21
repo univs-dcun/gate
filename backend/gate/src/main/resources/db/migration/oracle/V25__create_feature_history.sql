@@ -23,6 +23,6 @@ CREATE TABLE feature_history (
     CONSTRAINT fk_feature_history_project FOREIGN KEY (project_id) REFERENCES projects(project_id)
 );
 
-CREATE INDEX idx_feature_history_project_action_created ON feature_history(project_id, action_type, created_at);
+CREATE INDEX idx_feature_history_project_type_action_created ON feature_history(project_id, feature_type, action_type, created_at);
 CREATE INDEX idx_feature_history_project_feature_seq    ON feature_history(project_id, feature_seq);
 CREATE INDEX idx_feature_history_transaction_uuid       ON feature_history(transaction_uuid);

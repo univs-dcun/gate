@@ -27,7 +27,7 @@ CREATE TABLE feature_history (
     CONSTRAINT fk_feature_history_project FOREIGN KEY (project_id) REFERENCES projects(project_id)
 );
 
--- 대시보드: 프로젝트·사건·시각으로 센다. 통합 목록(UG-326): 프로젝트·일련번호로 한 특징점의 생애를 모은다.
-CREATE INDEX idx_feature_history_project_action_created ON feature_history(project_id, action_type, created_at);
+-- 대시보드: 프로젝트·인증방식·사건·시각으로 센다 (where 절 순서와 같다). 통합 목록(UG-326): 프로젝트·일련번호로 한 특징점의 생애를 모은다.
+CREATE INDEX idx_feature_history_project_type_action_created ON feature_history(project_id, feature_type, action_type, created_at);
 CREATE INDEX idx_feature_history_project_feature_seq    ON feature_history(project_id, feature_seq);
 CREATE INDEX idx_feature_history_transaction_uuid       ON feature_history(transaction_uuid);
