@@ -3,6 +3,7 @@ package ai.univs.gate.support.history;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
@@ -71,6 +72,8 @@ class HistoryRecorderSliceTest {
     void tearDown() {
         tx.executeWithoutResult(status -> {
             em.createQuery("DELETE FROM MatchHistory h WHERE h.transactionUuid = :uuid")
+                    .setParameter("uuid", TX_UUID).executeUpdate();
+            em.createQuery("DELETE FROM FeatureHistory h WHERE h.transactionUuid = :uuid")
                     .setParameter("uuid", TX_UUID).executeUpdate();
             em.createQuery("DELETE FROM Project p WHERE p.id = :id")
                     .setParameter("id", projectId).executeUpdate();
@@ -150,7 +153,7 @@ class HistoryRecorderSliceTest {
         assertThatThrownBy(() -> tx.executeWithoutResult(status -> {
             MatchHistory history = recorder.start(이력());
             history.failUpstream(new RemoteCallException(503));
-            recorder.finish(history);
+            recorder.fail(history);
             throw new IllegalStateException("전이 뒤에 터진다");
         })).isInstanceOf(IllegalStateException.class);
 
@@ -168,12 +171,39 @@ class HistoryRecorderSliceTest {
         tx.executeWithoutResult(status -> {
             MatchHistory history = recorder.start(이력());
             history.success(BigDecimal.valueOf(0.99));
-            recorder.finish(history);
+            recorder.succeed(history);
         });
 
         List<MatchHistory> found = 남은_이력();
         assertThat(found).hasSize(1);
         assertThat(found.get(0).getSuccess()).isTrue();
+    }
+
+    /**
+     * 성공 전이는 호출자 트랜잭션과 함께 사라져야 한다 (반박 리뷰 지적).
+     *
+     * <p>초판은 성공도 별도 트랜잭션이라 즉시 커밋됐다. 그러면 특징점 등록처럼 이력과 실제
+     * 데이터를 함께 쓰는 경로에서 순서가 뒤집힌다 — "등록 성공" 이력이 먼저 커밋되고, 그 뒤
+     * 바깥이 롤백되면 {@code biometric_feature} 행은 없는데 이력만 성공으로 남는다.
+     *
+     * <p>행 자체는 남는다({@code start} 가 커밋해 뒀다). 남되 {@code success=false} 이고,
+     * 그것이 사실이다 — 그 일은 완료되지 않았다.
+     */
+    @Test
+    @DisplayName("성공 전이는 호출자가 롤백하면 함께 사라진다 — 행은 남고 성공만 취소된다")
+    void 성공_전이는_호출자와_함께_롤백된다() {
+        assertThatThrownBy(() -> tx.executeWithoutResult(status -> {
+            MatchHistory history = recorder.start(이력());
+            history.success(BigDecimal.valueOf(0.99));
+            recorder.succeed(history);
+            throw new IllegalStateException("성공 전이 뒤에 실제 데이터 저장이 실패한다");
+        })).isInstanceOf(IllegalStateException.class);
+
+        List<MatchHistory> found = 남은_이력();
+        assertThat(found).as("행은 남아야 한다 — 시도가 있었던 것은 사실이다").hasSize(1);
+        assertThat(found.get(0).getSuccess())
+                .as("성공이 함께 커밋되면 롤백된 일을 '성공했다' 고 기록하게 된다")
+                .isFalse();
     }
 
     /**
@@ -191,6 +221,59 @@ class HistoryRecorderSliceTest {
     }
 
     /**
+     * 특징점 사건 이력도 같은 경계를 쓴다.
+     *
+     * <p>{@code MatchHistory} 만 덮으면 {@code FeatureHistory} 쪽 오버로드를 통째로 no-op 으로
+     * 만들어도 아무 테스트도 깨지지 않는다 — 반박 리뷰가 실제로 그 변이를 심어 확인했다.
+     * 등록·삭제 이력이 커밋되지 않으면 대시보드 등록 건수가 조용히 미달한다.
+     */
+    @Test
+    @DisplayName("특징점 사건 이력도 호출자 롤백에서 살아남고, 성공은 함께 롤백된다")
+    void 특징점_이력도_같은_경계다() {
+        assertThatThrownBy(() -> tx.executeWithoutResult(status -> {
+            FeatureHistory history = recorder.start(특징점_이력());
+            history.failUpstream(new RemoteCallException(503));
+            recorder.fail(history);
+            throw new IllegalStateException("전이 뒤에 터진다");
+        })).isInstanceOf(IllegalStateException.class);
+
+        List<FeatureHistory> found = 남은_특징점_이력();
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getFailureType())
+                .as("실패 사유가 지워지면 행만 남고 조사할 것이 없다")
+                .isNotNull();
+        assertThat(found.get(0).getUpstreamStatus()).isEqualTo(503);
+    }
+
+    @Test
+    @DisplayName("특징점 사건의 성공 전이는 커밋된다 — succeed 가 no-op 이면 여기서 깨진다")
+    void 특징점_이력_성공도_커밋된다() {
+        tx.executeWithoutResult(status -> {
+            FeatureHistory history = recorder.start(특징점_이력());
+            history.successDelete();
+            recorder.succeed(history);
+        });
+
+        List<FeatureHistory> found = 남은_특징점_이력();
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).isSuccess())
+                .as("succeed 오버로드가 비면 등록·삭제가 전부 실패로 기록된다")
+                .isTrue();
+    }
+
+    private FeatureHistory 특징점_이력() {
+        Project project = tx.execute(status -> em.find(Project.class, projectId));
+        return FeatureHistory.register(project, FeatureType.FACE, false, "img/x", TX_UUID, false);
+    }
+
+    private List<FeatureHistory> 남은_특징점_이력() {
+        return tx.execute(status -> em.createQuery(
+                        "SELECT h FROM FeatureHistory h WHERE h.transactionUuid = :uuid",
+                        FeatureHistory.class)
+                .setParameter("uuid", TX_UUID).getResultList());
+    }
+
+    /**
      * 행이 두 번 생기지 않는다.
      *
      * <p>{@code finish} 가 {@code save} 를 다시 부르므로, 준영속 엔티티가 merge 가 아니라
@@ -202,8 +285,8 @@ class HistoryRecorderSliceTest {
     void 중복_행이_생기지_않는다() {
         MatchHistory history = recorder.start(이력());
         history.fail(BigDecimal.ZERO, "NOT_MATCH");
-        recorder.finish(history);
-        recorder.finish(history);
+        recorder.fail(history);
+        recorder.fail(history);
 
         assertThat(남은_이력()).hasSize(1);
     }

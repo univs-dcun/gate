@@ -82,18 +82,48 @@ public class HistoryRecorder {
     }
 
     /**
-     * 상태 전이(성공·실패)를 별도 트랜잭션에서 커밋한다.
+     * <b>실패</b> 전이를 별도 트랜잭션에서 커밋한다.
      *
-     * <p>전이가 호출자 트랜잭션 안에 있으면, 그 트랜잭션이 나중에 롤백될 때 전이도 함께
-     * 사라져 행이 {@code start} 시점 상태로 되돌아간다 — 실패 사유가 지워진다는 뜻이다.
+     * <p>실패 사유가 호출자 트랜잭션 안에 있으면, 그 트랜잭션이 롤백될 때 사유도 함께 사라져
+     * 행이 {@code start} 시점 상태로 되돌아간다 — 행은 남고 "왜 실패했는지" 만 지워진다.
+     * 그것이 UG-280 이 세 번 겪은 실패 모드의 절반이다.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void finish(MatchHistory history) {
+    public void fail(MatchHistory history) {
         matchHistoryRepository.save(history);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void finish(FeatureHistory history) {
+    public void fail(FeatureHistory history) {
+        featureHistoryRepository.save(history);
+    }
+
+    /**
+     * <b>성공</b> 전이를 호출자 트랜잭션과 <b>함께</b> 커밋한다 (반박 리뷰 지적).
+     *
+     * <p>초판은 성공도 {@code REQUIRES_NEW} 였다. 그러면 특징점 등록처럼 이력과 실제 데이터를
+     * 함께 쓰는 경로에서 <b>순서가 뒤집힌다</b> — "등록 성공" 이력이 먼저 커밋되고, 그 뒤
+     * 바깥 트랜잭션이 롤백되면 {@code biometric_feature} 행은 없는데 이력만 "성공" 으로 남는다.
+     * 감사 기록이 거짓말을 하게 된다.
+     *
+     * <p>성공 전이는 <b>성공했다고 말하는 그 일</b>과 원자적이어야 한다. {@code REQUIRED} 는
+     * 바깥 트랜잭션이 있으면 합류하고(→ 함께 커밋되거나 함께 사라진다) 없으면 새로 연다
+     * (→ 매칭처럼 다른 쓰기가 없는 경로에서는 그대로 커밋된다).
+     *
+     * <p>롤백돼도 행 자체는 남는다 — {@link #start} 가 이미 커밋해 뒀다. 그 행은
+     * {@code success=false} 인 채로 남고, 그것이 사실이다. 그 일은 완료되지 않았다.
+     *
+     * <p>덤으로 커넥션도 아낀다. 바깥 트랜잭션이 커넥션을 쥔 채 {@code REQUIRES_NEW} 가 두
+     * 번째를 요구하면 풀 크기만큼의 동시 요청이 서로를 기다리며 멈출 수 있다 — 리뷰가 풀
+     * 크기 1로 재현했다. 합류하면 그 창이 없다.
+     */
+    @Transactional
+    public void succeed(MatchHistory history) {
+        matchHistoryRepository.save(history);
+    }
+
+    @Transactional
+    public void succeed(FeatureHistory history) {
         featureHistoryRepository.save(history);
     }
 }

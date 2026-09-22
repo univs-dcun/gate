@@ -29,8 +29,6 @@ import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -50,12 +48,20 @@ public class IdentifyFaceUseCase {
     private final UseCaseNotifyService useCaseNotifyService;
 
     /**
-     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
      *
-     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
-     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     * <p>이 유스케이스는 {@link HistoryRecorder} 밖에서 아무것도 쓰지 않는다. 그런데 초판은
+     * {@code @Transactional} 을 남겨 뒀고, 그러면 요청 하나가 <b>커넥션 두 개</b>를 동시에
+     * 쥔다 — 바깥 트랜잭션이 조회 시점에 하나를 잡아 끝까지 붙들고, 그 안에서
+     * {@code REQUIRES_NEW} 인 이력 기록이 두 번째를 요구한다.
+     *
+     * <p>리뷰가 풀 크기 1로 재현했다. 기본 풀은 10이고 Tomcat 스레드는 200이므로, 동시 10건이
+     * 각자 첫 번째를 쥔 채 두 번째를 기다리면 아무도 진행하지 못하고 전원 타임아웃까지 멈춘다.
+     * 바깥 트랜잭션이 face 서비스 호출까지 품고 있어 그 창이 넓다.
+     *
+     * <p>읽기는 각 리포지토리 호출이 자기 트랜잭션을 연다. 지연 연관은 {@code ApiKeyService} 가
+     * 자기 경계 안에서 초기화해 돌려주므로(UG-335) 여기서 트랜잭션이 없어도 읽을 수 있다.
      */
-    @Transactional
     public IdentifyResult execute(IdentifyInput input) {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -102,7 +108,7 @@ public class IdentifyFaceUseCase {
             // noRollbackFor 로 커밋된 행의 failure_type 이 NULL 로 남았다 — 응답을 받지 못하고
             // 끊긴 요청과 구분되지 않아 이력만 보고는 원인을 알 수 없었다.
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
             return fail(input.callerType(), matchHistory, consentEnabled);
@@ -110,13 +116,13 @@ public class IdentifyFaceUseCase {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             matchHistory.failUpstream(e);
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             throw e;
         }
 
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.NOT_MATCH.name());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
@@ -126,12 +132,12 @@ public class IdentifyFaceUseCase {
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         matchHistory.success(biometricFeature, data.getSimilarity());
-        historyRecorder.finish(matchHistory);
+        historyRecorder.succeed(matchHistory);
 
         return success(input.callerType(), matchHistory, consentEnabled);
     }

@@ -29,8 +29,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 특징점 기반 1:N <b>후보 목록</b> 매칭 (UG-314).
@@ -51,8 +49,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class IdentifyCandidatesByDescriptorUseCase {
 
-    private final HistoryRecorder historyRecorder;
     private static final BigDecimal PERCENT = BigDecimal.valueOf(100);
+    private final HistoryRecorder historyRecorder;
 
     private final BiometricFeatureRepository biometricFeatureRepository;
     private final ProjectSettingsService projectSettingsService;
@@ -60,12 +58,20 @@ public class IdentifyCandidatesByDescriptorUseCase {
     private final FaceService faceService;
 
     /**
-     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
      *
-     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
-     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     * <p>이 유스케이스는 {@link HistoryRecorder} 밖에서 아무것도 쓰지 않는다. 그런데 초판은
+     * {@code @Transactional} 을 남겨 뒀고, 그러면 요청 하나가 <b>커넥션 두 개</b>를 동시에
+     * 쥔다 — 바깥 트랜잭션이 조회 시점에 하나를 잡아 끝까지 붙들고, 그 안에서
+     * {@code REQUIRES_NEW} 인 이력 기록이 두 번째를 요구한다.
+     *
+     * <p>리뷰가 풀 크기 1로 재현했다. 기본 풀은 10이고 Tomcat 스레드는 200이므로, 동시 10건이
+     * 각자 첫 번째를 쥔 채 두 번째를 기다리면 아무도 진행하지 못하고 전원 타임아웃까지 멈춘다.
+     * 바깥 트랜잭션이 face 서비스 호출까지 품고 있어 그 창이 넓다.
+     *
+     * <p>읽기는 각 리포지토리 호출이 자기 트랜잭션을 연다. 지연 연관은 {@code ApiKeyService} 가
+     * 자기 경계 안에서 초기화해 돌려주므로(UG-335) 여기서 트랜잭션이 없어도 읽을 수 있다.
      */
-    @Transactional
     public IdentifyCandidatesByDescriptorResult execute(IdentifyCandidatesByDescriptorInput input) {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -100,11 +106,11 @@ public class IdentifyCandidatesByDescriptorUseCase {
             data = faceService.identifyCandidatesByDescriptor(request);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             matchHistory.failUpstream(e);
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             throw e;
         }
 
@@ -113,7 +119,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
             // 0 이 아니라 최근접 유사도를 남긴다. 기존 1:N 도 그렇게 하고 있고, 0 으로 눕히면
             // "아무도 근접하지 않았다" 와 "아깝게 미달했다" 가 이력에서 같아 보인다.
             matchHistory.fail(최근접_유사도(data), ErrorType.NOT_MATCH.name());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             return IdentifyCandidatesByDescriptorResult.failResult(
                     matchHistory, input.thresholdPercent());
         }
@@ -124,7 +130,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
         // 매칭 실패와 구분되어야 하므로 INVALID_USER 로 남긴다.
         if (found.isEmpty()) {
             matchHistory.fail(최근접_유사도(data), ErrorType.INVALID_USER.name());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             return IdentifyCandidatesByDescriptorResult.failResult(
                     matchHistory, input.thresholdPercent());
         }
@@ -142,7 +148,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
         // 그 예외는 noRollbackFor 에 없어 REQUIRES_NEW 트랜잭션째 롤백되어 이력 행이 사라진다.
         IdentifyCandidatesByDescriptorResult.Candidate top = candidates.getFirst();
         matchHistory.success(found.get(top.featureId()), 도메인_스케일_유사도(후보, top.featureId()));
-        historyRecorder.finish(matchHistory);
+        historyRecorder.succeed(matchHistory);
 
         return IdentifyCandidatesByDescriptorResult.successResult(
                 matchHistory, input.thresholdPercent(), candidates);

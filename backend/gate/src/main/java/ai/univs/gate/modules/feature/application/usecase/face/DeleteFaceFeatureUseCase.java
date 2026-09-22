@@ -42,12 +42,10 @@ public class DeleteFaceFeatureUseCase {
      * 중요한데 그것만 사라지는 셈이었다. UG-293 이후로는 {@code HistoryRecorder} 가 행을 먼저
      * 커밋하므로 열거가 필요 없다. 실패 시 {@code biometricFeature.delete()} 에는 도달하지
      * 않으므로 대상은 그대로다.
-     */
-    /**
-     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
-     *
-     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
-     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+      *
+     * <p><b>UG-293: 이력 커밋이 이 트랜잭션과 분리됐다.</b> 예전에는 {@code noRollbackFor} 로
+     * "이 예외들에서는 롤백하지 말라" 고 열거했고, 목록에 없는 예외 — 특히 우리 코드의 NPE —
+     * 에서는 이력이 그대로 사라졌다. 지금은 {@link HistoryRecorder} 가 행을 먼저 커밋한다.
      */
     @Transactional
     public void execute(DeleteFaceFeatureInput input) {
@@ -85,16 +83,16 @@ public class DeleteFaceFeatureUseCase {
             faceService.deleteFace(deleteRequest);
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
-            historyRecorder.finish(featureHistory);
+            historyRecorder.fail(featureHistory);
             throw e;
         } catch (RemoteCallException e) {
             featureHistory.failUpstream(e);
-            historyRecorder.finish(featureHistory);
+            historyRecorder.fail(featureHistory);
             throw e;
         }
 
         biometricFeature.delete();
         featureHistory.successDelete();
-        historyRecorder.finish(featureHistory);
+        historyRecorder.succeed(featureHistory);
     }
 }

@@ -19,8 +19,6 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -37,12 +35,20 @@ public class LivenessPalmUseCase {
     private final ProjectSettingsService projectSettingsService;
 
     /**
-     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
      *
-     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
-     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     * <p>이 유스케이스는 {@link HistoryRecorder} 밖에서 아무것도 쓰지 않는다. 그런데 초판은
+     * {@code @Transactional} 을 남겨 뒀고, 그러면 요청 하나가 <b>커넥션 두 개</b>를 동시에
+     * 쥔다 — 바깥 트랜잭션이 조회 시점에 하나를 잡아 끝까지 붙들고, 그 안에서
+     * {@code REQUIRES_NEW} 인 이력 기록이 두 번째를 요구한다.
+     *
+     * <p>리뷰가 풀 크기 1로 재현했다. 기본 풀은 10이고 Tomcat 스레드는 200이므로, 동시 10건이
+     * 각자 첫 번째를 쥔 채 두 번째를 기다리면 아무도 진행하지 못하고 전원 타임아웃까지 멈춘다.
+     * 바깥 트랜잭션이 face 서비스 호출까지 품고 있어 그 창이 넓다.
+     *
+     * <p>읽기는 각 리포지토리 호출이 자기 트랜잭션을 연다. 지연 연관은 {@code ApiKeyService} 가
+     * 자기 경계 안에서 초기화해 돌려주므로(UG-335) 여기서 트랜잭션이 없어도 읽을 수 있다.
      */
-    @Transactional
     public PalmLivenessResult execute(PalmLivenessInput input) {
         ApiKey apiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
@@ -79,11 +85,11 @@ public class LivenessPalmUseCase {
             data = palmService.liveness(livenessRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             matchHistory.failUpstream(e);
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
             throw e;
         }
 
@@ -93,10 +99,10 @@ public class LivenessPalmUseCase {
                 .divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP);
         if (!data.isSuccess()) {
             matchHistory.fail(score, data.getMessage() != null ? data.getMessage().toUpperCase() : "LIVENESS_FAILED");
-            historyRecorder.finish(matchHistory);
+            historyRecorder.fail(matchHistory);
         } else {
             matchHistory.success(score);
-            historyRecorder.finish(matchHistory);
+            historyRecorder.succeed(matchHistory);
         }
 
         return PalmLivenessResult.from(data, input.transactionUuid());

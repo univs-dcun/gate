@@ -43,15 +43,10 @@ import org.junit.jupiter.api.Test;
 class RemoteCallRollbackGuardTest {
 
     private static final Path SOURCE_ROOT = Path.of("src/main/java");
-    private static final String REQUIRED = "RemoteCallException";
 
-    /** 엉뚱한 트리를 훑고 조용히 통과하는 것을 막는다. 한 곳을 통째로 지워도 통과하지 않도록 실제 수와 맞춘다. */
-    private static final int MIN_SITES = 11;
 
     /** 같은 목적의 하한선. Feign 호출 지점이 사라지면 래핑 검사가 공회전한다. 현재 15곳. */
     private static final int MIN_FEIGN_CALLS = 15;
-
-    private static final Pattern TRANSACTIONAL = Pattern.compile("@Transactional\\s*\\(");
 
     /**
      * 애노테이션 원문에서 주석을 지운다.
@@ -83,36 +78,6 @@ class RemoteCallRollbackGuardTest {
         }
         m.appendTail(out);
         return out.toString();
-    }
-
-    /** {@code noRollbackFor = {A.class, B.class}} 와 중괄호 없는 단일 값 형태를 모두 받는다. */
-    private static final Pattern NO_ROLLBACK_FOR =
-            Pattern.compile("noRollbackFor\\s*=\\s*(\\{[^}]*}|[\\w.]+)");
-
-    private record Site(Path file, int line, String annotation, String fileText) {
-        /** 주석을 지운 애노테이션. 판정은 반드시 이쪽으로 한다. */
-        String code() {
-            return stripComments(annotation);
-        }
-
-        boolean isRequiresNew() {
-            return code().contains("REQUIRES_NEW");
-        }
-
-        /** {@code noRollbackFor} 의 값 부분만. 선언이 없으면 빈 문자열. */
-        String noRollbackFor() {
-            Matcher m = NO_ROLLBACK_FOR.matcher(code());
-            return m.find() ? m.group(1) : "";
-        }
-
-        /** 주석이 아니라 실제 {@code noRollbackFor} 목록에 들어 있는지. */
-        boolean declaresRemoteCall() {
-            return noRollbackFor().contains(REQUIRED + ".class");
-        }
-
-        String describe() {
-            return "%s:%d".formatted(file, line);
-        }
     }
 
     private static final Pattern REMOTE_CALLS_BEFORE =
@@ -170,177 +135,7 @@ class RemoteCallRollbackGuardTest {
      * 한 줄을 추가하는 것은 "이 트랜잭션은 이력을 쓰지 않는다" 는 선언이고, 그 선언이 틀리면
      * 아래 단언이 깨진다.
      */
-    private static final List<String> 이력_없는_REQUIRES_NEW = List.of(
-            // UG-303: 삭제된 프로젝트의 생체 데이터를 지운다. 이력을 남기지 않고, 하위 서비스
-            // 실패는 메서드 안에서 잡아 다음 특징점으로 넘어가므로 트랜잭션 경계를 넘지 않는다.
-            "ProjectDataPurgeService.java");
 
-    private static boolean 이력을_쓰지_않는다(Site site) {
-        String file = site.file().getFileName().toString();
-        if (!이력_없는_REQUIRES_NEW.contains(file)) {
-            return false;
-        }
-        // 선언이 사실인지 확인한다. 나중에 이력을 쓰게 되면 면제가 조용히 유지되지 않는다.
-        assertThat(site.fileText())
-                .as("%s 를 '이력을 쓰지 않는다' 로 면제했는데 이력을 쓰고 있다. "
-                        + "noRollbackFor 를 선언하거나 면제를 지울 것", file)
-                .doesNotContain("matchHistoryRepository", "featureHistoryRepository")
-                .doesNotContain("History.save(");
-        return true;
-    }
-
-    /** {@code @Transactional(...)} 을 괄호 짝을 세어 통째로 잘라낸다 — 줄바꿈 위치와 무관하다. */
-    private static List<Site> findTransactionalSites() throws IOException {
-        List<Site> sites = new ArrayList<>();
-        try (Stream<Path> paths = Files.walk(SOURCE_ROOT)) {
-            for (Path p : paths.filter(f -> f.toString().endsWith(".java")).toList()) {
-                String text = Files.readString(p);
-                Matcher m = TRANSACTIONAL.matcher(text);
-                while (m.find()) {
-                    int depth = 0;
-                    int i = m.end() - 1;
-                    for (; i < text.length(); i++) {
-                        char c = text.charAt(i);
-                        if (c == '(') {
-                            depth++;
-                        } else if (c == ')') {
-                            depth--;
-                            if (depth == 0) {
-                                break;
-                            }
-                        }
-                    }
-                    String annotation = text.substring(m.start(), Math.min(i + 1, text.length()));
-                    int line = (int) text.substring(0, m.start()).lines().count() + 1;
-                    sites.add(new Site(p, line, annotation, text));
-                }
-            }
-        }
-        return sites;
-    }
-
-    @Nested
-<<<<<<< HEAD
-    @DisplayName("선언 검사")
-    class Declarations {
-
-        @Test
-        @DisplayName("REQUIRES_NEW 트랜잭션은 모두 noRollbackFor 에 RemoteCallException 을 포함한다")
-        void requiresNew_모두_원격실패를_포함한다() throws IOException {
-            List<Site> requiresNew = findTransactionalSites().stream()
-                    .filter(Site::isRequiresNew)
-                    .toList();
-
-            assertThat(requiresNew)
-                    .as("REQUIRES_NEW 를 찾지 못했다면 SOURCE_ROOT(%s)가 잘못됐을 가능성이 크다", SOURCE_ROOT)
-                    .hasSizeGreaterThanOrEqualTo(MIN_SITES);
-
-            List<String> bad = requiresNew.stream()
-                    .filter(s -> !s.declaresRemoteCall())
-                    .filter(s -> !이력을_쓰지_않는다(s))
-                    .map(Site::describe)
-                    .toList();
-
-            assertThat(bad)
-                    .as("""
-                            REQUIRES_NEW 인데 noRollbackFor 에 RemoteCallException 이 없는 곳이 있다 (UG-280).
-                            하위 서비스가 실패하면 이 트랜잭션이 롤백되어 앞서 저장한 매칭 이력 행이 사라진다 —
-                            장애를 가장 관측해야 할 때 기록이 없어진다. 선언을 다음 형태로 맞출 것:
-                              noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-                            이력을 쓰지 않는 REQUIRES_NEW 라면 그 사실을 주석으로 남기고 이 테스트를 함께
-                            고칠 것 — 조용히 빼지 말 것.""")
-                    .isEmpty();
-        }
-
-        @Test
-        @DisplayName("RemoteCallException 을 선언한 파일은 그 예외를 catch 해 실패 사유를 남긴다")
-        void 선언한_곳은_사유도_남긴다() throws IOException {
-            // 행이 커밋돼도 failure_type 이 NULL 이면 응답을 받지 못하고 끊긴 요청과 구분되지 않는다.
-            // UG-280 이 고친 것의 절반이 이쪽이라 선언만으로는 부족하다.
-            List<String> missingCatch = findTransactionalSites().stream()
-                    .filter(Site::declaresRemoteCall)
-                    .filter(s -> !s.fileText().contains("catch (RemoteCallException"))
-                    .map(Site::describe)
-                    .distinct()
-                    .toList();
-
-            assertThat(missingCatch)
-                    .as("""
-                            noRollbackFor 에는 RemoteCallException 이 있는데 catch 가 없다.
-                            행은 커밋되지만 failure_type 이 NULL 로 남아 원인을 알 수 없다.
-                            Feign 호출을 감싸 matchHistory.fail(...) 을 남기고 rethrow 할 것.""")
-                    .isEmpty();
-        }
-
-        @Test
-        @DisplayName("여러 줄로 나눠 쓴 애노테이션도 정상 인식한다")
-        void 여러줄_애노테이션_허용() throws IOException {
-            // 괄호 짝을 세어 잘라내므로 줄바꿈 위치와 무관하다. 이 레포의 선언은 이미 여러 줄에
-            // 걸쳐 있고, 한 줄만 보던 초기 버전은 포매터가 줄을 접으면 오탐을 냈다.
-            List<Site> multiline = findTransactionalSites().stream()
-                    .filter(s -> s.annotation().contains("\n"))
-                    .toList();
-
-            assertThat(multiline).isNotEmpty();
-            assertThat(multiline.stream().filter(Site::isRequiresNew).toList())
-                    .allSatisfy(s -> assertThat(s.noRollbackFor()).contains(REQUIRED + ".class"));
-        }
-
-        @Test
-        @DisplayName("판정은 주석이 아니라 선언을 본다 — 이 가드 자신의 회귀 테스트")
-        void 주석은_선언으로_치지_않는다() {
-            // 3차 반박 리뷰: 이 레포의 선언은 괄호 안에 RemoteCallException 을 언급하는 주석을
-            // 달고 있다. 원문을 그대로 contains 하면 noRollbackFor 를 되돌려도 통과해 버려서,
-            // 가드가 존재하지만 아무것도 막지 못하는 상태가 된다. 파서를 직접 검증한다.
-            Site 주석만 = new Site(SOURCE_ROOT, 1, """
-                    @Transactional(
-                            propagation = Propagation.REQUIRES_NEW,
-                            // UG-280: RemoteCallException 이 목록에 있어야 이력이 커밋된다
-                            noRollbackFor = {CustomFeignException.class}
-                    )""", "");
-            Site 선언까지 = new Site(SOURCE_ROOT, 1, """
-                    @Transactional(
-                            propagation = Propagation.REQUIRES_NEW,
-                            // UG-280: RemoteCallException 이 목록에 있어야 이력이 커밋된다
-                            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-                    )""", "");
-
-            assertThat(주석만.isRequiresNew()).isTrue();
-            assertThat(주석만.declaresRemoteCall())
-                    .as("주석에만 있는 낱말을 선언으로 오인하면 가드가 무력화된다")
-                    .isFalse();
-            assertThat(선언까지.declaresRemoteCall()).isTrue();
-
-            // 델타 검증의 지적: 위 픽스처만으로는 두 방어(주석 제거 / 값 부분만 추출)가 서로를
-            // 가려서, 둘 중 하나만 되돌리는 뮤테이션이 살아남는다. 축을 분리한다.
-            //
-            // (1) noRollbackFor 밖에 낱말이 있는 형태 — "값만 추출" 이 없으면 통과해 버린다.
-            Site 밖에만 = new Site(SOURCE_ROOT, 1, """
-                    @Transactional(
-                            propagation = Propagation.REQUIRES_NEW,
-                            rollbackFor = RemoteCallException.class,
-                            noRollbackFor = {CustomFeignException.class}
-                    )""", "");
-            assertThat(밖에만.declaresRemoteCall())
-                    .as("noRollbackFor 가 아닌 다른 속성의 값을 선언으로 세면 안 된다")
-                    .isFalse();
-
-            // (2) 블록 주석 형태 — "주석 제거" 가 없으면 통과해 버린다.
-            Site 블록주석 = new Site(SOURCE_ROOT, 1, """
-                    @Transactional(
-                            propagation = Propagation.REQUIRES_NEW,
-                            noRollbackFor = {/* RemoteCallException.class 는 뺐다 */
-                                    CustomFeignException.class}
-                    )""", "");
-            assertThat(블록주석.declaresRemoteCall())
-                    .as("블록 주석 안의 낱말도 선언이 아니다")
-                    .isFalse();
-        }
-    }
-
-    @Nested
-=======
->>>>>>> 8485a05 (refactor(gate): UG-293 이력 보존을 예외 타입 열거에서 커밋 경계로 바꾼다)
     @DisplayName("예외 계층")
     class Hierarchy {
 

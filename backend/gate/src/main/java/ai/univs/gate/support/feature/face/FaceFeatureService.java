@@ -41,12 +41,16 @@ public class FaceFeatureService {
     /**
      * @param callerType 무인증 데모({@link CallerType#DEMO})는 대조할 accountId 가 없어 소유 검증을
      *                   건너뛴다. 인증 경로는 반드시 {@link CallerType#API} 를 넘긴다. (UG-281)
-     */
-    /**
-     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+      *
+     * <p><b>UG-293: 이력 커밋이 이 트랜잭션과 분리됐다.</b> 예전에는 {@code noRollbackFor} 로
+     * "이 예외들에서는 롤백하지 말라" 고 열거했고, 목록에 없는 예외 — 특히 우리 코드의 NPE —
+     * 에서는 이력이 그대로 사라졌다. 지금은 {@link HistoryRecorder} 가 행을 먼저 커밋한다.
      *
-     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
-     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     * <p><b>전파도 함께 바뀌었다: {@code REQUIRES_NEW} → {@code REQUIRED}.</b> 이력이 더는 이
+     * 트랜잭션에 묶여 있지 않으므로 경계를 따로 열 이유가 없어졌고, 호출자와 합류하는 편이
+     * 특징점 저장의 원자성에 맞다. 성공 이력도 {@code succeed} 로 이 트랜잭션에 합류하므로
+     * "특징점은 롤백됐는데 등록 성공 이력만 남는" 상태가 생기지 않는다 (반박 리뷰 지적).
+     * 실패 이력만 별도 트랜잭션으로 빠져나간다 — 그것이 이 티켓의 목적이다.
      */
     @Transactional
     public CreateFaceFeatureServiceResult createFaceFeature(CallerType callerType,
@@ -58,7 +62,7 @@ public class FaceFeatureService {
                                                             String externalKey
     ) {
         // UG-281: 검증을 이 메서드 맨 앞에서 한다. 예전에는 호출하는 UseCase 가 등록을
-        // 마친 뒤에야 소유를 확인했는데, 이 메서드는 REQUIRES_NEW 라 그 시점엔 이미 특징점과
+        // 마친 뒤에야 소유를 확인했는데, 이 메서드는 당시 REQUIRES_NEW 라 그 시점엔 이미 특징점과
         // 이력이 별도 트랜잭션으로 커밋된 뒤였다 — 거부해도 남의 갤러리에 얼굴이 남았다.
         ApiKey findApiKey = apiKeyService.findByApiKey(callerType, apiKey, accountId);
         Project project = findApiKey.getProject();
@@ -90,13 +94,13 @@ public class FaceFeatureService {
             featureId = faceService.createFace(createRequest);
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
-            historyRecorder.finish(featureHistory);
+            historyRecorder.fail(featureHistory);
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             featureHistory.failUpstream(e);
-            historyRecorder.finish(featureHistory);
+            historyRecorder.fail(featureHistory);
             throw e;
         }
 
@@ -113,7 +117,7 @@ public class FaceFeatureService {
         biometricFeatureRepository.save(biometricFeature);
 
         featureHistory.successRegister(biometricFeature);
-        historyRecorder.finish(featureHistory);
+        historyRecorder.succeed(featureHistory);
 
         return new CreateFaceFeatureServiceResult(biometricFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
     }
@@ -169,13 +173,13 @@ public class FaceFeatureService {
             featureId = faceService.createFaceByDescriptor(createRequest);
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
-            historyRecorder.finish(featureHistory);
+            historyRecorder.fail(featureHistory);
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             featureHistory.failUpstream(e);
-            historyRecorder.finish(featureHistory);
+            historyRecorder.fail(featureHistory);
             throw e;
         }
 
@@ -190,7 +194,7 @@ public class FaceFeatureService {
         biometricFeatureRepository.save(biometricFeature);
 
         featureHistory.successRegister(biometricFeature);
-        historyRecorder.finish(featureHistory);
+        historyRecorder.succeed(featureHistory);
 
         return biometricFeature;
     }
