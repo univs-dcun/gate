@@ -244,9 +244,11 @@ compose 가 `restart: unless-stopped` 이므로 컨테이너는 크래시 루프
 
 ```sql
 -- 실패한 마이그레이션이 있는지 (계정별로 접속해서)
-SELECT installed_rank, version, description, success
-  FROM flyway_schema_history
- WHERE success = 0;
+-- ⚠️ Flyway 는 오라클에 이력 테이블과 컬럼을 소문자 따옴표 식별자로 만든다.
+--    따옴표 없이 쓰면 대문자로 해석돼 ORA-00942 가 난다 (2026-09-22 실측).
+SELECT "installed_rank", "version", "description", "success"
+  FROM "flyway_schema_history"
+ WHERE "success" = 0;
 ```
 
 복구는 둘 중 하나다.
@@ -254,7 +256,7 @@ SELECT installed_rank, version, description, success
 1. **실패한 문장을 손으로 실행한 뒤 이력을 고친다.** 무엇이 실패했는지 로그로 확인하고 그
    문장만 SQL*Plus 로 실행한 다음, 위 행을 지우고 재기동한다.
    ```sql
-   DELETE FROM flyway_schema_history WHERE success = 0;
+   DELETE FROM "flyway_schema_history" WHERE "success" = 0;
    COMMIT;
    ```
 2. **Flyway repair 를 돌린다.** 애플리케이션이 못 뜨는 상태이므로 Flyway CLI 가 필요하다.
@@ -283,15 +285,17 @@ V29 는 **gate-service 를 모두 내린 뒤** 기동해 적용한다 — 오라
 ## 6. 설치 후 검증
 
 ```sql
+-- 식별자는 반드시 따옴표로 감싼다 (Flyway 가 소문자 따옴표 식별자로 만든다 — 위 §5 참고)
+
 -- 1) 서비스마다 자기 이력 테이블을 갖고 있는가 (계정별로 접속해서 확인)
-SELECT installed_rank, version, description, success
-FROM flyway_schema_history ORDER BY installed_rank;
+SELECT "installed_rank", "version", "description", "success"
+FROM "flyway_schema_history" ORDER BY "installed_rank";
 
 -- 2) 마지막 버전이 기대와 맞는가
---    univs_gate=22, univs_face=1, univs_palm=1, univs_match=3, univs_auth=3
+--    univs_gate=29, univs_face=1, univs_palm=1, univs_match=3, univs_auth=3
 
 -- 3) 실패한 마이그레이션이 없는가
-SELECT * FROM flyway_schema_history WHERE success = 0;
+SELECT * FROM "flyway_schema_history" WHERE "success" = 0;
 
 -- 4) match 계정에서 매칭 함수가 이름만으로 보이는가  ← §3
 SELECT vlmatch(HEXTORAW('00'), HEXTORAW('00'), 60) FROM dual;
@@ -301,24 +305,40 @@ SELECT vlmatch(HEXTORAW('00'), HEXTORAW('00'), 60) FROM dual;
 
 ---
 
-## 7. 아직 검증되지 않은 것
+## 7. 검증 결과 (2026-09-22, Oracle Free 23ai) — 그리고 아직 남은 것
 
-**실제 오라클 인스턴스에서 V1 ~ V29 를 끝까지 돌려 본 적이 없다.** UG-296 이 열려 있는 이유다.
+**gate 저장소의 네 서비스 마이그레이션(gate V1~V29 · face V1 · match V1~V3 · palm V1, 34개)을 실제 오라클에서
+빈 스키마 네 개에 끝까지 적용했다.** UG-296 의 마지막 조건이었다.
 
-지금까지 확인한 것은 여기까지다.
+| 항목 | 결과 |
+|---|---|
+| 인스턴스 | `gvenzl/oracle-free:23-slim-faststart` (Oracle Database 23ai, 23.26.3) 컨테이너, PDB `FREEPDB1` |
+| 계정 | §2 의 DDL 그대로 `univs_gate`·`univs_face`·`univs_match`·`univs_palm` (CREATE SESSION/TABLE/SEQUENCE/SYNONYM + `users` 쿼터) |
+| 실행 방식 | 각 서비스의 **실제 `runtimeClasspath`**(flyway-core 11.7.2 · flyway-database-oracle 11.7.2 · ojdbc11)로 `Flyway.configure().locations("classpath:db/migration/oracle").load().migrate()` — 앱 기동 없음 |
+| 결과 | 34/34 SUCCESS, `"success"=0` 행 0. 마지막 버전 gate 29 · face 1 · match 3 · palm 1 |
+| 멱등성 | gate 를 한 번 더 돌리면 validate 통과 + 적용 0건 |
+| V29 (빈 테이블) | `ACTIVITY_SEQ` last_number 1, `match_history`/`feature_history`.`activity_seq` **NOT NULL + DEFAULT `ACTIVITY_SEQ.NEXTVAL`**, 유니크 인덱스 2개 생성 확인 |
+| `vlmatch` (§3, §6-4) | 설치하지 않았으므로 `univs_match` 에서 **ORA-00904** — 문서대로 부팅과 무관, 매칭 시점에 터지는 항목임을 확인 |
+| 테이블 | gate 13개(+이력) — V21 뒤에도 `face_feature`·`palm_feature` 가 남는 것은 PostgreSQL 과 동일(두 방언 모두 DROP 하지 않음) |
 
-- `flyway-database-oracle` 이 다섯 서비스의 부트 jar 에 모두 들어간다
-- 그 모듈이 없으면 오라클 URL 로 `Flyway.configure().load()` 가 실제로 실패하고, 있으면 통과한다
-- 37개 마이그레이션 SQL(gate 29 · face 1 · palm 1 · match 3 · auth 3)에 19c 에서 못 도는 구문이
-  없다 (정적 검토)
-- 계정을 공유하면 두 번째 서비스가 checksum 불일치로 죽고, `baseline-on-migrate: true` 가 걸린
-  비어 있지 않은 스키마에서는 조용히 앞쪽 마이그레이션을 건너뛴다 (둘 다 H2 로 재현)
-- `.env` 에 `{서비스}_DB_*` 를 주면 계정이 갈리고, 안 주면 기존 동작 그대로다
-  (`docker compose config` 로 확인)
+**실측으로 드러나 문서를 고친 것**
 
-확인하지 못한 것은 **SQL 이 실제 오라클에서 끝까지 도는지**다. 정적 검토는 타입 변환, 제약 조건
-충돌, 권한 문제 같은 것을 다 잡지 못한다. `GRANT CREATE SEQUENCE` 가 IDENTITY 컬럼에 실제로
-필요한지도 실측하지 못했다 (과다 부여라 무해하다).
+- Flyway 는 오라클에 `"flyway_schema_history"` 와 그 컬럼을 **소문자 따옴표 식별자**로 만든다. §5·§6 의 쿼리를
+  따옴표 없이 쓰면 `ORA-00942: table or view does not exist` 가 난다 — 이 문서의 쿼리를 전부 따옴표 형태로 바꿨다.
+- §6-2 의 gate 기대 버전이 22 로 낡아 있었다 → 29.
 
-오라클 19 인스턴스가 확보되면 빈 스키마 다섯 개에 다섯 서비스를 순서대로 올려 §6 의 검증 쿼리를
-돌려야 한다.
+**아직 검증되지 않은 것**
+
+- **19c 실기.** 검증은 23ai 에서 했다. 23ai 는 19c 의 상위집합이라 "23 에서 되는데 19 에서 안 되는 구문"
+  (`IF NOT EXISTS`, `BOOLEAN` 타입 등)이 있을 수 있는데, 그 계열은 `OracleMigrationSyntaxTest` 가 정적으로
+  금지하고 있다. 둘을 합쳐 "실제 오라클에서 끝까지 돈다 + 19c 전용 금지 구문 없음" 까지가 지금의 근거다.
+  고객사 19c 인스턴스가 확보되면 같은 절차(§2 계정 → 서비스 기동 → §6)를 한 번 더 돈다.
+- **Hibernate 매핑 검증.** 앱을 오라클로 기동하지 않았으므로 엔티티 ↔ 컬럼 타입 정합(`ddl-auto: validate` 에
+  해당하는 검사)은 미실측이다. 정적으로는 `DialectSchemaParityTest` 가 두 방언의 컬럼 이름·NULL 허용성을 대조한다.
+- auth-service(msa-scaffold, V1~V3)는 이 저장소 범위 밖이라 돌리지 않았다.
+- ojdbc11 버전이 gate·palm 은 23.7.0.25.01, face·match 는 21.9.0.0 으로 갈린다(Boot BOM 과 직접 선언의 차이).
+  둘 다 동작했지만 통일 여부는 별건.
+- `GRANT CREATE SEQUENCE` 가 IDENTITY 컬럼에 실제로 필요한지는 따로 떼어 보지 않았다 (준 상태에서 성공, 과다 부여라 무해).
+
+재현 절차는 UG-296 코멘트(2026-09-22)에 있다 — 컨테이너 기동, 계정 DDL, runtimeClasspath 추출용 Gradle init
+스크립트, 단일 파일 Flyway 실행기.
