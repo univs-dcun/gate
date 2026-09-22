@@ -25,5 +25,18 @@ public interface ApiKeyJpaRepository extends JpaRepository<ApiKey, Long> {
 
     Optional<ApiKey> findByApiKeyAndIsActive(String apiKey, boolean isActive);
 
+    /**
+     * 활성 키 중 <b>살아 있는 프로젝트</b>의 것만 (UG-300, UG-288 후속).
+     *
+     * <p>삭제된 프로젝트의 키를 거부하는 규칙이 자바 조건에서 여기로 내려왔다. 조회 조건에
+     * 얹힌 보안 규칙은 호출처가 늘어도 빠질 수 없다 — 자바 조건은 새 조회 메서드를 하나
+     * 만들면 조용히 뚫린다.
+     *
+     * <p>원래 UG-288 은 이 자리를 골랐다가 되돌렸다. 검증할 슬라이스 테스트가 없어서였다
+     * ({@code JpaSliceTest} 참고). UG-300 이 그 인프라를 만들었으므로 제자리로 옮긴다.
+     */
+    Optional<ApiKey> findByApiKeyAndIsActiveAndProject_IsDeletedFalse(
+            String apiKey, boolean isActive);
+
     boolean existsByApiKey(String apiKey);
 }

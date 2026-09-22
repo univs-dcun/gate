@@ -214,19 +214,30 @@ gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고
 
 ## 5. 첫 설치에서 Flyway 가 하는 일
 
-오라클 프로파일에는 **`baseline-on-migrate` 를 주지 않는다.** `{서비스}-postgresql.yml` 에만 있다.
-
-이 설정은 Flyway 도입 시점(UG-229)에 이미 테이블이 들어 있던 기존 PostgreSQL 스키마를 입양하기
-위한 것이다. 오라클에는 그런 과거가 없다 — 항상 빈 스키마에 처음 설치한다.
+**`baseline-on-migrate` 는 이제 어느 프로파일에도 없다** (2026-09-22, UG-305 후속). 예전에는
+`{서비스}-postgresql.yml` 에만 있었고 오라클에는 주지 않았다.
 
 | 상황 | 동작 |
 |---|---|
 | 빈 스키마 (정상) | V1 부터 끝까지 순서대로 실행 |
 | 비어 있지 않은 스키마 | `Found non-empty schema without schema history table` 로 **즉시 실패** |
 
-두 번째 줄이 의도한 동작이다. `baseline-on-migrate: true` 였다면 같은 상황에서
-`baseline-version` 이하를 통째로 건너뛰고도 기동에 성공한다 — gate 기준 **V1~V21 이 실행되지
-않은 채 초록**이고, 나중에 없는 테이블을 찾다가 런타임에 터진다. H2 로 재현해 확인했다.
+두 번째 줄이 의도한 동작이고, 이제 PostgreSQL 도 같다. `baseline-on-migrate: true` 였다면
+같은 상황에서 `baseline-version` 이하를 통째로 건너뛰고도 기동에 성공한다 — gate 기준
+**V1~V21 이 실행되지 않은 채 초록**이고, 나중에 없는 테이블을 찾다가 런타임에 터진다.
+H2 로 재현해 확인했고, 온프레미스 3.0.3 검증에서 실제로 두 번 밟았다.
+
+- 설치 패키지가 옛 DDL 로 테이블을 먼저 만듦 → gate 가 V21 baseline 후 V26 에서
+  `column mh.feature_type does not exist`(V7 에서 추가된 컬럼)로 기동 실패
+- match DB 의 `vlmatch` C 함수를 `public` 에 등록한 것만으로 match-server 가 V3 baseline
+  → branch/descriptor 테이블 없음 → `relation branch does not exist`
+
+두 번째 사례가 중요하다. **확장 함수 하나로도 스키마는 "비어 있지 않음" 이 된다.** 신규
+설치에서는 함수도 `public` 이 아닌 별도 스키마에 만들고 `search_path` 로 잡는다.
+
+그 설정이 존재한 이유는 Flyway 도입 시점(UG-229)에 이미 테이블이 들어 있던 사내 dev
+PostgreSQL 스키마를 입양하기 위한 것 하나였고, 그 입양은 끝났다. 이력 테이블이 있는 환경에서는
+아무 일도 하지 않으므로 제거해도 dev·stage·prod 의 동작은 달라지지 않는다.
 
 ### 설치를 재시도할 때
 

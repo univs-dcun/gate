@@ -75,7 +75,7 @@ class ApiKeyOwnershipTest {
     }
 
     private void keyExists() {
-        given(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY)).willReturn(Optional.of(apiKey));
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY)).willReturn(Optional.of(apiKey));
     }
 
     @Nested
@@ -104,7 +104,7 @@ class ApiKeyOwnershipTest {
         @Test
         @DisplayName("없는 키와 남의 키가 같은 오류를 낸다 — 열거 오라클 방지")
         void 열거_오라클_없음() {
-            given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
+            given(apiKeyRepository.findActiveByApiKeyWithLiveProject("없는키")).willReturn(Optional.empty());
             keyExists();
 
             ErrorType 없는키 = errorTypeOf(() -> apiKeyService.findOwnedByApiKey("없는키", ATTACKER));
@@ -184,7 +184,7 @@ class ApiKeyOwnershipTest {
         @Test
         @DisplayName("없는 키·남의 키·ENFORCE 거부가 전부 같은 코드다")
         void 열거_오라클_없음() {
-            given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
+            given(apiKeyRepository.findActiveByApiKeyWithLiveProject("없는키")).willReturn(Optional.empty());
             keyExists();
             logOnly();
 
@@ -205,7 +205,7 @@ class ApiKeyOwnershipTest {
             assertThatThrownBy(() -> apiKeyService.findStrictlyOwnedByApiKey(KEY, null))
                     .isInstanceOf(CustomGateException.class);
 
-            verify(apiKeyRepository, never()).findByApiKeyAndIsActiveTrue(any());
+            verify(apiKeyRepository, never()).findActiveByApiKeyWithLiveProject(any());
         }
 
         private ErrorType errorTypeOf(Runnable call) {
@@ -268,7 +268,7 @@ class ApiKeyOwnershipTest {
         @Test
         @DisplayName("LOG_ONLY 여도 없는 키는 여전히 거부한다")
         void 로그만이어도_없는키는_거부() {
-            given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
+            given(apiKeyRepository.findActiveByApiKeyWithLiveProject("없는키")).willReturn(Optional.empty());
             logOnly();
 
             // LOG_ONLY 는 '소유 검증' 만 끄는 스위치다. 키 존재 여부까지 통과시키면
@@ -340,7 +340,7 @@ class ApiKeyOwnershipTest {
          * 그것이 테스트를 깨뜨린다.
          */
         private void 키는_있다() {
-            lenient().when(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY))
+            lenient().when(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY))
                     .thenReturn(Optional.of(apiKey));
         }
 
@@ -378,7 +378,7 @@ class ApiKeyOwnershipTest {
             assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, null))
                     .isInstanceOf(CustomGateException.class);
 
-            verify(apiKeyRepository, never()).findByApiKeyAndIsActiveTrue(any());
+            verify(apiKeyRepository, never()).findActiveByApiKeyWithLiveProject(any());
         }
 
         /**

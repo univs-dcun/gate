@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 
 /**
  * API 키 리포지토리의 실제 쿼리 (UG-300 첫 사례).
@@ -35,12 +36,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  *       <b>그 사실을 증명할 방법이 없었다.</b> 여기서 증명한다.
  * </ul>
  *
- * <p><b>여기서 프로덕션 코드를 바꾸지 않았다.</b> 티켓 항목 4는 UG-288 의 삭제 검사를 쿼리로
- * 옮기는 것을 첫 사례로 제안하지만, 그 판단은 "그때 판단" 으로 열려 있었다. 아래
- * {@link 삭제된_프로젝트}가 현재 쿼리의 실제 동작을 못박아 두므로, 옮길지 말지는 이제 데이터를
- * 보고 정할 수 있다. 인프라를 들이는 커밋에서 보안 통제까지 함께 옮기면 회귀 원인을 가리게 된다.
+ * <p><b>티켓 항목 4 를 여기서 마친다.</b> UG-288 의 삭제 검사를 자바 조건에서 조회 조건으로
+ * 옮겼고, 아래 {@link 삭제된_프로젝트}가 그 조건이 실제 SQL 로 해석되는지를 본다. 인프라를
+ * 들인 커밋과 통제를 옮기는 커밋을 나눈 것은 회귀 원인을 가리지 않기 위해서다.
  */
 @JpaSliceTest
+@Import(ApiKeyRepositoryImpl.class)
 @DisplayName("UG-300: API 키 리포지토리 슬라이스")
 class ApiKeyJpaRepositorySliceTest {
 
@@ -48,6 +49,17 @@ class ApiKeyJpaRepositorySliceTest {
 
     @Autowired
     private ApiKeyJpaRepository apiKeyJpaRepository;
+
+    /**
+     * 구현체까지 함께 띄운다 (UG-300).
+     *
+     * <p>파생 쿼리만 직접 부르면 <b>구현체가 어느 쿼리를 고르는지</b>는 무검증으로 남는다.
+     * {@code findActiveByApiKeyWithLiveProject} 가 삭제 조건 없는 쪽으로 위임해도 아무 테스트도
+     * 깨지지 않는다 — 실제로 변이를 심어 확인했다. 서비스가 쓰는 것은 이 도메인 인터페이스이므로
+     * 그 경로로도 단언한다.
+     */
+    @Autowired
+    private ApiKeyRepositoryImpl apiKeyRepository;
 
     @Autowired
     private EntityManager em;
@@ -114,8 +126,8 @@ class ApiKeyJpaRepositorySliceTest {
         /**
          * LAZY 연관이 실제로 지연 로딩되는지.
          *
-         * <p>{@code ApiKeyService.validateProjectNotDeleted} 가 {@code getProject().isDeleted()}
-         * 로 프록시를 초기화하는 것에 의존한다. 그 전제가 여기서 확인된다.
+         * <p>{@code ApiKeyService.validateOwnership} 이 {@code getProject().getAccountId()} 로
+         * 프록시를 초기화하는 것에 의존한다. 그 전제가 여기서 확인된다.
          */
         @Test
         @DisplayName("project 연관이 LAZY 로 실려 나중에 초기화된다")
@@ -134,7 +146,7 @@ class ApiKeyJpaRepositorySliceTest {
             assertThat(found.getProject().getBranchName()).isEqualTo("branch-1");
 
             assertThat(Hibernate.isInitialized(found.getProject()))
-                    .as("필드를 읽는 순간 초기화된다 — validateProjectNotDeleted 가 기대는 동작이다")
+                    .as("필드를 읽는 순간 초기화된다 — 소유 검증이 기대는 동작이다")
                     .isTrue();
         }
     }
@@ -271,35 +283,68 @@ class ApiKeyJpaRepositorySliceTest {
     }
 
     /**
-     * 삭제된 프로젝트의 키를 <b>쿼리가 걸러내지 않는다</b>는 현재 동작을 못박는다.
+     * 삭제된 프로젝트의 키를 <b>쿼리가 걸러낸다</b> (UG-300, UG-288 항목 4).
      *
-     * <p>UG-288 은 그 검사를 {@code ApiKeyService.validateProjectNotDeleted} 라는 자바 조건으로
-     * 뒀다 — 쿼리에 조건을 붙이는 편이 나았지만 그것을 검증할 테스트가 없었기 때문이다.
-     * 이 인프라가 생겼으니 이제 옮길 수 있다.
+     * <p>UG-288 은 이 검사를 {@code ApiKeyService} 의 자바 조건으로 뒀다 — 쿼리에 붙이는 편이
+     * 나았지만 그것을 검증할 테스트가 없었기 때문이다. 이 인프라가 생겨 제자리로 옮겼고,
+     * 아래 두 테스트가 그 조건이 실제 SQL 로 해석되는지를 본다.
      *
-     * <p>이 커밋에서 옮기지 않은 이유: 자바 조건은 WARN 로그를 남긴다("정상 사용에서는 나올 수
-     * 없는 조합"). 쿼리로 옮기면 그 관측이 사라진다. 무엇을 잃고 무엇을 얻는지는 별도 판단이고,
-     * 인프라를 들이는 커밋에서 보안 통제까지 함께 옮기면 회귀 원인을 가린다.
+     * <p>파생 쿼리는 이름이 곧 명세라, 속성 경로가 어긋나도 컴파일은 통과하고 기동 시점에야
+     * 드러난다. {@code Project_IsDeletedFalse} 가 정말 {@code project.is_deleted = false} 로
+     * 번역되는지는 실제로 돌려 보는 수밖에 없다.
      *
-     * <p>옮기게 되면 이 테스트가 <b>깨지면서</b> 알려 준다.
+     * <p>WARN 로그는 잃지 않았다. 쿼리가 비면 서비스가 실패 경로에서만 한 번 더 조회해
+     * "키가 없음" 과 "프로젝트가 삭제됨" 을 구분해 남긴다
+     * ({@code ApiKeyService.warnIfProjectDeleted}).
      */
     @Nested
-    @DisplayName("삭제된 프로젝트의 키 (UG-288 후속 판단 근거)")
+    @DisplayName("삭제된 프로젝트의 키 (UG-300)")
     class 삭제된_프로젝트 {
 
         @Test
-        @DisplayName("쿼리는 삭제 여부를 보지 않는다 — 지금은 자바 조건이 막는다")
-        void 쿼리는_거르지_않는다() {
+        @DisplayName("살아 있는 프로젝트의 활성 키는 나온다")
+        void 살아있으면_나온다() {
+            키를_저장한다(project, KEY, true);
+            반영하고_비운다();
+
+            assertThat(apiKeyJpaRepository
+                    .findByApiKeyAndIsActiveAndProject_IsDeletedFalse(KEY, true))
+                    .as("대조군이 없으면 아래 테스트는 '조건이 항상 거짓' 으로도 통과한다")
+                    .isPresent();
+            assertThat(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY)).isPresent();
+        }
+
+        @Test
+        @DisplayName("삭제된 프로젝트의 키는 쿼리 단계에서 걸러진다")
+        void 삭제되면_안_나온다() {
             Project deleted = 프로젝트를_저장한다("branch-deleted", true);
             키를_저장한다(deleted, KEY, true);
             반영하고_비운다();
 
-            Optional<ApiKey> found = apiKeyJpaRepository.findByApiKeyAndIsActive(KEY, true);
+            assertThat(apiKeyJpaRepository
+                    .findByApiKeyAndIsActiveAndProject_IsDeletedFalse(KEY, true))
+                    .as("이 조건이 빠지면 삭제된 프로젝트의 키로 인증이 통과한다 (UG-288)")
+                    .isEmpty();
 
-            assertThat(found)
-                    .as("쿼리로 옮기면 여기가 비게 된다. 그때 이 테스트를 함께 뒤집을 것")
+            assertThat(apiKeyJpaRepository.findByApiKeyAndIsActive(KEY, true))
+                    .as("행 자체는 남아 있다 — 걸러낸 주체가 쿼리 조건임을 못박는다")
                     .isPresent();
-            assertThat(found.get().getProject().isDeleted()).isTrue();
+
+            assertThat(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY))
+                    .as("서비스가 실제로 쓰는 경로다. 구현체가 삭제 조건 없는 쿼리로 위임하면 여기서 깨진다")
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("비활성 키는 프로젝트가 살아 있어도 나오지 않는다")
+        void 비활성은_안_나온다() {
+            키를_저장한다(project, KEY, false);
+            반영하고_비운다();
+
+            assertThat(apiKeyJpaRepository
+                    .findByApiKeyAndIsActiveAndProject_IsDeletedFalse(KEY, true))
+                    .as("isActive 조건이 사라지면 폐기된 키가 되살아난다")
+                    .isEmpty();
         }
     }
 }
