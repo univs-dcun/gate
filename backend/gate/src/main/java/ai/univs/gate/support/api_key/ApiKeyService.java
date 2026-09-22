@@ -46,7 +46,10 @@ import java.util.Locale;
  * {@code open-in-view} 기본값(true)이 요청 끝까지 컨텍스트를 열어 둔 덕에 동작했다.
  *
  * <p>UG-335 가 그것을 끄면서 두 유스케이스({@code ExtractUseCase},
- * {@code GetFeatureListUseCase})가 드러났다. 그 둘에 선언을 붙이는 방법도 있었지만
+ * {@code GetFeatureListUseCase})가 드러났다. 반박 리뷰가 세 번째
+ * ({@code CreatePalmFeatureUseCase})를 더 찾았는데, 그쪽은 이 클래스가 아니라 자기
+ * {@code @Transactional} 로 해결했다 — 쌍둥이인 face 쪽과 대칭을 맞추는 편이 맞았다.
+ * 앞의 둘에 선언을 붙이는 방법도 있었지만
  * {@code ExtractUseCase} 는 조회 직후 face 서비스를 Feign 으로 부른다 — 트랜잭션으로 감싸면
  * <b>원격 호출 내내 DB 커넥션을 붙든다.</b> 부하가 걸릴 때 풀을 고갈시키는, OSIV 를 끄려던
  * 이유와 똑같은 형태의 문제다.

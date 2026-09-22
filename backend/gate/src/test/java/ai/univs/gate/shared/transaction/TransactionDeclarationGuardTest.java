@@ -10,6 +10,8 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -108,8 +110,12 @@ class TransactionDeclarationGuardTest {
      * ({@code ExtractUseCase}, {@code GetFeatureListUseCase})는 OSIV 기본값에만 기대고 있었다.
      *
      * <p>호출자마다 선언을 붙이지 않은 이유는 {@code ExtractUseCase} 다. 그쪽은 조회 직후
-     * face 서비스를 Feign 으로 부르므로, 트랜잭션으로 감싸면 원격 호출 내내 DB 커넥션을
-     * 붙든다 — OSIV 를 끄려던 이유와 똑같은 문제를 다른 자리에 만드는 셈이다.
+     * face 서비스를 Feign 으로 부르므로, 트랜잭션으로 감싸면 원격 호출 내내 영속성 컨텍스트를
+     * 붙든 채 네트워크를 기다린다.
+     *
+     * <p>반박 리뷰가 세 번째 사례({@code CreatePalmFeatureUseCase})를 더 찾았다. 그쪽은
+     * 원격 호출이 끝난 뒤 결과를 조립하며 지연 연관을 읽으므로 자기 {@code @Transactional} 로
+     * 해결했다 — 쌍둥이인 {@code CreateFaceFeatureUseCase} 와 대칭이 맞다.
      */
     @Test
     @DisplayName("ApiKeyService 는 읽기 트랜잭션을 연다 — 지연 로딩 경계의 소유자다")
@@ -143,9 +149,10 @@ class TransactionDeclarationGuardTest {
      * 프로파일 공통)에 이 줄이 있어야 한다.
      */
     @Test
-    @DisplayName("open-in-view: false 가 프로파일 공통 문서에 있다")
+    @DisplayName("open-in-view: false 가 프로파일 공통 문서에 있고, 어디서도 다시 켜지지 않는다")
     void OSIV_가_모든_환경에_적용된다() throws IOException {
-        String yaml = Files.readString(Path.of("src/main/resources/application.yaml"));
+        Path resources = 리소스_루트();
+        String yaml = Files.readString(resources.resolve("application.yaml"));
         String 공통_문서 = yaml.split("(?m)^---\\s*$")[0];
 
         assertThat(yaml)
@@ -156,6 +163,55 @@ class TransactionDeclarationGuardTest {
                         + "Boot 기본값(true)으로 돈다. 그러면 트랜잭션 밖 지연 로딩이 조용히 "
                         + "동작하고, 이 클래스의 다른 가드들도 무력해진다 (UG-335)")
                 .contains("open-in-view: false");
+
+        // 공통 문서에 있어도 뒤 프로파일 문서나 다른 프로파일 파일이 true 로 덮으면 그만이다
+        // (반박 리뷰 지적 — 초판은 '첫 문서에 있는가' 만 봤다).
+        List<Path> 설정들;
+        try (Stream<Path> files = Files.list(resources)) {
+            설정들 = files.filter(f -> f.getFileName().toString().matches("application.*\\.ya?ml"))
+                    .sorted().toList();
+        }
+        assertThat(설정들)
+                .as("설정 파일을 한 개도 못 찾았다 — 경로가 어긋났다")
+                .isNotEmpty();
+
+        List<String> 되켠_곳 = 설정들.stream()
+                .filter(f -> 읽는다(f).matches("(?s).*open-in-view:\\s*true.*"))
+                .map(f -> f.getFileName().toString())
+                .toList();
+
+        assertThat(되켠_곳)
+                .as("어느 프로파일에서든 open-in-view 를 true 로 되돌리면 그 환경만 조용히 "
+                        + "예전 동작으로 돌아간다. 껐다는 사실이 무의미해진다")
+                .isEmpty();
+    }
+
+    /**
+     * 리소스 루트. 상대 경로 하나만 쓰면 작업 디렉터리가 다른 곳(IDE, 모노레포 루트)에서
+     * 돌릴 때 조용히 엉뚱한 트리를 보거나 예외로 끝난다 (반박 리뷰 지적).
+     */
+    private static Path 리소스_루트() {
+        Path 상대 = Path.of("src/main/resources");
+        for (Path p = Path.of("").toAbsolutePath(); p != null; p = p.getParent()) {
+            if (Files.isDirectory(p.resolve(상대).resolve("application.yaml"))
+                    || Files.isRegularFile(p.resolve(상대).resolve("application.yaml"))) {
+                return p.resolve(상대);
+            }
+            Path viaRoot = p.resolve("backend/gate").resolve(상대);
+            if (Files.isRegularFile(viaRoot.resolve("application.yaml"))) {
+                return viaRoot;
+            }
+        }
+        throw new IllegalStateException(
+                "gate 의 리소스 루트를 찾지 못했다. 작업 디렉터리=" + Path.of("").toAbsolutePath());
+    }
+
+    private static String 읽는다(Path file) {
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            throw new IllegalStateException("설정을 읽을 수 없다: " + file, e);
+        }
     }
 
     @Test
