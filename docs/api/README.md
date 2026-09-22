@@ -98,6 +98,13 @@ UG-279 에서 주석 처리했다가 UG-284 에서 소스에서 완전히 삭제
 (Face + Palm)" 이고 `featureType` 이 `PALM` 을 값으로 노출해, 페이지가 있는 것만으로 Palm 모듈의
 존재가 드러나기 때문이다.
 
+### UG-332 — 얼굴 이미지 수정(PUT /api/v1/feature/face/{faceFeatureId}) 페이지 삭제 (2026-09-22)
+
+수정 API 자체를 gate 에서 제거했다 (재등록은 삭제 + 등록, 이력 연속성은 UG-333 `externalKey`).
+문서에서 함께 지운 것: nav `얼굴 이미지 수정`, `p-face-feature-update` 페이지 div, nav i18n ko/en,
+`PAGES['p-face-feature-update']`, `ERR_ENDPOINT['p-face-feature-update']`, 수정에서만 나던 오류
+`FACE-004 MISMATCH` 카탈로그 엔트리. `USER-101`·`FACE-008` 의 "수정" 언급도 정리했다.
+
 ### 복원하려면
 
 `git log --oneline -- docs/api/gate-api-docs.html` 에서 UG-284 커밋(`d2ffb4e`) 직전 상태를 꺼낸다.
@@ -134,7 +141,7 @@ print('\n;\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', t, re.S)))
 
 ## ERRORS 두 페이지는 데이터에서 렌더링된다 (UG-321)
 
-`오류 응답 형식` · `오류 코드 목록` 두 페이지와 **엔드포인트 18개 페이지의 `Errors` 표**는
+`오류 응답 형식` · `오류 코드 목록` 두 페이지와 **엔드포인트 17개 페이지의 `Errors` 표**는
 정적 마크업이 아니라 인라인 스크립트의 데이터에서 그려진다.
 
 | 데이터 | 내용 |

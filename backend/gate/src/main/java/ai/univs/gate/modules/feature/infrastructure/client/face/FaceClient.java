@@ -19,9 +19,6 @@ public interface FaceClient {
     @PostMapping(value = "/api/v2/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     FeignResponseApi<FaceFeignResponseDTO> create(@ModelAttribute CreateFaceFeignRequestDTO request);
 
-    @PutMapping(value = "/api/v1/face", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    FeignResponseApi<FaceFeignResponseDTO> update(@ModelAttribute UpdateFaceFeignRequestDTO request);
-
     @PostMapping(value = "/api/v1/face/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
     FeignResponseApi<FaceFeignResponseDTO> delete(DeleteFaceFeignRequestDTO request);
 
