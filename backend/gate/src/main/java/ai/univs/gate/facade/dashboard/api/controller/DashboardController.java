@@ -52,7 +52,7 @@ public class DashboardController {
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
             @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
             // UG-301: 예전에는 여기에 PROJECT_NOT_FOUND · NOT_OWNERSHIP 이 있었다
-            // (UG-288). 네 엔드포인트가 ApiKeyService.findStrictlyOwnedByApiKey 로 통일되면서
+            // (UG-288). 네 엔드포인트가 ApiKeyService.findOwnedByApiKey 로 통일되면서
             // 두 코드가 날 자리가 사라졌다 — 소유 불일치도 API_KEY_NOT_FOUND 로 나가고,
             // 삭제 여부는 그 조회가 이미 본다. 남의 키의 '존재' 를 확인해 주지 않으려는
             // ApiKeyService 의 열거 오라클 방지 정책과도 이제 어긋나지 않는다.

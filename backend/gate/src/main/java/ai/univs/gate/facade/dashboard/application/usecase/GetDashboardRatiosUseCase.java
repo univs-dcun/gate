@@ -22,11 +22,10 @@ public class GetDashboardRatiosUseCase {
 
     @Transactional(readOnly = true)
     public DashboardRatiosResult execute(Long accountId, String apiKey, TrendPeriod period, FeatureType featureType) {
-        // UG-301: 모드와 무관하게 막는 조회다. 일반 findOwnedByApiKey 는
-        // gate.security.api-key-ownership.mode = LOG_ONLY 에서 통과시키는데, 그 스위치를
-        // 켜는 순간 이 엔드포인트가 남의 프로젝트 집계를 통째로 내주게 된다.
-        // 사유와 한계(나머지 16곳은 아직 열려 있다)는 ApiKeyService 쪽 주석 참고.
-        ApiKey findApiKey = apiKeyService.findStrictlyOwnedByApiKey(apiKey, accountId);
+        // UG-301 은 이 자리에 '모드와 무관하게 막는' 별도 조회를 뒀었다. LOG_ONLY 스위치가
+        // 일반 조회를 통과시켰기 때문인데, 그 스위치가 UG-306 에서 사라져 두 조회가 같아졌다.
+        // 이제 findOwnedByApiKey 하나로 충분하다.
+        ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
         Project project = findApiKey.getProject();
 
 

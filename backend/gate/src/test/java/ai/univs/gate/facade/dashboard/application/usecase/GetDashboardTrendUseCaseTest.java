@@ -36,7 +36,7 @@ import org.springframework.test.util.ReflectionTestUtils;
  * {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 통과시키므로, 그 스위치를 켜는
  * 순간 이 셋만 남의 집계를 그대로 내주는 상태였다.
  *
- * <p>지금은 네 엔드포인트가 {@code findStrictlyOwnedByApiKey} 로 통일됐다. 이 클래스는
+ * <p>지금은 네 엔드포인트가 {@code findOwnedByApiKey} 로 통일됐다. 이 클래스는
  * <b>어느 조회를 부르는가</b>만 본다 — 모드별 실제 동작은
  * {@code ApiKeyOwnershipTest.StrictOwned} 가 진짜 구현으로 검증한다.
  */
@@ -72,37 +72,18 @@ class GetDashboardTrendUseCaseTest {
     @Test
     @DisplayName("키 조회에 요청 계정을 그대로 넘긴다")
     void 요청_계정을_넘긴다() {
-        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         getDashboardTrendUseCase.execute(OWNER, KEY, TrendPeriod.WEEK, FeatureType.FACE);
 
-        verify(apiKeyService).findStrictlyOwnedByApiKey(KEY, OWNER);
-    }
-
-    /**
-     * 느슨한 조회({@code findOwnedByApiKey})를 쓰면 안 된다.
-     *
-     * <p>그쪽은 {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 남의 키를
-     * 통과시킨다. 대시보드는 프로젝트 집계를 통째로 내주므로 그 스위치의 영향권 밖에
-     * 있어야 한다. 모드별 실제 동작은 {@code ApiKeyOwnershipTest.StrictOwned} 가 진짜
-     * 구현으로 검증한다 — 여기서는 <b>어느 쪽을 부르는가</b>만 못박는다.
-     */
-    @Test
-    @DisplayName("모드와 무관하게 막는 조회를 쓴다 — 느슨한 쪽이 아니다")
-    void 엄격한_조회를_쓴다() {
-        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
-
-        getDashboardTrendUseCase.execute(OWNER, KEY, TrendPeriod.WEEK, FeatureType.FACE);
-
-        verify(apiKeyService).findStrictlyOwnedByApiKey(KEY, OWNER);
-        verify(apiKeyService, never()).findOwnedByApiKey(any(), any());
+        verify(apiKeyService).findOwnedByApiKey(KEY, OWNER);
     }
 
     @Test
     @DisplayName("소유 검증이 거부하면 집계를 읽지 않는다")
     void 소유_검증_실패는_전파된다() {
         willThrow(new CustomGateException(ErrorType.API_KEY_NOT_FOUND))
-                .given(apiKeyService).findStrictlyOwnedByApiKey(KEY, ATTACKER);
+                .given(apiKeyService).findOwnedByApiKey(KEY, ATTACKER);
 
         assertThatThrownBy(() -> getDashboardTrendUseCase.execute(ATTACKER, KEY, TrendPeriod.WEEK, FeatureType.FACE))
                 .isInstanceOf(CustomGateException.class);
@@ -119,7 +100,7 @@ class GetDashboardTrendUseCaseTest {
     @Test
     @DisplayName("period 와 featureType 을 그대로 넘기고 결과를 그대로 돌려준다")
     void 요청_파라미터를_그대로_넘긴다() {
-        given(apiKeyService.findStrictlyOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
+        given(apiKeyService.findOwnedByApiKey(KEY, OWNER)).willReturn(apiKey);
 
         DashboardTrendResult expected = new DashboardTrendResult(
                 TrendPeriod.MONTH, List.of("2026-08-01"),
