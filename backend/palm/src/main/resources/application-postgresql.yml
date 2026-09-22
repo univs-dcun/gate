@@ -2,11 +2,15 @@ spring:
   config:
     activate:
       on-profile: postgresql
+  # UG-307: 접속 정보는 앱 소스에 두지 않는다. 컨테이너 환경변수(SPRING_DATASOURCE_URL/USERNAME/PASSWORD,
+  # compose 가 서비스마다 준다)나 config-server(gate-config)가 채우며, 둘 다 없으면 플레이스홀더를 풀 수 없어
+  # 기동이 즉시 실패한다 — 예전처럼 사내 개발 DB 로 조용히 붙는 대신 설정 누락을 드러내는 것이 의도다.
+  # 로컬 실행은 세 환경변수를 주거나 gitignore 된 로컬 프로파일 파일을 쓴다. DatasourceCredentialGuardTest 가 이 규칙을 지킨다.
   datasource:
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://192.168.0.135:5432/palm
-    username: postgres
-    password: univs0411!
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     show-sql: false
     properties:

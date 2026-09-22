@@ -53,6 +53,7 @@
 ## Spring 환경 파일 수정 규칙
 - Spring 설정(yml)의 단일 진실은 별도 레포 `univs-dcun/gate-config`의 `main` 브랜치다 (UG-233). 설정 수정은 gate-config 레포에서 main에 직접 커밋 + push 로 완료한다. (PR + Merge 사용 안함)
 - 온프레미스(native) 납품 시 config-server가 마운트하는 `/config-repo` 볼륨의 내용물은 gate-config 레포를 클론하여 준비한다. (모노레포에 있던 config-repo 폴더는 UG-233에서 제거됨 — 스냅샷이 낡은 채 납품되는 사고 방지)
+- **앱 소스의 프로파일 yml(`backend/*/src/main/resources/application-*.yml`)에 DB 접속 정보(URL·계정·비밀번호)를 두지 않는다 (UG-307).** 값은 `${SPRING_DATASOURCE_URL}` 같은 기본값 없는 플레이스홀더만 허용하며, 실제 값은 compose 환경변수 또는 gate-config 가 준다. 주석으로 남기는 것도 금지 — 각 서비스의 `DatasourceCredentialGuardTest` 가 빌드에서 막는다. 로컬 실행은 `SPRING_DATASOURCE_URL/USERNAME/PASSWORD` 환경변수를 주거나 gitignore 된 로컬 프로파일 파일을 쓴다.
 - 온프레미스 계약의 소유 경계 (UG-323): 이 레포는 앱이 요구하는 환경변수·프로파일 계약만 문서로 유지한다 (`docs/onpremise-*.md`). gate·face·match·palm 이 이 레포 소유이고, auth·config·discovery·gateway 는 `univs-dcun/msa-scaffold` 소유다. 배포 구성 자체와 통지 방법은 아래 「온프레미스 패키지(onprem 저장소)와의 연동」을 따른다.
 
 ## 온프레미스 패키지(onprem 저장소)와의 연동

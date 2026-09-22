@@ -156,10 +156,11 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 | `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | ✅ | |
 | `MANAGEMENT_SERVER_PORT` | `management.server.port` | | actuator 분리 포트 |
 
-⚠️ **`SPRING_DATASOURCE_*` 는 안 주면 기동이 실패하지 않는다.** 앱 소스의
-`application-{postgresql,oracle}.yml` 에 사내 개발 서버 주소가 기본값으로 들어 있어 그쪽으로
-붙으려 한다. 폐쇄망에서는 연결 실패로 끝나지만 **설정 누락이 조용히 지나간다는 뜻**이므로
-설치 검증에서 실제 접속 대상을 반드시 확인한다.
+✅ **`SPRING_DATASOURCE_*` 를 안 주면 기동이 즉시 실패한다 (UG-307, 2026-09-22).** 앱 소스의
+`application-{postgresql,oracle}.yml` 은 세 값을 `${SPRING_DATASOURCE_URL}` 같은 기본값 없는 플레이스홀더로만
+갖는다. 예전에는 사내 개발 서버 주소가 기본값으로 들어 있어 누락 시 그쪽으로 조용히 붙으려 했는데, 지금은
+"Could not resolve placeholder" 로 기동이 멈춘다. 각 서비스의 `DatasourceCredentialGuardTest` 가 소스에 접속 정보가
+다시 들어오는 것을 빌드 단계에서 막는다.
 
 ### gate-service 추가
 
