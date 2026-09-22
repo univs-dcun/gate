@@ -16,7 +16,7 @@ spring:
     enabled: false   # 마이그레이션 SQL은 PostgreSQL 전용이라 H2에서 실행 불가
 
   jpa:
-    open-in-view: false
+    # open-in-view 는 application.yaml 의 공통 문서에 있다 (UG-335).
     hibernate:
       ddl-auto: none # 스펙 추출에 스키마 불필요 — 쿼리가 실행될 일이 없다
 
