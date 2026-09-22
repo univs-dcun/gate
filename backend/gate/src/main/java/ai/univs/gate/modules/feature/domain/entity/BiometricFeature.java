@@ -5,7 +5,6 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.util.StringUtils;
 
 @Entity
 @Table(name = "biometric_feature")
@@ -40,18 +39,6 @@ public class BiometricFeature extends BaseEntity {
 
     @Column(name = "external_key")
     private String externalKey;
-
-    public void updateFeatureImagePath(String featureImagePath) {
-        this.featureImagePath = featureImagePath;
-    }
-
-    public void updateFeatureId(String featureId) {
-        this.featureId = featureId;
-    }
-
-    public void updateInfo(String description) {
-        if (StringUtils.hasText(description)) this.description = description;
-    }
 
     public void delete() {
         this.isDeleted = true;

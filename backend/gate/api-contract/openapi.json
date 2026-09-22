@@ -1345,1002 +1345,6 @@
         ]
       }
     },
-    "/api/v1/feature/palm/{palmFeatureId}": {
-      "get": {
-        "tags": [
-          "특징점 팜 관리"
-        ],
-        "summary": "팜 단건 조회",
-        "operationId": "get",
-        "parameters": [
-          {
-            "name": "palmFeatureId",
-            "in": "path",
-            "description": "팜 식별 번호",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "INVALID_USER": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "USER-101",
-                        "type": "INVALID_USER",
-                        "message": "User information is invalid."
-                      }
-                    }
-                  },
-                  "SETTINGS_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-106",
-                        "type": "SETTINGS_NOT_FOUND",
-                        "message": "Project settings not found."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResponseApiPalmFeatureResponseDTO"
-                }
-              }
-            }
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          },
-          {
-            "X-Api-Key": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "특징점 팜 관리"
-        ],
-        "summary": "팜 수정",
-        "operationId": "update",
-        "parameters": [
-          {
-            "name": "palmFeatureId",
-            "in": "path",
-            "description": "팜 식별 번호",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdatePalmFeatureRequestDTO"
-              }
-            }
-          }
-        },
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INVALID_INPUT": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-101",
-                        "type": "INVALID_INPUT",
-                        "message": "The user\u0027s request contains invalid values."
-                      }
-                    }
-                  },
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "INVALID_USER": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "USER-101",
-                        "type": "INVALID_USER",
-                        "message": "User information is invalid."
-                      }
-                    }
-                  },
-                  "SETTINGS_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-106",
-                        "type": "SETTINGS_NOT_FOUND",
-                        "message": "Project settings not found."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResponseApiPalmFeatureResponseDTO"
-                }
-              }
-            }
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          },
-          {
-            "X-Api-Key": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "특징점 팜 관리"
-        ],
-        "summary": "팜 삭제",
-        "operationId": "delete",
-        "parameters": [
-          {
-            "name": "palmFeatureId",
-            "in": "path",
-            "description": "팜 식별 번호",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "INVALID_USER": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "USER-101",
-                        "type": "INVALID_USER",
-                        "message": "User information is invalid."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          },
-          {
-            "X-Api-Key": []
-          }
-        ]
-      }
-    },
-    "/api/v1/feature/face/{faceFeatureId}": {
-      "get": {
-        "tags": [
-          "특징점 얼굴 관리"
-        ],
-        "summary": "특징점 얼굴 단건 조회",
-        "operationId": "get_1",
-        "parameters": [
-          {
-            "name": "faceFeatureId",
-            "in": "path",
-            "description": "특징점 얼굴 ID",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INVALID_INPUT": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-101",
-                        "type": "INVALID_INPUT",
-                        "message": "The user\u0027s request contains invalid values."
-                      }
-                    }
-                  },
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "SETTINGS_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-106",
-                        "type": "SETTINGS_NOT_FOUND",
-                        "message": "Project settings not found."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResponseApiFaceFeatureResponseDTO"
-                }
-              }
-            }
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          },
-          {
-            "X-Api-Key": []
-          }
-        ]
-      },
-      "put": {
-        "tags": [
-          "특징점 얼굴 관리"
-        ],
-        "summary": "특징점 얼굴 수정",
-        "operationId": "update_1",
-        "parameters": [
-          {
-            "name": "faceFeatureId",
-            "in": "path",
-            "description": "특징점 얼굴 ID",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateFaceFeatureRequestDTO"
-              }
-            }
-          }
-        },
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INVALID_INPUT": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-101",
-                        "type": "INVALID_INPUT",
-                        "message": "The user\u0027s request contains invalid values."
-                      }
-                    }
-                  },
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "INVALID_USER": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "USER-101",
-                        "type": "INVALID_USER",
-                        "message": "User information is invalid."
-                      }
-                    }
-                  },
-                  "SETTINGS_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-106",
-                        "type": "SETTINGS_NOT_FOUND",
-                        "message": "Project settings not found."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResponseApiFaceFeatureResponseDTO"
-                }
-              }
-            }
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          },
-          {
-            "X-Api-Key": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "특징점 얼굴 관리"
-        ],
-        "summary": "특징점 얼굴 삭제",
-        "operationId": "delete_1",
-        "parameters": [
-          {
-            "name": "faceFeatureId",
-            "in": "path",
-            "description": "특징점 얼굴 ID",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          },
-          {
-            "name": "Accept-Language",
-            "in": "header",
-            "description": "응답 언어 설정 (기본값: ko)",
-            "required": false,
-            "example": "ko"
-          },
-          {
-            "name": "Accept-TimeZone",
-            "in": "header",
-            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
-            "required": false,
-            "example": "Asia/Seoul"
-          }
-        ],
-        "responses": {
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INVALID_INPUT": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-101",
-                        "type": "INVALID_INPUT",
-                        "message": "The user\u0027s request contains invalid values."
-                      }
-                    }
-                  },
-                  "API_KEY_NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-105",
-                        "type": "API_KEY_NOT_FOUND",
-                        "message": "API key not found."
-                      }
-                    }
-                  },
-                  "INVALID_USER": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "USER-101",
-                        "type": "INVALID_USER",
-                        "message": "User information is invalid."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UNAUTHORIZED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-001",
-                        "type": "UNAUTHORIZED",
-                        "message": "A request was attempted without authentication."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "NOT_FOUND": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-003",
-                        "type": "NOT_FOUND",
-                        "message": "Your information requested to server is wrong. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-004",
-                        "type": "METHOD_NOT_ALLOWED",
-                        "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "Authentication": []
-          },
-          {
-            "X-Api-Key": []
-          }
-        ]
-      }
-    },
     "/api/v1/company": {
       "get": {
         "tags": [
@@ -7926,6 +6930,638 @@
         ]
       }
     },
+    "/api/v1/feature/palm/{palmFeatureId}": {
+      "get": {
+        "tags": [
+          "특징점 팜 관리"
+        ],
+        "summary": "팜 단건 조회",
+        "operationId": "get",
+        "parameters": [
+          {
+            "name": "palmFeatureId",
+            "in": "path",
+            "description": "팜 식별 번호",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "INVALID_USER": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "USER-101",
+                        "type": "INVALID_USER",
+                        "message": "User information is invalid."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiPalmFeatureResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "특징점 팜 관리"
+        ],
+        "summary": "팜 삭제",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "palmFeatureId",
+            "in": "path",
+            "description": "팜 식별 번호",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "INVALID_USER": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "USER-101",
+                        "type": "INVALID_USER",
+                        "message": "User information is invalid."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      }
+    },
+    "/api/v1/feature/face/{faceFeatureId}": {
+      "get": {
+        "tags": [
+          "특징점 얼굴 관리"
+        ],
+        "summary": "특징점 얼굴 단건 조회",
+        "operationId": "get_1",
+        "parameters": [
+          {
+            "name": "faceFeatureId",
+            "in": "path",
+            "description": "특징점 얼굴 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "SETTINGS_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-106",
+                        "type": "SETTINGS_NOT_FOUND",
+                        "message": "Project settings not found."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiFaceFeatureResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "특징점 얼굴 관리"
+        ],
+        "summary": "특징점 얼굴 삭제",
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "name": "faceFeatureId",
+            "in": "path",
+            "description": "특징점 얼굴 ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INVALID_INPUT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-101",
+                        "type": "INVALID_INPUT",
+                        "message": "The user\u0027s request contains invalid values."
+                      }
+                    }
+                  },
+                  "API_KEY_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-105",
+                        "type": "API_KEY_NOT_FOUND",
+                        "message": "API key not found."
+                      }
+                    }
+                  },
+                  "INVALID_USER": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "USER-101",
+                        "type": "INVALID_USER",
+                        "message": "User information is invalid."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          },
+          {
+            "X-Api-Key": []
+          }
+        ]
+      }
+    },
     "/api/v1/feature/face/faceId/{faceId}": {
       "get": {
         "tags": [
@@ -9561,146 +9197,6 @@
           "consentEnabled"
         ]
       },
-      "UpdatePalmFeatureRequestDTO": {
-        "type": "object",
-        "properties": {
-          "featureImage": {
-            "type": "string",
-            "format": "binary",
-            "description": "새 팜 이미지 (선택)"
-          },
-          "description": {
-            "type": "string",
-            "description": "팜 설명"
-          },
-          "transactionUuid": {
-            "type": "string",
-            "description": "요청 키"
-          }
-        }
-      },
-      "PalmFeatureResponseDTO": {
-        "type": "object",
-        "properties": {
-          "palmFeatureId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "팜 식별 번호"
-          },
-          "description": {
-            "type": "string",
-            "description": "팜 설명"
-          },
-          "featureId": {
-            "type": "string",
-            "description": "팜 AI 서비스 식별자"
-          },
-          "featureImagePath": {
-            "type": "string",
-            "description": "특징점 이미지 경로"
-          },
-          "checkLiveness": {
-            "type": "boolean",
-            "description": "라이브니스 적용 여부"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "등록 일시"
-          },
-          "transactionUuid": {
-            "type": "string",
-            "description": "요청 키"
-          }
-        }
-      },
-      "ResponseApiPalmFeatureResponseDTO": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "description": "요청 성공/실패 여부"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PalmFeatureResponseDTO",
-            "description": "성공 응답 데이터"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/Errors",
-            "description": "실패 응답 데이터"
-          }
-        }
-      },
-      "UpdateFaceFeatureRequestDTO": {
-        "type": "object",
-        "properties": {
-          "featureImage": {
-            "type": "string",
-            "format": "binary",
-            "description": "사용자 얼굴 이미지"
-          },
-          "description": {
-            "type": "string",
-            "description": "특징점 얼굴 설명"
-          },
-          "transactionUuid": {
-            "type": "string",
-            "description": "요청 키"
-          }
-        }
-      },
-      "FaceFeatureResponseDTO": {
-        "type": "object",
-        "properties": {
-          "faceFeatureId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "특징점 얼굴 식별 번호"
-          },
-          "description": {
-            "type": "string",
-            "description": "특징점 얼굴 설명"
-          },
-          "featureId": {
-            "type": "string",
-            "description": "특징점 아이디"
-          },
-          "featureImagePath": {
-            "type": "string",
-            "description": "사용자 이미지 경로"
-          },
-          "checkLiveness": {
-            "type": "boolean",
-            "description": "라이브니스 적용 여부"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "생성 일자"
-          },
-          "transactionUuid": {
-            "type": "string",
-            "description": "요청 키"
-          }
-        }
-      },
-      "ResponseApiFaceFeatureResponseDTO": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "description": "요청 성공/실패 여부"
-          },
-          "data": {
-            "$ref": "#/components/schemas/FaceFeatureResponseDTO",
-            "description": "성공 응답 데이터"
-          },
-          "errors": {
-            "$ref": "#/components/schemas/Errors",
-            "description": "실패 응답 데이터"
-          }
-        }
-      },
       "UpsertCompanyRequestDTO": {
         "type": "object",
         "properties": {
@@ -9847,6 +9343,58 @@
         "required": [
           "featureImage"
         ]
+      },
+      "PalmFeatureResponseDTO": {
+        "type": "object",
+        "properties": {
+          "palmFeatureId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "팜 식별 번호"
+          },
+          "description": {
+            "type": "string",
+            "description": "팜 설명"
+          },
+          "featureId": {
+            "type": "string",
+            "description": "팜 AI 서비스 식별자"
+          },
+          "featureImagePath": {
+            "type": "string",
+            "description": "특징점 이미지 경로"
+          },
+          "checkLiveness": {
+            "type": "boolean",
+            "description": "라이브니스 적용 여부"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "등록 일시"
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        }
+      },
+      "ResponseApiPalmFeatureResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PalmFeatureResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
       },
       "PalmLivenessRequestDTO": {
         "type": "object",
@@ -10049,6 +9597,58 @@
         "required": [
           "featureImage"
         ]
+      },
+      "FaceFeatureResponseDTO": {
+        "type": "object",
+        "properties": {
+          "faceFeatureId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "특징점 얼굴 식별 번호"
+          },
+          "description": {
+            "type": "string",
+            "description": "특징점 얼굴 설명"
+          },
+          "featureId": {
+            "type": "string",
+            "description": "특징점 아이디"
+          },
+          "featureImagePath": {
+            "type": "string",
+            "description": "사용자 이미지 경로"
+          },
+          "checkLiveness": {
+            "type": "boolean",
+            "description": "라이브니스 적용 여부"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "생성 일자"
+          },
+          "transactionUuid": {
+            "type": "string",
+            "description": "요청 키"
+          }
+        }
+      },
+      "ResponseApiFaceFeatureResponseDTO": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "요청 성공/실패 여부"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FaceFeatureResponseDTO",
+            "description": "성공 응답 데이터"
+          },
+          "errors": {
+            "$ref": "#/components/schemas/Errors",
+            "description": "실패 응답 데이터"
+          }
+        }
       },
       "VerifyByImageRequestDTO": {
         "type": "object",
