@@ -172,7 +172,6 @@ public class SwaggerDescriptions {
     /* Palm Feature */
     public static final String PALM_FEATURE_ID = "팜 식별 번호";
     public static final String PALM_IMAGE = "팜 이미지";
-    public static final String PALM_IMAGE_OPTIONAL = "새 팜 이미지 (선택)";
     public static final String PALM_DESCRIPTION = "팜 설명";
     public static final String PALM_FEATURE_AI_ID = "팜 AI 서비스 식별자";
     public static final String PALM_FEATURE_LIST = "특징점 팜 목록";

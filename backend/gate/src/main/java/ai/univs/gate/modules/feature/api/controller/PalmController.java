@@ -35,7 +35,6 @@ import java.util.List;
 public class PalmController {
 
     private final CreatePalmFeatureUseCase createPalmFeatureUseCase;
-    private final UpdatePalmFeatureUseCase updatePalmFeatureUseCase;
     private final DeletePalmFeatureUseCase deletePalmFeatureUseCase;
     private final GetPalmFeatureUseCase getPalmFeatureUseCase;
     private final GetPalmFeaturesUseCase getPalmFeaturesUseCase;
@@ -65,31 +64,6 @@ public class PalmController {
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
-    @Operation(summary = "팜 수정")
-    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = UpdatePalmFeatureRequestDTO.class)))
-    @SecurityRequirements({
-            @SecurityRequirement(name = "Authentication"),
-            @SecurityRequirement(name = "X-Api-Key")
-    })
-    @SwaggerErrorExample({
-            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
-            @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
-            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
-            // UpdatePalmFeatureUseCase 는 projectSettingsService 가 아니라
-            // projectSettingsRepository.findByProject 로 직접 조회하고 같은 예외를 던진다.
-            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
-    })
-    @PutMapping(value = "/{palmFeatureId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> update(
-            @Parameter(description = "팜 식별 번호") @PathVariable Long palmFeatureId,
-            @ModelAttribute @Valid UpdatePalmFeatureRequestDTO request
-    ) {
-        UserContext ctx = UserContext.get();
-        var input = request.toInput(ctx.getAccountIdAsLong(), ctx.getApiKey(), palmFeatureId);
-        var result = updatePalmFeatureUseCase.execute(input);
-        var response = PalmFeatureResponseDTO.from(result, ctx.getTimezone());
-        return ResponseEntity.ok(ResponseApi.ok(response));
-    }
 
     @Operation(summary = "팜 삭제")
     @SecurityRequirements({

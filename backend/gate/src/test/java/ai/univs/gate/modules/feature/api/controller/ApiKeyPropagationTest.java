@@ -17,7 +17,6 @@ import ai.univs.gate.modules.feature.api.dto.face.IdentifyByDescriptorRequestDTO
 import ai.univs.gate.modules.feature.api.dto.face.IdentifyCandidatesByDescriptorRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.IdentifyRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.LivenessRequestDTO;
-import ai.univs.gate.modules.feature.api.dto.face.UpdateFaceFeatureRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.VerifyByDescriptorRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.VerifyByFaceIdRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.face.VerifyByImageRequestDTO;
@@ -26,7 +25,6 @@ import ai.univs.gate.modules.feature.api.dto.palm.CreatePalmFeatureRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmFeatureSelectCondition;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmIdentifyRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmLivenessRequestDTO;
-import ai.univs.gate.modules.feature.api.dto.palm.UpdatePalmFeatureRequestDTO;
 import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.DeleteFaceFeatureUseCase;
@@ -40,7 +38,6 @@ import ai.univs.gate.modules.feature.application.usecase.face.IdentifyByDescript
 import ai.univs.gate.modules.feature.application.usecase.face.IdentifyCandidatesByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.IdentifyFaceUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.LivenessFaceUseCase;
-import ai.univs.gate.modules.feature.application.usecase.face.UpdateFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.VerifyByDescriptorUseCase;
 import ai.univs.gate.modules.feature.application.usecase.match.GetMatchHistoriesUseCase;
 import ai.univs.gate.modules.feature.application.usecase.match.GetMatchHistoryByTransactionUuidUseCase;
@@ -50,7 +47,6 @@ import ai.univs.gate.modules.feature.application.usecase.palm.GetPalmFeatureUseC
 import ai.univs.gate.modules.feature.application.usecase.palm.GetPalmFeaturesUseCase;
 import ai.univs.gate.modules.feature.application.usecase.palm.IdentifyPalmUseCase;
 import ai.univs.gate.modules.feature.application.usecase.palm.LivenessPalmUseCase;
-import ai.univs.gate.modules.feature.application.usecase.palm.UpdatePalmFeatureUseCase;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.support.message.MessageService;
 import org.junit.jupiter.api.AfterEach;
@@ -104,7 +100,6 @@ class ApiKeyPropagationTest {
     private static final Long ACCOUNT_ID = 42L;
 
     @Mock private CreateFaceFeatureUseCase createFaceFeatureUseCase;
-    @Mock private UpdateFaceFeatureUseCase updateFaceFeatureUseCase;
     @Mock private DeleteFaceFeatureUseCase deleteFaceFeatureUseCase;
     @Mock private GetFaceFeatureUseCase getFaceFeatureUseCase;
     @Mock private GetFaceFeatureByFaceIdUseCase getFaceFeatureByFaceIdUseCase;
@@ -120,7 +115,6 @@ class ApiKeyPropagationTest {
     @Mock private IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
 
     @Mock private CreatePalmFeatureUseCase createPalmFeatureUseCase;
-    @Mock private UpdatePalmFeatureUseCase updatePalmFeatureUseCase;
     @Mock private DeletePalmFeatureUseCase deletePalmFeatureUseCase;
     @Mock private GetPalmFeatureUseCase getPalmFeatureUseCase;
     @Mock private GetPalmFeaturesUseCase getPalmFeaturesUseCase;
@@ -246,14 +240,6 @@ class ApiKeyPropagationTest {
         }
 
         @Test
-        @DisplayName("수정")
-        void 수정() {
-            given(updateFaceFeatureUseCase.execute(any())).willAnswer(captureFirstArg());
-            var request = new UpdateFaceFeatureRequestDTO(null, "desc", "tx-update");
-            assertApiKeyPropagated(capture(() -> faceController.update(1L, request)));
-        }
-
-        @Test
         @DisplayName("삭제")
         void 삭제() {
             willAnswer(captureFirstArg()).given(deleteFaceFeatureUseCase).execute(any());
@@ -309,14 +295,6 @@ class ApiKeyPropagationTest {
             given(createPalmFeatureUseCase.execute(any())).willAnswer(captureFirstArg());
             var request = new CreatePalmFeatureRequestDTO(null, "desc", "tx-palm-create", "ext-1");
             assertApiKeyPropagated(capture(() -> palmController.create(request)));
-        }
-
-        @Test
-        @DisplayName("수정")
-        void 수정() {
-            given(updatePalmFeatureUseCase.execute(any())).willAnswer(captureFirstArg());
-            var request = new UpdatePalmFeatureRequestDTO(null, "desc", "tx-palm-update");
-            assertApiKeyPropagated(capture(() -> palmController.update(1L, request)));
         }
 
         @Test
