@@ -39,8 +39,7 @@ public class DeleteProjectUseCase {
     @Transactional
     public void execute(Long accountId, Long projectId) {
         // 잠그고 읽는다 (UG-302). 같은 프로젝트를 고치는 쓰기끼리 직렬화하기 위해서다. 잠금은
-        // 경쟁하는 모든 쓰기 경로가 같이 잡아야 의미가 있는데, UpdateProjectUseCase 가 아직
-        // 잡지 않는다 — 그게 UG-311 이다.
+        // 경쟁하는 모든 쓰기 경로가 같이 잡아야 의미가 있다 — UpdateProjectUseCase 도 UG-311 부터 잡는다.
         Project project = projectService.validateOwnershipForUpdate(projectId, accountId);
         project.delete();
 
