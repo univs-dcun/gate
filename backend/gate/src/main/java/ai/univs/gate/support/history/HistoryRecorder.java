@@ -39,28 +39,32 @@ import org.springframework.transaction.annotation.Transactional;
  *     history.success(feature, similarity);
  * } catch (RemoteCallException e) {
  *     history.failUpstream(e);
- *     recorder.finish(history);
+ *     recorder.fail(history);          // 별도 트랜잭션 — 사유가 롤백에 지워지지 않는다
  *     throw e;
  * }
- * recorder.finish(history);
+ * recorder.succeed(history);           // 호출자 트랜잭션에 합류 — 결과와 원자적이다
  * }</pre>
  *
- * <p><b>{@code start} 와 {@code finish} 를 나눈 이유.</b> 하나로 묶으면 원격 호출이 그 안에
- * 들어가야 하는데, 그러면 호출 내내 DB 커넥션을 붙든다. 나누면 각 트랜잭션이 짧고, 그
- * 사이의 원격 호출은 트랜잭션 밖이다.
+ * <p><b>{@code start} 와 전이를 나눈 이유.</b> 하나로 묶으면 원격 호출이 그 안에 들어가야
+ * 하고, 그러면 이력 트랜잭션이 원격 호출 내내 열려 있게 된다. 나누면 이력 트랜잭션이 각각
+ * 짧다. (매칭 경로는 UG-293 에서 호출자 트랜잭션도 없앴으므로 원격 호출이 어떤 트랜잭션에도
+ * 들어 있지 않다. 등록·삭제 경로는 호출자 트랜잭션이 여전히 원격 호출을 품는다.)
  *
- * <p><b>{@code finish} 를 부르지 못하면 어떻게 되나.</b> 행은 {@code start} 시점 상태
+ * <p><b>전이({@link #succeed}·{@link #fail})를 부르지 못하면 어떻게 되나.</b> 행은
+ * {@code start} 시점 상태
  * ({@code success=false}, {@code failure_type=null})로 남는다. 완벽하진 않지만 <b>행이
  * 사라지는 것보다 낫다</b> — 그 조합 자체가 "전이 전에 무언가 터졌다" 는 신호가 된다.
  * 예전 구조에서는 같은 상황이 흔적 없이 지워졌다.
  *
- * <p><b>왜 {@code REQUIRES_NEW} 인가.</b> 호출자에게 트랜잭션이 있으면 잠시 밀어 두고 새
- * 트랜잭션에서 커밋한 뒤 돌아온다. 호출자에게 트랜잭션이 없어도 동작한다. 즉 호출자가 어떤
- * 상태든 이력은 독립적으로 남는다.
+ * <p><b>왜 {@code start} 가 {@code REQUIRES_NEW} 인가.</b> 호출자에게 트랜잭션이 있으면 잠시
+ * 밀어 두고 새 트랜잭션에서 커밋한 뒤 돌아온다. 없어도 동작한다. 즉 호출자가 어떤 상태든
+ * 행은 독립적으로 남는다. 실패 전이({@link #fail})도 같은 이유로 같은 전파를 쓴다.
+ *
+ * <p>성공 전이({@link #succeed})만 {@code REQUIRED} 다 — 이유는 그 메서드의 설명 참고.
  *
  * <p><b>돌려주는 엔티티는 준영속이다.</b> 이 트랜잭션이 끝나면 영속성 컨텍스트가 닫힌다.
- * 호출자는 그 객체의 상태를 바꾼 뒤 {@link #finish} 로 다시 넘긴다 — {@code merge} 가
- * 새 트랜잭션에서 붙여 준다.
+ * 호출자는 그 객체의 상태를 바꾼 뒤 {@link #succeed} 또는 {@link #fail} 로 다시 넘긴다 —
+ * {@code merge} 가 붙여 준다.
  */
 @Component
 @RequiredArgsConstructor

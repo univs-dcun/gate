@@ -60,20 +60,16 @@ class HistoryRecorderUsageGuardTest {
         List<Path> scanned = 소스들();
 
         for (Path file : scanned) {
-            String text = Files.readString(file);
-            if (!text.contains("historyRecorder")) {
+            String code = 주석과_문자열을_지운다(Files.readString(file));
+            if (!code.contains("historyRecorder")) {
                 continue;
             }
-            Matcher m = TRANSITION.matcher(text);
+            Matcher m = TRANSITION.matcher(code);
             while (m.find()) {
-                String rest = text.substring(m.end());
-                String nextLine = rest.contains("\n")
-                        ? rest.substring(rest.indexOf('\n') + 1).split("\n")[0]
-                        : "";
-                if (!RECORDER_COMMIT.matcher(nextLine).find()) {
+                if (!RECORDER_COMMIT.matcher(다음_문장(code, m.end())).find()) {
                     violations.add("%s:%d %s".formatted(
                             SOURCE_ROOT.relativize(file),
-                            text.substring(0, m.start()).split("\n", -1).length,
+                            code.substring(0, m.start()).split("\n", -1).length,
                             m.group(0)));
                 }
             }
@@ -106,18 +102,14 @@ class HistoryRecorderUsageGuardTest {
         List<String> violations = new ArrayList<>();
 
         for (Path file : 소스들()) {
-            String text = Files.readString(file);
-            if (!text.contains("historyRecorder")) {
+            String code = 주석과_문자열을_지운다(Files.readString(file));
+            if (!code.contains("historyRecorder")) {
                 continue;
             }
-            Matcher m = TRANSITION.matcher(text);
+            Matcher m = TRANSITION.matcher(code);
             while (m.find()) {
                 boolean 실패전이 = m.group(2).startsWith("fail");
-                String rest = text.substring(m.end());
-                String nextLine = rest.contains("\n")
-                        ? rest.substring(rest.indexOf('\n') + 1).split("\n")[0]
-                        : "";
-                Matcher c = RECORDER_COMMIT.matcher(nextLine);
+                Matcher c = RECORDER_COMMIT.matcher(다음_문장(code, m.end()));
                 if (!c.find()) {
                     continue;   // 위 테스트가 잡는다
                 }
@@ -125,7 +117,7 @@ class HistoryRecorderUsageGuardTest {
                 if (실패전이 != 실패커밋) {
                     violations.add("%s:%d %s → historyRecorder.%s".formatted(
                             SOURCE_ROOT.relativize(file),
-                            text.substring(0, m.start()).split("\n", -1).length,
+                            code.substring(0, m.start()).split("\n", -1).length,
                             m.group(2), c.group(1)));
                 }
             }
@@ -189,6 +181,70 @@ class HistoryRecorderUsageGuardTest {
         assertThat(users)
                 .as("기록기를 쓰는 파일을 못 찾았다면 위 검사들은 위반 0건으로 영원히 통과한다")
                 .isGreaterThanOrEqualTo(MIN_USERS);
+    }
+
+    /**
+     * {@code from} 이 속한 문장을 끝낸 <b>다음 문장</b>.
+     *
+     * <p>초판은 "다음 줄" 을 봤다. 리뷰가 두 가지로 깨뜨렸다 — 커밋 호출을 주석 처리하면
+     * 통과했고(원문을 그대로 봤으므로), 전이 호출을 두 줄로 나누거나 사이에 빈 줄을 넣으면
+     * 정상 코드인데 위반으로 잡혔다. 이 저장소의 전이 호출은 이미 길어서 줄바꿈이 현실적이다.
+     *
+     * <p>문장 단위로 보면 셋이 한꺼번에 해결된다. 주석·문자열은 미리 지운다.
+     */
+    private static String 다음_문장(String code, int from) {
+        int end = code.indexOf(';', from);
+        if (end < 0) {
+            return "";
+        }
+        int next = code.indexOf(';', end + 1);
+        return next < 0 ? code.substring(end + 1) : code.substring(end + 1, next + 1);
+    }
+
+    /** 주석과 문자열 리터럴을 공백으로. 길이를 유지해 줄 번호가 어긋나지 않게 한다. */
+    private static String 주석과_문자열을_지운다(String source) {
+        StringBuilder out = new StringBuilder(source.length());
+        int i = 0;
+        while (i < source.length()) {
+            char c = source.charAt(i);
+            String two = i + 1 < source.length() ? source.substring(i, i + 2) : "";
+            if ("//".equals(two)) {
+                while (i < source.length() && source.charAt(i) != '\n') {
+                    out.append(' ');
+                    i++;
+                }
+            } else if ("/*".equals(two)) {
+                int close = source.indexOf("*/", i + 2);
+                int stop = close < 0 ? source.length() : close + 2;
+                for (; i < stop; i++) {
+                    out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                }
+            } else if (c == '"' || c == '\'') {
+                out.append(' ');
+                i++;
+                while (i < source.length() && source.charAt(i) != c) {
+                    if (source.charAt(i) == '\\') {
+                        out.append(' ');
+                        i++;
+                        if (i < source.length()) {
+                            out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                            i++;
+                        }
+                        continue;
+                    }
+                    out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                    i++;
+                }
+                if (i < source.length()) {
+                    out.append(' ');
+                    i++;
+                }
+            } else {
+                out.append(c);
+                i++;
+            }
+        }
+        return out.toString();
     }
 
     private static List<Path> 소스들() throws IOException {

@@ -8,6 +8,7 @@ import ai.univs.gate.shared.utils.ApiKeyMasker;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -157,11 +158,23 @@ public class ApiKeyService {
      * 같은 열거 오라클이 된다.
      */
     public ApiKey findByApiKeyUnverified(String apiKey) {
-        return apiKeyRepository.findActiveByApiKeyWithLiveProject(apiKey)
+        ApiKey found = apiKeyRepository.findActiveByApiKeyWithLiveProject(apiKey)
                 .orElseThrow(() -> {
                     warnIfProjectDeleted(apiKey);
                     return new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
                 });
+
+        // 이 클래스가 자기 지연 로딩의 경계를 자기가 연다는 원칙(UG-335)을 이 경로에도 적용한다.
+        // 인증 경로는 validateOwnership 이 getAccountId() 를 읽으며 프록시를 초기화하지만,
+        // 데모 경로는 소유 검증을 하지 않아 그 지점이 없다. 호출자가 트랜잭션을 열지 않으면
+        // (UG-293 에서 매칭 유스케이스들이 그렇게 됐다) project 의 실제 필드를 읽는 순간
+        // LazyInitializationException 이 난다 — 데모 매칭 API 5개가 전부 500 이었다.
+        //
+        // 이 클래스는 이미 트랜잭션 안이므로 여기서 초기화하는 데 드는 비용은 쿼리 한 번이고,
+        // 그 쿼리는 어차피 호출자가 곧 일으킬 것이었다.
+        Hibernate.initialize(found.getProject());
+
+        return found;
     }
 
     /**
