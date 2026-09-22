@@ -159,10 +159,18 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 ✅ **`SPRING_DATASOURCE_*` 를 안 주면 기동이 실패한다 (UG-307, 2026-09-22).** 앱 소스의
 `application-{postgresql,oracle}.yml` 은 세 값을 `${SPRING_DATASOURCE_URL}` 같은 **기본값 없는** 플레이스홀더로만
 갖는다. 예전에는 사내 개발 서버 주소가 기본값으로 들어 있어 누락 시 그쪽으로 조용히 붙으려 했다. 지금 누락 시
-동작은 상황에 따라 다르지만 어느 쪽이든 **접속 성공으로 이어지지 않는다**: config-server 가 없으면
-"Could not resolve placeholder" 로, config-server 가 있으면 gate-config 의 `{서비스}-oracle.yml` /
-`application-postgresql.yml` 이 갖는 값이 `url`·`password` 리터럴 자리표시자라 드라이버가 URL 을 거부하며 멈춘다.
-compose 아래에서 `.env` 의 `CORE_DB_*` 가 빠지면 환경변수가 빈 문자열로 넘어와 접속 단계에서 실패한다.
+동작은 상황에 따라 다르지만 어느 쪽이든 **접속 성공으로 이어지지 않는다**. 실제 실패 서명은 다음과 같다
+(msa-scaffold UMS-17 리뷰에서 확인, 2026-09-22):
+
+- 환경변수가 **아예 없으면** Spring Boot 의 속성 바인더는 미해결 플레이스홀더를 무시하고 `${SPRING_DATASOURCE_URL}`
+  리터럴을 그대로 `spring.datasource.url` 에 바인딩한다. 그래서 "Could not resolve placeholder" 가 아니라 Flyway 의
+  첫 연결에서 HikariCP 가 `Driver ... claims to not accept jdbcUrl, ${SPRING_DATASOURCE_URL}` 로 실패한다.
+  config-server 가 있어도 같다 — gate-config 의 `{서비스}-oracle.yml` / `application-postgresql.yml` 이 갖는
+  `url`·`password` 값 역시 리터럴 자리표시자라 드라이버가 같은 메시지로 거부한다.
+- compose 아래에서 `.env` 의 `CORE_DB_*` 가 빠지면 환경변수가 **빈 문자열**로 넘어와 URL 이 `""` 이 되고, 마찬가지로
+  드라이버가 URL 을 거부하거나 접속 단계에서 실패한다.
+
+세 경로 모두 로그에서 `SPRING_DATASOURCE_URL` 또는 빈 jdbcUrl 이 보이면 원인은 환경변수 누락이다.
 gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고 나머지는 자리표시자다.
 각 서비스의 `DatasourceCredentialGuardTest` 가 소스에 접속 정보나 기본값 있는 플레이스홀더가 다시 들어오는 것을
 빌드 단계에서 막는다.
