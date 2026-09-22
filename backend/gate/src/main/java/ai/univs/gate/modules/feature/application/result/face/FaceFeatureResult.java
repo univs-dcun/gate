@@ -14,7 +14,8 @@ public record FaceFeatureResult(
         String featureImagePath,
         LocalDateTime createdAt,
         String transactionUuid,
-        Boolean checkLiveness
+        Boolean checkLiveness,
+        String externalKey
 ) {
 
     public static FaceFeatureResult from(BiometricFeature feature,
@@ -29,7 +30,8 @@ public record FaceFeatureResult(
                 ImagePathUtil.get(consentEnabled, prefixImagePath, feature.getFeatureImagePath()),
                 feature.getCreatedAt(),
                 feature.getTransactionUuid(),
-                null);
+                null,
+                feature.getExternalKey());
     }
 
     public static FaceFeatureResult from(BiometricFeature feature,
@@ -45,6 +47,7 @@ public record FaceFeatureResult(
                 ImagePathUtil.get(consentEnabled, prefixImagePath, feature.getFeatureImagePath()),
                 feature.getCreatedAt(),
                 feature.getTransactionUuid(),
-                livenessChecked);
+                livenessChecked,
+                feature.getExternalKey());
     }
 }

@@ -508,6 +508,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">얼굴 이미지 (jpg, jpeg, png)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 설명 (최대 1000자)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다</td></tr>
           </tbody>
         </table>
       </div>
@@ -523,6 +524,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 (등록 시 전달한 고객사 사용자 식별자, 없으면 null)</td></tr>
           </tbody>
         </table>
       </div>
@@ -542,7 +544,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
     <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>,
+    <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
 }</pre>
@@ -596,6 +599,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <tbody>
             <tr><td><span class="pname">descriptor</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">등록할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다</td></tr>
           </tbody>
         </table>
       </div>
@@ -608,6 +612,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버에서 발급된 특징점 식별 ID</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 (등록 시 전달한 고객사 사용자 식별자, 없으면 null)</td></tr>
           </tbody>
         </table>
       </div>
@@ -619,7 +624,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <div class="cblk-hdr"><span class="cblk-ttl">Body</span><span class="cblk-lng">JSON</span></div>
           <pre>{
   <span class="jk">"descriptor"</span>: <span class="js">"AAABAAAAAAAAAAAA..."</span>,
-  <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+  <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>,
+  <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
 }</pre>
         </div>
       </div>
@@ -634,7 +640,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"faceFeatureId"</span>: <span class="jn">1</span>,
     <span class="jk">"featureId"</span>: <span class="js">"abc123-def456-..."</span>,
     <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>,
+    <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
 }</pre>
@@ -740,6 +747,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 (등록 시 전달한 고객사 사용자 식별자, 없으면 null)</td></tr>
           </tbody>
         </table>
       </div>
@@ -759,7 +767,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
     <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
     <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>
+    <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>,
+    <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
 }</pre>
@@ -829,7 +838,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <span class="jk">"featureImagePath"</span>: <span class="js">"https://files.univs.ai/f/img.jpg"</span>,
         <span class="jk">"checkLiveness"</span>: <span class="jb">true</span>,
         <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-        <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>
+        <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>,
+        <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
       }
     ],
     <span class="jk">"page"</span>: {
@@ -1631,7 +1641,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingKeyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">매칭 검색 키워드</td></tr>
+            <tr><td><span class="pname">matchingKeyword</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">검색 키워드 — 요청 ID · Feature ID · 메모 · 외부 키 부분 일치</td></tr>
             <tr><td><span class="pname">matchType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">이력 타입 필터. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL (기본값: ALL — DELETE 는 includeDeletions=true 일 때만 포함)</td></tr>
             <tr><td><span class="pname">includeDeletions</span></td><td><span class="ptyp">boolean</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">matchType=ALL 일 때 삭제(DELETE) 이력을 포함할지 (기본값: false — 기존 클라이언트 호환). matchType=DELETE 를 명시하면 이 값과 무관하게 조회됨</td></tr>
             <tr><td><span class="pname">featureType</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 타입 필터 (FACE | ALL, 기본값: ALL)</td></tr>
@@ -1689,7 +1699,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <span class="jk">"failureReason"</span>: <span class="js">""</span>,
         <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>,
         <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>,
-        <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>
+        <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
+        <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
       }
     ],
     <span class="jk">"page"</span>: {
@@ -1755,6 +1766,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
             <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">이력 생성 일시</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null</td></tr>
           </tbody>
         </table>
       </div>
@@ -1787,7 +1799,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"failureReason"</span>: <span class="js">""</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>,
     <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>,
-    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>
+    <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
+    <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
 }</pre>
@@ -2451,13 +2464,15 @@ var PAGES = {
       { ko: '얼굴 이미지 (jpg, jpeg, png)', en: 'Face image (jpg, jpeg, png)' },
       { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
       { ko: '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)', en: 'Request UUID (auto-generated if not provided, max 36 chars)' },
+      { ko: '외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다', en: 'External key — the user identifier in your own system (max 255 chars). Registering again with the same key after a delete links the history before and after, and it is searchable in history queries' },
       { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
       { ko: '특징점 설명', en: 'Feature description' },
       { ko: 'AI 서버에서 발급된 특징점 식별 ID', en: 'Feature identifier issued by the AI server' },
       { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '등록 일시', en: 'Registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '외부 키 (등록 시 전달한 고객사 사용자 식별자, 없으면 null)', en: 'External key (your user identifier given at registration; null if none)' }
     ],
     stDesc: [
       { ko: '등록 성공', en: 'Registration successful' },
@@ -2476,10 +2491,12 @@ var PAGES = {
       { ko: '프로젝트 API Key (최대 36자)', en: 'Project API Key (max 36 chars)' },
       { ko: '등록할 특징점 디스크립터. <code>특징점 추출</code> API 응답을 가공 없이 그대로 전달합니다 (base64 696자 고정 = 520바이트)', en: 'Feature descriptor to register. Pass the <code>Extract</code> API response verbatim (fixed 696 base64 chars = 520 bytes)' },
       { ko: '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)', en: 'Request UUID (auto-generated if not provided, max 36 chars)' },
+      { ko: '외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다', en: 'External key — the user identifier in your own system (max 255 chars). Registering again with the same key after a delete links the history before and after, and it is searchable in history queries' },
       { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
       { ko: 'AI 서버에서 발급된 특징점 식별 ID', en: 'Feature identifier issued by the AI server' },
       { ko: '등록 일시', en: 'Registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '외부 키 (등록 시 전달한 고객사 사용자 식별자, 없으면 null)', en: 'External key (your user identifier given at registration; null if none)' }
     ],
     stDesc: [
       { ko: '등록 성공', en: 'Registration successful' },
@@ -2516,7 +2533,8 @@ var PAGES = {
       { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '등록 일시', en: 'Registration timestamp' },
-      { ko: '요청 식별 UUID', en: 'Request UUID' }
+      { ko: '요청 식별 UUID', en: 'Request UUID' },
+      { ko: '외부 키 (등록 시 전달한 고객사 사용자 식별자, 없으면 null)', en: 'External key (your user identifier given at registration; null if none)' }
     ],
     stDesc: [
       { ko: 'OK', en: 'OK' }
@@ -2773,7 +2791,7 @@ var PAGES = {
       en: 'Retrieve a paginated e-KYC history for the project. Authentication attempts (1:1, 1:N, liveness) and feature-management events (registration, deletion) are interleaved in one chronological list; each item\'s <code>source</code> tells them apart. Filter by function with <code>matchType</code> and by module with <code>featureType</code>.'
     },
     pdsc: [
-      { ko: '매칭 검색 키워드', en: 'Match search keyword' },
+      { ko: '검색 키워드 — 요청 ID · Feature ID · 메모 · 외부 키 부분 일치', en: 'Search keyword — partial match on request ID, Feature ID, description and external key' },
       { ko: '이력 타입 필터. 인증: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / 특징점 관리: REGISTER | DELETE / ALL (기본값: ALL — DELETE 는 includeDeletions=true 일 때만 포함)', en: 'History type filter. Authentication: VERIFY | VERIFY_ID | VERIFY_IMAGE | VERIFY_DESCRIPTOR | IDENTIFY | LIVENESS / Feature management: REGISTER | DELETE / ALL (default: ALL — DELETE is included only when includeDeletions=true)' },
       { ko: 'matchType=ALL 일 때 삭제(DELETE) 이력을 포함할지 (기본값: false — 기존 클라이언트 호환). matchType=DELETE 를 명시하면 이 값과 무관하게 조회됨', en: 'Whether to include deletion (DELETE) records when matchType=ALL (default: false — for existing clients). Explicit matchType=DELETE is returned regardless of this flag' },
       { ko: '특징점 타입 필터 (FACE | ALL, 기본값: ALL)', en: 'Feature type filter (FACE | ALL, default: ALL)' },
@@ -2822,7 +2840,8 @@ var PAGES = {
       { ko: '매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)', en: 'Failure reason (localized via Accept-Language; empty string on success)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
       { ko: '사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)', en: 'Consent setting snapshot at event time (null when matchType=DELETE)' },
-      { ko: '이력 생성 일시', en: 'History creation time' }
+      { ko: '이력 생성 일시', en: 'History creation time' },
+      { ko: '외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null', en: 'External key — your user identifier of the feature this record refers to. Authentication records take the value stored on that feature; null if none' }
     ],
     stDesc: [
       { ko: 'OK', en: 'OK' }

@@ -9337,7 +9337,7 @@
           },
           "externalKey": {
             "type": "string",
-            "description": "외부 연결 키 (face ↔ palm 연결용)"
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         },
         "required": [
@@ -9376,6 +9376,10 @@
           "transactionUuid": {
             "type": "string",
             "description": "요청 키"
+          },
+          "externalKey": {
+            "type": "string",
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         }
       },
@@ -9592,6 +9596,10 @@
           "transactionUuid": {
             "type": "string",
             "description": "요청 키"
+          },
+          "externalKey": {
+            "type": "string",
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         },
         "required": [
@@ -9630,6 +9638,10 @@
           "transactionUuid": {
             "type": "string",
             "description": "요청 키"
+          },
+          "externalKey": {
+            "type": "string",
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         }
       },
@@ -10425,6 +10437,10 @@
           "transactionUuid": {
             "type": "string",
             "description": "요청 키"
+          },
+          "externalKey": {
+            "type": "string",
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         },
         "required": [
@@ -10451,6 +10467,10 @@
           "transactionUuid": {
             "type": "string",
             "description": "요청 키"
+          },
+          "externalKey": {
+            "type": "string",
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         }
       },
@@ -10979,6 +10999,10 @@
             "type": "string",
             "format": "date-time",
             "description": "생성 일자"
+          },
+          "externalKey": {
+            "type": "string",
+            "description": "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다"
           }
         }
       },

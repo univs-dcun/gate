@@ -28,7 +28,10 @@ public record FaceFeatureResponseDTO(
         LocalDateTime createdAt,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.EXTERNAL_KEY)
+        String externalKey
 ) {
 
     public static FaceFeatureResponseDTO from(FaceFeatureResult result, String timezone) {
@@ -39,6 +42,7 @@ public record FaceFeatureResponseDTO(
                 result.featureImagePath(),
                 result.checkLiveness(),
                 fromUtc(result.createdAt(), timezone),
-                result.transactionUuid());
+                result.transactionUuid(),
+                result.externalKey());
     }
 }
