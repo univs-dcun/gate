@@ -29,6 +29,20 @@ import org.junit.jupiter.api.Test;
  *
  * <p>그래서 폐기한 선언 검사가 지키던 자리를 이 검사가 대신한다. 옛 검사는 소스에서
  * {@code noRollbackFor} 선언을 찾았고, 이 검사는 기록기 사용 규약을 찾는다.
+ *
+ * <p><b>무엇을 못 잡는지 적어 둔다</b> (3차 리뷰가 변이 17종으로 확인). 소스를 문자열로 훑는
+ * 검사의 한계이고, 모르면 있는 것보다 해롭다.
+ *
+ * <ul>
+ *   <li><b>제어 흐름을 모른다.</b> {@code if (조건) historyRecorder.fail(h);} 처럼 조건 안에
+ *       넣으면 통과한다. 한 문장 앞만 보기 때문이다.
+ *   <li><b>인자 동일성을 안 본다.</b> 엉뚱한 객체를 커밋해도 통과한다.
+ *   <li><b>전이와 커밋 사이에 다른 문장을 넣으면 위반으로 잡는다</b> — 오탐이다. 그 둘은
+ *       붙여 쓰는 것이 규약이므로 일부러 좁게 뒀다.
+ * </ul>
+ *
+ * <p>실제 동작은 {@code HistoryRecorderSliceTest} 가 트랜잭션을 열어 확인한다. 이 검사는
+ * 그 규약을 <b>쓰는 자리</b>에서 빠뜨리지 않았는지만 본다.
  */
 @DisplayName("UG-293: 이력 기록기 사용 규약")
 class HistoryRecorderUsageGuardTest {
@@ -208,6 +222,7 @@ class HistoryRecorderUsageGuardTest {
         while (i < source.length()) {
             char c = source.charAt(i);
             String two = i + 1 < source.length() ? source.substring(i, i + 2) : "";
+            String three = i + 2 < source.length() ? source.substring(i, i + 3) : "";
             if ("//".equals(two)) {
                 while (i < source.length() && source.charAt(i) != '\n') {
                     out.append(' ');
@@ -216,6 +231,17 @@ class HistoryRecorderUsageGuardTest {
             } else if ("/*".equals(two)) {
                 int close = source.indexOf("*/", i + 2);
                 int stop = close < 0 ? source.length() : close + 2;
+                for (; i < stop; i++) {
+                    out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                }
+            } else if ("\"\"\"".equals(three)) {
+                // 텍스트 블록. 이것을 모르면 여는 \"\"\" 를 「빈 문자열 + 새 문자열」로 읽고,
+                // 블록 안의 따옴표가 홀수면 패리티가 뒤집혀 <파일의 나머지 전체>를 지운다.
+                // 그러면 그 파일에는 전이도 커밋도 없는 것처럼 보여 가드가 조용히 초록이 된다
+                // (3차 리뷰가 재현). 자매 가드의 COMMENT 정규식이 UG-326 에서 같은 함정을
+                // 이미 막아 뒀는데 그 지식이 여기로 옮겨오지 않았다.
+                int close = source.indexOf("\"\"\"", i + 3);
+                int stop = close < 0 ? source.length() : close + 3;
                 for (; i < stop; i++) {
                     out.append(source.charAt(i) == '\n' ? '\n' : ' ');
                 }
