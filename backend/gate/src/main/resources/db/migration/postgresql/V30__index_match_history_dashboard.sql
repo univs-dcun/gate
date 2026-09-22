@@ -1,0 +1,26 @@
+-- UG-282: 대시보드 집계가 match_history 전체를 훑는다.
+--
+-- 실측(PostgreSQL 17, 합성 200만 행 / 1년치 / 프로젝트 20개 중 하나에 50% 편중):
+--
+--   프로젝트+기능+동작+30일 카운트   80ms → 0.47ms   (인덱스 온리 스캔, 힙 접근 0)
+--   countVerifyById 실제 형태        66ms → 2.4ms
+--   성공 비율 (success 포함)         80ms → 4.4ms
+--   로그 목록 (기간 1일)             2.1ms → 1.0ms  (회귀 없음)
+--   10만 건 INSERT                  298ms → 516ms  (행당 +2.2us)
+--
+-- 대시보드 한 번에 이런 카운트가 10여 개 나가므로 체감은 그 배수다.
+--
+-- 컬럼 순서는 등치 먼저, 범위 마지막이다. DashboardStatsService 의 모든 카운트가
+-- project_id·match_type·feature_type 등치 + created_at 범위 형태다. match_type 을
+-- feature_type 보다 앞에 둔 이유는 feature_type 없이 match_type 만 거는 비율 쿼리
+-- (queryVerifyByIdRatio)가 있어서다 — 그쪽도 이 인덱스를 탄다(66ms → 43ms).
+--
+-- V28 의 (project_id, created_at) 은 그대로 둔다. 로그 목록은 match_type·feature_type 없이
+-- 기간만 거르므로 이 인덱스로는 대체되지 않는다. 실측에서도 로그 목록은 V28 을 계속 쓴다.
+--
+-- CONCURRENTLY 를 쓰지 않은 이유: 배포가 컨테이너를 재생성하므로 Flyway 가 도는 동안
+-- 이 서비스는 트래픽을 받지 않는다. 2백만 행에서 1.5초 걸렸다. CONCURRENTLY 는 트랜잭션
+-- 밖 실행이 필요하고, 실패 시 INVALID 인덱스가 남아 수동 복구를 요구한다 — 얻는 것보다
+-- 운영 위험이 크다.
+CREATE INDEX idx_match_history_project_match_feature_created
+    ON match_history (project_id, match_type, feature_type, created_at);
