@@ -5,12 +5,14 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.DeleteFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
+import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <ul>
  *   <li><b>개인정보.</b> 얼굴·손바닥 특징점과 이미지다. "프로젝트를 지웠다" 는 사용자 입장에서
  *       그 데이터가 없어졌다는 뜻으로 읽힌다.
- *   <li><b>저장소.</b> MinIO 이미지가 회수 경로 없이 영구히 쌓인다.
+ *   <li><b>저장소.</b> 원본 이미지가 회수 경로 없이 영구히 쌓인다.
  *   <li><b>온프레미스.</b> 납품처의 "이 프로젝트 데이터를 지워 달라" 가 수작업이 된다.
  * </ul>
  *
@@ -44,11 +46,20 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>무엇을 지우고 무엇을 남기는가.</b>
  * <ul>
- *   <li>지운다 — {@code biometric_feature} 행(물리 삭제), 그 특징점의 MinIO 원본 이미지,
+ *   <li>지운다 — {@code biometric_feature} 행(물리 삭제), 그 특징점의 원본 이미지 파일,
  *       face-service·palm-service 쪽 저장분(각 서비스의 삭제 API 호출).
- *   <li>남긴다 — {@code match_history}·{@code feature_history} 의 감사 기록. 그 행들이 가진
- *       이미지 경로는 시도 시점의 별도 이미지라 이 퍼지의 대상이 아니다. 이력 보존 기간은
- *       UG-282 와 같은 법적 판단이 필요해 별개로 둔다.
+ *   <li>남긴다 — {@code match_history}·{@code feature_history} 의 감사 <b>행</b>. 보존 기간이
+ *       UG-282 와 같은 법적 판단을 필요로 해 별개로 둔다.
+ * </ul>
+ *
+ * <p><b>이력 행의 이미지는 함께 사라진다</b> (반박 리뷰 지적). 등록 사건의
+ * {@code feature_history} 행은 {@code biometric_feature} 와 <b>같은 경로 문자열</b>을 갖는다
+ * ({@code FaceFeatureService} 가 하나의 {@code imagePath} 를 양쪽에 넣는다). 즉 행은 남고
+ * 그 행이 가리키는 파일은 없어진다. 개인정보를 지우는 것이 이 기능의 목적이므로 그 편이 맞고,
+ * 외래 키가 없어(V25 의 스냅샷 설계) 행이 깨지지도 않는다. 다만 "이력은 남는다" 를 "이미지도
+ * 남는다" 로 읽으면 안 된다.
+ *
+ * <ul>
  * </ul>
  *
  * <p><b>부분 실패를 어떻게 다루는가.</b> 특징점 하나의 삭제가 실패해도 다음 특징점으로
@@ -100,12 +111,25 @@ public class ProjectDataPurgeService {
         return purged;
     }
 
-    /** @return 지웠으면 true, 실패해 남겼으면 false */
+    /**
+     * 특징점 하나를 지운다.
+     *
+     * @return 지웠으면 true, 실패해 남겼으면 false
+     */
     private boolean purgeFeature(Project project, BiometricFeature feature) {
         try {
             deleteFromBiometricService(project, feature);
+        } catch (CustomFeignException e) {
+            if (!알려진_없음_응답(e)) {
+                log.warn("하위 서비스 삭제 실패로 남겨 둔다. projectId={}, featureId={}, type={}, 사유={}",
+                        project.getId(), feature.getFeatureId(), feature.getType(), e.getType());
+                return false;
+            }
+            // 하위에 이미 없다 = 우리가 지우려던 상태다. 실패로 세면 영원히 재시도만 한다.
+            log.info("하위 서비스에 이미 없다 — 정리를 계속한다. projectId={}, featureId={}, 사유={}",
+                    project.getId(), feature.getFeatureId(), e.getType());
         } catch (RuntimeException e) {
-            // 하위 서비스가 실패하면 gate 행을 남긴다 — 다음 실행에서 다시 시도한다.
+            // 그 외 실패는 gate 행을 남긴다 — 다음 실행에서 다시 시도한다.
             // 여기서 예외를 올리면 이 프로젝트의 나머지 특징점도 함께 멈춘다.
             log.warn("하위 서비스 삭제 실패로 남겨 둔다. projectId={}, featureId={}, type={}, 원인={}",
                     project.getId(), feature.getFeatureId(), feature.getType(),
@@ -118,7 +142,21 @@ public class ProjectDataPurgeService {
         return true;
     }
 
+    /**
+     * 하위 서비스 호출.
+     *
+     * <p><b>이미 소프트 삭제된 특징점은 부르지 않는다</b> (반박 리뷰 지적). 제품 API 의 삭제
+     * ({@code DeleteFaceFeatureUseCase})는 하위 삭제가 <b>성공한 뒤에야</b>
+     * {@code biometricFeature.delete()} 를 찍는다. 즉 {@code is_deleted = true} 인 특징점은
+     * 하위에 이미 없다. 그런데도 부르면 match 가 {@code INVALID_FACE_ID}(MATCH-004, 400)를
+     * 돌려주고, 그것을 실패로 세면 <b>제품 API 로 삭제된 특징점은 영원히 정리되지 않는다.</b>
+     * 리뷰가 체인을 끝까지 따라가 확인했다.
+     */
     private void deleteFromBiometricService(Project project, BiometricFeature feature) {
+        if (feature.isDeleted()) {
+            return;
+        }
+
         String transactionUuid = TransactionUtil.useOrCreate(null);
         String clientId = String.valueOf(project.getAccountId());
 
@@ -130,6 +168,26 @@ public class ProjectDataPurgeService {
                     project.getBranchName(), feature.getFeatureId(), transactionUuid, clientId));
         }
     }
+
+    /**
+     * 하위 서비스가 "그런 특징점 없다" 고 답한 경우.
+     *
+     * <p>위의 소프트 삭제 건너뛰기로 대부분 걸러지지만, <b>부분 실패 뒤 재시도</b>가 남는다 —
+     * 하위 삭제는 성공했는데 그 뒤 커밋이 실패하면 행이 살아 있는 채로 다음 실행에 다시 온다.
+     * 그때도 없음 응답을 실패로 세면 수렴하지 않는다.
+     *
+     * <p>face 경로는 코드가 확인됐다. match 가 {@code INVALID_FACE_ID}(MATCH-004)를 던지고
+     * face 가 {@code code}·{@code type} 을 그대로 전파한다.
+     *
+     * <p><b>palm 은 미확인이다.</b> 벤더 모듈의 응답 코드를 확인하지 못했다. palm 쪽은 위
+     * 소프트 삭제 건너뛰기에만 기댄다 — 부분 실패 재시도에서 막히면 로그의 사유를 보고 이
+     * 목록에 추가할 것.
+     */
+    private boolean 알려진_없음_응답(CustomFeignException e) {
+        return 없음을_뜻하는_사유.contains(e.getType());
+    }
+
+    private static final Set<String> 없음을_뜻하는_사유 = Set.of("INVALID_FACE_ID");
 
     /**
      * MinIO 원본 이미지를 지운다.

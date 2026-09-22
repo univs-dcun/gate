@@ -25,10 +25,19 @@ public class ProjectPurgeRepository {
     private final EntityManager em;
 
     /**
-     * 유예가 지난 삭제 프로젝트 id.
+     * 유예가 지난 삭제 프로젝트 중 <b>아직 지울 것이 남은</b> 것의 id.
      *
      * <p>{@code deleted_at IS NULL} 은 제외한다 — V32 이전에 삭제된 행은 삭제 시각을 알 수 없다.
-     * 임의로 채워 지우는 것보다 남기는 쪽이 안전하다.
+     * 임의로 채워 지우는 것보다 남기는 쪽이 안전하다. ({@code deleted_at < :cutoff} 가 SQL 3값
+     * 논리로 이미 NULL 을 거르지만, 의도를 드러내려고 조건을 남긴다.)
+     *
+     * <p><b>{@code EXISTS} 절이 이 조회의 종료 조건이다</b> (반박 리뷰 지적). 정리가 끝난
+     * 프로젝트에는 지울 특징점이 없으므로 목록에서 빠진다. 이 조건이 없으면 정리된 프로젝트가
+     * 계속 대상으로 남고, <b>가장 오래된 것부터</b> 고르므로 실행당 상한 50개를 영구히
+     * 차지한다 — 51번째 프로젝트는 영원히 정리되지 않는다. 리뷰가 실제 DB 로 재현했다.
+     *
+     * <p>프로젝트 행 자체는 지우지 않는다. 소프트 삭제된 프로젝트는 복구 가능성을 위해
+     * 남기는 것이 UG-288 의 설계이고, 이 기능이 지우는 것은 <b>생체 데이터</b>다.
      *
      * <p>id 만 가져오는 이유는 각 프로젝트를 <b>별도 트랜잭션</b>에서 처리하기 때문이다.
      * 엔티티를 들고 나가면 그 트랜잭션이 끝난 뒤 준영속 상태로 쓰이게 된다.
@@ -39,6 +48,7 @@ public class ProjectPurgeRepository {
                          WHERE p.isDeleted = true
                            AND p.deletedAt IS NOT NULL
                            AND p.deletedAt < :cutoff
+                           AND EXISTS (SELECT 1 FROM BiometricFeature f WHERE f.project.id = p.id)
                          ORDER BY p.deletedAt ASC
                         """, Long.class)
                 .setParameter("cutoff", deletedBefore)

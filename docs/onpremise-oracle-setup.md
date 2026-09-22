@@ -239,6 +239,38 @@ H2 로 재현해 확인했고, 온프레미스 3.0.3 검증에서 실제로 두 
 PostgreSQL 스키마를 입양하기 위한 것 하나였고, 그 입양은 끝났다. 이력 테이블이 있는 환경에서는
 아무 일도 하지 않으므로 제거해도 dev·stage·prod 의 동작은 달라지지 않는다.
 
+### 삭제된 프로젝트의 생체 데이터 정리 (UG-303)
+
+납품처가 "이 프로젝트 데이터를 지워 달라" 고 하면 지금까지는 수작업이었다. 프로젝트 삭제는
+행에 `is_deleted` 를 찍을 뿐 특징점과 원본 이미지는 남기기 때문이다.
+
+UG-303 이 유예 기간 뒤에 실제로 지우는 잡을 넣었다. **기본값은 꺼져 있다** — 아래 설정을
+주지 않으면 대상 조회조차 하지 않으므로, 이 버전으로 올려도 동작은 달라지지 않는다.
+
+```yaml
+gate:
+  privacy:
+    project-purge:
+      retention-days: 30
+```
+
+켜기 전에 정할 것은 하나다. **삭제 후 며칠 뒤에 지울 것인가** — 그 값이 복구 창의 길이다.
+e-KYC 이력의 법적 보관 의무가 납품처마다 다를 수 있으므로 코드가 기본값을 정하지 않는다.
+
+| 지우는 것 | 남기는 것 |
+|---|---|
+| `biometric_feature` 행(물리 삭제), 원본 이미지 파일, face·palm 서비스의 저장분 | `match_history`·`feature_history` 의 감사 행 |
+
+이력 행은 남지만 그 행이 가리키는 등록 이미지는 함께 사라진다. 자세한 내용과 실패 시 동작은
+`docs/project-data-purge.md` 참고.
+
+**V32 이전에 삭제된 프로젝트는 대상이 아니다.** 삭제 시각(`projects.deleted_at`)을 알 수 없어
+유예를 잴 수 없다. 해당 행이 있는지 확인:
+
+```sql
+SELECT count(*) FROM projects WHERE is_deleted = true AND deleted_at IS NULL;
+```
+
 ### 하위 서비스 실패를 조사할 때 (UG-294)
 
 `match_history`·`feature_history` 에 `upstream_status` 컬럼이 있다. face-service·match-server

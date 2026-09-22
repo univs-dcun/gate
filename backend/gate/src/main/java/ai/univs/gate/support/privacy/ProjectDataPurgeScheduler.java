@@ -58,7 +58,11 @@ public class ProjectDataPurgeScheduler {
         if (retentionDays <= 0) {
             // 켜지지 않았다는 것을 하루 한 줄로 남긴다. "안 도는 것" 과 "꺼둔 것" 을 구분할
             // 유일한 근거다 — 나중에 켰다고 생각했는데 안 켜진 상황을 여기서 잡는다.
-            log.debug("프로젝트 데이터 정리는 꺼져 있다 (gate.privacy.project-purge.retention-days 미설정)");
+            //
+            // INFO 인 이유: 루트 로그 레벨이 네 프로파일 모두 INFO 이고 ai.univs 오버라이드가
+            // 없다. DEBUG 로 두면 이 줄이 어디에도 안 찍혀 위 목적을 달성하지 못한다
+            // (반박 리뷰 지적).
+            log.info("프로젝트 데이터 정리는 꺼져 있다 (gate.privacy.project-purge.retention-days 미설정)");
             return;
         }
 

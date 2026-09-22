@@ -12,6 +12,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.DeleteFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
+import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.palm.PalmService;
@@ -162,6 +163,63 @@ class ProjectDataPurgeServiceTest {
         purgeService.purgeProject(PROJECT_ID);
 
         verify(fileService, never()).delete(any());
+    }
+
+    /**
+     * 이미 소프트 삭제된 특징점은 하위 서비스를 부르지 않는다 (반박 리뷰 지적).
+     *
+     * <p>제품 API 의 삭제는 하위 삭제가 <b>성공한 뒤에야</b> is_deleted 를 찍는다. 즉 그런
+     * 특징점은 하위에 이미 없다. 그런데도 부르면 match 가 INVALID_FACE_ID 를 돌려주고, 그것을
+     * 실패로 세면 제품 API 로 삭제된 특징점은 <b>영원히 정리되지 않는다.</b>
+     */
+    @Test
+    @DisplayName("이미 소프트 삭제된 특징점은 하위 서비스를 부르지 않고 바로 지운다")
+    void 소프트삭제된_특징점은_하위호출을_건너뛴다() {
+        BiometricFeature deleted = feature(1, FeatureType.FACE, "img/f1");
+        deleted.delete();
+        given특징점(deleted);
+
+        assertThat(purgeService.purgeProject(PROJECT_ID)).isEqualTo(1);
+
+        verify(faceService, never()).deleteFace(any());
+        verify(fileService).delete("img/f1");
+        verify(projectPurgeRepository).deleteFeature(deleted);
+    }
+
+    /**
+     * 부분 실패 뒤 재시도에서 수렴한다.
+     *
+     * <p>하위 삭제는 성공했는데 그 뒤 커밋이 실패하면 행이 살아 있는 채로 다음 실행에 다시
+     * 온다. 그때 "없다" 응답을 실패로 세면 영원히 재시도만 하게 된다.
+     */
+    @Test
+    @DisplayName("하위 서비스가 '없다' 고 답하면 성공으로 보고 정리를 끝낸다")
+    void 하위에_이미_없으면_성공으로_본다() {
+        BiometricFeature live = feature(1, FeatureType.FACE, "img/f1");
+        given특징점(live);
+        willThrow(new CustomFeignException("MATCH-004", "INVALID_FACE_ID", "no such face"))
+                .given(faceService).deleteFace(any());
+
+        assertThat(purgeService.purgeProject(PROJECT_ID))
+                .as("실패로 세면 이 특징점은 매일 밤 재시도만 하고 영영 안 지워진다")
+                .isEqualTo(1);
+
+        verify(projectPurgeRepository).deleteFeature(live);
+    }
+
+    @Test
+    @DisplayName("그 밖의 하위 서비스 오류는 여전히 실패로 본다")
+    void 다른_사유는_실패다() {
+        BiometricFeature live = feature(1, FeatureType.FACE, "img/f1");
+        given특징점(live);
+        willThrow(new CustomFeignException("MATCH-001", "INVALID_BRANCH", "bad branch"))
+                .given(faceService).deleteFace(any());
+
+        assertThat(purgeService.purgeProject(PROJECT_ID))
+                .as("'없다' 만 성공으로 봐야 한다 — 전부 성공으로 보면 지우지 못한 것을 지웠다고 센다")
+                .isZero();
+
+        verify(projectPurgeRepository, never()).deleteFeature(any());
     }
 
     /**
