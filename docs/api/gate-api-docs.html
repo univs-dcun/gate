@@ -2087,17 +2087,17 @@ var ERR_CATALOG = [
     ko: { when: '갤러리에 그 <code>faceId</code> 로 등록된 사용자가 없다.', act: '등록 여부와 <code>faceId</code> 를 확인한다.' },
     en: { when: 'No user is registered in the gallery under that <code>faceId</code>.', act: 'Check that the user is registered and the <code>faceId</code> is right.' } },
   { g: 'upstream', code: 'MATCH-003', type: 'ALREADY_REGISTERED_DESCRIPTOR',
-    ko: { when: '이미 등록된 인물이다. 같은 사람을 두 번 등록하려 했다.', act: '기존 등록을 조회해 재사용하거나, 교체가 목적이면 수정 API 를 쓴다.' },
-    en: { when: 'That person is already registered — a duplicate registration was attempted.', act: 'Look up the existing entry and reuse it, or use the update API to replace it.' } },
+    ko: { when: '이미 등록된 인물이다. 같은 사람을 두 번 등록하려 했다.', act: '기존 등록을 조회해 재사용하거나, 교체가 목적이면 삭제 후 다시 등록한다.' },
+    en: { when: 'That person is already registered — a duplicate registration was attempted.', act: 'Look up the existing entry and reuse it, or delete it and register again to replace it.' } },
   { g: 'upstream', code: 'MATCH-002', type: 'NOT_SUPPORTED_VERSION',
     ko: { when: '<code>descriptor</code> 의 추출 버전을 지원하지 않는다. 오래 보관해 둔 특징점을 보낼 때 발생한다.',
           act: '특징점 추출 API 로 다시 추출해 보낸다.' },
     en: { when: 'The extraction version of the <code>descriptor</code> is not supported — typically a descriptor kept from an older run.',
           act: 'Re-extract it with the extraction API and send the new value.' } },
   { g: 'upstream', code: '-777', type: 'FAKE · EYES_CLOSED · …',
-    ko: { when: '라이브니스 검증에 실패했다. <code>code</code> 는 사유와 무관하게 <code>-777</code> 이고, 실패 사유는 <code>type</code> 에 담긴다. <b>라이브니스를 켠 프로젝트의 등록·수정에서 이 오류로 온다</b> — 1:1 확인·1:N 매칭(이미지)에서는 오류가 아니라 HTTP 200 + <code>failureReason</code> 으로 흡수된다.',
+    ko: { when: '라이브니스 검증에 실패했다. <code>code</code> 는 사유와 무관하게 <code>-777</code> 이고, 실패 사유는 <code>type</code> 에 담긴다. <b>라이브니스를 켠 프로젝트의 등록에서 이 오류로 온다</b> — 1:1 확인·1:N 매칭(이미지)에서는 오류가 아니라 HTTP 200 + <code>failureReason</code> 으로 흡수된다.',
           act: '<code>type</code> 문자열을 그대로 사용자에게 보여주지 않는다. 사유별 안내가 필요하면 <b>오류 응답 형식</b> 페이지의 사유 목록을 참고해 매핑한다.' },
-    en: { when: 'The liveness check failed. <code>code</code> is <code>-777</code> regardless of the reason, and the reason itself is carried in <code>type</code>. <b>Register and update return this error on projects with liveness enabled</b> — on 1:1 verify and 1:N identify (image) it is absorbed into HTTP 200 with <code>failureReason</code> instead.',
+    en: { when: 'The liveness check failed. <code>code</code> is <code>-777</code> regardless of the reason, and the reason itself is carried in <code>type</code>. <b>Register returns this error on projects with liveness enabled</b> — on 1:1 verify and 1:N identify (image) it is absorbed into HTTP 200 with <code>failureReason</code> instead.',
           act: 'Do not show the raw <code>type</code> string to users. If you need a per-reason message, map it using the reason list on the <b>Response Format</b> page.' } },
   { g: 'upstream', code: 'MATCH-005', type: 'DIFFERENT_EXTRACTION_TYPE',
     ko: { when: '비교하는 두 특징점의 추출 버전이 달라 매칭할 수 없다.', act: '두 값을 같은 버전으로 다시 추출한다.' },
@@ -2326,7 +2326,7 @@ var ERR_FMT = {
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">200 · 매칭 실패</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: {\n    <span class="jk">"success"</span>: <span class="jb">false</span>,\n    <span class="jk">"failureReason"</span>: <span class="js">"얼굴 매칭 결과가 불일치합니다."</span>,\n    <span class="jk">"transactionUuid"</span>: <span class="js">"..."</span>\n  },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
     + '<p class="err-p"><b><code>failureReason</code> 은 코드가 아니라 지역화된 메시지 문자열이다.</b> 문자열 비교로 분기하면 언어 설정이나 문구 변경에 함께 깨진다. 아래는 주로 내려오는 사유들이다 — 각 사유가 어떤 문장으로 오는지 확인하는 용도이며, 프로그램 분기의 근거로 쓰지 않는다.</p>'
     + '<div id="err-reason-body"></div>'
-    + '<p class="err-foot">정의되지 않은 사유는 <b>키 문자열이 그대로</b> 실린다 — 사람에게 보여주기 전에 알려진 사유인지 확인해야 한다. 그리고 <b>이 목록은 위 세 계열(1:1 확인·1:N 매칭·라이브니스)에만 적용된다.</b> 라이브니스를 켠 프로젝트의 <b>등록·수정</b>에서는 같은 사유가 흡수되지 않고 <code>code</code> 가 <code>-777</code> 인 <b>오류</b>로 온다 (사유는 <code>type</code>).</p></div>',
+    + '<p class="err-foot">정의되지 않은 사유는 <b>키 문자열이 그대로</b> 실린다 — 사람에게 보여주기 전에 알려진 사유인지 확인해야 한다. 그리고 <b>이 목록은 위 세 계열(1:1 확인·1:N 매칭·라이브니스)에만 적용된다.</b> 라이브니스를 켠 프로젝트의 <b>등록</b>에서는 같은 사유가 흡수되지 않고 <code>code</code> 가 <code>-777</code> 인 <b>오류</b>로 온다 (사유는 <code>type</code>).</p></div>',
 
   en: '<div class="sec-blk"><div class="sec-ttl">Response Envelope</div>'
     + '<p class="err-p">Success and failure share the same three fields. Use <code>success</code> to tell them apart; on failure, <code>errors</code> carries <code>code</code>, <code>type</code> and <code>message</code>.</p>'
@@ -2363,7 +2363,7 @@ var ERR_FMT = {
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">200 · match failed</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: {\n    <span class="jk">"success"</span>: <span class="jb">false</span>,\n    <span class="jk">"failureReason"</span>: <span class="js">"Face matching result is a mismatch."</span>,\n    <span class="jk">"transactionUuid"</span>: <span class="js">"..."</span>\n  },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
     + '<p class="err-p"><b><code>failureReason</code> is a localized message, not a code.</b> Comparing strings breaks as soon as the language setting or the wording changes. The list below shows the reasons returned most often, so you can recognize them — not as a basis for branching.</p>'
     + '<div id="err-reason-body"></div>'
-    + '<p class="err-foot">An undefined reason is returned <b>as the raw key string</b>, so check that a reason is known before showing it to a person. Note also that <b>this list applies only to the three families above</b> (1:1 verify, 1:N identify, liveness). On <b>register and update</b> with liveness enabled, the same reasons are not absorbed: they arrive as an <b>error</b> with <code>code</code> <code>-777</code> and the reason in <code>type</code>.</p></div>'
+    + '<p class="err-foot">An undefined reason is returned <b>as the raw key string</b>, so check that a reason is known before showing it to a person. Note also that <b>this list applies only to the three families above</b> (1:1 verify, 1:N identify, liveness). On <b>register</b> with liveness enabled, the same reasons are not absorbed: they arrive as an <b>error</b> with <code>code</code> <code>-777</code> and the reason in <code>type</code>.</p></div>'
 };
 
 function renderErrorFormat(lang) {

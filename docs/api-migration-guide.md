@@ -28,7 +28,7 @@
 | 삭제된 엔드포인트 | 대체 엔드포인트 |
 |---|---|
 | `POST /api/v1/users` (사용자 등록) | `POST /api/v1/feature/face` |
-| `PUT /api/v1/users` (사용자 수정) | `PUT /api/v1/feature/face/{faceFeatureId}` |
+| `PUT /api/v1/users` (사용자 수정) | 없음 — 수정 API 는 UG-332(2026-09-22)에서 제거. 재등록은 `DELETE` 후 `POST` |
 | `DELETE /api/v1/users/{userId}` | `DELETE /api/v1/feature/face/{faceFeatureId}` |
 | `GET /api/v1/users/{userId}` | `GET /api/v1/feature/face/{faceFeatureId}` |
 | `GET /api/v1/users/faceId/{faceId}` | `GET /api/v1/feature/face/faceId/{faceId}` |
@@ -63,7 +63,6 @@
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | `POST` | `/api/v1/feature/face` | 얼굴 특징점 등록 |
-| `PUT` | `/api/v1/feature/face/{faceFeatureId}` | 수정 |
 | `DELETE` | `/api/v1/feature/face/{faceFeatureId}` | 삭제 |
 | `GET` | `/api/v1/feature/face/{faceFeatureId}` | 단건 조회 |
 | `GET` | `/api/v1/feature/face/faceId/{faceId}` | Face ID 기반 조회 |
