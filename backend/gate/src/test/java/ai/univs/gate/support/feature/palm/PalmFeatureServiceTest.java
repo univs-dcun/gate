@@ -121,7 +121,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "  cust-42 ");
 
         // then: 저장된 특징 필드 검증
         ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
@@ -130,6 +130,8 @@ class PalmFeatureServiceTest {
         assertThat(savedFeature.getProject()).isSameAs(project);
         assertThat(savedFeature.getType()).isEqualTo(FeatureType.PALM);
         assertThat(savedFeature.getFeatureId()).isEqualTo(CREATED_PALM_ID);
+        // UG-333: 예전엔 DTO 가 받기만 하고 여기서 버렸다 — 저장·정규화(trim)를 못박는다
+        assertThat(savedFeature.getExternalKey()).isEqualTo("cust-42");
         assertThat(savedFeature.getFeatureImagePath()).isEqualTo(UPLOADED_IMAGE_PATH);
         assertThat(savedFeature.getDescription()).isEqualTo("홍길동");
         assertThat(savedFeature.isDeleted()).isFalse();

@@ -107,6 +107,7 @@ class MatchingHistorySelectConditionContractTest {
         assertThat(dto.failureReason()).isEqualTo("서버 오류");
         assertThat(dto.similarity()).isNull();
         assertThat(dto.matchingTime()).isNotNull();
+        assertThat(dto.externalKey()).as("UG-333").isEqualTo("ext-9");
     }
 
     private static Set<String> 위반(MatchingHistorySelectCondition c) {

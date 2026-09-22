@@ -96,7 +96,7 @@ class CreatePalmFeatureUseCaseTest {
     @DisplayName("입력 값이 그대로 서비스에 위임되고 서비스 결과가 PalmFeatureResult로 매핑된다")
     void execute_delegatesAndMapsResult() {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
-        // (input의 externalKey는 서비스로 전달되지 않는다 — 프로덕션 코드 현재 동작)
+        // (UG-333 부터 input 의 externalKey 도 서비스로 전달된다)
         givenProjectSettings(true);
         given(palmFeatureService.createPalmFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))

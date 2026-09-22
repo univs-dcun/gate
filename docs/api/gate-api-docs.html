@@ -1766,7 +1766,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
             <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">이력 생성 일시</td></tr>
-            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 당시 특징점에서 가져오며, 없으면 null</td></tr>
+            <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null</td></tr>
           </tbody>
         </table>
       </div>
@@ -2841,7 +2841,7 @@ var PAGES = {
       { ko: '요청 식별 UUID', en: 'Request UUID' },
       { ko: '사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)', en: 'Consent setting snapshot at event time (null when matchType=DELETE)' },
       { ko: '이력 생성 일시', en: 'History creation time' },
-      { ko: '외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 당시 특징점에서 가져오며, 없으면 null', en: 'External key — your user identifier of the feature this record refers to. Authentication records take it from the feature at that time; null if none' }
+      { ko: '외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null', en: 'External key — your user identifier of the feature this record refers to. Authentication records take the value stored on that feature; null if none' }
     ],
     stDesc: [
       { ko: 'OK', en: 'OK' }

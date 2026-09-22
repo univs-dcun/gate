@@ -304,4 +304,17 @@ class ActivityLogSliceTest {
                 .as("featureId 는 갈리지만 외부 키가 한 사람으로 묶는다")
                 .containsExactlyInAnyOrder("fid-2차", "fid-2차", "fid-1차", "fid-1차", "fid-1차");
     }
+
+    @Test
+    @DisplayName("UG-333: 인증 행의 외부 키는 같은 프로젝트의 특징점에서만 가져온다 — 다른 프로젝트에 같은 featureId 가 있어도 새지 않는다")
+    void 외부_키는_프로젝트_경계를_넘지_않는다() {
+        등록(other, FeatureType.FACE, "홍길동", 0, "other-cust");   // other 프로젝트에 fid-홍길동 + 외부 키
+        인증(project, MatchType.VERIFY_ID, FeatureType.FACE, false, "홍길동", 1);   // 내 프로젝트엔 fid-홍길동 특징점이 없다
+
+        Page<ActivityLog> page = repo.findAllByQuery(조회("ALL", true), project.getId());
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).getExternalKey()).as("남의 프로젝트 키가 붙으면 교차 노출").isNull();
+        assertThat(repo.findAllByQuery(조회("ALL", "ALL", "ALL", "other-cust", 1, 10, true), project.getId()).getTotalElements())
+                .isZero();
+    }
 }

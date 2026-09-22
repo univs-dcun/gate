@@ -265,9 +265,10 @@ class DescriptorMatchHistoryTest {
                     .willReturn("issued-face-id");
 
             BiometricFeature feature = faceFeatureService.createFaceFeatureByDescriptor(
-                    ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, null);
+                    ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, " cust-77 ");
 
             assertThat(feature.getFeatureId()).isEqualTo("issued-face-id");
+            assertThat(feature.getExternalKey()).as("UG-333: descriptor 경로도 외부 키를 저장한다").isEqualTo("cust-77");
             assertThat(feature.getFeatureImagePath()).isNull();
             assertThat(feature.getDescription()).isNull();
             assertThat(feature.getTransactionUuid()).isEqualTo(TX);
