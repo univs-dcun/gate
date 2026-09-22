@@ -59,6 +59,11 @@ public class ApiKeyRepositoryImpl implements ApiKeyRepository {
     }
 
     @Override
+    public Optional<ApiKey> findActiveByApiKeyWithLiveProject(String apiKey) {
+        return apiKeyJpaRepository.findByApiKeyAndIsActiveAndProject_IsDeletedFalse(apiKey, true);
+    }
+
+    @Override
     public boolean existsByApiKey(String apiKey) {
         return apiKeyJpaRepository.existsByApiKey(apiKey);
     }

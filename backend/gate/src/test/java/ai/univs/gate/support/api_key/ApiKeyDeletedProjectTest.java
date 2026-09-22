@@ -65,7 +65,14 @@ class ApiKeyDeletedProjectTest {
         ReflectionTestUtils.setField(project, "id", 42L);
 
         ApiKey apiKey = ApiKey.builder().project(project).apiKey(KEY).isActive(true).build();
-        given(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY)).willReturn(Optional.of(apiKey));
+
+        // UG-300: 규칙이 쿼리로 내려갔으므로 스텁도 진짜 리포지토리처럼 굴어야 한다.
+        // 삭제된 프로젝트면 살아있는-프로젝트 조회는 비고, 진단용 조회에서만 행이 나온다.
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY))
+                .willReturn(projectDeleted ? Optional.empty() : Optional.of(apiKey));
+        if (projectDeleted) {
+            given(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY)).willReturn(Optional.of(apiKey));
+        }
     }
 
     private ErrorType errorTypeOf(Runnable call) {
@@ -123,6 +130,7 @@ class ApiKeyDeletedProjectTest {
     @Test
     @DisplayName("없는 키와 같은 오류 코드다 — 열거 오라클 방지")
     void 열거_오라클_없음() {
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject("없는키")).willReturn(Optional.empty());
         given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
         givenKeyOfProject(true);
 
