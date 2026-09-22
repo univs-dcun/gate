@@ -236,6 +236,18 @@ public class ApiKeyService {
      * <p>{@code NOT_OWNERSHIP} 을 쓰지 않은 것도 같은 이유다. 그 코드는 프로젝트 ID 처럼 이미
      * 소유자에게만 알려진 식별자를 다루는 경로용이다.
      */
+    /**
+     * 소유 불일치를 거부한다.
+     *
+     * <p><b>이 WARN 이 유일한 신호다</b> (UG-306 반박 리뷰 지적). 예전에는 되돌림 스위치의
+     * 모드가 로그에 함께 찍혀 "지금 차단 중인가" 를 로그만으로 알 수 있었다. 스위치가
+     * 사라졌으므로 이제 볼 것은 이 WARN 의 빈도뿐이다.
+     *
+     * <p><b>급증하면 무엇을 해야 하나.</b> 전역 통제를 끄는 것이 아니라 <b>데이터를 교정</b>한다.
+     * 차단 조건은 "X-Api-Key 가 가리키는 프로젝트의 소유 계정 != X-Account-Id" 이므로, 그
+     * 프로젝트의 소유 계정을 바로잡거나 호출자에게 자기 키를 발급하면 해소된다. 로그에 찍히는
+     * {@code projectId} 와 두 {@code accountId} 가 그 판단에 필요한 전부다.
+     */
     private void validateOwnership(ApiKey apiKey, Long accountId) {
         Long ownerAccountId = apiKey.getProject().getAccountId();
         if (ownerAccountId.equals(accountId)) {

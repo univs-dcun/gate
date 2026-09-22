@@ -32,13 +32,11 @@ import org.springframework.test.util.ReflectionTestUtils;
  * 대시보드 trend 의 접근 통제 (UG-301).
  *
  * <p>UG-288 에서 {@code /summary} 에만 모드 무관 검증이 있었고 나머지 대시보드 3종에는 없었다.
- * {@code ApiKeyService.findOwnedByApiKey} 의 소유 검증은
- * {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 통과시키므로, 그 스위치를 켜는
- * 순간 이 셋만 남의 집계를 그대로 내주는 상태였다.
+ * 되돌림 스위치(LOG_ONLY)가 소유 검증을 통과시켰기 때문인데, 그 스위치는 UG-306 에서
+ * 제거됐고 네 엔드포인트가 {@code findOwnedByApiKey} 하나로 통일됐다.
  *
- * <p>지금은 네 엔드포인트가 {@code findOwnedByApiKey} 로 통일됐다. 이 클래스는
- * <b>어느 조회를 부르는가</b>만 본다 — 모드별 실제 동작은
- * {@code ApiKeyOwnershipTest.StrictOwned} 가 진짜 구현으로 검증한다.
+ * <p>이 클래스는 <b>요청 계정을 그대로 넘기는가</b>를 본다 — 거부 동작 자체는
+ * {@code ApiKeyOwnershipTest.Owned} 가 목이 아니라 진짜 구현으로 검증한다.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("대시보드 trend 접근 통제")

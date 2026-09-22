@@ -39,12 +39,12 @@ import org.springframework.test.util.ReflectionTestUtils;
  * 초록이었다. 즉 테넌트 격리가 통째로 사라져도 아무도 몰랐다.
  *
  * <p><b>UG-301 에서 검증 위치가 바뀌었다.</b> 예전에는 여기서
- * {@code projectService.validateOwnership} 을 한 번 더 불러 LOG_ONLY 를 무력화했다. 지금은
+ * {@code projectService.validateOwnership} 을 한 번 더 불렀다. 지금은
  * {@code ApiKeyService.findOwnedByApiKey} 하나로 끝난다. 반박 리뷰가 짚은 대로 옛 방식은
  * {@code NOT_OWNERSHIP} 이라는 열거 오라클을 만들고 SELECT 를 한 번 더 쳤다.
  *
- * <p>그래서 이 클래스는 이제 <b>어느 조회를 부르는가</b>만 본다. 모드별 실제 동작은
- * {@code ApiKeyOwnershipTest.StrictOwned} 가 목이 아니라 진짜 구현으로 검증한다.
+ * <p>그래서 이 클래스는 <b>요청 계정을 그대로 넘기는가</b>를 본다. 거부 동작 자체는
+ * {@code ApiKeyOwnershipTest.Owned} 가 목이 아니라 진짜 구현으로 검증한다.
  *
  * <p>{@code ATTACKER} 를 {@code OWNER} 와 다른 값으로 유지한다. 거부 경로에서 요청 계정을
  * 상수로 굳히는 변이를 잡으려면 둘이 달라야 한다.
