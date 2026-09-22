@@ -10,13 +10,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.DeleteFaceFeatureInput;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.DeleteFaceFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
@@ -58,7 +58,7 @@ class DeleteFaceFeatureUseCaseTest {
     private static final String FEATURE_ID = "face-uuid-1";
 
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
-    @Mock private FeatureHistoryRepository featureHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FaceService faceService;
 
@@ -90,12 +90,12 @@ class DeleteFaceFeatureUseCaseTest {
         given(biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(FEATURE_SEQ, FeatureType.FACE))
                 .willReturn(Optional.of(feature));
         given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
-        given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
     }
 
     private FeatureHistory 저장된_이력() {
         ArgumentCaptor<FeatureHistory> captor = ArgumentCaptor.forClass(FeatureHistory.class);
-        verify(featureHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 
@@ -107,8 +107,8 @@ class DeleteFaceFeatureUseCaseTest {
         useCase.execute(input);
 
         // 순서: 이력 저장 → face 호출. 반대면 face 가 실패했을 때 남는 것이 없다.
-        InOrder order = inOrder(featureHistoryRepository, faceService);
-        order.verify(featureHistoryRepository).save(any(FeatureHistory.class));
+        InOrder order = inOrder(historyRecorder, faceService);
+        order.verify(historyRecorder).start(any(FeatureHistory.class));
         order.verify(faceService).deleteFace(any(DeleteFaceFeignRequestDTO.class));
 
         FeatureHistory history = 저장된_이력();
@@ -183,7 +183,7 @@ class DeleteFaceFeatureUseCaseTest {
                 .satisfies(t -> assertThat(((CustomGateException) t).getErrorType()).isEqualTo(ErrorType.INVALID_USER));
 
         // 남의 것을 지우려던 시도는 남기지 않는다 — 남기면 그 행의 project 가 요청자 것도 대상 것도 아니다.
-        verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
+        verify(historyRecorder, never()).start(any(FeatureHistory.class));
         verify(faceService, never()).deleteFace(any(DeleteFaceFeignRequestDTO.class));
         assertThat(feature.isDeleted()).isFalse();
     }
@@ -195,21 +195,18 @@ class DeleteFaceFeatureUseCaseTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(input)).isInstanceOf(CustomGateException.class);
-        verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
+        verify(historyRecorder, never()).start(any(FeatureHistory.class));
         verify(faceService, never()).deleteFace(any(DeleteFaceFeignRequestDTO.class));
     }
 
     /**
-     * 위 실패 테스트들은 Mockito 라 실제 트랜잭션이 없다 — {@code noRollbackFor} 를 지워도 전부 초록이다.
-     * 그런데 그 속성이 이 티켓의 핵심이다: 없으면 face 실패 시 이력 행이 롤백으로 사라진다 (UG-280).
-     * 선언 자체를 못박는다.
+     * 위 실패 테스트들은 Mockito 라 실제 트랜잭션이 없다 — 이력 행이 정말 남는지는 보지 못한다.
+     *
+     * <p>예전에는 이 자리에 {@code noRollbackFor} <b>선언</b>을 못박는 테스트가 있었다. 선언을
+     * 지우면 face 실패 시 이력이 롤백으로 사라졌기 때문이다. UG-293 이 그 구조를 바꿔 이력을
+     * 호출자 트랜잭션 밖에서 커밋하므로 선언 자체가 사라졌고, 이 테스트도 함께 폐기했다.
+     *
+     * <p>대신 {@code HistoryRecorderSliceTest} 가 실제 트랜잭션을 열고 롤백시켜 <b>행이 남는지</b>
+     * 를 직접 본다 — 선언이 아니라 동작을 보므로, 열거하지 않은 예외에서도 성립한다.
      */
-    @Test
-    @DisplayName("하위 서비스 실패 예외 두 종류가 noRollbackFor 에 선언돼 있다")
-    void noRollbackFor_선언() throws NoSuchMethodException {
-        Method execute = DeleteFaceFeatureUseCase.class.getMethod("execute", DeleteFaceFeatureInput.class);
-        Transactional tx = execute.getAnnotation(Transactional.class);
-        assertThat(tx).as("@Transactional 이 execute 에 있어야 한다").isNotNull();
-        assertThat(tx.noRollbackFor()).contains(CustomFeignException.class, RemoteCallException.class);
-    }
 }

@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.exception.CustomFeignException;
@@ -16,6 +15,7 @@ import ai.univs.gate.shared.utils.ApiKeyMasker;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.palm.PalmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +27,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeletePalmFeatureUseCase {
 
+    private final HistoryRecorder historyRecorder;
     private final BiometricFeatureRepository biometricFeatureRepository;
-    private final FeatureHistoryRepository featureHistoryRepository;
     private final ApiKeyService apiKeyService;
     private final PalmService palmService;
 
-    /** UG-325: 삭제 이력. 순서와 {@code noRollbackFor} 의 이유는 {@code DeleteFaceFeatureUseCase} 참고. */
-    @Transactional(noRollbackFor = {CustomFeignException.class, RemoteCallException.class})
+    /** UG-325: 삭제 이력. 순서와 {@code noRollbackFor} 의 이유는 {@code DeleteFaceFeatureUseCase} 참고.  *
+     * <p><b>UG-293: 이력 커밋이 이 트랜잭션과 분리됐다.</b> 예전에는 {@code noRollbackFor} 로
+     * "이 예외들에서는 롤백하지 말라" 고 열거했고, 목록에 없는 예외 — 특히 우리 코드의 NPE —
+     * 에서는 이력이 그대로 사라졌다. 지금은 {@link HistoryRecorder} 가 행을 먼저 커밋한다.
+     */
+    @Transactional
     public void execute(DeletePalmFeatureInput input) {
         BiometricFeature biometricFeature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.palmFeatureId(), FeatureType.PALM)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
@@ -47,7 +51,7 @@ public class DeletePalmFeatureUseCase {
         }
 
         String transactionUuid = TransactionUtil.useOrCreate(null);
-        FeatureHistory featureHistory = featureHistoryRepository.save(
+        FeatureHistory featureHistory = historyRecorder.start(
                 FeatureHistory.delete(project, biometricFeature, transactionUuid));
 
         var deleteRequest = new DeletePalmFeignRequestDTO(
@@ -66,13 +70,16 @@ public class DeletePalmFeatureUseCase {
             palmService.deletePalm(deleteRequest);
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
+            historyRecorder.fail(featureHistory);
             throw e;
         } catch (RemoteCallException e) {
             featureHistory.failUpstream(e);
+            historyRecorder.fail(featureHistory);
             throw e;
         }
 
         biometricFeature.delete();
         featureHistory.successDelete();
+        historyRecorder.succeed(featureHistory);
     }
 }

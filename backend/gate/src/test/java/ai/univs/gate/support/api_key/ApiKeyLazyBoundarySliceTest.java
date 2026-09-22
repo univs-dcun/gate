@@ -122,6 +122,34 @@ class ApiKeyLazyBoundarySliceTest {
     }
 
     /**
+     * <b>데모 경로도 같아야 한다</b> (UG-293 델타 리뷰가 잡은 회귀).
+     *
+     * <p>데모는 소유 검증을 하지 않는다 — 대조할 accountId 가 없기 때문이다. 그래서 인증
+     * 경로에서 프록시를 초기화해 주던 {@code validateOwnership} 이 불리지 않는다.
+     *
+     * <p>UG-293 이 매칭 유스케이스들의 {@code @Transactional} 을 떼자(커넥션 두 개를 동시에
+     * 쥐는 문제 때문에) 이 경로에 방어막이 하나도 남지 않았고, {@code /api/v1/demo} 의 매칭
+     * API 다섯 개가 전부 {@code LazyInitializationException} 으로 500 이 됐다. 그것도
+     * 이력 행을 저장한 <b>뒤</b>라, 요청마다 사유 없는 행이 쌓였다.
+     *
+     * <p>이 테스트가 없어서 전체 빌드가 초록이었다. 여기 한 줄이면 잡혔을 것이다.
+     */
+    @Test
+    @DisplayName("데모 경로도 트랜잭션 밖에서 프로젝트를 읽을 수 있다 — 소유 검증이 없어도")
+    void 데모_경로도_초기화된_엔티티를_준다() {
+        ApiKey found = apiKeyService.findByApiKeyUnverified(KEY);
+
+        assertThat(Hibernate.isInitialized(found.getProject()))
+                .as("데모는 소유 검증을 하지 않으므로 이 클래스가 직접 초기화해 줘야 한다")
+                .isTrue();
+
+        // 매칭 유스케이스들이 실제로 읽는 값. id 가 아니라 스칼라 필드여야 의미가 있다 —
+        // id 는 프록시가 초기화 없이도 돌려준다.
+        assertThat(found.getProject().getBranchName()).isEqualTo("branch-osiv");
+        assertThat(found.getProject().getAccountId()).isEqualTo(OWNER);
+    }
+
+    /**
      * 본 검증. 서비스를 거치면 트랜잭션 밖에서도 읽을 수 있어야 한다.
      *
      * <p>{@code ApiKeyService} 가 자기 트랜잭션을 열고 소유 검증에서 프록시를 초기화하므로,
