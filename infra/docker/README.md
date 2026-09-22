@@ -42,7 +42,7 @@ compose가 소유권 경계대로 분해되어 있다. 조합은 각 서버 `.en
 | `compose.palm.yml` | 생체인증 역량 (palm 세트) | palm-service |
 | `compose.gate.yml` | 제품 | gate-service |
 | `compose.demo-web.yml` | 제품 | demo-web |
-| `compose.gate-web.yml` | 제품 | gate-web (dev 미사용) |
+| `compose.gate-web.yml` | 제품 | gate-web (UG-331 부터 dev 포함 — main push 자동 배포) |
 
 **실행 방식**: 서버 `.env`에 `COMPOSE_PROJECT_NAME=gate` + `COMPOSE_FILE=<콜론 구분 목록>`이
 선언되어 있어, docker compose가 자동으로 읽는다. 실행 명령은 분해 이전과 동일:
