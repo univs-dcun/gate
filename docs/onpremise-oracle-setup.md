@@ -156,10 +156,16 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 | `SPRING_DATASOURCE_PASSWORD` | `spring.datasource.password` | ✅ | |
 | `MANAGEMENT_SERVER_PORT` | `management.server.port` | | actuator 분리 포트 |
 
-⚠️ **`SPRING_DATASOURCE_*` 는 안 주면 기동이 실패하지 않는다.** 앱 소스의
-`application-{postgresql,oracle}.yml` 에 사내 개발 서버 주소가 기본값으로 들어 있어 그쪽으로
-붙으려 한다. 폐쇄망에서는 연결 실패로 끝나지만 **설정 누락이 조용히 지나간다는 뜻**이므로
-설치 검증에서 실제 접속 대상을 반드시 확인한다.
+✅ **`SPRING_DATASOURCE_*` 를 안 주면 기동이 실패한다 (UG-307, 2026-09-22).** 앱 소스의
+`application-{postgresql,oracle}.yml` 은 세 값을 `${SPRING_DATASOURCE_URL}` 같은 **기본값 없는** 플레이스홀더로만
+갖는다. 예전에는 사내 개발 서버 주소가 기본값으로 들어 있어 누락 시 그쪽으로 조용히 붙으려 했다. 지금 누락 시
+동작은 상황에 따라 다르지만 어느 쪽이든 **접속 성공으로 이어지지 않는다**: config-server 가 없으면
+"Could not resolve placeholder" 로, config-server 가 있으면 gate-config 의 `{서비스}-oracle.yml` /
+`application-postgresql.yml` 이 갖는 값이 `url`·`password` 리터럴 자리표시자라 드라이버가 URL 을 거부하며 멈춘다.
+compose 아래에서 `.env` 의 `CORE_DB_*` 가 빠지면 환경변수가 빈 문자열로 넘어와 접속 단계에서 실패한다.
+gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고 나머지는 자리표시자다.
+각 서비스의 `DatasourceCredentialGuardTest` 가 소스에 접속 정보나 기본값 있는 플레이스홀더가 다시 들어오는 것을
+빌드 단계에서 막는다.
 
 ### gate-service 추가
 
@@ -175,10 +181,10 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 
 ### palm-service / match-server 추가
 
-| 서비스 | 컨테이너 환경변수 | 비고 |
-|---|---|---|
-| palm | `PALM_MODULE_URL` | 폐쇄망 내부 palm 모듈 주소 |
-| match | `LICENSE_SERVER_HOST` | 라이선스 서버 |
+| 서비스 | 컨테이너 환경변수 | 필수 | 비고 |
+|---|---|---|---|
+| palm | `PALM_MODULE_URL` | ✅ | 폐쇄망 내부 palm 모듈 주소. UG-307 부터 소스 기본값이 없어 안 주면 기동 실패 |
+| match | `LICENSE_SERVER_HOST` | | 라이선스 서버 |
 
 ### 이 문서가 다루지 않는 것
 
