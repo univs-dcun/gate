@@ -13,7 +13,8 @@ public record PalmFeatureResult(
         String featureImagePath,
         LocalDateTime createdAt,
         String transactionUuid,
-        Boolean checkLiveness
+        Boolean checkLiveness,
+        String externalKey
 ) {
 
     public static PalmFeatureResult from(BiometricFeature feature,
@@ -28,7 +29,8 @@ public record PalmFeatureResult(
                 ImagePathUtil.get(consentEnabled, prefixImagePath, feature.getFeatureImagePath()),
                 feature.getCreatedAt(),
                 feature.getTransactionUuid(),
-                null);
+                null,
+                feature.getExternalKey());
     }
 
     public static PalmFeatureResult from(BiometricFeature feature,
@@ -44,6 +46,7 @@ public record PalmFeatureResult(
                 ImagePathUtil.get(consentEnabled, prefixImagePath, feature.getFeatureImagePath()),
                 feature.getCreatedAt(),
                 feature.getTransactionUuid(),
-                livenessChecked);
+                livenessChecked,
+                feature.getExternalKey());
     }
 }

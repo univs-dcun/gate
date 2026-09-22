@@ -15,7 +15,8 @@ public record FaceFeatureByDescriptorResult(
         Long faceFeatureId,
         String featureId,
         LocalDateTime createdAt,
-        String transactionUuid
+        String transactionUuid,
+        String externalKey
 ) {
 
     public static FaceFeatureByDescriptorResult from(BiometricFeature feature) {
@@ -23,6 +24,7 @@ public record FaceFeatureByDescriptorResult(
                 feature.getId(),
                 feature.getFeatureId(),
                 feature.getCreatedAt(),
-                feature.getTransactionUuid());
+                feature.getTransactionUuid(),
+                feature.getExternalKey());
     }
 }

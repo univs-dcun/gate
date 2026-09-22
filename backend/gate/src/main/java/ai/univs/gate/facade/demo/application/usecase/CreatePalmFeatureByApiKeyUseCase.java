@@ -35,7 +35,9 @@ public class CreatePalmFeatureByApiKeyUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.transactionUuid());
+                input.transactionUuid(),
+                // UG-333: 데모 등록은 고객사 식별자를 받지 않는다.
+                null);
 
         return PalmFeatureResult.from(result.biometricFeature(), result.livenessChecked(),
                 fileService.getFileServerPath(), findProjectSettings.getConsentEnabled());

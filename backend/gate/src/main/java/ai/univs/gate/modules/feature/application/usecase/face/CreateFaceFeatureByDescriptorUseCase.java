@@ -27,7 +27,8 @@ public class CreateFaceFeatureByDescriptorUseCase {
                 input.accountId(),
                 input.apiKey(),
                 input.descriptor(),
-                input.transactionUuid());
+                input.transactionUuid(),
+                input.externalKey());
 
         return FaceFeatureByDescriptorResult.from(biometricFeature);
     }

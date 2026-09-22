@@ -148,7 +148,7 @@ public class SwaggerDescriptions {
     public static final String FEATURE_IMAGE_PATH = "특징점 이미지 경로";
     public static final String MATCHED_FEATURE_IMAGE_PATH = "매칭 이미지 경로";
     public static final String TARGET_FEATURE_IMAGE_PATH = "대상 이미지 경로";
-    public static final String EXTERNAL_KEY = "외부 연결 키 (face ↔ palm 연결용)";
+    public static final String EXTERNAL_KEY = "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다";
     public static final String THRESHOLD = "판정 임계값";
     public static final String MATCH_THRESHOLD =
             "매칭 성공/실패 기준 점수. 백분율이며 0 초과 100 이하, 소수점 입력 가능 (예: 85.00)";
