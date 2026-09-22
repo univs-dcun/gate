@@ -65,7 +65,6 @@ class FlywayOracleSupportTest {
     private static final String ORACLE = "org.flywaydb.database.oracle.OracleDatabaseType";
     private static final String POSTGRESQL = "org.flywaydb.database.postgresql.PostgreSQLDatabaseType";
 
-    private static final String ORACLE_ACCOUNT = "univs_gate";
 
     @Test
     @DisplayName("오라클 DatabaseType 이 Flyway 플러그인으로 등록돼 있다")
@@ -252,23 +251,23 @@ class FlywayOracleSupportTest {
      * <p>부분 문자열이 아니라 <b>정확히 일치</b>를 본다. 리뷰가 {@code univs_gateway} 나
      * {@code gate_face_palm_match} 같은 값이 {@code contains} 검사를 통과하는 것을 보여 줬다.
      *
-     * <p><b>이 가드가 덮는 범위는 레포 안의 개발 기본값까지다.</b> 실제 컨테이너는 compose 가
-     * 넘기는 {@code SPRING_DATASOURCE_USERNAME} 환경변수를 쓰고, 그쪽이 config-server 값보다
-     * 우선한다 ({@code spring.config.import} 는 bootstrap 이 아니라 config-data 경로다).
-     * 실배포의 계정 분리는 {@code infra/docker/compose/compose.*.yml} 과 {@code .env} 가 쥐고
-     * 있으므로 {@code docs/onpremise-oracle-setup.md} 를 함께 볼 것.
+     * <p><b>UG-307 이후 계정은 소스에 없다.</b> {@code application-oracle.yml} 의 {@code username} 은
+     * {@code ${SPRING_DATASOURCE_USERNAME}} 플레이스홀더만 갖고, 실제 계정({@code univs_gate})은 gate-config 의
+     * {@code gate-service-oracle.yml} 과 compose 환경변수가 준다. 그래서 이 가드는 "계정이 서비스 전용이다" 를
+     * 직접 볼 수 없고, 대신 <b>리터럴 계정(특히 옛 공용 계정 {@code univs} 나 다른 서비스 계정)이 소스로 되돌아오지
+     * 않는 것</b>을 본다. 계정 분리 자체는 {@code docs/onpremise-oracle-setup.md} §2 와 gate-config 가 쥔다.
      */
     @Test
-    @DisplayName("오라클 계정이 이 서비스 전용이다")
+    @DisplayName("오라클 계정은 소스에 리터럴로 없고 플레이스홀더만 있다 (실제 계정 univs_gate 는 gate-config·환경변수가 준다)")
     void 오라클_계정이_서비스_전용이다() throws IOException {
         String username = binderFor("application-oracle.yml")
                 .bind("spring.datasource.username", String.class)
                 .orElse("");
 
         assertThat(username)
-                .as("다른 서비스의 yml 을 복사해 오거나 공용 계정으로 되돌리는 것을 막는다. "
-                        + "오라클은 계정 = 스키마다")
-                .isEqualTo(ORACLE_ACCOUNT);
+                .as("UG-307: 계정을 소스에 다시 박거나(공용 univs 포함) 다른 서비스 yml 을 복사해 오는 것을 막는다. "
+                        + "오라클은 계정 = 스키마라 계정이 겹치면 flyway_schema_history 까지 공유된다")
+                .isEqualTo("${SPRING_DATASOURCE_USERNAME}");
     }
 
     /**
