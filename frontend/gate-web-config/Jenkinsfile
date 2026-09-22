@@ -1,19 +1,41 @@
 // ================================================================
-// gate-web 빌드·배포 파이프라인 (UG-236)
+// gate-web 빌드·배포 파이프라인 (UG-236, UG-331)
 //
-// - 트리거 없음: Jenkins에서 "Build with Parameters"로 수동 실행
+// - 수동: Jenkins에서 "Build with Parameters" (stage/master 승격은 promote)
+// - 자동(UG-331): Bitbucket main push → Generic Webhook Trigger → build-deploy / dev / main 고정.
+//   웹훅 URL: https://jenkins.univsgate.com/generic-webhook-trigger/invoke?token=gate-web-deploy
+//   triggers 블록은 잡이 한 번 실행된 뒤에 Jenkins 에 등록된다 (선언 후 수동 1회 실행 필요).
 // - job 설정: Pipeline from SCM, Branch Specifier */master 고정
 //   (frontend 파이프라인은 모노레포 master가 단일 진실)
 // - 소스: Bitbucket univsai/univsaigateserviceweb (SSH 자격증명)
+// - 이미지 하나로 전 환경 배포: docker-entrypoint.sh 가 기동 시 config.js 를 환경변수로 만든다.
+//   dev 에서 빌드한 태그를 stage/master 로 promote 하는 것이 정석 (백엔드와 동일).
 // ================================================================
 pipeline {
     agent any
 
+    triggers {
+        // Bitbucket Cloud repo:push 페이로드. 이 저장소의 main 브랜치 push 일 때만 기동한다.
+        GenericTrigger(
+            genericVariables: [
+                [key: 'WEBHOOK_BRANCH', value: '$.push.changes[0].new.name'],
+                [key: 'WEBHOOK_REPO',   value: '$.repository.full_name'],
+                [key: 'WEBHOOK_ACTOR',  value: '$.actor.display_name'],
+            ],
+            token: 'gate-web-deploy',
+            causeString: 'Bitbucket push to $WEBHOOK_BRANCH by $WEBHOOK_ACTOR',
+            regexpFilterText: '$WEBHOOK_REPO/$WEBHOOK_BRANCH',
+            regexpFilterExpression: '^univsai/univsaigateserviceweb/main$',
+            printContributedVariables: true,
+            printPostContent: false
+        )
+    }
+
     parameters {
         choice(name: 'MODE', choices: ['build-deploy', 'promote'],
                description: 'build-deploy: 소스 빌드 후 배포 / promote: 기존 이미지 태그를 검증 후 배포만')
-        choice(name: 'TARGET_ENV', choices: ['stage', 'master'],
-               description: '배포 대상 환경 (gate-web은 dev 환경에 없음)')
+        choice(name: 'TARGET_ENV', choices: ['dev', 'stage', 'master'],
+               description: '배포 대상 환경. dev 는 main push 로 자동 배포되며, stage/master 는 dev 태그를 promote 한다')
         string(name: 'SOURCE_REF', defaultValue: 'main',
                description: 'build-deploy: 빌드할 브랜치/태그/커밋 (Bitbucket 기준)')
         string(name: 'PROMOTE_TAG', defaultValue: '',
@@ -41,13 +63,22 @@ pipeline {
         stage('Checkout Monorepo & Load Deploy Target') {
             steps {
                 script {
+                    // UG-331: 웹훅으로 기동됐으면 파라미터 기본값과 무관하게 build-deploy / dev / main 으로 고정한다.
+                    // 수동 실행이면 입력한 파라미터를 그대로 쓴다. 이후 단계는 params.* 대신 RUN_* 만 본다.
+                    boolean fromWebhook = (env.WEBHOOK_BRANCH ?: '').trim() != ''
+                    env.RUN_MODE       = fromWebhook ? 'build-deploy' : params.MODE
+                    env.RUN_TARGET_ENV = fromWebhook ? 'dev'          : params.TARGET_ENV
+                    env.RUN_SOURCE_REF = fromWebhook ? 'main'         : params.SOURCE_REF
+                    env.RUN_TRIGGER    = fromWebhook ? "Bitbucket push (${env.WEBHOOK_ACTOR ?: '-'})" : '수동 실행'
+                    echo "▶ 실행 조건: mode=${env.RUN_MODE} env=${env.RUN_TARGET_ENV} ref=${env.RUN_SOURCE_REF} (${env.RUN_TRIGGER})"
+
                     git branch: 'master',
                         credentialsId: 'github-credentials',
                         url: "${MONOREPO_URL}"
 
                     // 배포 타깃 정보는 master의 단일 파일에서 로드 (UG-232 규칙)
                     def targetEnv = sh(
-                        script: "git show origin/master:infra/ci-cd/deploy-targets/${params.TARGET_ENV}.env",
+                        script: "git show origin/master:infra/ci-cd/deploy-targets/${env.RUN_TARGET_ENV}.env",
                         returnStdout: true
                     ).trim()
                     for (line in targetEnv.split('\n')) {
@@ -63,7 +94,7 @@ pipeline {
         }
 
         stage('Clone Source & Resolve Tag') {
-            when { expression { params.MODE == 'build-deploy' } }
+            when { expression { env.RUN_MODE == 'build-deploy' } }
             steps {
                 sshagent(credentials: [env.SOURCE_CREDENTIALS_ID]) {
                     script {
@@ -71,19 +102,19 @@ pipeline {
                             rm -rf src
                             GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no' git clone ${SOURCE_REPO_URL} src
                             cd src
-                            git checkout ${params.SOURCE_REF}
+                            git checkout ${env.RUN_SOURCE_REF}
                         """
                         def sha   = sh(script: "cd src && git rev-parse --short HEAD", returnStdout: true).trim()
                         def cdate = sh(script: "cd src && git log -1 --pretty=format:'%cd' --date=format:'%Y%m%d'", returnStdout: true).trim()
                         env.DEPLOY_TAG = "${cdate}-${sha}"
-                        echo "✅ 소스 ${params.SOURCE_REF} @ ${sha} → 이미지 태그 ${env.DEPLOY_TAG}"
+                        echo "✅ 소스 ${env.RUN_SOURCE_REF} @ ${sha} → 이미지 태그 ${env.DEPLOY_TAG}"
                     }
                 }
             }
         }
 
         stage('Build and Push') {
-            when { expression { params.MODE == 'build-deploy' } }
+            when { expression { env.RUN_MODE == 'build-deploy' } }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockhub-credentials',
@@ -115,7 +146,7 @@ pipeline {
         }
 
         stage('Verify Image Exists') {
-            when { expression { params.MODE == 'promote' } }
+            when { expression { env.RUN_MODE == 'promote' } }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockhub-credentials',
@@ -147,7 +178,7 @@ pipeline {
                     script {
                         def remoteScript = """
                             cd ${WORKING_DIR} && \
-                            if [ '${params.TARGET_ENV}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
+                            if [ '${env.RUN_TARGET_ENV}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
                             sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}/' .env && \
                             echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}" && \
                             docker compose -p gate stop ${SERVICE_NAME} || true && \
@@ -164,7 +195,7 @@ pipeline {
             post {
                 success {
                     slackSend(channel: SLACK_CHANNEL, color: SLACK_SUCCESS_COLOR,
-                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 배포 성공 (${env.DEPLOY_TAG})")
+                        message: "[${env.DEPLOY_ENV} CI/CD] ${SERVICE_NAME} 배포 성공 (${env.DEPLOY_TAG}) — ${env.RUN_TRIGGER}")
                 }
                 failure {
                     slackSend(channel: SLACK_CHANNEL, color: SLACK_FAIL_COLOR,
