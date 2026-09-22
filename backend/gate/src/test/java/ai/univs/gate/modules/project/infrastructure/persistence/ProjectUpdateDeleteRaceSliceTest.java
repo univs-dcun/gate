@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -110,6 +111,7 @@ class ProjectUpdateDeleteRaceSliceTest {
     @DisplayName("삭제가 행을 잠근 채 진행 중일 때 들어온 수정은 삭제 커밋을 기다렸다가 PROJECT_NOT_FOUND 로 끝난다 — 되살리지 않는다")
     void 삭제_진행_중_들어온_수정은_부활시키지_않는다() throws Exception {
         CountDownLatch deleteHoldsRow = new CountDownLatch(1);
+        AtomicLong updateElapsedMs = new AtomicLong(-1);
         ExecutorService pool = Executors.newFixedThreadPool(2);
         Future<Throwable> update;
         try {
@@ -125,11 +127,14 @@ class ProjectUpdateDeleteRaceSliceTest {
             //    되써 is_deleted=false 로 되살렸다 — 그 회귀를 이 단언이 잡는다.
             update = pool.submit(() -> {
                 await(deleteHoldsRow);
+                long started = System.nanoTime();
                 try {
                     updateProjectUseCase.execute(new UpdateProjectInput(OWNER, projectId, "after", null, null));
                     return null;
                 } catch (Throwable t) {
                     return t;
+                } finally {
+                    updateElapsedMs.set(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
                 }
             });
             delete.get(10, TimeUnit.SECONDS);
@@ -137,6 +142,10 @@ class ProjectUpdateDeleteRaceSliceTest {
             pool.shutdownNow();
         }
         Throwable updateOutcome = update.get(10, TimeUnit.SECONDS);
+
+        // 수정이 잠금 대기를 실제로 거쳤는지 — 잠금 없이 읽으면 D 의 멈춤과 무관하게 즉시 읽고 UPDATE 에서만 막힌다.
+        // 어느 쪽이든 D 의 커밋(≥400ms) 뒤에 끝나야 하지만, 이 단언은 "대기 경로가 죽어 케이스 (1)로 퇴화" 를 잡는다.
+        assertThat(updateElapsedMs.get()).as("수정은 삭제의 잠금 보유 창(400ms)을 기다렸어야 한다").isGreaterThanOrEqualTo(300L);
 
         Project p = reload();
         assertThat(p.isDeleted()).as("삭제가 수정에 덮여 사라지면 안 된다").isTrue();

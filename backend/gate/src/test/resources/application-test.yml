@@ -24,7 +24,9 @@ spring:
     # 부분 유니크 인덱스(UG-302), 타입 강제, Oracle 의 빈 문자열=NULL(UG-297) 같은 것은
     # 여기서 재현되지 않는다. 그런 검증이 필요해지면 Testcontainers 로 실제 DB 를
     # 띄워야 한다 (build.gradle 의 h2 주석 참고).
-    url: jdbc:h2:mem:gate-slice;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    # LOCK_TIMEOUT: H2 기본 2000ms. 잠금 대기를 실제로 태우는 슬라이스(ProjectUpdateDeleteRaceSliceTest, UG-311)가
+    # 느린 CI 워커(UG-326 전례)에서 타임아웃으로 오판되지 않게 넉넉히 준다. 운영 PostgreSQL 은 lock_timeout=0(무한).
+    url: jdbc:h2:mem:gate-slice;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000
     driver-class-name: org.h2.Driver
     username: sa
     password:
