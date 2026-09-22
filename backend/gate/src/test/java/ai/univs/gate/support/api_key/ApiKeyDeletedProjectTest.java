@@ -65,7 +65,14 @@ class ApiKeyDeletedProjectTest {
         ReflectionTestUtils.setField(project, "id", 42L);
 
         ApiKey apiKey = ApiKey.builder().project(project).apiKey(KEY).isActive(true).build();
-        given(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY)).willReturn(Optional.of(apiKey));
+
+        // UG-300: 규칙이 쿼리로 내려갔으므로 스텁도 진짜 리포지토리처럼 굴어야 한다.
+        // 삭제된 프로젝트면 살아있는-프로젝트 조회는 비고, 진단용 조회에서만 행이 나온다.
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY))
+                .willReturn(projectDeleted ? Optional.empty() : Optional.of(apiKey));
+        if (projectDeleted) {
+            given(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY)).willReturn(Optional.of(apiKey));
+        }
     }
 
     private ErrorType errorTypeOf(Runnable call) {
@@ -123,6 +130,7 @@ class ApiKeyDeletedProjectTest {
     @Test
     @DisplayName("없는 키와 같은 오류 코드다 — 열거 오라클 방지")
     void 열거_오라클_없음() {
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject("없는키")).willReturn(Optional.empty());
         given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
         givenKeyOfProject(true);
 
@@ -156,9 +164,51 @@ class ApiKeyDeletedProjectTest {
                     .isNotEmpty();
             assertThat(appender.list)
                     .noneMatch(event -> event.getFormattedMessage().contains(KEY));
+
+            // UG-300 반박 리뷰: 로그가 '있다' 만 보면 내용이 비어도 통과한다. 운영자가 어떤
+            // 프로젝트인지 찾을 수 있어야 이 진단이 의미가 있다 — 그게 규칙을 쿼리로 옮기면서
+            // 굳이 실패 경로 조회를 남긴 이유다.
+            assertThat(appender.list)
+                    .as("어떤 프로젝트인지 없으면 조사 단서가 되지 못한다")
+                    .anyMatch(event -> event.getFormattedMessage().contains("42"));
+            assertThat(appender.list)
+                    .as("삭제 여부가 없으면 '고아 키' 와 '삭제된 프로젝트' 를 구분할 수 없다")
+                    .anyMatch(event -> event.getFormattedMessage().contains("deleted=true"));
         } finally {
             logger.detachAppender(appender);
         }
+    }
+
+    /**
+     * 프로젝트 행이 사라진 고아 키 (UG-300 반박 리뷰 지적).
+     *
+     * <p>{@code api_keys.project_id} 에는 외래 키 제약이 없다 (V1 확인). 그래서 프로젝트 행만
+     * 사라진 상태가 물리적으로 가능하고, 그 지연 프록시를 건드리면
+     * {@code EntityNotFoundException} 이 난다.
+     *
+     * <p>UG-300 이 삭제 검사를 쿼리로 옮기면서 그 프록시 접근이 <b>실패 경로의 진단</b>으로
+     * 옮겨졌다. 거기서 예외가 새어 나가면 "없는 키" 는 400, "고아 키" 는 500 이 되어
+     * 이 클래스가 세 문단에 걸쳐 피하려는 열거 오라클이 진단 코드 때문에 생긴다.
+     */
+    @Test
+    @DisplayName("프로젝트 행이 사라진 키도 없는 키와 같은 응답이다 — 진단이 응답을 바꾸지 않는다")
+    void 고아_키도_같은_응답() {
+        ApiKey orphan = org.mockito.Mockito.mock(ApiKey.class);
+        given(orphan.getProject())
+                .willThrow(new jakarta.persistence.EntityNotFoundException("project 42 없음"));
+
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY)).willReturn(Optional.empty());
+        given(apiKeyRepository.findByApiKeyAndIsActiveTrue(KEY)).willReturn(Optional.of(orphan));
+        given(apiKeyRepository.findActiveByApiKeyWithLiveProject("없는키")).willReturn(Optional.empty());
+        given(apiKeyRepository.findByApiKeyAndIsActiveTrue("없는키")).willReturn(Optional.empty());
+
+        ErrorType 고아키 = errorTypeOf(() -> apiKeyService.findOwnedByApiKey(KEY, OWNER));
+        ErrorType 없는키 = errorTypeOf(() -> apiKeyService.findOwnedByApiKey("없는키", OWNER));
+
+        assertThat(고아키)
+                .as("진단이 예외를 흘리면 여기서 500 이 되어 '이 키는 실재한다' 를 알려준다")
+                .isEqualTo(없는키)
+                .isEqualTo(ErrorType.API_KEY_NOT_FOUND);
     }
 
     @Test
