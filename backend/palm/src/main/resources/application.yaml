@@ -36,7 +36,7 @@ spring:
 
 palm:
   module:
-    url: http://192.168.79.9:8098
+    url: ${PALM_MODULE_URL}  # UG-307: 사내 엔진 주소 기본값 제거 — compose 의 PALM_MODULE_URL 이 준다
   match:
     threshold: 0.85
 
