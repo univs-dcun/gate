@@ -37,7 +37,23 @@ public interface ApiKeyRepository {
      */
     List<ApiKey> findAllActiveByProjectId(Long projectId);
 
+    /**
+     * 활성 키를 찾는다. <b>프로젝트가 삭제됐는지는 보지 않는다.</b>
+     *
+     * <p>UG-300 이후 인증·데모 경로는 {@link #findActiveByApiKeyWithLiveProject} 를 쓴다. 이
+     * 메서드는 그 조회가 비었을 때 "키 자체가 없는 것" 과 "프로젝트가 삭제된 것" 을 구분해
+     * 로그로 남기는 <b>진단용</b>으로만 남는다. 응답은 어느 쪽이든 같다 (열거 오라클 방지).
+     */
     Optional<ApiKey> findByApiKeyAndIsActiveTrue(String apiKey);
+
+    /**
+     * 활성 키 중 <b>살아 있는 프로젝트</b>의 것만 (UG-300).
+     *
+     * <p>"삭제된 프로젝트의 키를 거부한다"(UG-288)를 조회 조건으로 강제한다. 자바 조건은 새
+     * 조회 경로가 생기면 조용히 뚫리지만, 조회 조건은 그 쿼리를 쓰는 모든 호출처에 자동으로
+     * 붙는다.
+     */
+    Optional<ApiKey> findActiveByApiKeyWithLiveProject(String apiKey);
 
     boolean existsByApiKey(String apiKey);
 }

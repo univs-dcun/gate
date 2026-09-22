@@ -143,8 +143,8 @@ public class ApiKeyService {
      *       열거 오라클이다. 이 클래스가 {@link #validateOwnership} 에서 세 문단에 걸쳐 피하려는
      *       바로 그것이고, 그 코드가 공개 계약서(openapi.json)에까지 실렸다.
      *   <li>{@code findByIdAndIsDeletedFalse} 로 SELECT 를 한 번 더 친다. 비교 대상
-     *       {@code accountId} 는 이미 손에 있는 프록시에 들어 있고
-     *       ({@link #validateProjectNotDeleted} 가 초기화해 둔다) 삭제 여부도 거기서 이미 봤다.
+     *       {@code accountId} 는 이미 손에 있는 프록시에 들어 있고, 삭제 여부는
+     *       조회 쿼리가 이미 걸렀다 (UG-300).
      * </ul>
      * 인메모리 비교 + {@link ErrorType#API_KEY_NOT_FOUND} 로 바꾸니 오라클도 추가 쿼리도
      * 사라졌고, 두 모드의 응답이 같아져 계약 스펙 변경이 0 이 됐다.
@@ -234,37 +234,50 @@ public class ApiKeyService {
      * 같은 열거 오라클이 된다.
      */
     public ApiKey findByApiKeyUnverified(String apiKey) {
-        ApiKey found = apiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
-                .orElseThrow(() -> new CustomGateException(ErrorType.API_KEY_NOT_FOUND));
-
-        validateProjectNotDeleted(found);
-
-        return found;
+        return apiKeyRepository.findActiveByApiKeyWithLiveProject(apiKey)
+                .orElseThrow(() -> {
+                    warnIfProjectDeleted(apiKey);
+                    return new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
+                });
     }
 
     /**
-     * 삭제된 프로젝트의 키를 거부한다 (UG-288).
+     * 조회가 빈 이유가 "삭제된 프로젝트" 였는지 확인해 로그만 남긴다 (UG-300).
      *
-     * <p>조회 쿼리에 조건을 붙이면(파생 쿼리 {@code ...AndProject_IsDeletedFalse}) 쿼리 한 번으로
-     * 끝나지만, <b>이 프로젝트에는 그것을 검증할 테스트가 없다.</b> {@code @DataJpaTest} 도
-     * {@code @SpringBootTest} 도 없고 H2 는 {@code developmentOnly} 라 테스트 클래스패스에도 없다.
-     * 보안 통제를 어떤 테스트도 닿지 않는 자리에 두지 않으려고 자바 조건으로 뒀다 — 대가는
-     * {@code getProject()} 지연 로딩 한 번이며, 인증 경로는 어차피 {@link #validateOwnership} 에서
-     * 같은 연관을 읽는다.
+     * <p><b>규칙 자체는 이제 쿼리가 강제한다</b>
+     * ({@code findActiveByApiKeyWithLiveProject}). UG-288 은 이 검사를 자바 조건으로 뒀는데,
+     * 그때는 조회 조건을 검증할 슬라이스 테스트가 없었기 때문이다 — 보안 통제를 "더 나은
+     * 자리" 가 아니라 "검증 가능한 자리" 에 둔 것이다. UG-300 이 인프라를 만들어 제자리로
+     * 옮겼다.
      *
-     * <p>JPA 슬라이스 테스트가 생기면 쿼리로 옮기는 편이 낫다.
+     * <p>그러면서 잃을 뻔한 것이 이 로그다. 쿼리가 걸러 버리면 "키가 없다" 와 "프로젝트가
+     * 삭제됐다" 가 호출자에게도 로그에도 구분되지 않는다. 응답이 같아야 하는 것은 맞지만
+     * (열거 오라클 방지) 운영자는 구분할 수 있어야 한다. 그래서 <b>실패 경로에서만</b> 한 번 더
+     * 조회해 남긴다. 정상 호출에는 추가 쿼리가 없다.
+     *
+     * <p>정상 사용에서는 나올 수 없는 로그다. 삭제 시 키도 함께 비활성화되므로
+     * ({@code DeleteProjectUseCase}) 이 WARN 은 그 경로를 타지 않고 삭제된 행이 있다는 신호다.
+     *
+     * <p><b>진단이 응답을 바꾸면 안 된다</b> (반박 리뷰 지적). {@code getProject()} 는 지연
+     * 프록시고, {@code api_keys.project_id} 에는 외래 키 제약이 없다 (V1 확인). 즉 프로젝트
+     * 행이 사라진 고아 키가 물리적으로 가능하고, 그 프록시를 건드리면
+     * {@link jakarta.persistence.EntityNotFoundException} 이 난다. 그러면 "없는 키" 는 400,
+     * "고아 키" 는 500 이 되어, 이 클래스가 피하려는 열거 오라클이 <b>진단 코드 때문에</b>
+     * 생긴다. 그래서 통째로 감싼다 — 로그를 남기려다 응답을 바꾸는 일은 없어야 한다.
      */
-    private void validateProjectNotDeleted(ApiKey apiKey) {
-        if (!apiKey.getProject().isDeleted()) {
-            return;
+    private void warnIfProjectDeleted(String apiKey) {
+        try {
+            apiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
+                    .ifPresent(found -> log.warn(
+                            "살아 있는 프로젝트가 없는 API 키로 호출이 들어왔다. "
+                                    + "projectId={}, deleted={}, apiKey={}",
+                            found.getProject().getId(), found.getProject().isDeleted(),
+                            ApiKeyMasker.mask(found.getApiKey())));
+        } catch (RuntimeException e) {
+            // 프로젝트 행이 없는 고아 키 등. 진단이 실패해도 호출자에게는 같은 응답을 준다.
+            log.warn("프로젝트를 읽을 수 없는 API 키로 호출이 들어왔다. apiKey={}, 원인={}",
+                    ApiKeyMasker.mask(apiKey), e.getClass().getSimpleName());
         }
-
-        // 정상 사용에서는 나올 수 없다. 삭제 시 키도 함께 비활성화되므로(DeleteProjectUseCase)
-        // 여기까지 왔다는 것은 그 경로를 타지 않고 삭제된 행이 있다는 뜻이다.
-        log.warn("삭제된 프로젝트의 API 키로 호출이 들어왔다. projectId={}, apiKey={}",
-                apiKey.getProject().getId(), ApiKeyMasker.mask(apiKey.getApiKey()));
-
-        throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
     }
 
     /**

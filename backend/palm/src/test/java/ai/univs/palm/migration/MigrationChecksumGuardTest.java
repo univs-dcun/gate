@@ -1,4 +1,4 @@
-package ai.univs.gate.migration;
+package ai.univs.palm.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
  * <p><b>왜 서비스마다 하나씩인가 (UG-313).</b> 원래는 gate 의 테스트 하나가 네 서비스를 모두
  * 봤다. 그런데 젠킨스 파이프라인이 변경 경로로 빌드 대상을 고르므로
  * ({@code univsServicePipeline.groovy} 의 {@code file.startsWith(SERVICE_PATH + '/')}),
- * {@code backend/gate/**} 만 바꾸는 PR 은 gate 테스트를 한 번도 돌리지 않았다. 두 방향으로 어긋난다:
+ * {@code backend/palm/**} 만 바꾸는 PR 은 gate 테스트를 한 번도 돌리지 않았다. 두 방향으로 어긋난다:
  *
  * <ul>
  *   <li>gate 아닌 서비스가 <b>적용된 파일을 고쳐도</b> 그 PR 에서는 안 잡혔다. 뒤늦게 gate 를
@@ -50,19 +50,19 @@ import org.junit.jupiter.api.Test;
  *       머지 조건이라 그 사람이 막힌다.
  * </ul>
  *
- * <p>그래서 이 테스트는 <b>gate 의 마이그레이션만</b> 본다. 형제 서비스 폴더를 아예 읽지
+ * <p>그래서 이 테스트는 <b>palm 의 마이그레이션만</b> 본다. 형제 서비스 폴더를 아예 읽지
  * 않으므로 이 서비스를 단독 레포로 떼도(UG-249 전례) 그대로 돈다.
  *
  * <p>지문은 {@code src/test/resources/migration-checksums.txt} 에 있다. 파일로 뺀 이유는
  * diff 때문이다 — 자바 맵에 넣으면 어느 마이그레이션이 바뀌었는지 리뷰에서 읽어내기 어렵다.
  */
-@DisplayName("UG-312: 적용된 마이그레이션 파일 불변 (gate)")
+@DisplayName("UG-312: 적용된 마이그레이션 파일 불변 (palm)")
 class MigrationChecksumGuardTest {
 
     private static final String RECORD = "/migration-checksums.txt";
 
     /** 이 테스트는 자기 서비스만 본다 (UG-313). 형제 폴더는 각자의 가드가 본다. */
-    private static final String SERVICE = "gate";
+    private static final String SERVICE = "palm";
 
     @Test
     @DisplayName("기록된 지문과 실제 파일이 모두 일치한다")
@@ -186,7 +186,7 @@ class MigrationChecksumGuardTest {
     }
 
     /**
-     * 이 서비스의 마이그레이션 폴더. 테스트의 작업 디렉터리는 {@code backend/gate} 이므로 보통
+     * 이 서비스의 마이그레이션 폴더. 테스트의 작업 디렉터리는 {@code backend/palm} 이므로 보통
      * 첫 줄에서 끝난다. 모노레포 루트에서 돌리는 경우를 위해 위로도 한 번 찾아본다.
      * 못 찾으면 통과가 아니라 예외로 끝낸다 — 조용한 0건이 가장 위험하다.
      */
