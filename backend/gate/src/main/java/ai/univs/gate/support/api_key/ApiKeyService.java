@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
 
@@ -38,6 +39,23 @@ import java.util.Locale;
  * 계정이 없고, 그 자리에서 카메라가 바로 떠야 하기 때문이다. 즉 데모에는 대조할 accountId 자체가
  * 없으므로 검증할 수 없다 — 생략이 아니라 부재다.
  *
+ * <p><b>왜 클래스에 {@code @Transactional(readOnly = true)} 가 붙어 있는가 (UG-335).</b>
+ * {@link #validateOwnership} 이 {@code apiKey.getProject().getAccountId()} 로 지연 프록시를
+ * 초기화한다. 영속성 컨텍스트가 열려 있어야 하는데, 예전에는 그 책임이 <b>호출자</b>에게
+ * 있었다 — 유스케이스 47개 중 43개가 {@code @Transactional} 이라 대부분 성립했고, 나머지는
+ * {@code open-in-view} 기본값(true)이 요청 끝까지 컨텍스트를 열어 둔 덕에 동작했다.
+ *
+ * <p>UG-335 가 그것을 끄면서 두 유스케이스({@code ExtractUseCase},
+ * {@code GetFeatureListUseCase})가 드러났다. 그 둘에 선언을 붙이는 방법도 있었지만
+ * {@code ExtractUseCase} 는 조회 직후 face 서비스를 Feign 으로 부른다 — 트랜잭션으로 감싸면
+ * <b>원격 호출 내내 DB 커넥션을 붙든다.</b> 부하가 걸릴 때 풀을 고갈시키는, OSIV 를 끄려던
+ * 이유와 똑같은 형태의 문제다.
+ *
+ * <p>그래서 자기 지연 로딩의 경계는 자기가 연다. 이 클래스는 조회만 하고 원격 호출이 없으므로
+ * 경계가 짧고, 바깥 트랜잭션이 있으면 {@code REQUIRED} 로 합류해 기존 43곳의 동작은 달라지지
+ * 않는다. 호출자는 반환된 엔티티의 {@code getProject()} 를 트랜잭션 밖에서도 읽을 수 있다 —
+ * 소유 검증이 이미 프록시를 초기화해 두기 때문이다.
+ *
  * <p>그래서 이 검증이 오히려 데모 설계를 지탱한다. 데모 페이지는 브라우저에서 직접
  * {@code /api/v1/demo/**} 를 호출하므로 API 키가 반드시 클라이언트에 노출된다. 그 키만으로 할 수 있는
  * 일이 데모 범위(등록·매칭·라이브니스·목록)에 머물러야 "키는 공개돼도 된다" 가 성립하는데, 검증이
@@ -47,6 +65,7 @@ import java.util.Locale;
 @Service
 @RefreshScope
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
