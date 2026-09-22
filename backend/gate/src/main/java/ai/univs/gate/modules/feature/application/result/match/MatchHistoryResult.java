@@ -29,7 +29,8 @@ public record MatchHistoryResult(
         String failureType,
         String transactionUuid,
         Boolean consentSnapshot,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String externalKey
 ) {
 
     /**
@@ -56,6 +57,7 @@ public record MatchHistoryResult(
                 log.getFailureType(),
                 log.getTransactionUuid(),
                 log.getConsentSnapshot(),
-                log.getCreatedAt());
+                log.getCreatedAt(),
+                log.getExternalKey());
     }
 }

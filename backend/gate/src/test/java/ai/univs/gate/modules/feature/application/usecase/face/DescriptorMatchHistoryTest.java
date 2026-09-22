@@ -265,9 +265,10 @@ class DescriptorMatchHistoryTest {
                     .willReturn("issued-face-id");
 
             BiometricFeature feature = faceFeatureService.createFaceFeatureByDescriptor(
-                    ACCOUNT_ID, API_KEY, DESCRIPTOR, TX);
+                    ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, " cust-77 ");
 
             assertThat(feature.getFeatureId()).isEqualTo("issued-face-id");
+            assertThat(feature.getExternalKey()).as("UG-333: descriptor 경로도 외부 키를 저장한다").isEqualTo("cust-77");
             assertThat(feature.getFeatureImagePath()).isNull();
             assertThat(feature.getDescription()).isNull();
             assertThat(feature.getTransactionUuid()).isEqualTo(TX);
@@ -291,7 +292,7 @@ class DescriptorMatchHistoryTest {
             given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
                     .willThrow(new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFaceByDescriptor", new RuntimeException("reset")));
 
-            assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX))
+            assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, null))
                     .isInstanceOf(RemoteCallException.class);
 
             assertThat(저장된_특징점_이력().getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
@@ -306,7 +307,7 @@ class DescriptorMatchHistoryTest {
                     .willThrow(new CustomFeignException(ErrorType.FACE_NOT_FOUND.getCode(), ErrorType.FACE_NOT_FOUND.name(), "no face"));
 
             assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(
-                    ACCOUNT_ID, API_KEY, DESCRIPTOR, TX))
+                    ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, null))
                     .isInstanceOf(CustomFeignException.class);
 
             assertThat(저장된_특징점_이력().getFailureType())

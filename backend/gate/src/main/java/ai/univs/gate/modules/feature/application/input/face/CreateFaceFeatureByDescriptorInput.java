@@ -10,6 +10,7 @@ public record CreateFaceFeatureByDescriptorInput(
         Long accountId,
         String apiKey,
         String descriptor,
-        String transactionUuid
+        String transactionUuid,
+        String externalKey
 ) {
 }

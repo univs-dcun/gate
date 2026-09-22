@@ -28,7 +28,8 @@ public class CreateFaceFeatureUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.transactionUuid());
+                input.transactionUuid(),
+                input.externalKey());
 
         // UG-281 반박 리뷰: 여기서 API 키를 다시 조회하지 않는다. 소유 검증은 위 서비스가
         // 맨 앞에서 이미 마쳤고, 이 두 번째 조회는 REQUIRES_NEW 커밋 '이후' 바깥 트랜잭션에서

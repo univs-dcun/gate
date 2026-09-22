@@ -25,7 +25,10 @@ public record FaceFeatureByDescriptorResponseDTO(
         LocalDateTime createdAt,
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.EXTERNAL_KEY)
+        String externalKey
 ) {
 
     public static FaceFeatureByDescriptorResponseDTO from(FaceFeatureByDescriptorResult result, String timezone) {
@@ -33,6 +36,7 @@ public record FaceFeatureByDescriptorResponseDTO(
                 result.faceFeatureId(),
                 result.featureId(),
                 fromUtc(result.createdAt(), timezone),
-                result.transactionUuid());
+                result.transactionUuid(),
+                result.externalKey());
     }
 }

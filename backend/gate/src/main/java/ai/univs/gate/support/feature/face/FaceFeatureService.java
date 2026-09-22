@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -53,7 +54,8 @@ public class FaceFeatureService {
                                                             String apiKey,
                                                             MultipartFile featureImage,
                                                             String description,
-                                                            String transactionUuid
+                                                            String transactionUuid,
+                                                            String externalKey
     ) {
         // UG-281: 검증을 이 메서드 맨 앞에서 한다. 예전에는 호출하는 UseCase 가 등록을
         // 마친 뒤에야 소유를 확인했는데, 이 메서드는 REQUIRES_NEW 라 그 시점엔 이미 특징점과
@@ -104,6 +106,7 @@ public class FaceFeatureService {
                 .description(description)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
+                .externalKey(normalizeExternalKey(externalKey))
                 .build();
         biometricFeatureRepository.save(biometricFeature);
 
@@ -138,7 +141,8 @@ public class FaceFeatureService {
     public BiometricFeature createFaceFeatureByDescriptor(Long accountId,
                                                          String apiKey,
                                                          String descriptor,
-                                                         String transactionUuid
+                                                         String transactionUuid,
+                                                         String externalKey
     ) {
         // descriptor 등록은 인증 경로 전용이다 (데모에 대응 엔드포인트가 없다).
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(apiKey, accountId);
@@ -181,12 +185,22 @@ public class FaceFeatureService {
                 .featureId(featureId)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
+                .externalKey(normalizeExternalKey(externalKey))
                 .build();
         biometricFeatureRepository.save(biometricFeature);
 
         featureHistory.successRegister(biometricFeature);
 
         return biometricFeature;
+    }
+
+    /**
+     * UG-333: 외부 키는 고객사 시스템의 사용자 식별자다. 빈 문자열은 "없음" 과 같으므로 null 로 정규화해
+     * 저장한다 — 오라클은 '' 를 NULL 로 취급하므로(UG-297) 두 방언에서 같은 값이 남게 하는 뜻도 있다.
+     * 프로젝트 안 유일성은 강제하지 않는다 (제품 결정 보류, UG-333).
+     */
+    public static String normalizeExternalKey(String externalKey) {
+        return StringUtils.hasText(externalKey) ? externalKey.trim() : null;
     }
 
     public BiometricFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {

@@ -108,6 +108,25 @@ class FaceFeatureServiceTest {
     }
 
     @Test
+    @DisplayName("UG-333: externalKey 는 앞뒤 공백을 지워 저장하고, 빈 값은 null 로 정규화한다 — 특징점 이력 스냅샷에도 같은 값이 실린다")
+    void createFaceFeature_externalKey_정규화() {
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willReturn(CREATED_FACE_ID);
+        given(biometricFeatureRepository.save(any(BiometricFeature.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "  cust-42 ");
+
+        ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
+        verify(biometricFeatureRepository).save(featureCaptor.capture());
+        assertThat(featureCaptor.getValue().getExternalKey()).isEqualTo("cust-42");
+        assertThat(capturedFeatureHistory().getExternalKey()).as("이력 스냅샷").isEqualTo("cust-42");
+
+        assertThat(FaceFeatureService.normalizeExternalKey("   ")).isNull();
+        assertThat(FaceFeatureService.normalizeExternalKey(null)).isNull();
+        assertThat(FaceFeatureService.normalizeExternalKey("")).isNull();
+    }
+
+    @Test
     @DisplayName("등록 성공 시 특징이 저장되고 특징점 이력(feature_history)이 REGISTER success 상태로 갱신된다")
     void createFaceFeature_success() {
         // given
@@ -121,7 +140,7 @@ class FaceFeatureServiceTest {
 
         // when
         CreateFaceFeatureServiceResult result =
-                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
 
         // then: 저장된 특징 필드 검증
         ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
@@ -176,7 +195,7 @@ class FaceFeatureServiceTest {
 
         // when & then
         assertThatThrownBy(() ->
-                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null))
                 .isSameAs(exception);
 
         // then (UG-325): 실패한 등록 시도도 feature_history 에 남는다 — 스냅샷은 비고 사유만 있다
@@ -198,7 +217,7 @@ class FaceFeatureServiceTest {
         RemoteCallException exception = new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFace", new RuntimeException("timeout"));
         given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willThrow(exception);
 
-        assertThatThrownBy(() -> faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID)).isSameAs(exception);
+        assertThatThrownBy(() -> faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null)).isSameAs(exception);
 
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.isSuccess()).isFalse();
@@ -220,7 +239,7 @@ class FaceFeatureServiceTest {
 
         // when
         CreateFaceFeatureServiceResult result =
-                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
 
         // then
         verify(fileService).uploadIfConsent(featureImage, false);
@@ -285,7 +304,7 @@ class FaceFeatureServiceTest {
 
         // when
         assertThatThrownBy(() -> faceFeatureService.createFaceFeature(
-                CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null))
                 .isInstanceOf(CustomGateException.class);
 
         // then: 순서가 이 테스트의 본문이다.
