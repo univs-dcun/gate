@@ -121,7 +121,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
 
         // then: 저장된 특징 필드 검증
         ArgumentCaptor<BiometricFeature> featureCaptor = ArgumentCaptor.forClass(BiometricFeature.class);
@@ -175,7 +175,7 @@ class PalmFeatureServiceTest {
 
         // when & then
         assertThatThrownBy(() ->
-                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null))
                 .isSameAs(exception);
 
         // then (UG-325): 실패한 등록 시도도 feature_history 에 남는다 — 스냅샷은 비고 사유만 있다
@@ -197,7 +197,7 @@ class PalmFeatureServiceTest {
         RemoteCallException exception = new RemoteCallException(RemoteCallException.NO_RESPONSE, "palm.registerPalm", new RuntimeException("timeout"));
         given(palmService.registerPalm(any(RegisterPalmFeignRequestDTO.class))).willThrow(exception);
 
-        assertThatThrownBy(() -> palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID)).isSameAs(exception);
+        assertThatThrownBy(() -> palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null)).isSameAs(exception);
 
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.isSuccess()).isFalse();
@@ -219,7 +219,7 @@ class PalmFeatureServiceTest {
 
         // when
         CreatePalmFeatureServiceResult result =
-                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+                palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
 
         // then
         verify(fileService).uploadIfConsent(featureImage, false);
@@ -283,7 +283,7 @@ class PalmFeatureServiceTest {
 
         // when
         assertThatThrownBy(() -> palmFeatureService.createPalmFeature(
-                CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null))
                 .isInstanceOf(CustomGateException.class);
 
         // then: FaceFeatureService 와 짝을 이루는 테스트다. 얼굴 쪽에만 있으면 손바닥 등록에서

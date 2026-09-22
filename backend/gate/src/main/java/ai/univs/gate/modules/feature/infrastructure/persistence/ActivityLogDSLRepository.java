@@ -73,7 +73,9 @@ public class ActivityLogDSLRepository {
             where.and(new BooleanBuilder()
                     .or(log.transactionUuid.containsIgnoreCase(kw))
                     .or(log.featureId.containsIgnoreCase(kw))
-                    .or(log.userDescription.containsIgnoreCase(kw)));
+                    .or(log.userDescription.containsIgnoreCase(kw))
+                    // UG-333: 고객사 식별자로도 찾는다 — 재등록 전후를 한 사람으로 이어 보는 진입점
+                    .or(log.externalKey.containsIgnoreCase(kw)));
         }
 
         // 기능 필터. "ALL" 은 옛 클라이언트 호환을 위해 기본으로 DELETE 를 숨긴다 — 옛 프론트의

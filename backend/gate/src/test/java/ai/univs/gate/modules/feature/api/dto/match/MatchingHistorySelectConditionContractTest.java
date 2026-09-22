@@ -97,7 +97,7 @@ class MatchingHistorySelectConditionContractTest {
     void 응답_DTO_매핑() {
         MatchHistoryResult r = new MatchHistoryResult(3L, 1003L, 1L, FeatureType.FACE, ActivityType.DELETE, ActivitySource.FEATURE,
                 LocalDateTime.of(2026, 9, 21, 1, 0), false, false, "fid", 7L, "홍길동", (BigDecimal) null, "img", null,
-                "INTERNAL_SERVER_ERROR", "tx-1", true, LocalDateTime.of(2026, 9, 21, 1, 0));
+                "INTERNAL_SERVER_ERROR", "tx-1", true, LocalDateTime.of(2026, 9, 21, 1, 0), "ext-9");
         MatchingHistoryResponseDTO dto = MatchingHistoryResponseDTO.from(r, "서버 오류", "Asia/Seoul");
         assertThat(dto).isNotNull();
         assertThat(dto.source()).isEqualTo(ActivitySource.FEATURE);

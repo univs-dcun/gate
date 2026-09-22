@@ -202,7 +202,7 @@ class ApiKeyPropagationTest {
         @DisplayName("등록 — descriptor 기반 (UG-279)")
         void 등록_descriptor() {
             given(createFaceFeatureByDescriptorUseCase.execute(any())).willAnswer(captureFirstArg());
-            var request = new CreateFaceFeatureByDescriptorRequestDTO("d1", "tx-create-descriptor");
+            var request = new CreateFaceFeatureByDescriptorRequestDTO("d1", "tx-create-descriptor", "ext-2");
             assertApiKeyPropagated(capture(() -> faceController.createByDescriptor(request)));
         }
 
@@ -235,7 +235,7 @@ class ApiKeyPropagationTest {
         @DisplayName("등록")
         void 등록() {
             given(createFaceFeatureUseCase.execute(any())).willAnswer(captureFirstArg());
-            var request = new CreateFeatureRequestDTO(null, "desc", "tx-create");
+            var request = new CreateFeatureRequestDTO(null, "desc", "tx-create", "ext-1");
             assertApiKeyPropagated(capture(() -> faceController.create(request)));
         }
 

@@ -68,7 +68,7 @@ class CreateFaceFeatureUseCaseTest {
                 .build();
         featureImage = new MockMultipartFile(
                 "featureImage", "face.jpg", "image/jpeg", "face-bytes".getBytes());
-        input = new CreateFeatureInput(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID);
+        input = new CreateFeatureInput(ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1");
         feature = BiometricFeature.builder()
                 .id(7L)
                 .project(project)
@@ -97,7 +97,7 @@ class CreateFaceFeatureUseCaseTest {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
         givenProjectSettings(true);
         given(faceFeatureService.createFaceFeature(
-                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, true));
 
         // when
@@ -119,7 +119,7 @@ class CreateFaceFeatureUseCaseTest {
         // given
         givenProjectSettings(false);
         given(faceFeatureService.createFaceFeature(
-                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, false));
 
         // when

@@ -26,7 +26,8 @@ public class CreatePalmFeatureUseCase {
                 input.apiKey(),
                 input.featureImage(),
                 input.description(),
-                input.transactionUuid());
+                input.transactionUuid(),
+                input.externalKey());
 
         // UG-281 반박 리뷰: CreateFaceFeatureUseCase 와 같은 이유로 재조회하지 않는다.
         ProjectSettings settings = projectSettingsService.findByProject(

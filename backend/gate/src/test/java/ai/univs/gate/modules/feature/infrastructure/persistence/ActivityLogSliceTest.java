@@ -1,6 +1,7 @@
 package ai.univs.gate.modules.feature.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import ai.univs.gate.modules.feature.domain.entity.ActivityLog;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
@@ -73,8 +74,14 @@ class ActivityLogSliceTest {
     }
 
     private FeatureHistory 등록(Project p, FeatureType ft, String memo, int minutes) {
+        return 등록(p, ft, memo, minutes, null);
+    }
+
+    /** UG-333: externalKey 를 가진 특징점. featureId 는 "fid-{memo}" 라 인증 행의 featureId 와 맞춰 쓴다. */
+    private FeatureHistory 등록(Project p, FeatureType ft, String memo, int minutes, String externalKey) {
         BiometricFeature f = BiometricFeature.builder().project(p).type(ft).featureId("fid-" + memo)
-                .description(memo).isDeleted(false).transactionUuid(UUID.randomUUID().toString()).build();
+                .description(memo).isDeleted(false).transactionUuid(UUID.randomUUID().toString())
+                .externalKey(externalKey).build();
         em.persist(f);
         FeatureHistory h = FeatureHistory.register(p, ft, false, null, UUID.randomUUID().toString(), true);
         h.successRegister(f); em.persist(h);
@@ -262,5 +269,39 @@ class ActivityLogSliceTest {
                 });
         assertThat(repo.findLatestByProjectIdAndTransactionUuid(other.getId(), del.getTransactionUuid()))
                 .as("다른 프로젝트에서는 보이지 않는다").isEmpty();
+    }
+
+    @Test
+    @DisplayName("UG-333: 외부 키는 특징점 사건은 스냅샷에서, 인증 시도는 그 시점의 특징점을 되짚어 붙는다")
+    void 외부_키는_두_출처에_붙는다() {
+        FeatureHistory reg = 등록(project, FeatureType.FACE, "홍길동", 0, "cust-42");
+        인증(project, MatchType.IDENTIFY, FeatureType.FACE, true, "홍길동", 1);       // featureId=fid-홍길동 → 특징점과 연결
+        인증(project, MatchType.IDENTIFY, FeatureType.FACE, false, "미등록", 2);      // fid-미등록 은 특징점이 없다
+        삭제(project, reg, true, 3);
+
+        Page<ActivityLog> page = repo.findAllByQuery(조회("ALL", true), project.getId());
+        assertThat(page.getContent()).extracting(ActivityLog::getActivityType, ActivityLog::getExternalKey)
+                .containsExactly(
+                        tuple(ActivityType.DELETE, "cust-42"),
+                        tuple(ActivityType.IDENTIFY, null),
+                        tuple(ActivityType.IDENTIFY, "cust-42"),
+                        tuple(ActivityType.REGISTER, "cust-42"));
+    }
+
+    @Test
+    @DisplayName("UG-333: 삭제 뒤 같은 외부 키로 다시 등록하면 검색어 하나로 전후 이력이 함께 나온다")
+    void 외부_키_검색은_재등록_전후를_잇는다() {
+        FeatureHistory first = 등록(project, FeatureType.FACE, "1차", 0, "cust-7");
+        인증(project, MatchType.VERIFY_ID, FeatureType.FACE, true, "1차", 1);
+        삭제(project, first, true, 2);
+        등록(project, FeatureType.FACE, "2차", 3, "cust-7");                          // 새 featureId(fid-2차), 같은 외부 키
+        인증(project, MatchType.VERIFY_ID, FeatureType.FACE, true, "2차", 4);
+        등록(project, FeatureType.FACE, "남", 5, "cust-8");
+
+        Page<ActivityLog> page = repo.findAllByQuery(조회("ALL", "ALL", "ALL", "cust-7", 1, 10, true), project.getId());
+        assertThat(page.getTotalElements()).as("등록·인증·삭제·재등록·재인증 5건, 다른 키는 제외").isEqualTo(5);
+        assertThat(page.getContent()).extracting(ActivityLog::getFeatureId)
+                .as("featureId 는 갈리지만 외부 키가 한 사람으로 묶는다")
+                .containsExactlyInAnyOrder("fid-2차", "fid-2차", "fid-1차", "fid-1차", "fid-1차");
     }
 }

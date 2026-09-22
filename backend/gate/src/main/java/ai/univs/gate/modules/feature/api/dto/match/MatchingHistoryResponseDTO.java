@@ -69,7 +69,10 @@ public record MatchingHistoryResponseDTO(
         Boolean consentSnapshot,
 
         @Schema(description = SwaggerDescriptions.CREATED_AT)
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        @Schema(description = SwaggerDescriptions.EXTERNAL_KEY)
+        String externalKey
 ) {
 
     public static MatchingHistoryResponseDTO from(MatchHistoryResult result,
@@ -96,6 +99,7 @@ public record MatchingHistoryResponseDTO(
                 failureReason,
                 result.transactionUuid(),
                 result.consentSnapshot(),
-                fromUtc(result.createdAt(), timezone));
+                fromUtc(result.createdAt(), timezone),
+                result.externalKey());
     }
 }

@@ -62,7 +62,11 @@ import org.hibernate.annotations.Synchronize;
                mh.failure_type                  AS failure_type,
                mh.transaction_uuid              AS transaction_uuid,
                mh.consent_snapshot              AS consent_snapshot,
-               mh.created_at                    AS created_at
+               mh.created_at                    AS created_at,
+               (SELECT MAX(bf.external_key) FROM biometric_feature bf
+                 WHERE bf.project_id = mh.project_id
+                   AND bf.type       = mh.feature_type
+                   AND bf.feature_id = mh.feature_id) AS external_key
           FROM match_history mh
          WHERE mh.match_type <> 'REGISTER'
         UNION ALL
@@ -84,10 +88,11 @@ import org.hibernate.annotations.Synchronize;
                fh.failure_type,
                fh.transaction_uuid,
                fh.consent_snapshot,
-               fh.created_at
+               fh.created_at,
+               fh.external_key
           FROM feature_history fh
         """)
-@Synchronize({"match_history", "feature_history"})
+@Synchronize({"match_history", "feature_history", "biometric_feature"})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ActivityLog {
@@ -133,6 +138,14 @@ public class ActivityLog {
 
     @Column(name = "user_description")
     private String userDescription;
+
+    /**
+     * UG-333: 고객사 시스템의 사용자 식별자. 특징점 사건은 feature_history 스냅샷에서, 인증 시도는 그 시점의
+     * feature_id 로 biometric_feature 를 되짚어 가져온다 — 재등록 뒤에도 옛 인증 행은 옛 특징점의 키를 가리키므로
+     * 같은 키로 재등록했다면 전후 이력이 한 값으로 이어진다. 이력 없는 실패(feature_id 없음)는 null.
+     */
+    @Column(name = "external_key")
+    private String externalKey;
 
     @Column(name = "similarity")
     private BigDecimal similarity;

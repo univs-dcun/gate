@@ -135,9 +135,9 @@ class DescriptorValidationTest {
         @DisplayName("등록 요청")
         void 등록() {
             assertSingleDescriptorViolation(validator.validate(
-                    new CreateFaceFeatureByDescriptorRequestDTO("not base64!", null)));
+                    new CreateFaceFeatureByDescriptorRequestDTO("not base64!", null, null)));
             assertTrue(validator.validate(
-                    new CreateFaceFeatureByDescriptorRequestDTO(VALID, "tx-1")).isEmpty());
+                    new CreateFaceFeatureByDescriptorRequestDTO(VALID, "tx-1", null)).isEmpty());
         }
 
         @Test

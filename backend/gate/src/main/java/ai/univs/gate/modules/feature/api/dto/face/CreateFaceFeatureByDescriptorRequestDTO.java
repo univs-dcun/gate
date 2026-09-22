@@ -22,7 +22,11 @@ public record CreateFaceFeatureByDescriptorRequestDTO(
 
         @Schema(description = SwaggerDescriptions.TRANSACTION_UUID)
         @Length(max = 36, message = "INVALID_TRANSACTION_UUID_LENGTH")
-        String transactionUuid
+        String transactionUuid,
+
+        @Schema(description = SwaggerDescriptions.EXTERNAL_KEY)
+        @Length(max = 255, message = "INVALID_EXTERNAL_KEY_LENGTH")
+        String externalKey
 ) {
 
     public CreateFaceFeatureByDescriptorInput toInput(Long accountId, String apiKey) {
@@ -30,6 +34,7 @@ public record CreateFaceFeatureByDescriptorRequestDTO(
                 accountId,
                 apiKey,
                 descriptor,
-                TransactionUtil.useOrCreate(transactionUuid));
+                TransactionUtil.useOrCreate(transactionUuid),
+                externalKey);
     }
 }

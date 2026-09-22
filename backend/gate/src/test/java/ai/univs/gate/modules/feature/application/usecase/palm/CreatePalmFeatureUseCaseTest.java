@@ -99,7 +99,7 @@ class CreatePalmFeatureUseCaseTest {
         // (input의 externalKey는 서비스로 전달되지 않는다 — 프로덕션 코드 현재 동작)
         givenProjectSettings(true);
         given(palmFeatureService.createPalmFeature(
-                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, true));
 
         // when
@@ -121,7 +121,7 @@ class CreatePalmFeatureUseCaseTest {
         // given
         givenProjectSettings(false);
         given(palmFeatureService.createPalmFeature(
-                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID))
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, false));
 
         // when

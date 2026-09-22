@@ -1,5 +1,6 @@
 package ai.univs.gate.support.feature.palm;
 
+import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
@@ -52,7 +53,8 @@ public class PalmFeatureService {
                                                             String apiKey,
                                                             MultipartFile featureImage,
                                                             String description,
-                                                            String transactionUuid
+                                                            String transactionUuid,
+                                                            String externalKey
     ) {
         // UG-281: FaceFeatureService.createFaceFeature 와 같은 이유로 맨 앞에서 검증한다.
         ApiKey findApiKey = apiKeyService.findByApiKey(callerType, apiKey, accountId);
@@ -101,6 +103,8 @@ public class PalmFeatureService {
                 .description(description)
                 .isDeleted(false)
                 .transactionUuid(transactionUuid)
+                // UG-333: 예전에는 요청 DTO 가 받기만 하고 여기서 버렸다 — 이제 저장한다.
+                .externalKey(FaceFeatureService.normalizeExternalKey(externalKey))
                 .build();
         biometricFeatureRepository.save(biometricFeature);
 
