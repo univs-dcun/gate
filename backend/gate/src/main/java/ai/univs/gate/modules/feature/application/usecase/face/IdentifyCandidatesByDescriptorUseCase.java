@@ -8,7 +8,6 @@ import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyCandidatesFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyCandidatesFaceFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -17,6 +16,7 @@ import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.math.BigDecimal;
@@ -51,19 +51,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class IdentifyCandidatesByDescriptorUseCase {
 
+    private final HistoryRecorder historyRecorder;
     private static final BigDecimal PERCENT = BigDecimal.valueOf(100);
 
-    private final MatchHistoryRepository matchHistoryRepository;
     private final BiometricFeatureRepository biometricFeatureRepository;
     private final ProjectSettingsService projectSettingsService;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280 과 같은 이유. 하위 서비스 5xx 에도 이력 행이 커밋돼야 한다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     *
+     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
+     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     */
+    @Transactional
     public IdentifyCandidatesByDescriptorResult execute(IdentifyCandidatesByDescriptorInput input) {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -80,7 +82,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
                 .transactionUuid(input.transactionUuid())
                 .consentSnapshot(findProjectSettings.getConsentEnabled())
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         var request = IdentifyCandidatesFaceFeignRequestDTO.builder()
                 .branchName(project.getBranchName())
@@ -98,9 +100,11 @@ public class IdentifyCandidatesByDescriptorUseCase {
             data = faceService.identifyCandidatesByDescriptor(request);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.finish(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             matchHistory.failUpstream(e);
+            historyRecorder.finish(matchHistory);
             throw e;
         }
 
@@ -109,6 +113,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
             // 0 이 아니라 최근접 유사도를 남긴다. 기존 1:N 도 그렇게 하고 있고, 0 으로 눕히면
             // "아무도 근접하지 않았다" 와 "아깝게 미달했다" 가 이력에서 같아 보인다.
             matchHistory.fail(최근접_유사도(data), ErrorType.NOT_MATCH.name());
+            historyRecorder.finish(matchHistory);
             return IdentifyCandidatesByDescriptorResult.failResult(
                     matchHistory, input.thresholdPercent());
         }
@@ -119,6 +124,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
         // 매칭 실패와 구분되어야 하므로 INVALID_USER 로 남긴다.
         if (found.isEmpty()) {
             matchHistory.fail(최근접_유사도(data), ErrorType.INVALID_USER.name());
+            historyRecorder.finish(matchHistory);
             return IdentifyCandidatesByDescriptorResult.failResult(
                     matchHistory, input.thresholdPercent());
         }
@@ -136,6 +142,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
         // 그 예외는 noRollbackFor 에 없어 REQUIRES_NEW 트랜잭션째 롤백되어 이력 행이 사라진다.
         IdentifyCandidatesByDescriptorResult.Candidate top = candidates.getFirst();
         matchHistory.success(found.get(top.featureId()), 도메인_스케일_유사도(후보, top.featureId()));
+        historyRecorder.finish(matchHistory);
 
         return IdentifyCandidatesByDescriptorResult.successResult(
                 matchHistory, input.thresholdPercent(), candidates);

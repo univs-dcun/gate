@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.application.result.face.VerifyByDescriptorR
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -14,6 +13,7 @@ import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,17 +40,17 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class VerifyByDescriptorUseCase {
 
+    private final HistoryRecorder historyRecorder;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
-    private final MatchHistoryRepository matchHistoryRepository;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     *
+     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
+     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     */
+    @Transactional
     public VerifyByDescriptorResult execute(VerifyByDescriptorInput input) {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -75,7 +75,7 @@ public class VerifyByDescriptorUseCase {
                 .success(false)
                 .transactionUuid(input.transactionUuid())
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         var feignRequest = new VerifyFaceByDescriptorFeignRequestDTO(
                 input.descriptor(),
@@ -97,11 +97,13 @@ public class VerifyByDescriptorUseCase {
             // failure_type 이 NULL 로 남아 "미완료 요청" 과 구분되지 않는다.
             // 같은 기능의 IdentifyByDescriptorUseCase / FaceFeatureService 와 동일한 처리다.
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.finish(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             matchHistory.failUpstream(e);
+            historyRecorder.finish(matchHistory);
             throw e;
         }
 
@@ -109,11 +111,13 @@ public class VerifyByDescriptorUseCase {
         if (response.isResult()) {
             // 1:1 확인은 성공해도 등록된 사용자 정보를 특정하지 않는다 (이미지 기반과 동일).
             matchHistory.success(similarity);
+            historyRecorder.finish(matchHistory);
         } else {
             // 이미지 기반 1:1 두 경로(FaceVerifyByFeatureIdUseCase, FaceVerifyByFeatureImageUseCase)
             // 가 쓰는 코드와 같아야 한다. NOT_MATCH 는 1:N 전용이다 — 섞이면 운영자가
             // "1:1 불일치" 를 한 조건으로 집계할 수 없다.
             matchHistory.fail(similarity, ErrorType.MISMATCH.name());
+            historyRecorder.finish(matchHistory);
         }
 
         // UG-283: 응답을 face 원값이 아니라 MatchHistory 에서 만든다. descriptor 1:N 과 같은

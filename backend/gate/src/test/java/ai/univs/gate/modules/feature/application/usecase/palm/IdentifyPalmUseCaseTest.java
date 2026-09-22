@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.palm.PalmIdentifyInput;
 import ai.univs.gate.modules.feature.application.result.palm.PalmIdentifyResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
@@ -14,7 +15,6 @@ import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.IdentifyPalmFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.IdentifyPalmFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -58,7 +58,7 @@ class IdentifyPalmUseCaseTest {
     private static final String FILE_SERVER_PATH = "http://gateway/api/v1/files?filePath=";
     private static final String UPLOADED_IMAGE_PATH = "match/uploaded-palm.jpg";
 
-    @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ProjectSettingsService projectSettingsService;
     @Mock private PalmFeatureService palmFeatureService;
     @Mock private ApiKeyService apiKeyService;
@@ -111,7 +111,7 @@ class IdentifyPalmUseCaseTest {
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.IDENTIFY))
                 .willReturn(true);
         given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
@@ -132,7 +132,7 @@ class IdentifyPalmUseCaseTest {
 
     private MatchHistory capturedMatchHistory() {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 
@@ -216,7 +216,7 @@ class IdentifyPalmUseCaseTest {
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.IDENTIFY))
                 .willReturn(true);
         given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;

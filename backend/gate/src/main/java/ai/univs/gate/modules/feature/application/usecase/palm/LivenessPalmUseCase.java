@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.application.result.palm.PalmLivenessResult;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.LivenessPalmFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.LivenessPalmFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -14,6 +13,7 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
@@ -30,19 +30,19 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class LivenessPalmUseCase {
 
-    private final MatchHistoryRepository matchHistoryRepository;
+    private final HistoryRecorder historyRecorder;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final PalmService palmService;
     private final ProjectSettingsService projectSettingsService;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     *
+     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
+     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     */
+    @Transactional
     public PalmLivenessResult execute(PalmLivenessInput input) {
         ApiKey apiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
@@ -65,7 +65,7 @@ public class LivenessPalmUseCase {
                 .transactionUuid(input.transactionUuid())
                 .consentSnapshot(consentEnabled)
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         var livenessRequest = new LivenessPalmFeignRequestDTO(
                 input.featureImage(),
@@ -79,9 +79,11 @@ public class LivenessPalmUseCase {
             data = palmService.liveness(livenessRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.finish(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             matchHistory.failUpstream(e);
+            historyRecorder.finish(matchHistory);
             throw e;
         }
 
@@ -91,8 +93,10 @@ public class LivenessPalmUseCase {
                 .divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP);
         if (!data.isSuccess()) {
             matchHistory.fail(score, data.getMessage() != null ? data.getMessage().toUpperCase() : "LIVENESS_FAILED");
+            historyRecorder.finish(matchHistory);
         } else {
             matchHistory.success(score);
+            historyRecorder.finish(matchHistory);
         }
 
         return PalmLivenessResult.from(data, input.transactionUuid());

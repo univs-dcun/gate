@@ -15,25 +15,31 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * UG-280 재발 방지.
+ * 하위 서비스 실패가 이력을 지우지 못하게 하는 <b>주변 조건</b>을 지킨다 (UG-280, UG-293).
  *
- * <p>매칭 경로는 "먼저 이력 행을 저장하고, 하위 서비스를 호출하고, 결과로 행을 갱신한다" 는 모양을
- * 공유한다. 그 트랜잭션이 {@code REQUIRES_NEW} 인데 하위 서비스 실패 시 롤백되면 이력 행이
- * 사라진다 — 정상 동작에서는 드러나지 않고 <b>장애 때만</b> 드러나는 종류의 결함이다.
+ * <p><b>이 클래스에서 무엇이 빠졌는지가 중요하다.</b> 예전에는 여기에 "선언 검사" 가 있었다 —
+ * {@code REQUIRES_NEW} 인 트랜잭션이 모두 {@code noRollbackFor} 에 {@code RemoteCallException}
+ * 을 열거했는지 소스에서 문자열로 확인하는 검사였다.
  *
- * <p>초기 버전은 {@code noRollbackFor} 가 이미 있는 줄만 훑었다. 반박 리뷰에서 그 방식으로는 가장
- * 흔한 재발 경로를 못 잡는다는 지적이 나왔다 — 새 UseCase 를 쓰는 사람은 선언을 복사한 뒤 절반을
- * 지우는 게 아니라 {@code noRollbackFor} 를 <b>아예 안 쓴다.</b> 그래서 지금은 {@code REQUIRES_NEW}
- * 를 기준으로 훑는다.
+ * <p>그 검사가 지킬 수 있던 것은 "열거한 예외에서는 롤백하지 않는다" 까지다. <b>열거하지 않은
+ * 예외</b>에서 무슨 일이 나는지는 보지 못했고, UG-280 의 반박 리뷰가 세 번 연속 찾아낸 것이
+ * 정확히 그런 예외들이었다 — {@code RetryableException}, 본문 디코딩 실패, HTTP 200 의 빈
+ * {@code data}, 그리고 우리 코드의 NPE.
  *
- * <p>또한 애노테이션을 여러 줄로 나눠 쓰면 오탐이 나던 문제도 없앴다 (Google Java Style 포매터가
- * 열 제한에서 줄을 접는다). 이제 {@code @Transactional(...)} 괄호 블록 전체를 본다.
+ * <p>UG-293 이 구조를 바꿔 이력을 호출자 트랜잭션 <b>밖에서</b> 커밋한다
+ * ({@code HistoryRecorder}). 열거할 목록 자체가 없어졌으므로 선언 검사도 폐기했고,
+ * {@code HistoryRecorderSliceTest} 가 실제 트랜잭션을 열고 롤백시켜 <b>행이 남는지</b> 를
+ * 직접 본다.
  *
- * <p>런타임 롤백 동작이 아니라 선언을 검사하는 이유는, 목 기반 단위 테스트로는 트랜잭션 롤백을
- * 확인할 수 없기 때문이다 ({@code @Transactional} 은 프록시가 적용하므로 목 테스트에서는 아예 돌지
- * 않는다). 각 UseCase 의 사유 기록은 별도 단위 테스트가 담당한다.
+ * <p>여기 남은 것은 그 구조가 기대는 주변 조건 둘이다.
+ * <ul>
+ *   <li><b>예외 계층</b> — {@code RemoteCallException} 이 {@code BusinessException} 하위이고
+ *       {@code CustomGateException} 과 형제여야 응답 계약이 유지된다.
+ *   <li><b>응답 없는 실패 경로</b> — 모든 Feign 호출이 {@code RemoteCalls} 를 거쳐야
+ *       {@code ErrorDecoder} 가 잡지 못하는 실패도 {@code RemoteCallException} 이 된다.
+ * </ul>
  */
-@DisplayName("매칭 트랜잭션 롤백 가드 (UG-280)")
+@DisplayName("하위 서비스 실패 처리의 주변 조건 (UG-280, UG-293)")
 class RemoteCallRollbackGuardTest {
 
     private static final Path SOURCE_ROOT = Path.of("src/main/java");
@@ -214,6 +220,7 @@ class RemoteCallRollbackGuardTest {
     }
 
     @Nested
+<<<<<<< HEAD
     @DisplayName("선언 검사")
     class Declarations {
 
@@ -332,6 +339,8 @@ class RemoteCallRollbackGuardTest {
     }
 
     @Nested
+=======
+>>>>>>> 8485a05 (refactor(gate): UG-293 이력 보존을 예외 타입 열거에서 커밋 경계로 바꾼다)
     @DisplayName("예외 계층")
     class Hierarchy {
 

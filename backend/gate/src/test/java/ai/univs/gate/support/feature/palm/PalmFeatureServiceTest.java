@@ -8,12 +8,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
-import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -53,7 +53,7 @@ class PalmFeatureServiceTest {
     private static final String CREATED_PALM_ID = "new-palm-id";
 
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
-    @Mock private FeatureHistoryRepository featureHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
     @Mock private PalmService palmService;
@@ -98,12 +98,12 @@ class PalmFeatureServiceTest {
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.REGISTER))
                 .willReturn(livenessEnabled);
-        given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
     }
 
     private FeatureHistory capturedFeatureHistory() {
         ArgumentCaptor<FeatureHistory> captor = ArgumentCaptor.forClass(FeatureHistory.class);
-        verify(featureHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 
@@ -290,7 +290,7 @@ class PalmFeatureServiceTest {
 
         // then: FaceFeatureService 와 짝을 이루는 테스트다. 얼굴 쪽에만 있으면 손바닥 등록에서
         // 검증이 뒤로 밀려도 아무도 모른다 — 이 메서드도 REQUIRES_NEW 라 같은 고아 위험을 갖는다.
-        verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
+        verify(historyRecorder, never()).start(any(FeatureHistory.class));
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
         verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
     }

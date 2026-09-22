@@ -7,7 +7,6 @@ import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByFaceIdFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -20,6 +19,7 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.shared.web.enums.LivenessErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
@@ -38,7 +38,7 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class FaceVerifyByFeatureIdUseCase {
 
-    private final MatchHistoryRepository matchHistoryRepository;
+    private final HistoryRecorder historyRecorder;
     private final FileService fileService;
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsService projectSettingsService;
@@ -46,13 +46,13 @@ public class FaceVerifyByFeatureIdUseCase {
     private final FaceFeatureService faceFeatureService;
     private final UseCaseNotifyService useCaseNotifyService;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     *
+     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
+     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     */
+    @Transactional
     public VerifyByFaceIdResult execute(VerifyByFaceIdInput input) {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -75,7 +75,7 @@ public class FaceVerifyByFeatureIdUseCase {
                 .transactionUuid(input.transactionUuid())
                 .consentSnapshot(consentEnabled)
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         BiometricFeature biometricFeature;
         try {
@@ -83,9 +83,11 @@ public class FaceVerifyByFeatureIdUseCase {
         } catch (CustomGateException e) {
             ErrorType errorType = e.getErrorType();
             matchHistory.fail(BigDecimal.ZERO, errorType.name());
+            historyRecorder.finish(matchHistory);
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
         matchHistory.updateBiometricFeature(biometricFeature);
+        historyRecorder.finish(matchHistory);
 
         var verifyRequest = new VerifyFaceByFaceIdFeignRequestDTO(
                 project.getBranchName(),
@@ -111,6 +113,7 @@ public class FaceVerifyByFeatureIdUseCase {
             // noRollbackFor 로 커밋된 행의 failure_type 이 NULL 로 남았다 — 응답을 받지 못하고
             // 끊긴 요청과 구분되지 않아 이력만 보고는 원인을 알 수 없었다.
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.finish(matchHistory);
             if (!LivenessErrorType.contains(e.getType())) throw e;
 
             return fail(input.callerType(), matchHistory, consentEnabled);
@@ -118,15 +121,18 @@ public class FaceVerifyByFeatureIdUseCase {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             matchHistory.failUpstream(e);
+            historyRecorder.finish(matchHistory);
             throw e;
         }
 
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.MISMATCH.name());
+            historyRecorder.finish(matchHistory);
             return fail(input.callerType(), matchHistory, consentEnabled);
         }
 
         matchHistory.successById(data.getSimilarity());
+        historyRecorder.finish(matchHistory);
         return success(input.callerType(), matchHistory, consentEnabled);
     }
 

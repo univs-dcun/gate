@@ -1,12 +1,12 @@
 package ai.univs.gate.support.feature.palm;
 
 import ai.univs.gate.support.feature.face.FaceFeatureService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
-import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.RegisterPalmFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -30,8 +30,8 @@ import ai.univs.gate.shared.web.enums.CallerType;
 @RequiredArgsConstructor
 public class PalmFeatureService {
 
+    private final HistoryRecorder historyRecorder;
     private final BiometricFeatureRepository biometricFeatureRepository;
-    private final FeatureHistoryRepository featureHistoryRepository;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final PalmService palmService;
@@ -41,13 +41,13 @@ public class PalmFeatureService {
      * @param callerType 무인증 데모({@link CallerType#DEMO})는 대조할 accountId 가 없어 소유 검증을
      *                   건너뛴다. 인증 경로는 반드시 {@link CallerType#API} 를 넘긴다. (UG-281)
      */
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     *
+     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
+     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     */
+    @Transactional
     public CreatePalmFeatureServiceResult createPalmFeature(CallerType callerType,
                                                             Long accountId,
                                                             String apiKey,
@@ -66,7 +66,7 @@ public class PalmFeatureService {
 
         // UG-325/326: 등록은 인증 시도가 아니라 특징점의 생애주기 사건이다 — feature_history 에만 쓴다.
         // (UG-325 의 과도기 이중 기록은 통합 조회가 나가면서 끝났고, V27 이 옛 REGISTER 행을 지웠다.)
-        FeatureHistory featureHistory = featureHistoryRepository.save(FeatureHistory.register(
+        FeatureHistory featureHistory = historyRecorder.start(FeatureHistory.register(
                 project, FeatureType.PALM, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.PALM, LivenessOperation.REGISTER), imagePath, transactionUuid,
                 findProjectSettings.getConsentEnabled()));
 
@@ -87,11 +87,13 @@ public class PalmFeatureService {
             palmId = palmService.registerPalm(registerRequest);
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
+            historyRecorder.finish(featureHistory);
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             featureHistory.failUpstream(e);
+            historyRecorder.finish(featureHistory);
             throw e;
         }
 
@@ -109,6 +111,7 @@ public class PalmFeatureService {
         biometricFeatureRepository.save(biometricFeature);
 
         featureHistory.successRegister(biometricFeature);
+        historyRecorder.finish(featureHistory);
 
         return new CreatePalmFeatureServiceResult(biometricFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.PALM, LivenessOperation.REGISTER));
     }

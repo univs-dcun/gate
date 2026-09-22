@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.application.result.face.LivenessResult;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.LivenessFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.LivenessFaceFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -16,6 +15,7 @@ import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
@@ -34,20 +34,21 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class LivenessFaceUseCase {
 
-    private final MatchHistoryRepository matchHistoryRepository;
+    private final HistoryRecorder historyRecorder;
     private final ApiKeyService apiKeyService;
     private final FileService fileService;
     private final FaceService faceService;
     private final ProjectSettingsService projectSettingsService;
     private final UseCaseNotifyService useCaseNotifyService;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다.
+     *
+     * <p>예전에는 {@code REQUIRES_NEW + noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고
+     * 열거했다. 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     * 이제 {@link HistoryRecorder} 가 행을 먼저 커밋하므로 여기서 무엇이 나든 행은 남는다.
+     */
+    @Transactional
     public LivenessResult execute(LivenessInput input) {
         ApiKey apiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
@@ -71,7 +72,7 @@ public class LivenessFaceUseCase {
                 .transactionUuid(input.transactionUuid())
                 .consentSnapshot(consentEnabled)
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         var livenessRequest = new LivenessFaceFeignRequestDTO(
                 input.matchingFeatureImage(),
@@ -86,24 +87,27 @@ public class LivenessFaceUseCase {
             data = faceService.liveness(livenessRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.finish(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             matchHistory.failUpstream(e);
+            historyRecorder.finish(matchHistory);
             throw e;
         }
 
-        // UG-280 3차 반박 리뷰: 여기부터는 이미 이력 행을 save 한 뒤다. 이 아래에서 나는 예외는
-        // noRollbackFor 에 걸리지 않으므로 REQUIRES_NEW 가 롤백되고 행이 사라진다 — 2차 리뷰가
-        // 잡은 .getFaceId() NPE 와 같은 결함 형태다. 200 응답의 본문 값은 신뢰하지 않는다.
-        // (palm 쪽은 이미 같은 가드가 있었고 face 만 무방비였다.)
+        // UG-280 3차 반박 리뷰: 200 응답의 본문 값은 신뢰하지 않는다. 예전에는 여기서 NPE 가
+        // 나면 이력 행까지 사라졌다 — UG-293 이후로는 행이 남으므로 이 가드는 '사유를 남긴다'
+        // 는 의미만 갖는다. (palm 쪽은 이미 같은 가드가 있었고 face 만 무방비였다.)
         BigDecimal livenessScore = parseProbability(data.getProbability());
         if (!data.isSuccess()) {
             String reason = StringUtils.hasText(data.getPrdioctionDesc())
                     ? data.getPrdioctionDesc().toUpperCase()
                     : "LIVENESS_FAILED";
             matchHistory.fail(livenessScore, reason);
+            historyRecorder.finish(matchHistory);
         } else {
             matchHistory.success(livenessScore);
+            historyRecorder.finish(matchHistory);
         }
 
         var result = LivenessResult.from(data, input.transactionUuid(), findProjectSettings.getConsentEnabled());

@@ -8,7 +8,6 @@ import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.IdentifyPalmFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.IdentifyPalmFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -18,6 +17,7 @@ import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
@@ -35,7 +35,7 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class IdentifyPalmUseCase {
 
-    private final MatchHistoryRepository matchHistoryRepository;
+    private final HistoryRecorder historyRecorder;
     private final ProjectSettingsService projectSettingsService;
     private final PalmFeatureService palmFeatureService;
     private final ApiKeyService apiKeyService;
@@ -43,13 +43,13 @@ public class IdentifyPalmUseCase {
     private final PalmService palmService;
     private final BiometricFeatureRepository biometricFeatureRepository;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * UG-293: 이력 커밋이 이 트랜잭션과 분리됐다. {@link HistoryRecorder} 참고.
+     *
+     * <p>예전에는 {@code noRollbackFor} 로 "이 예외들에서는 롤백하지 말라" 고 열거했다.
+     * 목록에 없는 예외 — 특히 우리 코드의 NPE — 에서는 이력이 그대로 사라졌다.
+     */
+    @Transactional
     public PalmIdentifyResult execute(PalmIdentifyInput input) {
         ApiKey findApiKey = apiKeyService.findByApiKey(input.callerType(), input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -72,8 +72,9 @@ public class IdentifyPalmUseCase {
                     .transactionUuid(input.transactionUuid())
                     .consentSnapshot(consentEnabled)
                     .build();
-            matchHistoryRepository.save(preCheckHistory);
+            preCheckHistory = historyRecorder.start(preCheckHistory);
             preCheckHistory.fail(BigDecimal.ZERO, "NO_REGISTERED_PALM_USERS");
+            historyRecorder.finish(preCheckHistory);
             return PalmIdentifyResult.failResult(preCheckHistory, "NO_REGISTERED_PALM_USERS",
                     fileService.getFileServerPath(), consentEnabled);
         }
@@ -91,7 +92,7 @@ public class IdentifyPalmUseCase {
                 .transactionUuid(input.transactionUuid())
                 .consentSnapshot(consentEnabled)
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         var identifyRequest = new IdentifyPalmFeignRequestDTO(
                 project.getBranchName(),
@@ -114,16 +115,19 @@ public class IdentifyPalmUseCase {
             data = palmService.identify(identifyRequest);
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.finish(matchHistory);
             return PalmIdentifyResult.failResult(matchHistory, e.getType(), prefixImagePath, consentEnabled);
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
             matchHistory.failUpstream(e);
+            historyRecorder.finish(matchHistory);
             throw e;
         }
 
         if (!data.isResult()) {
             matchHistory.fail(parseSimilarity(data.getSimilarity()), "PALM_NOT_MATCH");
+            historyRecorder.finish(matchHistory);
             return PalmIdentifyResult.failResult(matchHistory, "PALM_NOT_MATCH", prefixImagePath, consentEnabled);
         }
 
@@ -133,11 +137,13 @@ public class IdentifyPalmUseCase {
         } catch (CustomGateException e) {
             // 하위 서비스 실패가 아니라 우리 쪽 조회 실패(특징점 없음)다 — upstream_status 는 남기지 않는다.
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            historyRecorder.finish(matchHistory);
             return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), prefixImagePath, consentEnabled);
         }
 
         BigDecimal similarity = parseSimilarity(data.getSimilarity());
         matchHistory.success(biometricFeature, similarity);
+        historyRecorder.finish(matchHistory);
 
         return PalmIdentifyResult.successResult(matchHistory, biometricFeature, matchHistory.getSimilarity(), data.getThreshold(), prefixImagePath, consentEnabled);
     }

@@ -13,9 +13,13 @@ import lombok.Getter;
  * 관측해야 할 상황에서 기록이 없어지는 셈이었다.
  *
  * <p>전용 타입을 만든 이유는 {@code noRollbackFor} 에 {@code CustomGateException} 을 넣는 것으로는
- * 해결할 수 없기 때문이다. 그러면 <b>모든</b> {@code CustomGateException} 에 커밋을 허용하게 되고,
+ * 해결할 수 없기 때문이었다. 그러면 <b>모든</b> {@code CustomGateException} 에 커밋을 허용하게 되고,
  * {@code FaceFeatureService.createFaceFeature} 처럼 특징점과 이력을 함께 쓰는 경로에서는
  * 반쯤 등록된 특징점이 남는다.
+ *
+ * <p><b>UG-293 에서 그 열거 자체가 사라졌다.</b> 이력은 이제 {@code HistoryRecorder} 가 호출자
+ * 트랜잭션 밖에서 커밋하므로 어떤 예외에서도 남는다. 이 타입은 여전히 쓸모가 있다 — 하위 서비스
+ * 실패를 우리 쪽 실패와 구분하고, {@link #upstreamStatus} 로 원인을 이력에 남긴다 (UG-294).
  *
  * <p>세 가지 경로로 만들어진다.
  * <ul>

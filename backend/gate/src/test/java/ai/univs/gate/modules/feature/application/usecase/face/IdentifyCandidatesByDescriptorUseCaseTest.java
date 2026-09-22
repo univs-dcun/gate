@@ -1,6 +1,7 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyCandidatesByDescriptorInput;
 import ai.univs.gate.modules.feature.application.result.face.IdentifyCandidatesByDescriptorResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
@@ -8,7 +9,6 @@ import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyCandidatesFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyCandidatesFaceFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -81,7 +81,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
     private static final String TX = "550e8400-e29b-41d4-a716-446655440000";
     private static final String DESCRIPTOR = "descriptor-base64";
 
-    @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
     @Mock private ProjectSettingsService projectSettingsService;
     @Mock private ApiKeyService apiKeyService;
@@ -114,7 +114,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
         lenient().when(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).thenReturn(apiKey);
         lenient().when(projectSettingsService.findByProject(project)).thenReturn(
                 ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
-        lenient().when(matchHistoryRepository.save(any(MatchHistory.class))).thenAnswer(invocation -> {
+        lenient().when(historyRecorder.start(any(MatchHistory.class))).thenAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_ID);
             return saved;
@@ -186,7 +186,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
 
     private MatchHistory 저장된_이력() {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 

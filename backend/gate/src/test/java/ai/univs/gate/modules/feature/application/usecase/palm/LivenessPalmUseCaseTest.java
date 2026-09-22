@@ -7,12 +7,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.palm.PalmLivenessInput;
 import ai.univs.gate.modules.feature.application.result.palm.PalmLivenessResult;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.LivenessPalmFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.LivenessPalmFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -53,7 +53,7 @@ class LivenessPalmUseCaseTest {
     private static final String TRANSACTION_UUID = "550e8400-e29b-41d4-a716-446655440000";
     private static final String UPLOADED_IMAGE_PATH = "match/uploaded-palm.jpg";
 
-    @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
     @Mock private PalmService palmService;
@@ -98,7 +98,7 @@ class LivenessPalmUseCaseTest {
         given(apiKeyService.findByApiKey(CallerType.API, API_KEY, CALLER_ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
@@ -107,7 +107,7 @@ class LivenessPalmUseCaseTest {
 
     private MatchHistory capturedMatchHistory() {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 
