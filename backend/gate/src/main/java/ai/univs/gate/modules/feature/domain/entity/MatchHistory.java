@@ -4,6 +4,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -105,8 +106,14 @@ public class MatchHistory extends BaseEntity {
      * 이 컬럼은 응답에 넣지 않는다 — 조사용이다.
      *
      * <p>{@code 0} 은 응답을 받지 못했다는 뜻이다
-     * ({@link ai.univs.gate.shared.exception.RemoteCallException#NO_RESPONSE}).
+     * ({@link RemoteCallException#NO_RESPONSE}).
      * {@code null} 은 하위 서비스 실패가 아니거나 이 컬럼이 생기기 전의 행이다.
+     *
+     * <p><b>0 이 가리키는 원인은 하나가 아니다</b> (반박 리뷰 지적). 연결 거부·읽기 타임아웃,
+     * 본문 디코딩 실패(HTTP 200 포함), 200 인데 {@code data} 가 빈 경우가 모두 0 이다. 게다가
+     * {@code RemoteCalls.of} 는 {@code EncodeException} 도 잡으므로 <b>요청을 만들다 난 우리 쪽
+     * 버그</b>까지 0 으로 남는다. 즉 이 컬럼이 실제로 가르는 것은 "상대가 코드를 주며 거절했다"
+     * 와 "그 외" 다. 0 을 "상대가 죽었다" 로 단정하지 말 것.
      */
     @Column(name = "upstream_status")
     private Integer upstreamStatus;
@@ -147,11 +154,16 @@ public class MatchHistory extends BaseEntity {
      *
      * <p>{@code failureType} 은 기존과 같은 값을 그대로 쓰고({@code INTERNAL_SERVER_ERROR}),
      * 원인 구분은 {@link #upstreamStatus} 에 남긴다. 응답 계약은 건드리지 않는다.
+     *
+     * <p><b>예외 객체를 통째로 받는다</b> (반박 리뷰 지적). 초판은
+     * {@code (String failureType, int upstreamStatus)} 였는데, 호출처가 전부
+     * {@code e.getErrorType().name()} 과 {@code e.getUpstreamStatus()} 를 짝지어 넘기고
+     * 있었다. 둘을 따로 받으면 엉뚱한 조합을 넘길 수 있고, 그것을 막을 방법이 없다.
      */
-    public void failUpstream(String failureType, int upstreamStatus) {
+    public void failUpstream(RemoteCallException e) {
         this.similarity = toPercent(BigDecimal.ZERO);
-        this.failureType = failureType;
-        this.upstreamStatus = upstreamStatus;
+        this.failureType = e.getErrorType().name();
+        this.upstreamStatus = e.getUpstreamStatus();
     }
 
     private BigDecimal toPercent(BigDecimal similarity) {

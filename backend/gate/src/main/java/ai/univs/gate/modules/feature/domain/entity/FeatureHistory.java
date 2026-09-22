@@ -4,6 +4,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -126,9 +127,8 @@ public class FeatureHistory extends BaseEntity {
      * 값</b>이기 때문이다. 새 값을 만들면 고객이 보는 값이 늘고 i18n 리소스도 함께 늘어난다.
      * 이 컬럼은 응답에 넣지 않는다 — 조사용이다.
      *
-     * <p>{@code 0} 은 응답을 받지 못했다는 뜻이다
-     * ({@link ai.univs.gate.shared.exception.RemoteCallException#NO_RESPONSE}).
-     * {@code null} 은 하위 서비스 실패가 아니거나 이 컬럼이 생기기 전의 행이다.
+     * <p>{@code 0} 과 {@code null} 의 뜻, 그리고 0 이 여러 원인을 함께 가리킨다는 점은
+     * {@link MatchHistory#getUpstreamStatus()} 의 설명을 참고할 것.
      */
     @Column(name = "upstream_status")
     private Integer upstreamStatus;
@@ -199,8 +199,8 @@ public class FeatureHistory extends BaseEntity {
     /**
      * 하위 서비스 실패로 끝났을 때 (UG-294). {@link MatchHistory#failUpstream} 와 같은 이유다.
      */
-    public void failUpstream(String failureType, int upstreamStatus) {
-        this.failureType = failureType;
-        this.upstreamStatus = upstreamStatus;
+    public void failUpstream(RemoteCallException e) {
+        this.failureType = e.getErrorType().name();
+        this.upstreamStatus = e.getUpstreamStatus();
     }
 }

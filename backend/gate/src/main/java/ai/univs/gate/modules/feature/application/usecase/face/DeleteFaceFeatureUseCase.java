@@ -78,7 +78,7 @@ public class DeleteFaceFeatureUseCase {
             featureHistory.fail(e.getType());
             throw e;
         } catch (RemoteCallException e) {
-            featureHistory.failUpstream(e.getErrorType().name(), e.getUpstreamStatus());
+            featureHistory.failUpstream(e);
             throw e;
         }
 

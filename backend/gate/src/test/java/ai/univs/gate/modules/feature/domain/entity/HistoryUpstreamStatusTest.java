@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +51,7 @@ class HistoryUpstreamStatusTest {
             MatchHistory history = MatchHistory.builder().build();
             RemoteCallException e = new RemoteCallException(503, "face.identify", null);
 
-            history.failUpstream(e.getErrorType().name(), e.getUpstreamStatus());
+            history.failUpstream(e);
 
             assertThat(history.getUpstreamStatus())
                     .as("이게 없으면 502·타임아웃·디코딩 실패가 전부 같은 기록으로 남는다")
@@ -62,7 +64,7 @@ class HistoryUpstreamStatusTest {
             MatchHistory history = MatchHistory.builder().build();
             RemoteCallException e = new RemoteCallException(RemoteCallException.NO_RESPONSE);
 
-            history.failUpstream(e.getErrorType().name(), e.getUpstreamStatus());
+            history.failUpstream(e);
 
             assertThat(history.getUpstreamStatus())
                     .as("0 은 '응답 없음', null 은 '하위 서비스 실패가 아님' 이다. "
@@ -75,7 +77,7 @@ class HistoryUpstreamStatusTest {
         void 실패유형은_그대로다() {
             MatchHistory history = MatchHistory.builder().build();
 
-            history.failUpstream(ErrorType.INTERNAL_SERVER_ERROR.name(), 502);
+            history.failUpstream(new RemoteCallException(502));
 
             assertThat(history.getFailureType())
                     .as("이 값이 바뀌면 고객 응답과 i18n 메시지 키가 함께 바뀐다 — "
@@ -106,7 +108,7 @@ class HistoryUpstreamStatusTest {
         void 상태코드를_남긴다() {
             FeatureHistory history = FeatureHistory.builder().build();
 
-            history.failUpstream(ErrorType.INTERNAL_SERVER_ERROR.name(), 504);
+            history.failUpstream(new RemoteCallException(504));
 
             assertThat(history.getUpstreamStatus()).isEqualTo(504);
             assertThat(history.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
@@ -180,29 +182,94 @@ class HistoryUpstreamStatusTest {
     }
 
     /**
-     * {@code catch (RemoteCallException e)} 블록 <b>안에서만</b> 옛 {@code fail(...)} 을 쓰는지.
+     * {@code catch (RemoteCallException ...)} 블록 <b>안에서만</b> 옛 {@code fail(...)} 을 쓰는지.
      *
-     * <p>초판은 catch 문자열 뒤 400자를 잘라 봤는데, 정상 흐름의
-     * {@code matchHistory.fail(similarity, MISMATCH)} 까지 삼켜 다섯 파일이 거짓 양성으로
-     * 걸렸다. 블록의 끝은 중괄호로 정확히 찾는다.
+     * <p>세 번 고쳤다. 실패 방식을 남겨 둔다 — 소스를 문자열로 훑는 검사는 이런 식으로 조용히
+     * 뚫리고, 뚫린 줄 모르면 가드가 있다는 사실이 오히려 해롭다.
+     *
+     * <ol>
+     *   <li>초판은 catch 문자열 뒤 400자를 잘라 봤다 → 정상 흐름의
+     *       {@code matchHistory.fail(similarity, MISMATCH)} 까지 삼켜 다섯 파일이 거짓 양성.
+     *   <li>중괄호로 블록 끝을 찾게 고쳤다 → <b>주석이나 문자열 안의 짝 없는 {@code &#125;}</b> 가
+     *       블록을 일찍 닫아 그 뒤가 안 보였다 (반박 리뷰가 실제로 뚫었다).
+     *   <li>변수명을 {@code e} 로 고정해 찾았다 → {@code ex} 로 바꾸거나 다중 catch 로 쓰면
+     *       아예 안 걸렸다 (같은 리뷰).
+     * </ol>
+     *
+     * <p>지금은 주석·문자열을 먼저 지우고, catch 절을 정규식으로 찾는다. 주석 제거는
+     * {@code OracleMigrationSyntaxTest} 가 이미 같은 이유로 하고 있던 것이다.
      */
     private static boolean catchesRemoteCallWithPlainFail(Path file) {
-        String source = read(file);
-        int from = 0;
-        while (true) {
-            int at = source.indexOf("catch (RemoteCallException e)", from);
-            if (at < 0) {
-                return false;
-            }
-            String block = blockAfter(source, at);
-            if (block.contains("History.fail(") || block.contains("history.fail(")) {
+        String source = 주석과_문자열을_지운다(read(file));
+        Matcher m = CATCH_REMOTE_CALL.matcher(source);
+        while (m.find()) {
+            if (PLAIN_FAIL.matcher(blockAfter(source, m.end())).find()) {
                 return true;
             }
-            from = at + 1;
         }
+        return false;
     }
 
-    /** {@code at} 이후 첫 {@code &#123;} 부터 짝이 맞는 {@code &#125;} 까지. */
+    /** {@code catch (RemoteCallException e)} — 변수명·공백·다중 catch 를 함께 받는다. */
+    private static final Pattern CATCH_REMOTE_CALL =
+            Pattern.compile("catch\\s*\\(\\s*(?:[\\w.]+\\s*\\|\\s*)*RemoteCallException"
+                    + "(?:\\s*\\|\\s*[\\w.]+)*\\s+\\w+\\s*\\)");
+
+    /** {@code matchHistory.fail(...)} / {@code featureHistory.fail(...)} 같은 옛 호출. */
+    private static final Pattern PLAIN_FAIL = Pattern.compile("[Hh]istory\\.fail\\(");
+
+    /**
+     * 주석과 문자열 리터럴을 공백으로 바꾼다. 길이를 유지해 이후 인덱스가 어긋나지 않게 한다.
+     *
+     * <p>이것이 없으면 주석 안의 짝 없는 중괄호 하나가 블록 경계를 무너뜨린다.
+     */
+    private static String 주석과_문자열을_지운다(String source) {
+        StringBuilder out = new StringBuilder(source.length());
+        int i = 0;
+        while (i < source.length()) {
+            char c = source.charAt(i);
+            String rest2 = i + 1 < source.length() ? source.substring(i, i + 2) : "";
+
+            if ("//".equals(rest2)) {
+                while (i < source.length() && source.charAt(i) != '\n') {
+                    out.append(' ');
+                    i++;
+                }
+            } else if ("/*".equals(rest2)) {
+                int close = source.indexOf("*/", i + 2);
+                int stop = close < 0 ? source.length() : close + 2;
+                for (; i < stop; i++) {
+                    out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                }
+            } else if (c == '"' || c == '\'') {
+                out.append(' ');
+                i++;
+                while (i < source.length() && source.charAt(i) != c) {
+                    if (source.charAt(i) == '\\') {
+                        out.append(' ');
+                        i++;
+                        if (i < source.length()) {
+                            out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                            i++;
+                        }
+                        continue;
+                    }
+                    out.append(source.charAt(i) == '\n' ? '\n' : ' ');
+                    i++;
+                }
+                if (i < source.length()) {
+                    out.append(' ');
+                    i++;
+                }
+            } else {
+                out.append(c);
+                i++;
+            }
+        }
+        return out.toString();
+    }
+
+    /** {@code at} 이후 첫 여는 중괄호부터 짝이 맞는 닫는 중괄호까지. */
     private static String blockAfter(String source, int at) {
         int open = source.indexOf('{', at);
         if (open < 0) {
