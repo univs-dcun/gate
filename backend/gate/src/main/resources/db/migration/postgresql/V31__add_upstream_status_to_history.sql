@@ -1,0 +1,39 @@
+-- UG-294: 하위 서비스 실패가 이력에서 한 값으로 뭉개진다.
+--
+-- UG-280 이후 face-service·match-server 실패도 이력에 남는다. 그런데 남는 값이 하나뿐이다 —
+-- RemoteCallException.getErrorType() 이 항상 INTERNAL_SERVER_ERROR 라, 아래가 전부 같은
+-- failure_type 으로 기록된다.
+--
+--   · 하위 서비스가 502 / 503 / 504 를 응답
+--   · 연결 거부 · 읽기 타임아웃 (응답 없음)
+--   · 본문 디코딩 실패
+--   · HTTP 200 인데 envelope 의 data 가 비어 있음
+--
+-- "장애를 가장 관측해야 할 때 기록이 남게 한다" 가 UG-280 의 문제의식인데, 남은 기록으로
+-- 원인을 구분할 수 없었다. 예외 객체는 상태 코드를 이미 들고 있었고 로그에만 쓰였다.
+--
+-- 실제로 갈리는 것과 갈리지 않는 것 (반박 리뷰가 경로를 따라가 확인했다):
+--
+--   하위 서비스가 3xx/5xx 를 응답          → 그 상태 코드
+--   4xx 인데 errors 가 없거나 우리 포맷이 아님 → 그 4xx 상태 코드
+--   연결 거부 · 읽기 타임아웃               → 0
+--   본문 디코딩 실패 (HTTP 200 포함)        → 0
+--   HTTP 200 인데 envelope 의 data 가 빔     → 0
+--
+-- 즉 이 컬럼이 실제로 가르는 것은 "상대가 코드를 주며 거절했다" 와 "그 외" 다. 뒤의 셋은
+-- 여전히 한 값을 공유한다. 그래도 넣는 이유는 앞의 둘이 장애 조사에서 가장 자주 필요한
+-- 구분이고, 지금은 그것조차 없기 때문이다.
+--
+-- 주의: RemoteCalls.of 는 EncodeException 도 잡는다 — 요청을 만들다 난 <우리 쪽 버그>가
+-- upstream_status = 0 으로 남는다. 0 을 "상대가 죽었다" 로 단정하지 말 것.
+--
+-- failure_type 을 세분화하지 않고 컬럼을 따로 두는 이유는 그 값이 <클라이언트 응답에 나가는
+-- 값>이기 때문이다. IdentifyResponseDTO 등 5개 DTO 의 필드이고, MessageService 가 i18n 메시지
+-- 키로 쓴다. 새 값을 만들면 고객이 보는 값이 늘고 messages_{ko,en}.properties 에 대응 항목이
+-- 없어 키가 그대로 노출된다. 이 컬럼은 응답에 넣지 않는다 — 조사용이다.
+--
+-- 0 은 "응답을 받지 못함"(연결 거부·타임아웃·디코딩 실패·빈 data) 을 뜻한다
+-- (RemoteCallException.NO_RESPONSE). NULL 은 하위 서비스 실패가 아니거나 이 컬럼이 생기기
+-- 전의 행이다.
+ALTER TABLE match_history   ADD COLUMN upstream_status INTEGER;
+ALTER TABLE feature_history ADD COLUMN upstream_status INTEGER;

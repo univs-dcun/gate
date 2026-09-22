@@ -88,7 +88,7 @@ public class LivenessFaceUseCase {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
             throw e;
         } catch (RemoteCallException e) {
-            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            matchHistory.failUpstream(e);
             throw e;
         }
 

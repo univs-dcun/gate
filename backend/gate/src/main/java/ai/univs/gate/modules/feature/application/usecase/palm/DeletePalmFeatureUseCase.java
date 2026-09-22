@@ -68,7 +68,7 @@ public class DeletePalmFeatureUseCase {
             featureHistory.fail(e.getType());
             throw e;
         } catch (RemoteCallException e) {
-            featureHistory.fail(e.getErrorType().name());
+            featureHistory.failUpstream(e);
             throw e;
         }
 

@@ -117,7 +117,7 @@ public class FaceVerifyByFeatureIdUseCase {
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
-            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            matchHistory.failUpstream(e);
             throw e;
         }
 
