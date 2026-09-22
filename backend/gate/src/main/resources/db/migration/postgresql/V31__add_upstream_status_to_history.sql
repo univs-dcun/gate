@@ -1,0 +1,24 @@
+-- UG-294: 하위 서비스 실패가 이력에서 한 값으로 뭉개진다.
+--
+-- UG-280 이후 face-service·match-server 실패도 이력에 남는다. 그런데 남는 값이 하나뿐이다 —
+-- RemoteCallException.getErrorType() 이 항상 INTERNAL_SERVER_ERROR 라, 아래가 전부 같은
+-- failure_type 으로 기록된다.
+--
+--   · 하위 서비스가 502 / 503 / 504 를 응답
+--   · 연결 거부 · 읽기 타임아웃 (응답 없음)
+--   · 본문 디코딩 실패
+--   · HTTP 200 인데 envelope 의 data 가 비어 있음
+--
+-- "장애를 가장 관측해야 할 때 기록이 남게 한다" 가 UG-280 의 문제의식인데, 남은 기록으로
+-- 원인을 구분할 수 없었다. 예외 객체는 상태 코드를 이미 들고 있었고 로그에만 쓰였다.
+--
+-- failure_type 을 세분화하지 않고 컬럼을 따로 두는 이유는 그 값이 <클라이언트 응답에 나가는
+-- 값>이기 때문이다. IdentifyResponseDTO 등 5개 DTO 의 필드이고, MessageService 가 i18n 메시지
+-- 키로 쓴다. 새 값을 만들면 고객이 보는 값이 늘고 messages_{ko,en}.properties 에 대응 항목이
+-- 없어 키가 그대로 노출된다. 이 컬럼은 응답에 넣지 않는다 — 조사용이다.
+--
+-- 0 은 "응답을 받지 못함"(연결 거부·타임아웃·디코딩 실패·빈 data) 을 뜻한다
+-- (RemoteCallException.NO_RESPONSE). NULL 은 하위 서비스 실패가 아니거나 이 컬럼이 생기기
+-- 전의 행이다.
+ALTER TABLE match_history   ADD COLUMN upstream_status INTEGER;
+ALTER TABLE feature_history ADD COLUMN upstream_status INTEGER;

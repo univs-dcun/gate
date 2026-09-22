@@ -115,6 +115,24 @@ public class FeatureHistory extends BaseEntity {
     @ColumnDefault("nextval('activity_seq')")
     private Long activitySeq;
 
+    /**
+     * 하위 서비스 실패의 상태 코드 (UG-294).
+     *
+     * <p>{@code failure_type} 은 하위 서비스 실패를 전부 {@code INTERNAL_SERVER_ERROR} 하나로
+     * 적는다 — 502 도, 연결 거부도, 본문 디코딩 실패도, HTTP 200 인데 {@code data} 가 빈 것도
+     * 같은 값이다. 장애를 조사할 때 원인을 가를 수 없었다.
+     *
+     * <p>{@code failure_type} 을 세분화하지 않은 이유는 그 값이 <b>클라이언트 응답에 나가는
+     * 값</b>이기 때문이다. 새 값을 만들면 고객이 보는 값이 늘고 i18n 리소스도 함께 늘어난다.
+     * 이 컬럼은 응답에 넣지 않는다 — 조사용이다.
+     *
+     * <p>{@code 0} 은 응답을 받지 못했다는 뜻이다
+     * ({@link ai.univs.gate.shared.exception.RemoteCallException#NO_RESPONSE}).
+     * {@code null} 은 하위 서비스 실패가 아니거나 이 컬럼이 생기기 전의 행이다.
+     */
+    @Column(name = "upstream_status")
+    private Integer upstreamStatus;
+
     // ── 팩토리 ─────────────────────────────────────────────────────────────────────
 
     /**
@@ -176,5 +194,13 @@ public class FeatureHistory extends BaseEntity {
 
     public void fail(String failureType) {
         this.failureType = failureType;
+    }
+
+    /**
+     * 하위 서비스 실패로 끝났을 때 (UG-294). {@link MatchHistory#failUpstream} 와 같은 이유다.
+     */
+    public void failUpstream(String failureType, int upstreamStatus) {
+        this.failureType = failureType;
+        this.upstreamStatus = upstreamStatus;
     }
 }

@@ -81,7 +81,7 @@ public class LivenessPalmUseCase {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
             throw e;
         } catch (RemoteCallException e) {
-            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            matchHistory.failUpstream(e.getErrorType().name(), e.getUpstreamStatus());
             throw e;
         }
 

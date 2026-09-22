@@ -118,7 +118,7 @@ public class IdentifyPalmUseCase {
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
-            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            matchHistory.failUpstream(e.getErrorType().name(), e.getUpstreamStatus());
             throw e;
         }
 
@@ -131,6 +131,7 @@ public class IdentifyPalmUseCase {
         try {
             biometricFeature = palmFeatureService.getPalmFeatureByPalmIdAndProjectId(data.getPalmId(), project.getId());
         } catch (CustomGateException e) {
+            // 하위 서비스 실패가 아니라 우리 쪽 조회 실패(특징점 없음)다 — upstream_status 는 남기지 않는다.
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), prefixImagePath, consentEnabled);
         }
