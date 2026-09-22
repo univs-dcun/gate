@@ -9,12 +9,9 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Locale;
 
 /**
  * API 키 조회 진입점.
@@ -66,65 +63,11 @@ import java.util.Locale;
  */
 @Slf4j
 @Service
-@RefreshScope
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
-
-    /**
-     * 소유 검증 실패 시의 동작.
-     *
-     * <p>{@code ENFORCE}(기본)는 차단하고, {@code LOG_ONLY} 는 경고만 남기고 통과시킨다.
-     * 어느 쪽이든 WARN 로그는 동일하게 남는다.
-     *
-     * <p>LOG_ONLY 를 남겨 둔 이유: 배포 시점에 "정상인데 불일치로 호출하던 기존 고객" 이 있는지
-     * 실트래픽으로 확인할 방법이 없었다. 되돌릴 수단이 롤백뿐인 상황을 만들지 않으려는 안전장치다.
-     *
-     * <p><b>실제 전환 절차</b>({@link RefreshScope}). 게이트웨이를 통한 호출은 되지 않는다 —
-     * actuator 라우트는 dev 게이트웨이에만 있고 stage·prod·onpremise 에는 없으며, 액추에이터가
-     * {@code MANAGEMENT_SERVER_PORT}(9001) 라는 별도 포트에 뜨기 때문이다. 서버에서 컨테이너
-     * 내부 포트로 직접 호출해야 한다.
-     *
-     * <pre>{@code
-     * # 1. gate-config main 에서 mode 를 LOG_ONLY 로 바꾸고 push
-     * # 2. gate 컨테이너가 뜬 서버에서
-     * docker exec <gate-container> curl -s -X POST localhost:9001/gate/actuator/refresh
-     * }</pre>
-     *
-     * <p>이 절차는 <b>실제 환경에서 검증하지 않았다.</b> 되돌림이 필요해지는 상황에서 처음
-     * 시도하는 일이 없도록, dev 에 배포한 뒤 한 번 확인해 둘 것. 동작하지 않으면 컨테이너
-     * 재기동(설정은 기동 시 다시 읽는다)이 차선책이다.
-     *
-     * <p>관측 결과 불일치가 없다고 확인되면 이 속성과 분기를 제거할 것.
-     */
-    public enum OwnershipMode {
-        ENFORCE,
-        LOG_ONLY
-    }
-
-    /**
-     * enum 이 아니라 문자열로 받는다. enum 으로 직접 바인딩하면 오타 하나가 전면 장애가 되기
-     * 때문이다 — {@link RefreshScope} 빈은 refresh 이후 지연 생성되므로, 알 수 없는 값으로
-     * refresh 하면 그때부터 매 요청이 {@code BeanCreationException} 으로 터지고 이 빈을 주입받는
-     * 30여 개 컴포넌트가 전부 500 이 된다. 되돌리려다 더 큰 장애를 내는 셈이다.
-     *
-     * <p>문자열로 받아 {@link #mode()} 에서 해석하면, 잘못된 값은 경고와 함께 ENFORCE 로 떨어진다.
-     * 보안 통제이므로 해석 실패 시 <b>막는 쪽</b>이 안전한 기본값이다.
-     */
-    @Value("${gate.security.api-key-ownership.mode:ENFORCE}")
-    private String modeProperty;
-
-    private OwnershipMode mode() {
-        try {
-            return OwnershipMode.valueOf(modeProperty.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException | NullPointerException e) {
-            log.warn("gate.security.api-key-ownership.mode 값을 해석할 수 없어 ENFORCE 로 처리한다. value={}",
-                    modeProperty);
-            return OwnershipMode.ENFORCE;
-        }
-    }
 
     /**
      * 인증 경로 전용 조회. {@code accountId} 가 이 키의 프로젝트 소유자와 다르면 거부한다.
@@ -137,49 +80,6 @@ public class ApiKeyService {
 
         ApiKey found = findByApiKeyUnverified(apiKey);
         validateOwnership(found, accountId);
-        return found;
-    }
-
-    /**
-     * 소유 검증을 <b>모드와 무관하게</b> 하는 조회. {@code LOG_ONLY} 여도 거부한다.
-     *
-     * <p>UG-301: {@code /api/v1/dashboard/**} 네 엔드포인트가 쓴다.
-     *
-     * <p><b>왜 따로 두는가.</b> {@link #findOwnedByApiKey} 의 검증은
-     * {@code gate.security.api-key-ownership.mode = LOG_ONLY} 에서 통과시킨다. 그 스위치는
-     * UG-281 의 비상 되돌림 수단이고 실제로 켤 수 있다. 대시보드는 프로젝트 전체 집계를
-     * 통째로 내주므로, 되돌림이 필요한 상황에서 폭발 반경이 거기까지 넓어지는 것은 받아들일
-     * 수 없다고 판단했다.
-     *
-     * <p><b>이 판단은 대시보드에만 적용됐다 — 일관성 없는 상태다.</b> 반박 리뷰가 짚은 대로
-     * {@code Delete/Update Face·Palm Feature} 를 포함한 나머지 16곳은 여전히 LOG_ONLY 에서
-     * 열린다. 그쪽이 오히려 파괴적이다. 그러나 그 16곳을 여기로 옮기면 LOG_ONLY 는 아무것도
-     * 끄지 않는 죽은 스위치가 되고, 그것은 사실상 UG-306(LOG_ONLY 제거)을 이름만 다르게
-     * 하는 것이다. UG-306 은 UG-281 의 WARN 실트래픽 관측이 선행 조건이므로 여기서 몰래
-     * 처리하지 않는다. 전수 목록은 UG-306 코멘트에 남겼다.
-     *
-     * <p><b>왜 {@code ProjectService.validateOwnership} 을 쓰지 않는가.</b> 초판은 그것을
-     * 불렀다. 반박 리뷰가 두 가지를 짚었다.
-     * <ul>
-     *   <li>그쪽은 {@code NOT_OWNERSHIP} 을 던진다 — "이 키는 실재하고 남의 것" 을 확인해 주는
-     *       열거 오라클이다. 이 클래스가 {@link #validateOwnership} 에서 세 문단에 걸쳐 피하려는
-     *       바로 그것이고, 그 코드가 공개 계약서(openapi.json)에까지 실렸다.
-     *   <li>{@code findByIdAndIsDeletedFalse} 로 SELECT 를 한 번 더 친다. 비교 대상
-     *       {@code accountId} 는 이미 손에 있는 프록시에 들어 있고, 삭제 여부는
-     *       조회 쿼리가 이미 걸렀다 (UG-300).
-     * </ul>
-     * 인메모리 비교 + {@link ErrorType#API_KEY_NOT_FOUND} 로 바꾸니 오라클도 추가 쿼리도
-     * 사라졌고, 두 모드의 응답이 같아져 계약 스펙 변경이 0 이 됐다.
-     */
-    public ApiKey findStrictlyOwnedByApiKey(String apiKey, Long accountId) {
-        ApiKey found = findOwnedByApiKey(apiKey, accountId);
-
-        if (!found.getProject().getAccountId().equals(accountId)) {
-            // 여기 도달했다는 것은 위 검증이 LOG_ONLY 로 통과시켰다는 뜻이다. WARN 은 이미
-            // validateOwnership 이 남겼으므로 중복해 남기지 않는다.
-            throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
-        }
-
         return found;
     }
 
@@ -197,10 +97,11 @@ public class ApiKeyService {
      * 자리에서 닫힌다. (반박 리뷰 지적으로 "6곳" 을 고쳤다 —
      * {@code FaceFeatureService}·{@code PalmFeatureService} 경유 2곳이 빠져 있었다.)
      *
-     * <p><b>왜 하필 지금 필요해졌나.</b> 기본 모드({@code ENFORCE})에서는 아래
-     * {@link #validateOwnership} 이 {@code null} 을 불일치로 보고 먼저 거부하므로 NPE 까지 가지
-     * 않는다. 그러나 {@code mode=LOG_ONLY} 는 통과시키고, 그 모드는 UG-281 의 비상 되돌림
-     * 수단이라 실제로 켤 수 있다.
+     * <p><b>왜 필요해졌나.</b> 아래 {@link #validateOwnership} 이 {@code null} 을 불일치로 보고
+     * 거부하므로 지금은 NPE 까지 가지 않는다. 이 가드가 필요해진 것은 되돌림 스위치
+     * ({@code LOG_ONLY}) 가 그 거부를 통과시켰기 때문인데, 그 스위치는 UG-306 에서 제거됐다.
+     * 그래도 이 가드는 남긴다 — 소유 검증에 의존해 NPE 를 막는 구조는 한 겹이 사라지면
+     * 조용히 무너지고, 여기서 막으면 그 의존 자체가 없어진다.
      *
      * <p><b>이 가드가 아래 겹을 관측 불가로 만들었다</b> (반박 리뷰 지적). 이제 {@code null} 이
      * {@link #validateOwnership} 까지 갈 수 없으므로, 그쪽이 {@code null} 을 어떻게 다루는지는
@@ -208,11 +109,11 @@ public class ApiKeyService {
      * 손대는 조합은 잡히지 않는다. 이 가드가 사실상 단일 방어선이라는 뜻이다.
      *
      * <p><b>왜 새 오류 코드를 만들지 않았나.</b> {@link ErrorType#API_KEY_NOT_FOUND} 를 그대로
-     * 쓰면 ENFORCE 에서의 응답이 <b>바이트 단위로 그대로</b>다 — 지금도 같은 코드가 나간다.
-     * 즉 이 변경은 LOG_ONLY 에서만 500 을 400 으로 바꾸고, 클라이언트 계약은 건드리지 않는다.
+     * 쓰면 응답이 <b>바이트 단위로 그대로</b>다 — 소유 불일치도 같은 코드가 나간다. 열거 오라클을
+     * 만들지 않으려면 여기서도 같아야 한다.
      *
-     * <p>로그는 소유 불일치와 <b>구분해서</b> 남긴다. 같은 WARN 으로 뭉치면 UG-281 이 관측하려는
-     * "정상인데 불일치로 호출하던 기존 고객" 집계에 헤더 누락이 섞여 들어간다.
+     * <p>로그는 소유 불일치와 <b>구분해서</b> 남긴다. 같은 WARN 으로 뭉치면 소유 불일치 집계에
+     * 헤더 누락이 섞여 들어가 원인을 가를 수 없다.
      */
     private void requireAccountId(String apiKey, Long accountId) {
         if (accountId != null) {
@@ -335,21 +236,29 @@ public class ApiKeyService {
      * <p>{@code NOT_OWNERSHIP} 을 쓰지 않은 것도 같은 이유다. 그 코드는 프로젝트 ID 처럼 이미
      * 소유자에게만 알려진 식별자를 다루는 경로용이다.
      */
+    /**
+     * 소유 불일치를 거부한다.
+     *
+     * <p><b>이 WARN 이 유일한 신호다</b> (UG-306 반박 리뷰 지적). 예전에는 되돌림 스위치의
+     * 모드가 로그에 함께 찍혀 "지금 차단 중인가" 를 로그만으로 알 수 있었다. 스위치가
+     * 사라졌으므로 이제 볼 것은 이 WARN 의 빈도뿐이다.
+     *
+     * <p><b>급증하면 무엇을 해야 하나.</b> 전역 통제를 끄는 것이 아니라 <b>데이터를 교정</b>한다.
+     * 차단 조건은 "X-Api-Key 가 가리키는 프로젝트의 소유 계정 != X-Account-Id" 이므로, 그
+     * 프로젝트의 소유 계정을 바로잡거나 호출자에게 자기 키를 발급하면 해소된다. 로그에 찍히는
+     * {@code projectId} 와 두 {@code accountId} 가 그 판단에 필요한 전부다.
+     */
     private void validateOwnership(ApiKey apiKey, Long accountId) {
         Long ownerAccountId = apiKey.getProject().getAccountId();
         if (ownerAccountId.equals(accountId)) {
             return;
         }
 
-        OwnershipMode currentMode = mode();
-
         // 정상 사용에서는 나올 수 없는 조합이다. 조사할 수 있도록 남기되 키 원문은 가린다.
-        log.warn("API 키 소유 불일치 — 요청 accountId={}, 키 소유 accountId={}, projectId={}, apiKey={}, mode={}",
+        log.warn("API 키 소유 불일치 — 요청 accountId={}, 키 소유 accountId={}, projectId={}, apiKey={}",
                 accountId, ownerAccountId, apiKey.getProject().getId(),
-                ApiKeyMasker.mask(apiKey.getApiKey()), currentMode);
+                ApiKeyMasker.mask(apiKey.getApiKey()));
 
-        if (currentMode == OwnershipMode.ENFORCE) {
-            throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
-        }
+        throw new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
     }
 }

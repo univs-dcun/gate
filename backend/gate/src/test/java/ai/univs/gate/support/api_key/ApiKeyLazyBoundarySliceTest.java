@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.autoconfigure.RefreshAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,9 +42,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 실패를 가려 주던 상태이고, 이 테스트가 확인하려는 것은 그 가림막 없이도 동작하는가다.
  */
 @JpaSliceTest
-// RefreshAutoConfiguration: ApiKeyService 는 @RefreshScope 다. 슬라이스에는 refresh 스코프가
-// 등록돼 있지 않아 첫 호출이 "No Scope registered for scope name 'refresh'" 로 끝난다.
-@Import({RefreshAutoConfiguration.class, ApiKeyService.class, ApiKeyRepositoryImpl.class})
+@Import({ApiKeyService.class, ApiKeyRepositoryImpl.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-335: 트랜잭션 밖 지연 로딩 경계")
 class ApiKeyLazyBoundarySliceTest {

@@ -163,8 +163,9 @@ public class FaceFeatureService {
                 // UG-277: 프로젝트 소유자 accountId 를 보낸다. 이 경로는 데모 DTO 가 없어 인증 전용이며,
                 // 소유 검증이 호출자 == 소유자를 보장하므로 값이 달라지지 않는다. 호출자 값을 쓰지
                 // 않는 이유는 X-Account-Id 가 없을 때 null.toString() 이 되기 때문이다 — 기본
-                // ENFORCE 에서는 소유 검증이 먼저 거부하므로(Long.equals(null) 은 false) 도달하지
-                // 않지만, mode=LOG_ONLY 로 되돌린 동안에는 통과해 여기서 터진다.
+                // 소유 검증이 먼저 거부하므로(Long.equals(null) 은 false) 지금은 도달하지 않는다.
+                // 그 한 겹에 기대지 않으려고 여기서도 방어한다 — LOG_ONLY 스위치가 있던 동안에는
+                // 실제로 통과했다 (UG-306 에서 제거).
                 String.valueOf(project.getAccountId()));
         String featureId;
         try {
