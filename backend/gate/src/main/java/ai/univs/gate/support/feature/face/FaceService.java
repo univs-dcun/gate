@@ -26,9 +26,6 @@ public class FaceService {
         return RemoteCalls.data("face.createFace", () -> faceClient.create(request)).getFaceId();
     }
 
-    public void updateFace(UpdateFaceFeignRequestDTO request) {
-        RemoteCalls.run("face.updateFace", () -> faceClient.update(request));
-    }
 
     public void deleteFace(DeleteFaceFeignRequestDTO request) {
         RemoteCalls.run("face.deleteFace", () -> faceClient.delete(request));
