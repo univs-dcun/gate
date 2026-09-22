@@ -1,6 +1,8 @@
 # ============================================================
 # 제품 — gate-web (UG-246)
-# gate 제품의 관리 프론트엔드. dev 환경은 미사용 (COMPOSE_FILE에서 제외).
+# gate 제품의 관리 프론트엔드. dev/stage/master 전 환경에서 운영 (UG-331 부터 dev 포함 —
+# Bitbucket main push 가 dev 에 자동 배포되고, stage/master 는 그 태그를 promote 한다).
+# config.js 는 docker-entrypoint.sh 가 기동 시 아래 환경변수로 생성하므로 이미지는 환경 공통이다.
 # ============================================================
 
 services:
