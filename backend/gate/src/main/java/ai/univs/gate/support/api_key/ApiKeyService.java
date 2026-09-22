@@ -257,13 +257,27 @@ public class ApiKeyService {
      *
      * <p>정상 사용에서는 나올 수 없는 로그다. 삭제 시 키도 함께 비활성화되므로
      * ({@code DeleteProjectUseCase}) 이 WARN 은 그 경로를 타지 않고 삭제된 행이 있다는 신호다.
+     *
+     * <p><b>진단이 응답을 바꾸면 안 된다</b> (반박 리뷰 지적). {@code getProject()} 는 지연
+     * 프록시고, {@code api_keys.project_id} 에는 외래 키 제약이 없다 (V1 확인). 즉 프로젝트
+     * 행이 사라진 고아 키가 물리적으로 가능하고, 그 프록시를 건드리면
+     * {@link jakarta.persistence.EntityNotFoundException} 이 난다. 그러면 "없는 키" 는 400,
+     * "고아 키" 는 500 이 되어, 이 클래스가 피하려는 열거 오라클이 <b>진단 코드 때문에</b>
+     * 생긴다. 그래서 통째로 감싼다 — 로그를 남기려다 응답을 바꾸는 일은 없어야 한다.
      */
     private void warnIfProjectDeleted(String apiKey) {
-        apiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
-                .filter(found -> found.getProject().isDeleted())
-                .ifPresent(found -> log.warn(
-                        "삭제된 프로젝트의 API 키로 호출이 들어왔다. projectId={}, apiKey={}",
-                        found.getProject().getId(), ApiKeyMasker.mask(found.getApiKey())));
+        try {
+            apiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
+                    .ifPresent(found -> log.warn(
+                            "살아 있는 프로젝트가 없는 API 키로 호출이 들어왔다. "
+                                    + "projectId={}, deleted={}, apiKey={}",
+                            found.getProject().getId(), found.getProject().isDeleted(),
+                            ApiKeyMasker.mask(found.getApiKey())));
+        } catch (RuntimeException e) {
+            // 프로젝트 행이 없는 고아 키 등. 진단이 실패해도 호출자에게는 같은 응답을 준다.
+            log.warn("프로젝트를 읽을 수 없는 API 키로 호출이 들어왔다. apiKey={}, 원인={}",
+                    ApiKeyMasker.mask(apiKey), e.getClass().getSimpleName());
+        }
     }
 
     /**

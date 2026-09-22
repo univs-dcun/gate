@@ -51,6 +51,22 @@ class ApiKeyOwnershipGuardTest {
     /** 소유 검증을 건너뛰어도 되는 곳. 무인증 데모 경로와 그 분기를 구현한 서비스 자신뿐이다. */
     private static final List<String> ALLOWED = List.of(DEMO_PACKAGE, API_KEY_SERVICE);
 
+    /** 삭제된 프로젝트를 걸러내지 <b>않는</b> 조회 (UG-300). */
+    private static final String UNFILTERED_LOOKUP = "findByApiKeyAndIsActive";
+
+    /**
+     * 위 조회를 써도 되는 곳.
+     *
+     * <p>리포지토리 3단(선언·도메인 계약·구현)과, 조회가 빈 이유를 구분해 로그로 남기는
+     * {@code ApiKeyService.warnIfProjectDeleted} 뿐이다. 후자는 이미 거부가 확정된 실패
+     * 경로에서만 돌고 결과를 응답에 쓰지 않는다.
+     */
+    private static final List<String> UNFILTERED_ALLOWED = List.of(
+            "ai/univs/gate/modules/api_key/domain/repository/ApiKeyRepository.java",
+            "ai/univs/gate/modules/api_key/infrastructure/persistence/ApiKeyJpaRepository.java",
+            "ai/univs/gate/modules/api_key/infrastructure/persistence/ApiKeyRepositoryImpl.java",
+            API_KEY_SERVICE);
+
     private static final Path SOURCE_ROOT = Path.of("src/main/java");
 
     /**
@@ -91,6 +107,29 @@ class ApiKeyOwnershipGuardTest {
         assertThat(violations(API_LITERAL, rel -> rel.startsWith(DEMO_PACKAGE)))
                 .as("데모는 무인증이라 대조할 accountId 가 없고 0L 을 넘긴다. CallerType.API 를 "
                         + "넘기면 소유 검증에 걸려 QR 데모 전 기능이 400 이 된다")
+                .isEmpty();
+    }
+
+    /**
+     * 삭제 검사를 건너뛰는 조회의 호출처 제한 (UG-300 반박 리뷰 지적).
+     *
+     * <p>UG-300 은 "삭제된 프로젝트의 키를 거부한다" 를 자바 조건에서 조회 조건으로 옮기며
+     * <b>"조회 조건은 모든 호출처에 자동으로 붙는다"</b> 를 근거로 들었다. 그런데 삭제 조건이
+     * 없는 {@code findByApiKeyAndIsActiveTrue} 가 도메인 인터페이스에 그대로 public 으로
+     * 남아 있다. 새 UseCase 가 리포지토리를 직접 주입받아 그것을 부르면 같은 구멍이 한 층
+     * 아래로 옮겨졌을 뿐이다 — 리뷰가 실제로 그렇게 지적했고, 그 호출을 넣어도 빌드는 초록이었다.
+     *
+     * <p>그래서 이름 기반 스캔으로 막는다. 허용되는 곳은 리포지토리 3단과, 실패 경로에서만
+     * 진단 로그를 남기는 {@code ApiKeyService.warnIfProjectDeleted} 뿐이다.
+     */
+    @Test
+    @DisplayName("삭제 검사 없는 조회는 리포지토리와 진단 코드에서만 쓴다")
+    void 삭제검사_없는_조회의_호출처_제한() throws IOException {
+        assertThat(violations(UNFILTERED_LOOKUP,
+                rel -> UNFILTERED_ALLOWED.stream().noneMatch(rel::startsWith)))
+                .as("삭제된 프로젝트의 키를 거부하는 규칙은 조회 조건에 얹혀 있다 (UG-300). "
+                        + "이 조회는 그 조건이 없으므로, 새 경로에서 쓰면 삭제된 프로젝트의 키로 "
+                        + "인증이 통과한다 (UG-288). findActiveByApiKeyWithLiveProject 를 쓸 것")
                 .isEmpty();
     }
 
