@@ -176,10 +176,10 @@ CREATE SYNONYM vlmatch FOR <설치스키마>.vlmatch;
 
 ### palm-service / match-server 추가
 
-| 서비스 | 컨테이너 환경변수 | 비고 |
-|---|---|---|
-| palm | `PALM_MODULE_URL` | 폐쇄망 내부 palm 모듈 주소 |
-| match | `LICENSE_SERVER_HOST` | 라이선스 서버 |
+| 서비스 | 컨테이너 환경변수 | 필수 | 비고 |
+|---|---|---|---|
+| palm | `PALM_MODULE_URL` | ✅ | 폐쇄망 내부 palm 모듈 주소. UG-307 부터 소스 기본값이 없어 안 주면 기동 실패 |
+| match | `LICENSE_SERVER_HOST` | | 라이선스 서버 |
 
 ### 이 문서가 다루지 않는 것
 
