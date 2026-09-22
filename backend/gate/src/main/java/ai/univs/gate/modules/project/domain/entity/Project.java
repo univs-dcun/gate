@@ -3,6 +3,8 @@ package ai.univs.gate.modules.project.domain.entity;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.domain.BaseEntity;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import lombok.*;
 
 @Entity
@@ -33,6 +35,15 @@ public class Project extends BaseEntity {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
+
+    /**
+     * 소프트 삭제 시각 (UG-303). 유예 기간을 재는 기준이다.
+     *
+     * <p>{@code null} 이면 삭제되지 않았거나, 이 컬럼이 생기기 전에 삭제된 행이다. 후자는
+     * 삭제 시각을 알 수 없으므로 퍼지 대상에서 제외한다 — 임의로 채워 지우는 것보다 안전하다.
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -65,7 +76,19 @@ public class Project extends BaseEntity {
      * {@code 'ACTIVE' | 'INACTIVE' | 'DELETED'} 로 이미 기대하고 있다. {@code INACTIVE} 는
      * "삭제는 아니지만 비활성" 자리로 비워 둔다.
      */
+    /**
+     * 소프트 삭제 (UG-303 에서 삭제 시각을 함께 남긴다).
+     *
+     * <p>{@code deletedAt} 은 유예 기간을 재는 기준이다. {@code updated_at} 으로 근사할 수는
+     * 있지만 삭제 외의 갱신에도 움직여 "삭제 후 N일" 의 기준이 되지 못한다.
+     *
+     * <p>이미 삭제된 프로젝트를 다시 삭제해도 시각을 덮어쓰지 않는다 — 덮어쓰면 유예가
+     * 계속 뒤로 밀려 영원히 지워지지 않는다.
+     */
     public void delete() {
+        if (!this.isDeleted) {
+            this.deletedAt = LocalDateTime.now(ZoneOffset.UTC);
+        }
         this.isDeleted = true;
         this.status = ProjectStatus.DELETED;
     }

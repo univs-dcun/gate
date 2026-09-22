@@ -154,6 +154,35 @@ class RemoteCallRollbackGuardTest {
         return false;
     }
 
+    /**
+     * 이력을 쓰지 않는 {@code REQUIRES_NEW} — 이 가드의 대상이 아니다.
+     *
+     * <p>이 가드가 지키는 것은 "하위 서비스가 실패해도 <b>앞서 저장한 이력 행</b>이 살아남는
+     * 다" 이다 (UG-280). 이력을 아예 쓰지 않는 트랜잭션에는 지킬 것이 없다.
+     *
+     * <p>목록으로 두는 이유는 실패 메시지가 요구하는 그대로다 — "조용히 빼지 말 것".
+     * 한 줄을 추가하는 것은 "이 트랜잭션은 이력을 쓰지 않는다" 는 선언이고, 그 선언이 틀리면
+     * 아래 단언이 깨진다.
+     */
+    private static final List<String> 이력_없는_REQUIRES_NEW = List.of(
+            // UG-303: 삭제된 프로젝트의 생체 데이터를 지운다. 이력을 남기지 않고, 하위 서비스
+            // 실패는 메서드 안에서 잡아 다음 특징점으로 넘어가므로 트랜잭션 경계를 넘지 않는다.
+            "ProjectDataPurgeService.java");
+
+    private static boolean 이력을_쓰지_않는다(Site site) {
+        String file = site.file().getFileName().toString();
+        if (!이력_없는_REQUIRES_NEW.contains(file)) {
+            return false;
+        }
+        // 선언이 사실인지 확인한다. 나중에 이력을 쓰게 되면 면제가 조용히 유지되지 않는다.
+        assertThat(site.fileText())
+                .as("%s 를 '이력을 쓰지 않는다' 로 면제했는데 이력을 쓰고 있다. "
+                        + "noRollbackFor 를 선언하거나 면제를 지울 것", file)
+                .doesNotContain("matchHistoryRepository", "featureHistoryRepository")
+                .doesNotContain("History.save(");
+        return true;
+    }
+
     /** {@code @Transactional(...)} 을 괄호 짝을 세어 통째로 잘라낸다 — 줄바꿈 위치와 무관하다. */
     private static List<Site> findTransactionalSites() throws IOException {
         List<Site> sites = new ArrayList<>();
@@ -201,6 +230,7 @@ class RemoteCallRollbackGuardTest {
 
             List<String> bad = requiresNew.stream()
                     .filter(s -> !s.declaresRemoteCall())
+                    .filter(s -> !이력을_쓰지_않는다(s))
                     .map(Site::describe)
                     .toList();
 
