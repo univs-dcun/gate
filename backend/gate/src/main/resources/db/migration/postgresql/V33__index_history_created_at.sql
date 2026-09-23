@@ -1,0 +1,24 @@
+-- UG-282: 이력 보존 정리(HistoryPurgeService)가 "가장 오래된 행" 을 찾는 경로.
+--
+-- 정리 쿼리는 project_id 를 걸지 않는다 — 전 프로젝트의 오래된 행이 대상이다. 그래서 V28 의
+-- (project_id, created_at) 도 V30 의 (project_id, match_type, feature_type, created_at) 도
+-- 쓸 수 없다. 선두 컬럼이 project_id 이기 때문이다.
+--
+-- 이 인덱스가 없으면 정리가 <정상 동작할 때> 가장 비싸진다. 밀린 분량을 다 지우고 나면
+-- cutoff 보다 오래된 행이 0건이 되는데, 그 "0건" 을 확인하려면 테이블 전체를 훑어야 한다.
+-- 매일 밤 최대 테이블을 한 번씩 스캔하는 셈이고, 아무 일도 하지 않는 날일수록 그렇다.
+-- 인덱스가 있으면 첫 엔트리에서 조건이 깨져 즉시 끝난다.
+--
+-- <쓰기 비용> — 새로 재지 않았다. V30 이 같은 테이블에 4컬럼 인덱스를 넣고 인증 1건당
+-- +2.3us 를 실측했으므로, 1컬럼 인덱스의 비용은 그 값의 상한 안에 있다. created_at 은
+-- 단조 증가라 항상 오른쪽 끝 리프에 붙는다 — 분할도 랜덤 I/O 도 거의 없는, 가장 싼 형태다.
+--
+-- <HOT 는 깨지지 않는다>. PostgreSQL 의 HOT 판정은 "인덱스에 든 컬럼이 UPDATE 됐는가" 다.
+-- match_history 는 success/similarity/failure_type 이 UPDATE 되지만 created_at 은 INSERT
+-- 이후 바뀌지 않는다. V30 도 created_at 을 인덱스에 넣은 채 HOT 19,000/20,000 을 유지했다 —
+-- 같은 근거가 그대로 적용된다.
+--
+-- CONCURRENTLY 를 쓰지 않은 이유는 V30 과 같다 (배포가 stop → rm -f → pull → up -d 라
+-- Flyway 가 도는 동안 트래픽이 없다).
+CREATE INDEX idx_match_history_created_at ON match_history (created_at);
+CREATE INDEX idx_feature_history_created_at ON feature_history (created_at);

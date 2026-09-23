@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>무엇이 문제였나.</b> {@code DeleteProjectUseCase} 는 프로젝트 행에
  * {@code is_deleted = true} 를 찍고 API 키를 비활성화하는 것까지만 한다. 그 프로젝트에 등록된
- * 얼굴·손바닥 특징점과 MinIO 에 올라간 원본 이미지는 손대지 않는다. 조회 경로가 전부 막혀
+ * 얼굴·손바닥 특징점과 저장소에 올라간 원본 이미지는 손대지 않는다. 조회 경로가 전부 막혀
  * 접근은 안 되지만 데이터는 남는다.
  *
  * <ul>
@@ -190,13 +190,14 @@ public class ProjectDataPurgeService {
     private static final Set<String> 없음을_뜻하는_사유 = Set.of("INVALID_FACE_ID");
 
     /**
-     * MinIO 원본 이미지를 지운다.
+     * 원본 이미지 파일을 지운다 ({@code FileUtil} 이 {@code ${file.root-path}} 아래 로컬 경로에 쓴다).
      *
      * <p>실패해도 특징점 삭제는 진행한다. 이미지만 남은 고아 파일은 저장소 문제이지 접근
      * 경로가 있는 상태가 아니다 — 반대로 여기서 멈추면 특징점이 계속 살아 있어 더 나쁘다.
      *
-     * <p>동의를 받지 않은 프로젝트는 애초에 이미지를 올리지 않으므로 경로가 빈 문자열이다
-     * ({@code FileService.uploadIfConsent}).
+     * <p>동의를 받지 않은 프로젝트는 애초에 이미지를 올리지 않으므로 경로가 비어 있다 —
+     * {@code FileService.uploadIfConsent} 는 {@code null} 을, 업로드 자체가 꺼진 환경
+     * ({@code FILE_ENABLE_UPLOAD=false})은 빈 문자열을 돌려준다. 아래 검사가 둘 다 막는다.
      */
     private void deleteImage(BiometricFeature feature) {
         String path = feature.getFeatureImagePath();
