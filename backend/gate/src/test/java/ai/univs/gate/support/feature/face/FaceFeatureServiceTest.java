@@ -375,4 +375,45 @@ class FaceFeatureServiceTest {
                 .isLivenessEnabled(any(), any(), any());
         verify(projectSettingsService, org.mockito.Mockito.times(1)).findByProject(any());
     }
+
+    /**
+     * <b>동의와 라이브니스가 서로 다를 때 각 값이 제자리로 간다</b> (UG-336 델타 리뷰).
+     *
+     * <p>UG-336 이 두 값을 원격 호출 전에 한 번 읽어 같은 {@code boolean} 형의 지역 변수 둘과
+     * 두 칸짜리 결과 레코드로 넘긴다. 뒤바뀌어도 컴파일러는 모른다. 나머지 테스트는 두 값을 늘
+     * 같게 두므로(둘 다 켜짐 / 둘 다 꺼짐) 뒤바뀌어도 초록이었다 — 리뷰가 변이로 증명했다.
+     *
+     * <p>뒤바뀌면 실제로 틀린 일이 일어난다. 동의가 꺼졌는데 생체 이미지를 올리거나, 응답에
+     * 이미지 경로를 노출하거나, 하위 서비스에 라이브니스를 잘못 요청한다.
+     *
+     * <p>업로드 인자는 공통 스텁이 동의 값으로 걸려 있어 다른 값이 오면 strict stubs 가 거부한다.
+     */
+    @org.junit.jupiter.params.ParameterizedTest(name = "동의={0}, 라이브니스={1}")
+    @org.junit.jupiter.params.provider.CsvSource({"false, true", "true, false"})
+    @DisplayName("UG-336: 동의와 라이브니스가 다르면 각 값이 결과·업로드·이력·요청의 제자리로 간다")
+    void 동의와_라이브니스가_다르면_제자리로_간다(boolean 동의, boolean 라이브니스) {
+        givenCommonFlow(동의, 라이브니스, 동의 ? UPLOADED_IMAGE_PATH : null);
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willReturn(CREATED_FACE_ID);
+        given(biometricFeatureRepository.save(any(BiometricFeature.class))).willAnswer(inv -> {
+            BiometricFeature saved = inv.getArgument(0);
+            saved.setId(SAVED_FEATURE_ID);
+            return saved;
+        });
+
+        var result = faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
+
+        assertThat(result.consentEnabled()).as("결과의 동의").isEqualTo(동의);
+        assertThat(result.livenessChecked()).as("결과의 라이브니스").isEqualTo(라이브니스);
+
+        verify(fileService).uploadIfConsent(featureImage, 동의);
+
+        FeatureHistory history = capturedFeatureHistory();
+        assertThat(history.getConsentSnapshot()).as("이력의 동의 스냅샷").isEqualTo(동의);
+        assertThat(history.isCheckLiveness()).as("이력의 라이브니스").isEqualTo(라이브니스);
+
+        ArgumentCaptor<CreateFaceFeignRequestDTO> req = ArgumentCaptor.forClass(CreateFaceFeignRequestDTO.class);
+        verify(faceService).createFace(req.capture());
+        assertThat(req.getValue().isCheckLiveness()).as("face 요청의 라이브니스").isEqualTo(라이브니스);
+        assertThat(req.getValue().isCheckMultiFace()).as("face 요청의 다중 얼굴 검사 — 같은 설정을 따른다").isEqualTo(라이브니스);
+    }
 }

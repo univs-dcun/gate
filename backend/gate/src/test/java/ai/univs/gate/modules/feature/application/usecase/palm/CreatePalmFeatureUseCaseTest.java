@@ -120,4 +120,30 @@ class CreatePalmFeatureUseCaseTest {
         assertThat(result.checkLiveness()).isFalse();
         assertThat(result.featureId()).isEqualTo("new-palm-id");
     }
+
+    /**
+     * <b>동의와 라이브니스가 서로 다를 때 각 값이 제자리로 간다</b> (UG-336 델타 리뷰).
+     *
+     * <p>결과 레코드의 두 칸이 모두 {@code boolean} 이라 뒤바뀌어도 컴파일러는 모른다. 나머지
+     * 테스트는 두 값을 늘 같게 두어 뒤바뀌어도 초록이었다. 뒤바뀌면 동의가 꺼졌는데 응답에
+     * 이미지 경로가 나가거나 {@code checkLiveness} 가 틀린다.
+     */
+    @org.junit.jupiter.params.ParameterizedTest(name = "라이브니스={0}, 동의={1}")
+    @org.junit.jupiter.params.provider.CsvSource({"true, false", "false, true"})
+    @DisplayName("UG-336: 동의와 라이브니스가 다르면 checkLiveness 와 이미지 노출이 각자의 값을 따른다")
+    void 동의와_라이브니스가_다르면_제자리로_간다(boolean 라이브니스, boolean 동의) {
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(palmFeatureService.createPalmFeature(
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
+                .willReturn(new CreatePalmFeatureServiceResult(feature, 라이브니스, 동의));
+
+        PalmFeatureResult result = createPalmFeatureUseCase.execute(input);
+
+        assertThat(result.checkLiveness()).isEqualTo(라이브니스);
+        if (동의) {
+            assertThat(result.featureImagePath()).isNotEmpty();
+        } else {
+            assertThat(result.featureImagePath()).as("동의가 꺼지면 이미지 경로를 내보내지 않는다").isEmpty();
+        }
+    }
 }
