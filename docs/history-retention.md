@@ -58,6 +58,13 @@ gate:
       retention-days: 1825
 ```
 
+> ⚠️ **공용 `gate-service.yml` 에는 넣지 않는다.** onprem 저장소의 `config/spring` 은 gate-config 를
+> **통째로 복사**한 사본이라, 공용 파일에 값이 들어가면 다음 동기화에서 납품 패키지에 그대로
+> 실려 나간다 — 고객사에서 아무도 선택하지 않은 채 되돌릴 수 없는 삭제가 시작된다.
+> 환경별 파일(`gate-service-dev.yml` 등)을 만들어 거기에만 넣고, 넣기 전에 On-prem 세션에
+> 알린다. (onprem `cf4156a` 의 `build_package.sh` 가 `config/spring` 에 `retention-days:` 가
+> 있으면 빌드를 중단한다 — 납품처와 기간을 합의한 경우에만 `--allow-purge-keys` 로 통과시킨다.)
+
 ## 무엇을 지우고 무엇을 남기는가
 
 규칙은 한 문장이다 — **지우는 행이 들고 있던 이미지는, 살아 있는 `biometric_feature` 가
