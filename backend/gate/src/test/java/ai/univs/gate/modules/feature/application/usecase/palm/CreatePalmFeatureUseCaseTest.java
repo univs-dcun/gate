@@ -9,13 +9,11 @@ import ai.univs.gate.modules.feature.application.result.palm.PalmFeatureResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
-import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.feature.palm.CreatePalmFeatureServiceResult;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.project.ProjectSettingsService;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +37,6 @@ class CreatePalmFeatureUseCaseTest {
 
     @Mock private PalmFeatureService palmFeatureService;
     @Mock private FileService fileService;
-    @Mock private ProjectSettingsService projectSettingsService;
 
     @InjectMocks private CreatePalmFeatureUseCase createPalmFeatureUseCase;
 
@@ -82,25 +79,16 @@ class CreatePalmFeatureUseCaseTest {
                 .build();
     }
 
-    private void givenProjectSettings(boolean consentEnabled) {
-        ProjectSettings settings = ProjectSettings.builder()
-                .id(2L)
-                .project(project)
-                .consentEnabled(consentEnabled)
-                .build();
-        given(projectSettingsService.findByProject(project)).willReturn(settings);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
-    }
 
     @Test
     @DisplayName("입력 값이 그대로 서비스에 위임되고 서비스 결과가 PalmFeatureResult로 매핑된다")
     void execute_delegatesAndMapsResult() {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
         // (UG-333 부터 input 의 externalKey 도 서비스로 전달된다)
-        givenProjectSettings(true);
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
         given(palmFeatureService.createPalmFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
-                .willReturn(new CreatePalmFeatureServiceResult(feature, true));
+                .willReturn(new CreatePalmFeatureServiceResult(feature, true, true));
 
         // when
         PalmFeatureResult result = createPalmFeatureUseCase.execute(input);
@@ -119,10 +107,10 @@ class CreatePalmFeatureUseCaseTest {
     @DisplayName("동의(consent)가 비활성화면 이미지 경로가 비어 있고 livenessChecked=false가 그대로 매핑된다")
     void execute_consentDisabled_hidesImagePath() {
         // given
-        givenProjectSettings(false);
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
         given(palmFeatureService.createPalmFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
-                .willReturn(new CreatePalmFeatureServiceResult(feature, false));
+                .willReturn(new CreatePalmFeatureServiceResult(feature, false, false));
 
         // when
         PalmFeatureResult result = createPalmFeatureUseCase.execute(input);
@@ -131,5 +119,31 @@ class CreatePalmFeatureUseCaseTest {
         assertThat(result.featureImagePath()).isEmpty();
         assertThat(result.checkLiveness()).isFalse();
         assertThat(result.featureId()).isEqualTo("new-palm-id");
+    }
+
+    /**
+     * <b>동의와 라이브니스가 서로 다를 때 각 값이 제자리로 간다</b> (UG-336 델타 리뷰).
+     *
+     * <p>결과 레코드의 두 칸이 모두 {@code boolean} 이라 뒤바뀌어도 컴파일러는 모른다. 나머지
+     * 테스트는 두 값을 늘 같게 두어 뒤바뀌어도 초록이었다. 뒤바뀌면 동의가 꺼졌는데 응답에
+     * 이미지 경로가 나가거나 {@code checkLiveness} 가 틀린다.
+     */
+    @org.junit.jupiter.params.ParameterizedTest(name = "라이브니스={0}, 동의={1}")
+    @org.junit.jupiter.params.provider.CsvSource({"true, false", "false, true"})
+    @DisplayName("UG-336: 동의와 라이브니스가 다르면 checkLiveness 와 이미지 노출이 각자의 값을 따른다")
+    void 동의와_라이브니스가_다르면_제자리로_간다(boolean 라이브니스, boolean 동의) {
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(palmFeatureService.createPalmFeature(
+                        CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
+                .willReturn(new CreatePalmFeatureServiceResult(feature, 라이브니스, 동의));
+
+        PalmFeatureResult result = createPalmFeatureUseCase.execute(input);
+
+        assertThat(result.checkLiveness()).isEqualTo(라이브니스);
+        if (동의) {
+            assertThat(result.featureImagePath()).isNotEmpty();
+        } else {
+            assertThat(result.featureImagePath()).as("동의가 꺼지면 이미지 경로를 내보내지 않는다").isEmpty();
+        }
     }
 }

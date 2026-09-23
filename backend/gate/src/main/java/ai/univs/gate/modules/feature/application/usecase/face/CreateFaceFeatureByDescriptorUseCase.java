@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * descriptor 기반 특징점 얼굴 등록 (UG-279).
@@ -21,7 +20,6 @@ public class CreateFaceFeatureByDescriptorUseCase {
 
     private final FaceFeatureService faceFeatureService;
 
-    @Transactional
     public FaceFeatureByDescriptorResult execute(CreateFaceFeatureByDescriptorInput input) {
         BiometricFeature biometricFeature = faceFeatureService.createFaceFeatureByDescriptor(
                 input.accountId(),
