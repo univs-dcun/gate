@@ -307,4 +307,36 @@ class TransactionDeclarationGuardTest {
                         ApiKeyService 가 초기화해 돌려주는지 먼저 볼 것.""")
                 .isEmpty();
     }
+
+    /**
+     * <b>그 진입점을 부르는 컨트롤러에도 트랜잭션이 없다</b> (UG-336 반박 리뷰).
+     *
+     * <p>위 가드는 서비스와 유스케이스만 본다. 컨트롤러에 클래스 레벨 {@code @Transactional} 을
+     * 붙이면 그 아래 전부가 바깥 트랜잭션 안에 들어가 UG-336 이 무효가 되는데, 반박 리뷰가 그
+     * 변이로 스위트가 초록인 것을 보였다.
+     */
+    @Test
+    @DisplayName("UG-336: 등록·삭제를 부르는 컨트롤러에는 트랜잭션 선언이 없다")
+    void 등록_삭제_컨트롤러에는_트랜잭션이_없다() {
+        List<Class<?>> 컨트롤러 = List.of(
+                ai.univs.gate.modules.feature.api.controller.FaceController.class,
+                ai.univs.gate.modules.feature.api.controller.PalmController.class,
+                ai.univs.gate.facade.demo.api.controller.DemoController.class);
+
+        List<String> 위반 = new java.util.ArrayList<>();
+        for (Class<?> c : 컨트롤러) {
+            if (AnnotatedElementUtils.findMergedAnnotation(c, Transactional.class) != null) {
+                위반.add(c.getSimpleName() + " (클래스)");
+            }
+            for (Method m : c.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(m, Transactional.class) != null) {
+                    위반.add(c.getSimpleName() + "." + m.getName());
+                }
+            }
+        }
+
+        assertThat(위반)
+                .as("컨트롤러의 트랜잭션은 그 아래 등록·삭제 경로 전체를 바깥 트랜잭션으로 감싼다 (UG-336)")
+                .isEmpty();
+    }
 }

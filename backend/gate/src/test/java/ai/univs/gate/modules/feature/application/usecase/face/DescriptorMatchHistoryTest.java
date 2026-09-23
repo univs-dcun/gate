@@ -249,10 +249,42 @@ class DescriptorMatchHistoryTest {
         @InjectMocks private FaceFeatureService faceFeatureService;
 
         private void 공통() {
+            공통_start_없이();
+            given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        }
+
+        /** 시작 이력 스텁을 테스트가 직접 거는 경우. strict stubs 라 겹쳐 걸 수 없다. */
+        private void 공통_start_없이() {
             given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
-            given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        }
+
+        /**
+         * <b>특징점 저장과 성공 이력만 트랜잭션 안에서 일어난다</b> (UG-336).
+         *
+         * <p>반박 리뷰가 이 경로에만 경계 테스트가 없다는 것을 변이로 보였다 — 성공 이력을 템플릿
+         * 밖으로 빼도, 템플릿을 통째로 없애도(= 저장과 성공 이력이 따로 커밋돼도) 스위트가
+         * 초록이었다. face·palm 이미지 등록과 같은 단언을 둔다.
+         */
+        @Test
+        @DisplayName("UG-336: 시작 이력·원격 호출은 트랜잭션 밖, 특징점 저장·성공 이력은 안이다")
+        void 성공_쓰기만_트랜잭션_안이다() {
+            공통_start_없이();
+            java.util.List<String> 기록 = new java.util.ArrayList<>();
+            given(historyRecorder.start(any(FeatureHistory.class)))
+                    .willAnswer(inv -> { 기록.add("start:" + transactionTemplate.isActive()); return inv.getArgument(0); });
+            given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
+                    .willAnswer(inv -> { 기록.add("원격:" + transactionTemplate.isActive()); return "issued-face-id"; });
+            given(biometricFeatureRepository.save(any(BiometricFeature.class)))
+                    .willAnswer(inv -> { 기록.add("save:" + transactionTemplate.isActive()); return inv.getArgument(0); });
+            org.mockito.BDDMockito.willAnswer(inv -> { 기록.add("succeed:" + transactionTemplate.isActive()); return null; })
+                    .given(historyRecorder).succeed(any(FeatureHistory.class));
+
+            faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, null);
+
+            assertThat(기록).containsExactly("start:false", "원격:false", "save:true", "succeed:true");
+            assertThat(transactionTemplate.executions()).as("경계는 성공 블록 하나뿐이다").isEqualTo(1);
         }
 
         private FeatureHistory 저장된_특징점_이력() {

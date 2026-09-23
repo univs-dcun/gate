@@ -9,13 +9,11 @@ import ai.univs.gate.modules.feature.application.result.face.FaceFeatureResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
-import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
-import ai.univs.gate.support.project.ProjectSettingsService;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +37,6 @@ class CreateFaceFeatureUseCaseTest {
 
     @Mock private FaceFeatureService faceFeatureService;
     @Mock private FileService fileService;
-    @Mock private ProjectSettingsService projectSettingsService;
 
     @InjectMocks private CreateFaceFeatureUseCase createFaceFeatureUseCase;
 
@@ -81,24 +78,15 @@ class CreateFaceFeatureUseCaseTest {
                 .build();
     }
 
-    private void givenProjectSettings(boolean consentEnabled) {
-        ProjectSettings settings = ProjectSettings.builder()
-                .id(2L)
-                .project(project)
-                .consentEnabled(consentEnabled)
-                .build();
-        given(projectSettingsService.findByProject(project)).willReturn(settings);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
-    }
 
     @Test
     @DisplayName("입력 값이 그대로 서비스에 위임되고 서비스 결과가 FaceFeatureResult로 매핑된다")
     void execute_delegatesAndMapsResult() {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
-        givenProjectSettings(true);
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
         given(faceFeatureService.createFaceFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
-                .willReturn(new CreateFaceFeatureServiceResult(feature, true));
+                .willReturn(new CreateFaceFeatureServiceResult(feature, true, true));
 
         // when
         FaceFeatureResult result = createFaceFeatureUseCase.execute(input);
@@ -117,10 +105,10 @@ class CreateFaceFeatureUseCaseTest {
     @DisplayName("동의(consent)가 비활성화면 이미지 경로가 비어 있고 livenessChecked=false가 그대로 매핑된다")
     void execute_consentDisabled_hidesImagePath() {
         // given
-        givenProjectSettings(false);
+        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
         given(faceFeatureService.createFaceFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
-                .willReturn(new CreateFaceFeatureServiceResult(feature, false));
+                .willReturn(new CreateFaceFeatureServiceResult(feature, false, false));
 
         // when
         FaceFeatureResult result = createFaceFeatureUseCase.execute(input);

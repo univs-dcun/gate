@@ -367,5 +367,12 @@ class FaceFeatureServiceTest {
                 "save:true",      // 특징점 저장과
                 "succeed:true");  // 성공 이력이 한 트랜잭션
         assertThat(transactionTemplate.executions()).as("경계는 성공 블록 하나뿐이다").isEqualTo(1);
+
+        // 커밋 뒤에는 DB 를 읽지 않는다 (UG-336 반박 리뷰). 예전에는 결과를 만들 때 라이브니스
+        // 설정을 다시 조회했는데, 트랜잭션이 없으니 그 조회는 성공 커밋 뒤에 새 커넥션을 요구한다.
+        // 거기서 실패하면 등록은 끝났는데 클라이언트는 500 을 받고, 재시도가 이중 등록이 된다.
+        verify(projectSettingsService, org.mockito.Mockito.times(1))
+                .isLivenessEnabled(any(), any(), any());
+        verify(projectSettingsService, org.mockito.Mockito.times(1)).findByProject(any());
     }
 }
