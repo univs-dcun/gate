@@ -6,6 +6,12 @@ import ai.univs.gate.facade.dashboard.application.usecase.GetDashboardSummaryUse
 import ai.univs.gate.facade.dashboard.domain.enums.TrendPeriod;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.application.usecase.DeleteProjectUseCase;
+import ai.univs.gate.support.api_key.ApiKeyService;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,10 +35,12 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>읽기 쪽도 함께 지킨다</b> (2차 리뷰 지적). 처음에는 삭제 경로만 봤는데, 같은 PR 이
  * {@code GetDashboardSummaryUseCase} 에도 {@code @Transactional(readOnly = true)} 를 <b>같은
  * 이유로</b> 새로 붙이고는 가드를 두지 않았다. 그쪽이 사라지면 나는 증상은 반대다 — flush 가
- * 아니라 지연 로딩이다. {@code ApiKey.project} 가 LAZY 이고 {@code ApiKeyService} 에도 트랜잭션이
- * 없어서, 지금은 OSIV 기본값(true)에만 기대고 있다. {@code application.yaml} 의
- * {@code open-in-view: false} 는 {@code local} 프로파일 블록 안에만 있다. 누가 그걸 전역으로
- * 올리는 순간 이 엔드포인트만 {@code LazyInitializationException} 으로 500 이 된다.
+ * 아니라 지연 로딩이다. {@code ApiKey.project} 가 LAZY 라 트랜잭션 밖에서 건드리면
+ * {@code LazyInitializationException} 으로 500 이 된다.
+ *
+ * <p>(이 문단은 "지금은 OSIV 기본값(true)에만 기대고 있다" 로 시작했다. UG-335 가
+ * {@code open-in-view: false} 를 전역으로 올렸고, {@code ApiKeyService} 는 이제 자기
+ * 트랜잭션을 연다. 그 두 가지를 아래에서 함께 지킨다.)
  *
  * <p>여러 모듈을 가로질러 보므로 {@code shared} 아래 둔다. 처음에는 project 모듈 안에
  * {@code DeleteProjectTransactionGuardTest} 라는 이름으로 있었는데, 대시보드까지 보게 된 뒤로는
@@ -92,6 +100,118 @@ class TransactionDeclarationGuardTest {
         assertThat(transactional.propagation())
                 .as("트랜잭션 없이도 실행될 수 있거나, 바깥 트랜잭션을 요구하는 전파 속성이면 안 된다")
                 .isIn((Object[]) 트랜잭션이_열리는_전파);
+    }
+
+    /**
+     * {@code ApiKeyService} 는 자기 지연 로딩의 경계를 자기가 연다 (UG-335).
+     *
+     * <p>{@code validateOwnership} 이 {@code apiKey.getProject().getAccountId()} 로 프록시를
+     * 초기화한다. 예전에는 그 책임이 호출자에게 있었고, 트랜잭션 없는 유스케이스
+     * ({@code ExtractUseCase}, {@code GetFeatureListUseCase})는 OSIV 기본값에만 기대고 있었다.
+     *
+     * <p>호출자마다 선언을 붙이지 않은 이유는 {@code ExtractUseCase} 다. 그쪽은 조회 직후
+     * face 서비스를 Feign 으로 부르므로, 트랜잭션으로 감싸면 원격 호출 내내 영속성 컨텍스트를
+     * 붙든 채 네트워크를 기다린다.
+     *
+     * <p>반박 리뷰가 세 번째 사례({@code CreatePalmFeatureUseCase})를 더 찾았다. 그쪽은
+     * 원격 호출이 끝난 뒤 결과를 조립하며 지연 연관을 읽으므로 자기 {@code @Transactional} 로
+     * 해결했다 — 쌍둥이인 {@code CreateFaceFeatureUseCase} 와 대칭이 맞다.
+     */
+    @Test
+    @DisplayName("ApiKeyService 는 읽기 트랜잭션을 연다 — 지연 로딩 경계의 소유자다")
+    void ApiKeyService_는_읽기_트랜잭션이다() {
+        Transactional transactional =
+                AnnotatedElementUtils.findMergedAnnotation(ApiKeyService.class, Transactional.class);
+
+        assertThat(transactional)
+                .as("이 선언이 사라지면 트랜잭션 없는 호출자에서 소유 검증이 "
+                        + "LazyInitializationException 으로 터진다. open-in-view 가 꺼져 있어 "
+                        + "요청 범위 컨텍스트가 받아 주지 않는다 (UG-335)")
+                .isNotNull();
+
+        assertThat(transactional.readOnly())
+                .as("이 클래스는 조회만 한다. 쓰기 가능 트랜잭션이면 더티 체킹 flush 여지가 남는다")
+                .isTrue();
+
+        assertThat(transactional.propagation())
+                .as("바깥 트랜잭션이 있으면 합류하고 없으면 열어야 한다")
+                .isIn((Object[]) 트랜잭션이_열리는_전파);
+    }
+
+    /**
+     * {@code open-in-view} 가 배포 환경에도 적용되는지 (UG-335).
+     *
+     * <p>예전에는 {@code local} 프로파일 문서 안에만 있어서 dev·stage·prod·onpremise 가 전부
+     * Boot 기본값(true)으로 돌았다. 그 상태에서는 트랜잭션 밖 지연 로딩이 조용히 동작하므로,
+     * 위 가드들이 지키려는 선언이 사라져도 아무 일도 일어나지 않는다 — <b>가드가 무력해진다.</b>
+     *
+     * <p>그래서 설정 파일을 직접 본다. 프로파일 문서 경계는 {@code ---} 이므로, 첫 문서(모든
+     * 프로파일 공통)에 이 줄이 있어야 한다.
+     */
+    @Test
+    @DisplayName("open-in-view: false 가 프로파일 공통 문서에 있고, 어디서도 다시 켜지지 않는다")
+    void OSIV_가_모든_환경에_적용된다() throws IOException {
+        Path resources = 리소스_루트();
+        String yaml = Files.readString(resources.resolve("application.yaml"));
+        String 공통_문서 = yaml.split("(?m)^---\\s*$")[0];
+
+        assertThat(yaml)
+                .as("설정 파일을 제대로 읽지 못했다")
+                .contains("spring:");
+        assertThat(공통_문서)
+                .as("open-in-view: false 가 특정 프로파일 문서 안에만 있으면 배포 환경은 "
+                        + "Boot 기본값(true)으로 돈다. 그러면 트랜잭션 밖 지연 로딩이 조용히 "
+                        + "동작하고, 이 클래스의 다른 가드들도 무력해진다 (UG-335)")
+                .contains("open-in-view: false");
+
+        // 공통 문서에 있어도 뒤 프로파일 문서나 다른 프로파일 파일이 true 로 덮으면 그만이다
+        // (반박 리뷰 지적 — 초판은 '첫 문서에 있는가' 만 봤다).
+        List<Path> 설정들;
+        try (Stream<Path> files = Files.list(resources)) {
+            설정들 = files.filter(f -> f.getFileName().toString().matches("application.*\\.ya?ml"))
+                    .sorted().toList();
+        }
+        assertThat(설정들)
+                .as("설정 파일을 한 개도 못 찾았다 — 경로가 어긋났다")
+                .isNotEmpty();
+
+        List<String> 되켠_곳 = 설정들.stream()
+                .filter(f -> 읽는다(f).matches("(?s).*open-in-view:\\s*true.*"))
+                .map(f -> f.getFileName().toString())
+                .toList();
+
+        assertThat(되켠_곳)
+                .as("어느 프로파일에서든 open-in-view 를 true 로 되돌리면 그 환경만 조용히 "
+                        + "예전 동작으로 돌아간다. 껐다는 사실이 무의미해진다")
+                .isEmpty();
+    }
+
+    /**
+     * 리소스 루트. 상대 경로 하나만 쓰면 작업 디렉터리가 다른 곳(IDE, 모노레포 루트)에서
+     * 돌릴 때 조용히 엉뚱한 트리를 보거나 예외로 끝난다 (반박 리뷰 지적).
+     */
+    private static Path 리소스_루트() {
+        Path 상대 = Path.of("src/main/resources");
+        for (Path p = Path.of("").toAbsolutePath(); p != null; p = p.getParent()) {
+            if (Files.isDirectory(p.resolve(상대).resolve("application.yaml"))
+                    || Files.isRegularFile(p.resolve(상대).resolve("application.yaml"))) {
+                return p.resolve(상대);
+            }
+            Path viaRoot = p.resolve("backend/gate").resolve(상대);
+            if (Files.isRegularFile(viaRoot.resolve("application.yaml"))) {
+                return viaRoot;
+            }
+        }
+        throw new IllegalStateException(
+                "gate 의 리소스 루트를 찾지 못했다. 작업 디렉터리=" + Path.of("").toAbsolutePath());
+    }
+
+    private static String 읽는다(Path file) {
+        try {
+            return Files.readString(file);
+        } catch (IOException e) {
+            throw new IllegalStateException("설정을 읽을 수 없다: " + file, e);
+        }
     }
 
     @Test

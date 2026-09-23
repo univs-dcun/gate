@@ -239,6 +239,64 @@ H2 로 재현해 확인했고, 온프레미스 3.0.3 검증에서 실제로 두 
 PostgreSQL 스키마를 입양하기 위한 것 하나였고, 그 입양은 끝났다. 이력 테이블이 있는 환경에서는
 아무 일도 하지 않으므로 제거해도 dev·stage·prod 의 동작은 달라지지 않는다.
 
+### 삭제된 프로젝트의 생체 데이터 정리 (UG-303)
+
+납품처가 "이 프로젝트 데이터를 지워 달라" 고 하면 지금까지는 수작업이었다. 프로젝트 삭제는
+행에 `is_deleted` 를 찍을 뿐 특징점과 원본 이미지는 남기기 때문이다.
+
+UG-303 이 유예 기간 뒤에 실제로 지우는 잡을 넣었다. **기본값은 꺼져 있다** — 아래 설정을
+주지 않으면 대상 조회조차 하지 않으므로, 이 버전으로 올려도 동작은 달라지지 않는다.
+
+```yaml
+gate:
+  privacy:
+    project-purge:
+      retention-days: 30
+```
+
+켜기 전에 정할 것은 하나다. **삭제 후 며칠 뒤에 지울 것인가** — 그 값이 복구 창의 길이다.
+e-KYC 이력의 법적 보관 의무가 납품처마다 다를 수 있으므로 코드가 기본값을 정하지 않는다.
+
+| 지우는 것 | 남기는 것 |
+|---|---|
+| `biometric_feature` 행(물리 삭제), 원본 이미지 파일, face·palm 서비스의 저장분 | `match_history`·`feature_history` 의 감사 행 |
+
+이력 행은 남지만 그 행이 가리키는 등록 이미지는 함께 사라진다. 자세한 내용과 실패 시 동작은
+`docs/project-data-purge.md` 참고.
+
+**V32 이전에 삭제된 프로젝트는 대상이 아니다.** 삭제 시각(`projects.deleted_at`)을 알 수 없어
+유예를 잴 수 없다. 해당 행이 있는지 확인:
+
+```sql
+SELECT count(*) FROM projects WHERE is_deleted = true AND deleted_at IS NULL;
+```
+
+### 하위 서비스 실패를 조사할 때 (UG-294)
+
+`match_history`·`feature_history` 에 `upstream_status` 컬럼이 있다. face-service·match-server
+호출이 실패했을 때의 상태 코드다. 응답에도 화면에도 나가지 않는 **조사용** 컬럼이다.
+
+| 값 | 뜻 |
+|---|---|
+| 502·503·504 등 | 하위 서비스가 그 코드로 거절했다 |
+| 4xx | 하위 서비스가 4xx 를 줬는데 본문이 우리 포맷이 아니었다 |
+| `0` | 응답을 받지 못했다 — 연결 거부·타임아웃·본문 디코딩 실패·빈 `data`, **그리고 요청을 만들다 난 우리 쪽 버그**까지 포함 |
+| `NULL` | 하위 서비스 실패가 아니거나, 이 컬럼이 생기기 전(V31 이전)의 행 |
+
+`failure_type` 은 이 경우 전부 `INTERNAL_SERVER_ERROR` 하나다. 고객 응답에 나가는 값이라
+세분화하지 않았다.
+
+```sql
+SELECT upstream_status, count(*)
+  FROM match_history
+ WHERE failure_type = 'INTERNAL_SERVER_ERROR'
+   AND created_at >= now() - interval '1 day'
+ GROUP BY upstream_status ORDER BY 2 DESC;
+```
+
+로그에도 같은 정보가 있지만(`GlobalExceptionHandler`) 요청 URI 밖에는 맥락이 없다 —
+어느 프로젝트의 어느 거래였는지는 이 컬럼에만 있다.
+
 ### 설치를 재시도할 때
 
 스키마를 비우고 시작한다. **`user_tables` 만 보면 부족하다** — Flyway 의 빈 스키마 판정은

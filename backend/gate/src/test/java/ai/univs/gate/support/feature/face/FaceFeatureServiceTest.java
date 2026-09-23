@@ -8,12 +8,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
-import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -53,7 +53,7 @@ class FaceFeatureServiceTest {
     private static final String CREATED_FACE_ID = "new-face-id";
 
     @Mock private BiometricFeatureRepository biometricFeatureRepository;
-    @Mock private FeatureHistoryRepository featureHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
     @Mock private FaceService faceService;
@@ -98,12 +98,12 @@ class FaceFeatureServiceTest {
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.REGISTER))
                 .willReturn(livenessEnabled);
-        given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
     }
 
     private FeatureHistory capturedFeatureHistory() {
         ArgumentCaptor<FeatureHistory> captor = ArgumentCaptor.forClass(FeatureHistory.class);
-        verify(featureHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 
@@ -313,7 +313,7 @@ class FaceFeatureServiceTest {
         // 그런데 이 메서드는 REQUIRES_NEW 라 자기 트랜잭션을 따로 커밋한다. 즉 UseCase 가 나중에
         // 거부해도 남의 갤러리에는 이미 특징점과 REGISTER 이력이 남고, 이미지까지 업로드된 뒤였다.
         // 검증을 맨 앞으로 옮겨 그 창을 없앴다.
-        verify(featureHistoryRepository, never()).save(any(FeatureHistory.class));
+        verify(historyRecorder, never()).start(any(FeatureHistory.class));
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
         verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
         verify(faceService, never()).createFace(any(CreateFaceFeignRequestDTO.class));

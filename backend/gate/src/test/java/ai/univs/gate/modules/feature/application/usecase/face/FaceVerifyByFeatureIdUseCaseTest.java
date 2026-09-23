@@ -8,13 +8,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.VerifyByFaceIdInput;
 import ai.univs.gate.modules.feature.application.result.face.VerifyByFaceIdResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByFaceIdFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -59,7 +59,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
     private static final String FILE_SERVER_PATH = "http://gateway/api/v1/files?filePath=";
     private static final String UPLOADED_IMAGE_PATH = "match/uploaded-face.jpg";
 
-    @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private FileService fileService;
     @Mock private ApiKeyService apiKeyService;
     @Mock private ProjectSettingsService projectSettingsService;
@@ -108,7 +108,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
         given(fileService.uploadIfConsent(matchingImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.VERIFY_ID))
                 .willReturn(true);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
@@ -131,7 +131,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
 
     private MatchHistory capturedMatchHistory() {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 

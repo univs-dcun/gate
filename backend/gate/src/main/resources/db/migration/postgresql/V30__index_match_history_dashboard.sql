@@ -1,0 +1,45 @@
+-- UG-282: 대시보드 집계가 match_history 전체를 훑는다.
+--
+-- 실측(PostgreSQL 17, 합성 200만 행 / 1년치 / 프로젝트 20개 중 하나에 50% 편중):
+--
+--   프로젝트+기능+동작+30일 카운트   80ms → 0.47ms   (인덱스 온리 스캔, 힙 접근 0)
+--   countVerifyById 실제 형태        66ms → 2.4ms
+--   프로젝트 목록 집계               101ms → 19ms
+--   로그 목록 (기간 1일)             2.1ms → 1.0ms  (회귀 없음)
+--   인증 1건 (INSERT + 더티체킹 UPDATE)            행당 +2.3us
+--
+-- 대시보드 한 번에 이런 카운트가 10여 개 나가므로 체감은 그 배수다.
+--
+-- <success 를 넣지 않은 이유> — 반박 리뷰가 실측으로 짚었다.
+-- 비율 쿼리(getRatios 가 한 번에 4개 날린다)는 success 를 함께 거는데, 이 인덱스에 그 컬럼이
+-- 없어 Bitmap Heap Scan 으로 떨어진다. 남는 비용이 74ms(queryVerifyByIdRatio)·35ms(queryMatchRatio)
+-- 이고, success 를 5번째 키로 넣으면 각각 16ms·1.7ms 로 줄어든다. 오라클에서는 차이가 더 크다
+-- (42,664 blocks → 1,242 blocks).
+--
+-- 그런데도 넣지 않았다. success 는 <UPDATE 되는 컬럼>이다 — 매칭 UseCase 들이 이력을 저장한 뒤
+-- success()/fail() 로 바꾸므로 인증 1건마다 INSERT + UPDATE 가 나간다. 인덱스에 success 가 없으면
+-- 그 UPDATE 가 HOT 으로 끝나지만(실측 19,000/20,000), 넣는 순간 HOT 이 0/20,000 이 되어 인덱스
+-- 네 벌을 전부 갱신하고 블로트·vacuum 압력이 생긴다. 읽기 3~20배와 쓰기 +16%·HOT 전멸의 교환이라
+-- 쓰기가 가장 잦은 이 테이블에서는 받아들이지 않았다.
+--
+-- 비율 쿼리를 정말 줄여야 한다면 인덱스가 아니라 다른 수단을 볼 것 (집계 캐시, 사전 계산).
+-- 함께 발견된 선행 결함: queryVerifyByIdRatio 는 feature_type 을 걸지 않아 FACE 비율에 PALM 행이
+-- 섞인다. 그것을 고치면 이 인덱스의 컬럼 순서 근거도 함께 바뀐다.
+--
+-- 컬럼 순서는 등치 먼저, 범위 마지막이다. DashboardStatsService 의 모든 카운트가
+-- project_id·match_type·feature_type 등치 + created_at 범위 형태다. match_type 을
+-- feature_type 보다 앞에 둔 이유는 feature_type 없이 match_type 만 거는 비율 쿼리
+-- (queryVerifyByIdRatio)가 있어서다 — 그쪽도 이 인덱스를 탄다(66ms → 43ms).
+--
+-- V28 의 (project_id, created_at) 은 그대로 둔다. 로그 목록은 match_type·feature_type 없이
+-- 기간만 거르므로 이 인덱스로는 대체되지 않는다. 실측에서도 로그 목록은 V28 을 계속 쓴다.
+--
+-- CONCURRENTLY 를 쓰지 않은 이유: 배포가 컨테이너를 재생성하므로 Flyway 가 도는 동안
+-- 이 서비스는 트래픽을 받지 않는다. 파이프라인이 stop → rm -f → pull → up -d 순서라
+-- 롤링이 아니라는 것을 확인했다 (gate-jenkins-library univsServicePipeline.groovy:642).
+-- 200만 행에서 1.5초 걸렸고 선형이므로 1,000만 행이면 8초쯤이다 — 그 시간은 배포 중단
+-- 시간 안에 들어간다. CONCURRENTLY 는 트랜잭션
+-- 밖 실행이 필요하고, 실패 시 INVALID 인덱스가 남아 수동 복구를 요구한다 — 얻는 것보다
+-- 운영 위험이 크다.
+CREATE INDEX idx_match_history_project_match_feature_created
+    ON match_history (project_id, match_type, feature_type, created_at);
