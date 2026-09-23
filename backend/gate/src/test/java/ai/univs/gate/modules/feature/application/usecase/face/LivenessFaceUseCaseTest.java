@@ -8,10 +8,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.LivenessInput;
 import ai.univs.gate.modules.feature.application.result.face.LivenessResult;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.LivenessFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.LivenessFaceFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -63,7 +63,7 @@ class LivenessFaceUseCaseTest {
     private static final String TRANSACTION_UUID = "550e8400-e29b-41d4-a716-446655440000";
     private static final String UPLOADED_IMAGE_PATH = "match/uploaded-face.jpg";
 
-    @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FileService fileService;
     @Mock private FaceService faceService;
@@ -109,7 +109,7 @@ class LivenessFaceUseCaseTest {
         given(apiKeyService.findByApiKey(CallerType.API, API_KEY, CALLER_ACCOUNT_ID)).willReturn(apiKey);
         given(projectSettingsService.findByProject(project)).willReturn(settings);
         given(fileService.uploadIfConsent(featureImage, true)).willReturn(UPLOADED_IMAGE_PATH);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
@@ -118,7 +118,7 @@ class LivenessFaceUseCaseTest {
 
     private MatchHistory capturedMatchHistory() {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 

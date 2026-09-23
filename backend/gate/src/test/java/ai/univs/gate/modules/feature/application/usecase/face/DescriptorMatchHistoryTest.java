@@ -1,6 +1,7 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyByDescriptorInput;
 import ai.univs.gate.modules.feature.application.input.face.VerifyByDescriptorInput;
 import ai.univs.gate.modules.feature.application.result.face.IdentifyByDescriptorResult;
@@ -9,9 +10,7 @@ import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
-import ai.univs.gate.modules.feature.domain.repository.FeatureHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
@@ -102,14 +101,14 @@ class DescriptorMatchHistoryTest {
                 .build();
     }
 
-    private static MatchHistory captureSaved(MatchHistoryRepository repository) {
+    private static MatchHistory captureSaved(HistoryRecorder repository) {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(repository).save(captor.capture());
+        verify(repository).start(captor.capture());
         return captor.getValue();
     }
 
-    private static void stubSave(MatchHistoryRepository repository) {
-        given(repository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+    private static void stubSave(HistoryRecorder repository) {
+        given(repository.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_ID);
             return saved;
@@ -121,7 +120,7 @@ class DescriptorMatchHistoryTest {
     @DisplayName("1:N 매칭")
     class 매칭 {
 
-        @Mock private MatchHistoryRepository matchHistoryRepository;
+        @Mock private HistoryRecorder historyRecorder;
         @Mock private ProjectSettingsService projectSettingsService;
         @Mock private FaceFeatureService faceFeatureService;
         @Mock private ApiKeyService apiKeyService;
@@ -136,7 +135,7 @@ class DescriptorMatchHistoryTest {
             given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
-            stubSave(matchHistoryRepository);
+            stubSave(historyRecorder);
         }
 
         @Test
@@ -166,7 +165,7 @@ class DescriptorMatchHistoryTest {
             assertThat(result.failureType()).isEmpty();
             assertThat(result.transactionUuid()).isEqualTo(TX);
 
-            MatchHistory saved = captureSaved(matchHistoryRepository);
+            MatchHistory saved = captureSaved(historyRecorder);
             assertThat(saved.getMatchType()).isEqualTo(MatchType.IDENTIFY);
             assertThat(saved.getFeatureType()).isEqualTo(FeatureType.FACE);
             assertThat(saved.getCheckLiveness())
@@ -190,7 +189,7 @@ class DescriptorMatchHistoryTest {
             assertThat(result.featureId()).isEmpty();
             assertThat(result.failureType()).isEqualTo(ErrorType.NOT_MATCH.name());
 
-            MatchHistory saved = captureSaved(matchHistoryRepository);
+            MatchHistory saved = captureSaved(historyRecorder);
             assertThat(saved.getFailureType()).isEqualTo(ErrorType.NOT_MATCH.name());
             assertThat(saved.getSimilarity()).isEqualTo(new BigDecimal("10.00"));
             assertThat(saved.getCheckLiveness()).isFalse();
@@ -222,7 +221,7 @@ class DescriptorMatchHistoryTest {
 
             assertThatThrownBy(() -> useCase.execute(input)).isInstanceOf(CustomFeignException.class);
 
-            MatchHistory saved = captureSaved(matchHistoryRepository);
+            MatchHistory saved = captureSaved(historyRecorder);
             assertThat(saved.getFailureType())
                     .as("failure_type 이 비면 이력 목록에서 '왜 실패했는지 알 수 없는 행' 이 된다")
                     .isEqualTo(ErrorType.FACE_NOT_FOUND.name());
@@ -236,7 +235,7 @@ class DescriptorMatchHistoryTest {
     class 등록 {
 
         @Mock private BiometricFeatureRepository biometricFeatureRepository;
-        @Mock private FeatureHistoryRepository featureHistoryRepository;
+        @Mock private HistoryRecorder historyRecorder;
         @Mock private ApiKeyService apiKeyService;
         @Mock private FileService fileService;
         @Mock private FaceService faceService;
@@ -248,12 +247,12 @@ class DescriptorMatchHistoryTest {
             given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
             given(projectSettingsService.findByProject(project)).willReturn(
                     ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
-            given(featureHistoryRepository.save(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+            given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
         }
 
         private FeatureHistory 저장된_특징점_이력() {
             ArgumentCaptor<FeatureHistory> c = ArgumentCaptor.forClass(FeatureHistory.class);
-            verify(featureHistoryRepository).save(c.capture());
+            verify(historyRecorder).start(c.capture());
             return c.getValue();
         }
 
@@ -325,7 +324,7 @@ class DescriptorMatchHistoryTest {
 
         @Mock private ApiKeyService apiKeyService;
         @Mock private FaceService faceService;
-        @Mock private MatchHistoryRepository matchHistoryRepository;
+        @Mock private HistoryRecorder historyRecorder;
 
         @InjectMocks private VerifyByDescriptorUseCase useCase;
 
@@ -334,7 +333,7 @@ class DescriptorMatchHistoryTest {
 
         private void 공통() {
             given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
-            stubSave(matchHistoryRepository);
+            stubSave(historyRecorder);
         }
 
         private static VerifyFaceByDescriptorFeignResponseDTO 응답(String similarity, boolean result) {
@@ -364,7 +363,7 @@ class DescriptorMatchHistoryTest {
                     .as("1:1 은 갤러리를 조회하지 않으므로 특정할 등록 사용자가 없다")
                     .isEmpty();
 
-            MatchHistory saved = captureSaved(matchHistoryRepository);
+            MatchHistory saved = captureSaved(historyRecorder);
             assertThat(saved.getMatchType())
                     .as("VERIFY_IMAGE 등으로 바뀌면 특징점 1:1 트래픽이 이미지 기반 지표에 섞인다")
                     .isEqualTo(MatchType.VERIFY_DESCRIPTOR);
@@ -394,7 +393,7 @@ class DescriptorMatchHistoryTest {
             assertThat(result.similarity()).isEqualTo(new BigDecimal("10.00"));
             assertThat(result.failureType()).isEqualTo(ErrorType.MISMATCH.name());
 
-            MatchHistory saved = captureSaved(matchHistoryRepository);
+            MatchHistory saved = captureSaved(historyRecorder);
             assertThat(saved.getFailureType())
                     .as("NOT_MATCH 는 1:N 전용이다. 1:1 실패를 한 조건으로 집계할 수 없게 된다")
                     .isEqualTo(ErrorType.MISMATCH.name());
@@ -411,7 +410,7 @@ class DescriptorMatchHistoryTest {
 
             assertThatThrownBy(() -> useCase.execute(input)).isInstanceOf(CustomFeignException.class);
 
-            assertThat(captureSaved(matchHistoryRepository).getFailureType())
+            assertThat(captureSaved(historyRecorder).getFailureType())
                     .isEqualTo(ErrorType.INVALID_INPUT.name());
         }
 
@@ -427,7 +426,7 @@ class DescriptorMatchHistoryTest {
             assertThat(result.similarity())
                     .as("해석 불가한 유사도는 이력과 응답 모두 null 로 나간다 — 요청 자체는 깨지지 않는다")
                     .isNull();
-            assertThat(captureSaved(matchHistoryRepository).getSimilarity()).isNull();
+            assertThat(captureSaved(historyRecorder).getSimilarity()).isNull();
             assertThat(result.success()).isTrue();
         }
     }

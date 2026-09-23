@@ -6,7 +6,6 @@ import ai.univs.gate.modules.feature.application.result.face.VerifyByDescriptorR
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.VerifyFaceByDescriptorFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -14,12 +13,11 @@ import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,17 +38,25 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class VerifyByDescriptorUseCase {
 
+    private final HistoryRecorder historyRecorder;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
-    private final MatchHistoryRepository matchHistoryRepository;
 
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            // UG-280: RemoteCallException 이 목록에 있어야 하위 서비스 5xx 에도
-            // 매칭 이력 행이 커밋된다. CustomGateException 을 넣지 않는 이유는
-            // 그러면 모든 비즈니스 예외에 커밋을 허용해 버리기 때문이다.
-            noRollbackFor = {CustomFeignException.class, RemoteCallException.class}
-    )
+    /**
+     * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
+     *
+     * <p>이 유스케이스는 {@link HistoryRecorder} 밖에서 아무것도 쓰지 않는다. 그런데 초판은
+     * {@code @Transactional} 을 남겨 뒀고, 그러면 요청 하나가 <b>커넥션 두 개</b>를 동시에
+     * 쥔다 — 바깥 트랜잭션이 조회 시점에 하나를 잡아 끝까지 붙들고, 그 안에서
+     * {@code REQUIRES_NEW} 인 이력 기록이 두 번째를 요구한다.
+     *
+     * <p>리뷰가 풀 크기 1로 재현했다. 기본 풀은 10이고 Tomcat 스레드는 200이므로, 동시 10건이
+     * 각자 첫 번째를 쥔 채 두 번째를 기다리면 아무도 진행하지 못하고 전원 타임아웃까지 멈춘다.
+     * 바깥 트랜잭션이 face 서비스 호출까지 품고 있어 그 창이 넓다.
+     *
+     * <p>읽기는 각 리포지토리 호출이 자기 트랜잭션을 연다. 지연 연관은 {@code ApiKeyService} 가
+     * 자기 경계 안에서 초기화해 돌려주므로(UG-335) 여기서 트랜잭션이 없어도 읽을 수 있다.
+     */
     public VerifyByDescriptorResult execute(VerifyByDescriptorInput input) {
         ApiKey findApiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = findApiKey.getProject();
@@ -75,7 +81,7 @@ public class VerifyByDescriptorUseCase {
                 .success(false)
                 .transactionUuid(input.transactionUuid())
                 .build();
-        matchHistoryRepository.save(matchHistory);
+        matchHistory = historyRecorder.start(matchHistory);
 
         var feignRequest = new VerifyFaceByDescriptorFeignRequestDTO(
                 input.descriptor(),
@@ -85,7 +91,8 @@ public class VerifyByDescriptorUseCase {
                 // 소유 검증이 호출자 == 소유자를 보장하므로 값이 달라지지 않는다. 호출자 값을 쓰지
                 // 않는 이유는 X-Account-Id 가 없을 때 null.toString() 이 되기 때문이다 — 기본
                 // ENFORCE 에서는 소유 검증이 먼저 거부하므로(Long.equals(null) 은 false) 도달하지
-                // 않지만, mode=LOG_ONLY 로 되돌린 동안에는 통과해 여기서 터진다.
+                // 않는다. 그 한 겹에 기대지 않으려고 여기서도 방어한다 — 되돌림 스위치가 있던
+                // 동안에는 실제로 통과해 여기서 터졌다 (UG-306 에서 제거).
                 project.getAccountId().toString());
 
         VerifyFaceByDescriptorFeignResponseDTO response;
@@ -96,11 +103,13 @@ public class VerifyByDescriptorUseCase {
             // failure_type 이 NULL 로 남아 "미완료 요청" 과 구분되지 않는다.
             // 같은 기능의 IdentifyByDescriptorUseCase / FaceFeatureService 와 동일한 처리다.
             matchHistory.fail(BigDecimal.ZERO, e.getType());
+            historyRecorder.fail(matchHistory);
             throw e;
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
-            matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
+            matchHistory.failUpstream(e);
+            historyRecorder.fail(matchHistory);
             throw e;
         }
 
@@ -108,11 +117,13 @@ public class VerifyByDescriptorUseCase {
         if (response.isResult()) {
             // 1:1 확인은 성공해도 등록된 사용자 정보를 특정하지 않는다 (이미지 기반과 동일).
             matchHistory.success(similarity);
+            historyRecorder.succeed(matchHistory);
         } else {
             // 이미지 기반 1:1 두 경로(FaceVerifyByFeatureIdUseCase, FaceVerifyByFeatureImageUseCase)
             // 가 쓰는 코드와 같아야 한다. NOT_MATCH 는 1:N 전용이다 — 섞이면 운영자가
             // "1:1 불일치" 를 한 조건으로 집계할 수 없다.
             matchHistory.fail(similarity, ErrorType.MISMATCH.name());
+            historyRecorder.fail(matchHistory);
         }
 
         // UG-283: 응답을 face 원값이 아니라 MatchHistory 에서 만든다. descriptor 1:N 과 같은

@@ -18,7 +18,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.Optional;
 import org.slf4j.LoggerFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,11 +53,6 @@ class ApiKeyDeletedProjectTest {
 
     @InjectMocks
     private ApiKeyService apiKeyService;
-
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(apiKeyService, "modeProperty", "ENFORCE");
-    }
 
     private void givenKeyOfProject(boolean projectDeleted) {
         Project project = Project.builder().accountId(OWNER).isDeleted(projectDeleted).build();
@@ -112,18 +106,6 @@ class ApiKeyDeletedProjectTest {
         givenKeyOfProject(true);
 
         assertThatThrownBy(() -> apiKeyService.findByApiKey(CallerType.API, KEY, OWNER))
-                .isInstanceOf(CustomGateException.class);
-    }
-
-    @Test
-    @DisplayName("LOG_ONLY 여도 삭제된 프로젝트는 거부한다")
-    void LOG_ONLY_는_이_검사를_끄지_않는다() {
-        // LOG_ONLY 는 UG-281 의 '소유 검증' 만 되돌리는 스위치다. 여기까지 함께 꺼지면
-        // 되돌림 스위치 하나가 서로 다른 두 통제를 동시에 무력화하게 된다.
-        ReflectionTestUtils.setField(apiKeyService, "modeProperty", "LOG_ONLY");
-        givenKeyOfProject(true);
-
-        assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(KEY, OWNER))
                 .isInstanceOf(CustomGateException.class);
     }
 

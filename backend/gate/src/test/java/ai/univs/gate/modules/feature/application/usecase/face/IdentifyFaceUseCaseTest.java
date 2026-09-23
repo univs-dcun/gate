@@ -8,13 +8,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyInput;
 import ai.univs.gate.modules.feature.application.result.face.IdentifyResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.modules.feature.domain.repository.MatchHistoryRepository;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.IdentifyFaceFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.MatchFaceFeignResponseDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
@@ -58,7 +58,7 @@ class IdentifyFaceUseCaseTest {
     private static final String FILE_SERVER_PATH = "http://gateway/api/v1/files?filePath=";
     private static final String UPLOADED_IMAGE_PATH = "match/uploaded-face.jpg";
 
-    @Mock private MatchHistoryRepository matchHistoryRepository;
+    @Mock private HistoryRecorder historyRecorder;
     @Mock private ProjectSettingsService projectSettingsService;
     @Mock private FaceFeatureService faceFeatureService;
     @Mock private ApiKeyService apiKeyService;
@@ -106,7 +106,7 @@ class IdentifyFaceUseCaseTest {
         given(fileService.uploadIfConsent(matchingImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.IDENTIFY))
                 .willReturn(true);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(invocation -> {
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
             return saved;
@@ -127,7 +127,7 @@ class IdentifyFaceUseCaseTest {
 
     private MatchHistory capturedMatchHistory() {
         ArgumentCaptor<MatchHistory> captor = ArgumentCaptor.forClass(MatchHistory.class);
-        verify(matchHistoryRepository).save(captor.capture());
+        verify(historyRecorder).start(captor.capture());
         return captor.getValue();
     }
 
@@ -359,7 +359,7 @@ class IdentifyFaceUseCaseTest {
         given(fileService.uploadIfConsent(matchingImage, true)).willReturn(UPLOADED_IMAGE_PATH);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.IDENTIFY))
                 .willReturn(true);
-        given(matchHistoryRepository.save(any(MatchHistory.class))).willAnswer(inv -> inv.getArgument(0));
+        given(historyRecorder.start(any(MatchHistory.class))).willAnswer(inv -> inv.getArgument(0));
         given(faceService.identify(any(IdentifyFaceFeignRequestDTO.class)))
                 .willReturn(MatchFaceFeignResponseDTO.builder()
                         .transactionUuid(TRANSACTION_UUID)
