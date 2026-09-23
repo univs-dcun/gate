@@ -271,6 +271,34 @@ e-KYC 이력의 법적 보관 의무가 납품처마다 다를 수 있으므로 
 SELECT count(*) FROM projects WHERE is_deleted = true AND deleted_at IS NULL;
 ```
 
+### 이력 보존 기간 (UG-282)
+
+`match_history`·`feature_history` 는 지금까지 지워지지 않았다. 인증마다 행이 쌓이고, 동의를
+받은 프로젝트는 시도마다 프로브 이미지까지 쌓인다.
+
+UG-282 가 보존 기간이 지난 이력을 지우는 잡을 넣었다. **기본값은 꺼져 있다.**
+
+```yaml
+gate:
+  privacy:
+    history-purge:
+      retention-days: 1825
+```
+
+**이 값은 납품처의 법적 성격에 따라 갈린다.** 금융 납품이면 특정금융정보법 제5조의4 와
+전자금융거래법 시행령 제12조가 **거래 관계 종료 후 5년(1825일)** 을 요구하므로 그 미만은 위반
+이다. 출입문 게이트처럼 금융 법령이 걸리지 않는 납품은 개인정보 보호법 제21조만 적용되므로
+짧아야 맞다. 1825일 미만을 주면 기동 로그에 WARN 이 남지만 막지는 않는다.
+
+| 지우는 것 | 남기는 것 |
+|---|---|
+| 두 이력 테이블의 행, 각 시도의 프로브 이미지(`matched_feature_image_path`) | `biometric_feature` 행과 등록 이미지(`feature_image_path`) |
+
+등록 이미지를 남기는 이유는 이력의 그 컬럼이 살아 있는 특징점과 **같은 파일**을 가리키기
+때문이다. 배치 크기·실패 시 동작은 `docs/history-retention.md` 참고.
+
+매일 21:00 UTC 에 돈다 (프로젝트 정리 20:00 과 한 시간 차이).
+
 ### 하위 서비스 실패를 조사할 때 (UG-294)
 
 `match_history`·`feature_history` 에 `upstream_status` 컬럼이 있다. face-service·match-server
