@@ -156,22 +156,38 @@ class HistoryPurgeServiceTest {
     }
 
     /**
-     * 등록 이미지가 {@code matched_feature_image_path} 에 들어 있는 행도 지켜진다.
+     * <b>두 컬럼이 모두 참조 검사에 올라간다.</b>
      *
-     * <p>{@code match_history} 의 {@code REGISTER} 잔존 행이 그렇다(V26). 초판은 그 행을
-     * 쿼리에서 통째로 빼서 막았는데, 그러면 행 자체가 영구 면제된다 — 개인정보를 파기하는
-     * 기능이 특정 행을 무기한 보유하는 셈이다. 참조 검사는 <b>컬럼을 가리지 않으므로</b> 행은
-     * 지우면서 파일만 지킨다.
+     * <p>규칙은 "행이 들고 있던 <b>모든</b> 이미지가 검사를 거친다" 인데, 나머지 테스트는 전부
+     * 참조 조회를 인자 무시로 스텁하므로 그것을 확인하지 못한다. 한쪽 컬럼만 넣도록 바뀌어도
+     * 스위트가 초록이었다 — 3차 반박 리뷰가 변이 둘(M14·M17)로 증명했다.
+     *
+     * <p>한쪽만 넣으면 <b>등록된 사용자의 사진이 삭제된다.</b> 되돌릴 수 없다.
+     *
+     * <p>초판은 두 컬럼에 <b>같은 값</b>을 넣어 이 자리를 막으려 했는데, 그러면 어느 쪽이
+     * 올라갔는지 구분되지 않아 아무것도 증명하지 못한다. 슬라이스 테스트 javadoc 이 스스로
+     * 금지한 방식이었다.
+     *
+     * <p>덤으로, 등록 이미지가 {@code matched_feature_image_path} 쪽에 들어 있는 행
+     * ({@code match_history} 의 REGISTER 잔존 행, V26)도 이 규칙으로 지켜진다는 것을 함께
+     * 고정한다 — 참조 검사는 컬럼을 가리지 않는다.
      */
     @Test
-    @DisplayName("프로브 컬럼에 등록 이미지가 들어 있어도 파일은 지킨다")
-    void 프로브_컬럼의_등록_이미지도_지킨다() {
-        대상(target(1L, "feat/registered.jpg", "feat/registered.jpg"));
+    @DisplayName("두 컬럼의 경로가 모두 참조 검사에 올라간다")
+    void 두_컬럼이_모두_검사된다() {
+        대상(target(1L, "feat/registered.jpg", "probe/p.jpg"));
         살아있는_특징점이_가리키는_경로("feat/registered.jpg");
         지운_행(1);
 
         service.purgeMatchHistoryBatch(CUTOFF, 500);
 
+        ArgumentCaptor<java.util.Collection<String>> 검사대상 = ArgumentCaptor.captor();
+        verify(repository).findPathsStillReferencedByFeatures(검사대상.capture());
+        assertThat(검사대상.getValue())
+                .as("한쪽만 올리면 나머지 한쪽은 검사 없이 지워진다")
+                .containsExactlyInAnyOrder("feat/registered.jpg", "probe/p.jpg");
+
+        verify(fileService).delete("probe/p.jpg");
         verify(fileService, never()).delete("feat/registered.jpg");
         verify(repository).deleteMatchHistory(List.of(1L));
     }

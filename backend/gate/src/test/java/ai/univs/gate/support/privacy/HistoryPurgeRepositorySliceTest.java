@@ -233,6 +233,35 @@ class HistoryPurgeRepositorySliceTest {
             assertThat(repository.findPathsStillReferencedByFeatures(List.of())).isEmpty();
         }
 
+        /**
+         * {@code IN} 상한을 넘는 후보도 정확히 처리한다.
+         *
+         * <p>Oracle 19c 는 {@code IN} 리스트 1000 초과를 {@code ORA-01795} 로 거절하고, 배치
+         * 500행 × 경로 2개 = 정확히 1000 이라 여유가 0 이었다. 리포지토리가 쪼개는데, 쪼개다
+         * 마지막 조각을 빠뜨리면 <b>그 경로들이 검사 없이 지워진다</b> — 등록 사진이 사라진다.
+         *
+         * <p>상한(500)보다 큰 후보 목록을 주고, 마지막 조각에 있는 경로가 결과에 들어오는지를
+         * 본다. H2 에는 IN 한도가 없으므로 이 테스트가 잡는 것은 한도 자체가 아니라
+         * <b>쪼개기의 정확성</b>이다.
+         */
+        @Test
+        @DisplayName("IN 상한을 넘는 후보도 빠짐없이 검사한다")
+        void 상한을_넘는_후보를_쪼개서_검사한다() {
+            특징점(프로젝트, "feat/first.jpg");
+            특징점(프로젝트, "feat/last.jpg");
+            반영하고_비운다();
+
+            List<String> 후보 = new java.util.ArrayList<>();
+            후보.add("feat/first.jpg");
+            for (int i = 0; i < 700; i++) {
+                후보.add("probe/filler-" + i + ".jpg");
+            }
+            후보.add("feat/last.jpg");   // 두 번째 조각에 들어간다
+
+            assertThat(repository.findPathsStillReferencedByFeatures(후보))
+                    .containsExactlyInAnyOrder("feat/first.jpg", "feat/last.jpg");
+        }
+
         @Test
         @DisplayName("오래된 것부터 준다")
         void 오래된_것부터() {
