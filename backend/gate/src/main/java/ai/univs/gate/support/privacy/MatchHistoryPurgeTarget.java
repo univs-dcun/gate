@@ -1,56 +1,47 @@
 package ai.univs.gate.support.privacy;
 
-import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * 정리 대상 인증 이력 한 건과, <b>그 행이 지워질 때 함께 사라져야 하는 파일들</b> (UG-282).
+ * 정리 대상 인증 이력 한 건과 그 행이 들고 있는 이미지 경로들 (UG-282).
  *
- * <p>이 레코드가 존재하는 이유는 {@link #ownedImagePaths()} 한 곳이다. 이력 행이 가진 두 이미지
- * 경로 중 <b>어느 쪽이 이 행만의 것인가</b> 는 {@code match_type} 에 따라 다르고, 그 판단을
- * 서비스 안에 흩뿌리면 다음 매칭 API 가 추가될 때 조용히 틀린다.
+ * <p>여기서 주는 것은 <b>삭제 후보</b>일 뿐 삭제 대상이 아니다. 실제로 지울지는
+ * {@link HistoryPurgeService} 가 <b>살아 있는 {@code biometric_feature} 가 그 경로를
+ * 가리키는지</b> 로 정한다.
+ *
+ * <p><b>왜 {@code match_type} 으로 가르지 않는가.</b> 반박 리뷰가 두 번에 걸쳐 같은 결함을
+ * 냈고, 두 번째가 그 방식이 원리적으로 안 된다는 것을 보였다.
  *
  * <ul>
- *   <li>{@code matched_feature_image_path} — 그 시도에서 올린 프로브 이미지. 요청마다 새
- *       UUID 로 저장되므로({@code FileUtil.createImagePath}) 이 행만 가리킨다. <b>항상</b>
- *       이 행의 것이다.
- *   <li>{@code feature_image_path} — <b>대개는</b> 등록된 {@code biometric_feature} 의 경로를
- *       복사해 둔 값이다({@code MatchHistory.updateBiometricFeature}). 살아 있는 특징점과 다른
- *       이력 행이 같은 파일을 가리키므로 <b>지우면 안 된다.</b>
+ *   <li>초판 — {@code feature_image_path} 는 등록된 특징점의 경로를 복사한 값이니 절대 지우지
+ *       않는다고 봤다. {@code VERIFY_IMAGE} 에서 거짓이었다. 그 행의 그 컬럼은 요청에서 올린
+ *       <b>신분증 이미지</b>라, 남기면 영구 고아가 된다.
+ *   <li>2판 — {@code VERIFY_IMAGE} 만 예외로 뒀다. 레거시 {@code VERIFY} 에서 거짓이었다.
+ *       2026-05 이전에는 by-id 와 by-image 가 <b>같은 {@code VERIFY} 값</b>을 썼고(ec9e6d4 가
+ *       분리), 앞쪽은 공유 경로, 뒤쪽은 전용 경로다. <b>같은 값의 행이 두 모양을 갖는다</b> —
+ *       타입 화이트리스트로는 표현할 수 없다.
  * </ul>
  *
- * <p><b>예외가 하나 있고, 반박 리뷰가 그것을 잡았다.</b> {@link MatchType#VERIFY_IMAGE} 는
- * 사진 두 장을 받아 맞춰 보는 1:1 이라 등록된 특징점이 개입하지 않는다.
- * {@code FaceVerifyByFeatureImageUseCase} 는 {@code feature_image_path} 에 <b>그 요청에서 올린
- * 신분증(문서) 이미지</b>를 넣고, 성공 전이도 1:1 변형({@code success(BigDecimal)})이라 그 값이
- * 덮어써지지 않는다. 즉 이 행에서는 그 경로도 이 행만의 것이다.
- *
- * <p>그 한 줄을 놓치면 행이 지워진 뒤 <b>신분증 사진이 아무도 가리키지 않는 파일로 영구히
- * 남는다</b> — 개인정보를 지우는 것이 목적인 기능에서 가장 나쁜 실패이고, 하필 e-KYC 에서 가장
- * 민감한 파일이다.
- *
- * <p>{@link MatchType#REGISTER} 은 애초에 조회에서 빠진다 — 이유는
- * {@link HistoryPurgeRepository#findMatchHistoryToPurge} 참고.
+ * <p>그래서 타입이 아니라 <b>참조</b>로 정한다. 규칙 한 문장이고 모든 타입에, 레거시 행에도,
+ * 앞으로 추가될 매칭 API 에도 그대로 성립한다 — <b>살아 있는 특징점이 가리키지 않는 파일만
+ * 지운다.</b>
  */
 public record MatchHistoryPurgeTarget(
         Long id,
-        MatchType matchType,
         String matchedFeatureImagePath,
         String featureImagePath) {
 
     /**
-     * 이 행 말고는 아무도 가리키지 않는 파일들.
+     * 이 행이 들고 있는, 비어 있지 않은 이미지 경로들.
      *
-     * <p>비어 있는 경로는 걸러 낸다. 동의를 받지 않은 프로젝트는 {@code null}
-     * ({@code FileService.uploadIfConsent} 가 그렇게 돌려준다), 업로드 자체가 꺼진 환경은 빈
-     * 문자열이다.
+     * <p>동의를 받지 않은 프로젝트는 {@code null}
+     * ({@code FileService.uploadIfConsent}), 업로드 자체가 꺼진 환경
+     * ({@code FILE_ENABLE_UPLOAD=false})은 빈 문자열이다.
      */
-    public List<String> ownedImagePaths() {
-        Stream<String> paths = matchType == MatchType.VERIFY_IMAGE
-                ? Stream.of(matchedFeatureImagePath, featureImagePath)
-                : Stream.of(matchedFeatureImagePath);
-
-        return paths.filter(p -> p != null && !p.isBlank()).toList();
+    public List<String> candidateImagePaths() {
+        return Stream.of(matchedFeatureImagePath, featureImagePath)
+                .filter(p -> p != null && !p.isBlank())
+                .toList();
     }
 }

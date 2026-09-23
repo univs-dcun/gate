@@ -3,6 +3,9 @@ package ai.univs.gate.support.privacy;
 import ai.univs.gate.support.file.FileService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,16 +38,31 @@ import org.springframework.transaction.annotation.Transactional;
  * 하지 않는다. 출입문 게이트처럼 금융 법령이 걸리지 않는 납품은 짧은 값을 쓸 수 있고, 금융
  * 납품은 5년(1825일) 이상을 쓴다. 판단은 계약이 한다.
  *
- * <p><b>무엇을 지우고 무엇을 남기는가.</b>
+ * <p><b>무엇을 지우고 무엇을 남기는가.</b> 규칙은 한 문장이다 —
+ * <b>지우는 행이 들고 있던 이미지는, 살아 있는 {@code biometric_feature} 가 가리키지 않는 한
+ * 함께 지운다.</b>
+ *
  * <ul>
- *   <li>지운다 — {@code match_history}·{@code feature_history} 행(물리 삭제), 그리고 <b>그 행만
- *       가리키는</b> 이미지. 어느 경로가 그런 것인지는 {@code match_type} 에 따라 다르고,
- *       판단은 {@link MatchHistoryPurgeTarget#ownedImagePaths()} 한 곳에 있다.
+ *   <li>지운다 — {@code match_history}·{@code feature_history} 행(물리 삭제, 종류를 가리지
+ *       않는다), 그리고 그 행의 이미지 중 아무도 가리키지 않는 것.
  *   <li>남긴다 — {@code biometric_feature} 와 그 원본 이미지. 등록된 사용자는 이력의 보존
  *       기간과 무관하게 살아 있다. 그쪽을 지우는 것은 {@link ProjectDataPurgeService} 다.
- *   <li>건드리지 않는다 — {@code match_type = REGISTER} 인 잔존 행. 이유는
- *       {@link HistoryPurgeRepository#findMatchHistoryToPurge} 참고.
  * </ul>
+ *
+ * <p><b>왜 참조로 정하는가 — 타입으로 가르려다 두 번 틀렸다.</b> 이력 행의
+ * {@code feature_image_path} 는 <b>대개</b> 등록된 특징점의 경로를 복사한 값이지만, 어떤 행에서는
+ * 그 요청에서 올린 신분증 이미지다. 그 구분은 {@code match_type} 으로 표현되지 않는다 — 레거시
+ * {@code VERIFY} 는 by-id 행(공유)과 by-image 행(전용)이 <b>같은 값</b>을 쓴다(2026-05 ec9e6d4
+ * 이전). 자세한 경위는 {@link MatchHistoryPurgeTarget} 참고.
+ *
+ * <p>참조로 정하면 타입을 몰라도 된다. 프로브 이미지와 신분증 이미지는 어떤 특징점도 가리키지
+ * 않으므로 지워지고, 등록 사진은 특징점이 가리키므로 남는다. 앞으로 추가될 매칭 API 도 같은
+ * 규칙에 자동으로 들어온다.
+ *
+ * <p><b>남는 틈 하나.</b> 제품 API 로 삭제됐지만 파일이 남은 특징점을 가리키던 경로는, 그
+ * 특징점 행이 이미 없으면 여기서 지워진다. 더 오래된 다른 이력 행이 같은 파일을 가리키고
+ * 있었다면 그 행의 썸네일이 깨진다. 이미 삭제된 사용자의 사진이므로 지우는 쪽이 이 기능의
+ * 목적에 맞다고 보고 받아들인다.
  *
  * <p><b>이미지를 먼저 지우고 행을 지운다.</b> 순서를 뒤집으면 커밋 직후 죽었을 때 아무도
  * 가리키지 않는 파일이 남고, 그 파일은 어느 경로로도 다시 찾을 수 없다 — 개인정보를 지우는
@@ -70,35 +88,46 @@ public class HistoryPurgeService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int purgeMatchHistoryBatch(LocalDateTime cutoff, int batchSize) {
-        List<MatchHistoryPurgeTarget> rows =
-                historyPurgeRepository.findMatchHistoryToPurge(cutoff, batchSize);
+        return purgeBatch(
+                historyPurgeRepository.findMatchHistoryToPurge(cutoff, batchSize),
+                historyPurgeRepository::deleteMatchHistory);
+    }
+
+    /** 특징점 사건 이력 한 배치. 인증 이력과 <b>같은 규칙</b>을 거친다. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int purgeFeatureHistoryBatch(LocalDateTime cutoff, int batchSize) {
+        return purgeBatch(
+                historyPurgeRepository.findFeatureHistoryToPurge(cutoff, batchSize),
+                historyPurgeRepository::deleteFeatureHistory);
+    }
+
+    /**
+     * 한 배치를 처리한다 — 두 이력이 같은 코드를 지난다.
+     *
+     * <p>갈라 두면 한쪽에만 참조 검사를 넣는 실수가 가능해진다. 규칙이 하나이므로 구현도
+     * 하나여야 한다.
+     *
+     * <p>파일을 먼저 지우고 행을 지운다. 참조 검사는 {@code biometric_feature} 만 보므로 행
+     * 삭제 순서에 영향을 받지 않는다.
+     */
+    private int purgeBatch(List<MatchHistoryPurgeTarget> rows, ToIntFunction<List<Long>> delete) {
         if (rows.isEmpty()) {
             return 0;
         }
 
-        List<Long> ids = rows.stream().map(MatchHistoryPurgeTarget::id).toList();
-        rows.stream().map(MatchHistoryPurgeTarget::ownedImagePaths)
+        Set<String> candidates = rows.stream()
+                .map(MatchHistoryPurgeTarget::candidateImagePaths)
                 .flatMap(List::stream)
-                .forEach(this::deleteImage);
+                .collect(Collectors.toSet());
 
-        return historyPurgeRepository.deleteMatchHistory(ids);
-    }
+        Set<String> keep = historyPurgeRepository.findPathsStillReferencedByFeatures(candidates);
+        candidates.stream().filter(p -> !keep.contains(p)).forEach(this::deleteImage);
 
-    /** 특징점 사건 이력 한 배치. 지울 이미지가 없다 — 이유는 리포지토리 주석 참고. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int purgeFeatureHistoryBatch(LocalDateTime cutoff, int batchSize) {
-        List<Long> ids = historyPurgeRepository.findFeatureHistoryToPurge(cutoff, batchSize);
-        if (ids.isEmpty()) {
-            return 0;
-        }
-        return historyPurgeRepository.deleteFeatureHistory(ids);
+        return delete.applyAsInt(rows.stream().map(MatchHistoryPurgeTarget::id).toList());
     }
 
     /**
-     * 이 이력 행만 가리키는 이미지를 지운다.
-     *
-     * <p>어느 경로가 그런 것인지는 {@link MatchHistoryPurgeTarget#ownedImagePaths()} 가 고른다 —
-     * 이 메서드는 받은 것을 지울 뿐이다.
+     * 아무도 가리키지 않게 된 이미지를 지운다.
      *
      * <p>실패해도 행 삭제는 진행한다. 여기서 멈추면 저장소 한 번의 장애가 이력 정리 전체를
      * 영구히 막는다 — 그 편이 파일 하나가 남는 것보다 나쁘다. ({@link ProjectDataPurgeService}

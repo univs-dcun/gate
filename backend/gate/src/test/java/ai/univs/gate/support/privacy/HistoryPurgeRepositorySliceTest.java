@@ -55,6 +55,24 @@ class HistoryPurgeRepositorySliceTest {
         em.persist(프로젝트);
     }
 
+    private ai.univs.gate.modules.feature.domain.entity.BiometricFeature 특징점(
+            Project project, String imagePath) {
+        var f = ai.univs.gate.modules.feature.domain.entity.BiometricFeature.builder()
+                .project(project)
+                .type(FeatureType.FACE)
+                .featureId("f-" + imagePath)
+                .featureImagePath(imagePath)
+                .isDeleted(false)
+                .build();
+        em.persist(f);
+        return f;
+    }
+
+    private void 반영하고_비운다() {
+        em.flush();
+        em.clear();
+    }
+
     private static LocalDateTime 며칠전(int days) {
         return LocalDateTime.now(ZoneOffset.UTC).minusDays(days);
     }
@@ -83,10 +101,15 @@ class HistoryPurgeRepositorySliceTest {
     }
 
     private Long 특징점이력(int days) {
+        return 특징점이력(days, null);
+    }
+
+    private Long 특징점이력(int days, String 이미지경로) {
         FeatureHistory h = FeatureHistory.builder()
                 .project(프로젝트)
                 .featureType(FeatureType.FACE)
                 .actionType(FeatureActionType.REGISTER)
+                .featureImagePath(이미지경로)
                 .success(true)
                 .checkLiveness(false)
                 .transactionUuid(UUID.randomUUID().toString())
@@ -135,60 +158,79 @@ class HistoryPurgeRepositorySliceTest {
          * 넣으면 이 테스트는 아무것도 증명하지 못한다.
          */
         /**
-         * 조회가 두 경로와 {@code match_type} 을 모두 돌려줘야 한다.
+         * 조회가 <b>두 경로를 모두</b> 돌려줘야 한다.
          *
-         * <p>어느 쪽을 지울지는 {@link MatchHistoryPurgeTarget#ownedImagePaths()} 가 고른다.
-         * 그 판단이 서게 하려면 재료가 다 와야 한다 — 컬럼 하나가 빠지면 서비스는 지워야 할
-         * 파일을 지우지 못하거나(영구 고아) 지우면 안 될 파일을 지운다.
+         * <p>어느 쪽을 지울지는 살아 있는 특징점이 가리키는지로 정해진다. 그 판단이 서게
+         * 하려면 재료가 다 와야 한다 — 컬럼 하나가 빠지면 그 파일은 <b>영구 고아</b>가 된다
+         * (행이 사라진 뒤 아무도 가리키지 않고, 다시 찾을 방법도 없다).
          *
-         * <p>두 컬럼에 <b>서로 다른 값</b>을 넣는다. 같은 값이면 이 테스트는 아무것도
-         * 증명하지 못한다.
+         * <p>두 컬럼에 <b>서로 다른 값</b>을 넣는다. 같은 값이면 아무것도 증명하지 못한다.
          */
         @Test
-        @DisplayName("두 이미지 경로와 match_type 을 모두 준다")
+        @DisplayName("두 이미지 경로를 모두 준다")
         void 두_경로를_모두_준다() {
             인증이력(40, MatchType.VERIFY_IMAGE, "probe/probe.jpg", "doc/id-card.jpg");
 
             var found = repository.findMatchHistoryToPurge(며칠전(30), 500);
 
             assertThat(found).hasSize(1);
-            assertThat(found.get(0).matchedFeatureImagePath()).isEqualTo("probe/probe.jpg");
-            assertThat(found.get(0).featureImagePath()).isEqualTo("doc/id-card.jpg");
-            assertThat(found.get(0).matchType()).isEqualTo(MatchType.VERIFY_IMAGE);
-            assertThat(found.get(0).ownedImagePaths())
-                    .as("VERIFY_IMAGE 의 두 경로는 모두 이 행만의 것이다")
+            assertThat(found.get(0).candidateImagePaths())
                     .containsExactly("probe/probe.jpg", "doc/id-card.jpg");
         }
 
         /**
-         * <b>REGISTER 잔존 행은 아예 집지 않는다</b> (반박 리뷰 지적).
+         * <b>종류를 가리지 않고 집는다.</b>
          *
-         * <p>등록은 이제 {@code feature_history} 의 사건이고 V27 이 {@code match_history} 의
-         * REGISTER 행을 지웠다 — 다만 짝이 없는 행은 <b>일부러 남겼다.</b> 그 잔존 행은
-         * {@code matched_feature_image_path} 에 <b>등록 이미지</b>를 담고 있어서, 집는 순간
-         * 살아 있는 특징점의 사진을 지운다. 되돌릴 수 없다.
+         * <p>초판은 {@code REGISTER} 잔존 행을 쿼리에서 뺐는데, 그러면 그 행이 영구 면제된다 —
+         * 개인정보를 파기하는 기능이 특정 행을 무기한 보유하는 셈이다. 파일을 지킬 책임은
+         * 참조 검사로 옮겼으므로, 행은 종류와 무관하게 보존 기간으로만 판단한다.
          */
         @Test
-        @DisplayName("REGISTER 잔존 행은 대상에서 빠진다")
-        void 등록_잔존행은_건드리지_않는다() {
-            Long 등록 = 인증이력(40, MatchType.REGISTER, "feat/registered.jpg", "feat/registered.jpg");
+        @DisplayName("REGISTER 잔존 행도 보존 기간이 지나면 대상이다")
+        void 종류를_가리지_않는다() {
+            Long 등록 = 인증이력(40, MatchType.REGISTER, "feat/registered.jpg", null);
             Long 인증 = 인증이력(40, MatchType.IDENTIFY, "probe/p.jpg", "feat/registered.jpg");
 
             var found = repository.findMatchHistoryToPurge(며칠전(30), 500);
 
             assertThat(found).extracting(MatchHistoryPurgeTarget::id)
-                    .containsExactly(인증).doesNotContain(등록);
+                    .containsExactlyInAnyOrder(등록, 인증);
         }
 
-        /** 1:N·1:1(id) 계열의 {@code feature_image_path} 는 공유 경로라 지울 목록에 없다. */
+        /**
+         * 참조 검사 — 삭제 금지 목록을 고르는 쿼리.
+         *
+         * <p>이 쿼리가 빈 집합을 돌려주면 <b>등록된 사용자의 사진이 전부 지워진다.</b>
+         * 되돌릴 수 없으므로 실제 DB 에서 확인한다.
+         */
         @Test
-        @DisplayName("IDENTIFY 행이 지울 파일은 프로브 이미지뿐이다")
-        void 인증행은_프로브만_지운다() {
-            인증이력(40, MatchType.IDENTIFY, "probe/p.jpg", "feat/registered.jpg");
+        @DisplayName("살아 있는 특징점이 가리키는 경로만 돌려준다")
+        void 참조_검사() {
+            특징점(프로젝트, "feat/registered.jpg");
+            반영하고_비운다();
 
-            var found = repository.findMatchHistoryToPurge(며칠전(30), 500);
+            var 남길것 = repository.findPathsStillReferencedByFeatures(
+                    List.of("feat/registered.jpg", "probe/p.jpg", "doc/id-card.jpg"));
 
-            assertThat(found.get(0).ownedImagePaths()).containsExactly("probe/p.jpg");
+            assertThat(남길것).containsExactly("feat/registered.jpg");
+        }
+
+        @Test
+        @DisplayName("소프트 삭제된 특징점이 가리키는 경로도 남긴다")
+        void 소프트_삭제된_특징점도_참조로_센다() {
+            특징점(프로젝트, "feat/soft-deleted.jpg").delete();
+            반영하고_비운다();
+
+            assertThat(repository.findPathsStillReferencedByFeatures(
+                    List.of("feat/soft-deleted.jpg")))
+                    .as("행과 파일이 아직 남아 있다 — 지우는 것은 UG-303 의 일이다")
+                    .containsExactly("feat/soft-deleted.jpg");
+        }
+
+        @Test
+        @DisplayName("후보가 비면 쿼리를 날리지 않는다")
+        void 참조_검사_빈_목록() {
+            assertThat(repository.findPathsStillReferencedByFeatures(List.of())).isEmpty();
         }
 
         @Test
@@ -244,6 +286,7 @@ class HistoryPurgeRepositorySliceTest {
             Long 최근 = 특징점이력(10);
 
             assertThat(repository.findFeatureHistoryToPurge(며칠전(30), 500))
+                    .extracting(MatchHistoryPurgeTarget::id)
                     .containsExactly(오래된).doesNotContain(최근);
         }
 
@@ -257,6 +300,30 @@ class HistoryPurgeRepositorySliceTest {
 
             assertThat(em.find(FeatureHistory.class, 오래된)).isNull();
             assertThat(em.find(FeatureHistory.class, 최근)).isNotNull();
+        }
+
+        /**
+         * <b>이쪽도 이미지 경로를 가져와야 한다.</b>
+         *
+         * <p>지금 {@code feature_history} 의 경로는 전부 등록된 특징점에서 복사된 값이라,
+         * 가져오든 말든 참조 검사가 남기므로 결과가 같다. 그래서 이 단언이 없으면 변이로도
+         * 잡히지 않는다 — 실제로 변이 실험에서 이 한 건만 초록이었다.
+         *
+         * <p>그런데 그 "결과가 같다" 는 <b>지금 데이터에 대해서만</b> 참이다. 자기 이미지를
+         * 올리는 사건 종류가 추가되는 순간 여기만 조용히 영구 고아를 만든다. 이 티켓이 같은
+         * 실패를 두 번 겪은 자리가 정확히 그것이다(VERIFY_IMAGE, 레거시 VERIFY).
+         */
+        @Test
+        @DisplayName("이미지 경로를 후보로 올린다")
+        void 이미지_경로를_가져온다() {
+            특징점이력(40, "feat/registered.jpg");
+
+            var found = repository.findFeatureHistoryToPurge(며칠전(30), 500);
+
+            assertThat(found).hasSize(1);
+            assertThat(found.get(0).candidateImagePaths())
+                    .as("가져오지 않으면 참조 검사에 올라가지 못하고, 그 파일은 영구 고아가 된다")
+                    .containsExactly("feat/registered.jpg");
         }
 
         @Test

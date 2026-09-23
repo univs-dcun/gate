@@ -2,7 +2,9 @@ package ai.univs.gate.support.privacy;
 
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -22,24 +24,16 @@ public class HistoryPurgeRepository {
     private final EntityManager em;
 
     /**
-     * 정리 대상 인증 이력 — id, {@code match_type}, 그리고 두 이미지 경로.
+     * 정리 대상 인증 이력 — id 와 그 행이 들고 있는 두 이미지 경로.
      *
      * <p>엔티티를 통째로 들고 오지 않는 이유는 두 가지다. 배치 크기만큼의 영속성 컨텍스트가
      * 쌓이지 않고, 아래 벌크 삭제가 그 컨텍스트와 어긋날 여지도 없다.
      *
-     * <p><b>두 경로를 다 가져오되, 지울 것은 {@link MatchHistoryPurgeTarget#ownedImagePaths()}
-     * 가 고른다.</b> 초판은 {@code feature_image_path} 를 아예 조회하지 않는 것으로 사고를
-     * 막으려 했는데, 그 컬럼이 이 행만의 것인 경우가 실제로 있었다(VERIFY_IMAGE 의 신분증
-     * 이미지). 가져오지 않으면 그 파일이 영구 고아가 된다. 판단은 레코드 한 곳에 둔다.
-     *
-     * <p><b>{@code REGISTER} 은 제외한다</b> (반박 리뷰 지적). 등록은 이제
-     * {@code feature_history} 의 사건이고 V27 이 {@code match_history} 의 REGISTER 행을
-     * 지웠다 — 다만 짝이 없는 행은 <b>일부러 남겼다</b>(V27 주석). 그 잔존 행은
-     * {@code matched_feature_image_path} 에 <b>등록 이미지</b>를 담고 있어서
-     * (V26 주석: 등록 행은 경로를 먼저 그쪽에 넣었다), 여기서 집으면
-     * <b>살아 있는 특징점의 사진을 지운다.</b> {@code ActivityLog} 의 {@code @Subselect} 와
-     * {@code MatchType} enum 이 이미 같은 잔존 행을 방어하고 있다 — 읽기만 막아 두고 유일하게
-     * 파괴적인 이 경로를 비워 둘 이유가 없다.
+     * <p><b>{@code match_type} 으로 거르지 않는다.</b> 초판은 {@code REGISTER} 잔존 행을
+     * 쿼리에서 뺐는데(그 행은 {@code matched_feature_image_path} 에 등록 이미지를 담고 있다),
+     * 그러면 행 자체가 영구 면제된다 — 개인정보를 파기하는 기능이 특정 행을 무기한 보유하는
+     * 셈이다. 파일을 지킬 책임은 {@link HistoryPurgeService} 의 참조 검사로 옮겼고, 행은
+     * 종류를 가리지 않고 보존 기간이 지나면 지운다.
      *
      * <p>정렬 기준이 {@code created_at} 인 이유는 V33 인덱스를 타기 위해서다. 대상이 0건일 때
      * 첫 엔트리에서 끝난다.
@@ -48,11 +42,9 @@ public class HistoryPurgeRepository {
             LocalDateTime createdBefore, int limit) {
         return em.createQuery("""
                         SELECT new ai.univs.gate.support.privacy.MatchHistoryPurgeTarget(
-                                   h.id, h.matchType,
-                                   h.matchedFeatureImagePath, h.featureImagePath)
+                                   h.id, h.matchedFeatureImagePath, h.featureImagePath)
                           FROM MatchHistory h
                          WHERE h.createdAt < :cutoff
-                           AND h.matchType <> ai.univs.gate.modules.feature.domain.enums.MatchType.REGISTER
                          ORDER BY h.createdAt ASC
                         """, MatchHistoryPurgeTarget.class)
                 .setParameter("cutoff", createdBefore)
@@ -61,21 +53,51 @@ public class HistoryPurgeRepository {
     }
 
     /**
-     * 정리 대상 특징점 사건 이력 — id 만 가져온다.
+     * 정리 대상 특징점 사건 이력 — id 와 이미지 경로.
      *
-     * <p>{@code feature_history} 에는 프로브 이미지 컬럼이 없다. 가진
-     * {@code feature_image_path} 는 위와 같은 이유로 지우면 안 되는 공유 경로다. 즉 이쪽은
-     * 행만 지운다.
+     * <p>{@code feature_history} 에는 프로브 이미지 컬럼이 없고, 가진 경로는 등록된 특징점에서
+     * 복사된 값이다. 즉 지금은 지울 것이 없는 셈인데, <b>그래도 같은 참조 검사를 거친다.</b>
+     * 여기만 "복사된 값이니 안전하다" 로 특별 취급하면, 자기 이미지를 올리는 사건 종류가
+     * 추가되는 순간 조용히 영구 고아가 생긴다 — 이 티켓에서 두 번 겪은 실패 모드다.
      */
-    public List<Long> findFeatureHistoryToPurge(LocalDateTime createdBefore, int limit) {
+    public List<MatchHistoryPurgeTarget> findFeatureHistoryToPurge(
+            LocalDateTime createdBefore, int limit) {
         return em.createQuery("""
-                        SELECT h.id FROM FeatureHistory h
+                        SELECT new ai.univs.gate.support.privacy.MatchHistoryPurgeTarget(
+                                   h.id, NULL, h.featureImagePath)
+                          FROM FeatureHistory h
                          WHERE h.createdAt < :cutoff
                          ORDER BY h.createdAt ASC
-                        """, Long.class)
+                        """, MatchHistoryPurgeTarget.class)
                 .setParameter("cutoff", createdBefore)
                 .setMaxResults(limit)
                 .getResultList();
+    }
+
+    /**
+     * 주어진 경로 중 <b>살아 있는 특징점이 아직 가리키는</b> 것.
+     *
+     * <p>이 결과가 삭제 금지 목록이다. 나머지는 이 이력 행 말고는 아무도 가리키지 않으므로,
+     * 행과 함께 지워야 한다.
+     *
+     * <p>{@code is_deleted} 를 보지 않는 이유는 소프트 삭제된 특징점도 파일을 들고 있기
+     * 때문이다. 그 파일을 여기서 지우면 특징점 행이 깨진 경로를 가리키게 되므로 보수적으로
+     * 남긴다 — 그쪽은 {@link ProjectDataPurgeService} 가 특징점과 함께 지운다.
+     *
+     * <p>인덱스는 두지 않았다. {@code biometric_feature} 는 등록 시에만 쓰이는 작은 테이블이고
+     * 이 조회는 밤에 배치당 한 번 돈다. 스캔이 문제가 되면 그때 실측하고 넣는다 — 꺼져 있는
+     * 기능을 위해 등록 경로에 쓰기 비용을 얹지 않는다.
+     */
+    public Set<String> findPathsStillReferencedByFeatures(Collection<String> paths) {
+        if (paths.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(em.createQuery("""
+                        SELECT DISTINCT f.featureImagePath FROM BiometricFeature f
+                         WHERE f.featureImagePath IN :paths
+                        """, String.class)
+                .setParameter("paths", paths)
+                .getResultList());
     }
 
     /** 물리 삭제. 이 클래스 밖에서는 쓰지 않는다. */
