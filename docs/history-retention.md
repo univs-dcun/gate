@@ -59,15 +59,31 @@ gate:
 
 | 대상 | 처리 |
 |---|---|
-| `match_history` 행 | 물리 삭제 |
+| `match_history` 행 (단, `REGISTER` 제외) | 물리 삭제 |
 | `feature_history` 행 | 물리 삭제 |
 | `matched_feature_image_path` 파일 (그 시도의 프로브 이미지) | 삭제 |
-| `feature_image_path` 파일 (등록된 특징점의 사진) | **남긴다** |
+| `feature_image_path` 파일 — **`VERIFY_IMAGE` 행** (그 요청의 신분증 이미지) | 삭제 |
+| `feature_image_path` 파일 — **그 외 행** (등록된 특징점의 사진) | **남긴다** |
 | `biometric_feature` 행 | **남긴다** |
 
-`feature_image_path` 를 남기는 이유는 그것이 **복사된 경로** 이기 때문이다. 살아 있는
-`biometric_feature` 및 다른 이력 행이 같은 파일을 가리킨다 — 이력을 지우면서 그 파일까지
-지우면 등록된 사용자의 사진이 사라진다. 등록된 특징점을 지우는 것은 UG-303 쪽 일이다.
+**같은 컬럼인데 처리가 갈린다.** `feature_image_path` 는 대개 살아 있는 `biometric_feature` 의
+경로를 **복사해 둔 값**이라 그 특징점과 다른 이력 행들이 같은 파일을 가리킨다 — 지우면 등록된
+사용자의 사진이 사라진다.
+
+예외가 하나 있다. `VERIFY_IMAGE`(사진 두 장 1:1)는 등록된 특징점이 개입하지 않고, 그 컬럼에
+**그 요청에서 올린 신분증 이미지**가 들어간다 (`FaceVerifyByFeatureImageUseCase`). 성공 전이도
+1:1 변형이라 덮어써지지 않는다. 이 행에서 그 파일을 남기면 행이 지워진 뒤 **아무도 가리키지
+않는 신분증 사진이 영구히 남는다.**
+
+판단은 `MatchHistoryPurgeTarget.ownedImagePaths()` 한 곳에 있다. 매칭 API 를 추가할 때 그 행이
+어느 쪽인지 여기서 정하면 된다.
+
+`REGISTER` 행을 건드리지 않는 이유는 별개다. 등록은 이제 `feature_history` 의 사건이고 V27 이
+`match_history` 의 REGISTER 행을 지웠지만, 짝이 없는 행은 **일부러 남겼다**(V27 주석). 그 잔존
+행은 `matched_feature_image_path` 에 **등록 이미지**를 담고 있어(V26 주석), 집는 순간 살아 있는
+특징점의 사진을 지운다. `ActivityLog` 의 `@Subselect` 도 같은 잔존 행을 필터로 막고 있다.
+
+등록된 특징점 자체를 지우는 것은 UG-303 쪽 일이다.
 
 ## 언제 도는가
 

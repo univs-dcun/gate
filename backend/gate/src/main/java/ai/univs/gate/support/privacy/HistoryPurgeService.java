@@ -37,10 +37,13 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>무엇을 지우고 무엇을 남기는가.</b>
  * <ul>
- *   <li>지운다 — {@code match_history}·{@code feature_history} 행(물리 삭제), 그리고 각
- *       인증 시도에서 올린 프로브 이미지({@code matched_feature_image_path}).
+ *   <li>지운다 — {@code match_history}·{@code feature_history} 행(물리 삭제), 그리고 <b>그 행만
+ *       가리키는</b> 이미지. 어느 경로가 그런 것인지는 {@code match_type} 에 따라 다르고,
+ *       판단은 {@link MatchHistoryPurgeTarget#ownedImagePaths()} 한 곳에 있다.
  *   <li>남긴다 — {@code biometric_feature} 와 그 원본 이미지. 등록된 사용자는 이력의 보존
  *       기간과 무관하게 살아 있다. 그쪽을 지우는 것은 {@link ProjectDataPurgeService} 다.
+ *   <li>건드리지 않는다 — {@code match_type = REGISTER} 인 잔존 행. 이유는
+ *       {@link HistoryPurgeRepository#findMatchHistoryToPurge} 참고.
  * </ul>
  *
  * <p><b>이미지를 먼저 지우고 행을 지운다.</b> 순서를 뒤집으면 커밋 직후 죽었을 때 아무도
@@ -74,7 +77,9 @@ public class HistoryPurgeService {
         }
 
         List<Long> ids = rows.stream().map(MatchHistoryPurgeTarget::id).toList();
-        rows.forEach(r -> deleteProbeImage(r.probeImagePath()));
+        rows.stream().map(MatchHistoryPurgeTarget::ownedImagePaths)
+                .flatMap(List::stream)
+                .forEach(this::deleteImage);
 
         return historyPurgeRepository.deleteMatchHistory(ids);
     }
@@ -90,19 +95,16 @@ public class HistoryPurgeService {
     }
 
     /**
-     * 그 시도에서 올린 프로브 이미지를 지운다.
+     * 이 이력 행만 가리키는 이미지를 지운다.
+     *
+     * <p>어느 경로가 그런 것인지는 {@link MatchHistoryPurgeTarget#ownedImagePaths()} 가 고른다 —
+     * 이 메서드는 받은 것을 지울 뿐이다.
      *
      * <p>실패해도 행 삭제는 진행한다. 여기서 멈추면 저장소 한 번의 장애가 이력 정리 전체를
      * 영구히 막는다 — 그 편이 파일 하나가 남는 것보다 나쁘다. ({@link ProjectDataPurgeService}
      * 와 같은 판단이다.)
-     *
-     * <p>동의를 받지 않은 프로젝트는 애초에 올리지 않으므로 경로가 빈 문자열이다
-     * ({@code FileService.uploadIfConsent}).
      */
-    private void deleteProbeImage(String path) {
-        if (path == null || path.isBlank()) {
-            return;
-        }
+    private void deleteImage(String path) {
         try {
             fileService.delete(path);
         } catch (RuntimeException e) {

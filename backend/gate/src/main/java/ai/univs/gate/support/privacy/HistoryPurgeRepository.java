@@ -22,17 +22,24 @@ public class HistoryPurgeRepository {
     private final EntityManager em;
 
     /**
-     * 정리 대상 인증 이력 — id 와 그 시도에서 <b>올린 이미지 경로</b>만 가져온다.
+     * 정리 대상 인증 이력 — id, {@code match_type}, 그리고 두 이미지 경로.
      *
      * <p>엔티티를 통째로 들고 오지 않는 이유는 두 가지다. 배치 크기만큼의 영속성 컨텍스트가
      * 쌓이지 않고, 아래 벌크 삭제가 그 컨텍스트와 어긋날 여지도 없다.
      *
-     * <p><b>{@code feature_image_path} 는 가져오지 않는다.</b> 그 컬럼은 등록된 특징점의
-     * 이미지 경로를 <b>복사해 둔 값</b>이라 살아 있는 {@code biometric_feature} 및 다른 이력
-     * 행과 같은 파일을 가리킨다. 이력을 지우면서 그 파일을 지우면 <b>등록된 사용자의 사진이
-     * 사라진다.</b> 반면 {@code matched_feature_image_path} 는 그 시도에서 올린 프로브
-     * 이미지이고 매 요청마다 새 UUID 로 저장된다({@code FileUtil}) — 이 행 말고는 아무도
-     * 가리키지 않는다.
+     * <p><b>두 경로를 다 가져오되, 지울 것은 {@link MatchHistoryPurgeTarget#ownedImagePaths()}
+     * 가 고른다.</b> 초판은 {@code feature_image_path} 를 아예 조회하지 않는 것으로 사고를
+     * 막으려 했는데, 그 컬럼이 이 행만의 것인 경우가 실제로 있었다(VERIFY_IMAGE 의 신분증
+     * 이미지). 가져오지 않으면 그 파일이 영구 고아가 된다. 판단은 레코드 한 곳에 둔다.
+     *
+     * <p><b>{@code REGISTER} 은 제외한다</b> (반박 리뷰 지적). 등록은 이제
+     * {@code feature_history} 의 사건이고 V27 이 {@code match_history} 의 REGISTER 행을
+     * 지웠다 — 다만 짝이 없는 행은 <b>일부러 남겼다</b>(V27 주석). 그 잔존 행은
+     * {@code matched_feature_image_path} 에 <b>등록 이미지</b>를 담고 있어서
+     * (V26 주석: 등록 행은 경로를 먼저 그쪽에 넣었다), 여기서 집으면
+     * <b>살아 있는 특징점의 사진을 지운다.</b> {@code ActivityLog} 의 {@code @Subselect} 와
+     * {@code MatchType} enum 이 이미 같은 잔존 행을 방어하고 있다 — 읽기만 막아 두고 유일하게
+     * 파괴적인 이 경로를 비워 둘 이유가 없다.
      *
      * <p>정렬 기준이 {@code created_at} 인 이유는 V33 인덱스를 타기 위해서다. 대상이 0건일 때
      * 첫 엔트리에서 끝난다.
@@ -41,9 +48,11 @@ public class HistoryPurgeRepository {
             LocalDateTime createdBefore, int limit) {
         return em.createQuery("""
                         SELECT new ai.univs.gate.support.privacy.MatchHistoryPurgeTarget(
-                                   h.id, h.matchedFeatureImagePath)
+                                   h.id, h.matchType,
+                                   h.matchedFeatureImagePath, h.featureImagePath)
                           FROM MatchHistory h
                          WHERE h.createdAt < :cutoff
+                           AND h.matchType <> ai.univs.gate.modules.feature.domain.enums.MatchType.REGISTER
                          ORDER BY h.createdAt ASC
                         """, MatchHistoryPurgeTarget.class)
                 .setParameter("cutoff", createdBefore)

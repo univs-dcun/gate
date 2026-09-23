@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import ai.univs.gate.modules.feature.domain.enums.MatchType;
 import ai.univs.gate.support.file.FileService;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -42,6 +43,11 @@ class HistoryPurgeServiceTest {
     @InjectMocks
     private HistoryPurgeService service;
 
+    private static MatchHistoryPurgeTarget target(
+            Long id, MatchType type, String probe, String feature) {
+        return new MatchHistoryPurgeTarget(id, type, probe, feature);
+    }
+
     private static final LocalDateTime CUTOFF = LocalDateTime.now(ZoneOffset.UTC).minusDays(30);
 
     /**
@@ -73,8 +79,8 @@ class HistoryPurgeServiceTest {
     @DisplayName("지우는 이미지는 그 시도의 프로브 이미지뿐이다")
     void 프로브_이미지만_지운다() {
         given(repository.findMatchHistoryToPurge(any(), anyInt())).willReturn(List.of(
-                new MatchHistoryPurgeTarget(1L, "probe/a.jpg"),
-                new MatchHistoryPurgeTarget(2L, "probe/b.jpg")));
+                target(1L, MatchType.IDENTIFY, "probe/a.jpg", "feat/shared.jpg"),
+                target(2L, MatchType.IDENTIFY, "probe/b.jpg", "feat/shared.jpg")));
         given(repository.deleteMatchHistory(anyList())).willReturn(2);
 
         int deleted = service.purgeMatchHistoryBatch(CUTOFF, 500);
@@ -97,8 +103,8 @@ class HistoryPurgeServiceTest {
     @DisplayName("이미지 경로가 비어 있으면 저장소를 부르지 않는다")
     void 빈_경로는_건너뛴다() {
         given(repository.findMatchHistoryToPurge(any(), anyInt())).willReturn(List.of(
-                new MatchHistoryPurgeTarget(1L, ""),
-                new MatchHistoryPurgeTarget(2L, null)));
+                target(1L, MatchType.IDENTIFY, "", ""),
+                target(2L, MatchType.IDENTIFY, null, null)));
         given(repository.deleteMatchHistory(anyList())).willReturn(2);
 
         service.purgeMatchHistoryBatch(CUTOFF, 500);
@@ -116,8 +122,8 @@ class HistoryPurgeServiceTest {
     @DisplayName("이미지 삭제가 실패해도 행은 지운다")
     void 이미지_실패는_행_삭제를_막지_않는다() {
         given(repository.findMatchHistoryToPurge(any(), anyInt())).willReturn(List.of(
-                new MatchHistoryPurgeTarget(1L, "probe/a.jpg"),
-                new MatchHistoryPurgeTarget(2L, "probe/b.jpg")));
+                target(1L, MatchType.IDENTIFY, "probe/a.jpg", "feat/shared.jpg"),
+                target(2L, MatchType.IDENTIFY, "probe/b.jpg", "feat/shared.jpg")));
         willThrow(new IllegalStateException("MinIO 장애")).given(fileService).delete("probe/a.jpg");
         given(repository.deleteMatchHistory(anyList())).willReturn(2);
 
@@ -139,7 +145,7 @@ class HistoryPurgeServiceTest {
     @DisplayName("파일을 지운 뒤에 행을 지운다")
     void 파일이_먼저다() {
         given(repository.findMatchHistoryToPurge(any(), anyInt()))
-                .willReturn(List.of(new MatchHistoryPurgeTarget(1L, "probe/a.jpg")));
+                .willReturn(List.of(target(1L, MatchType.IDENTIFY, "probe/a.jpg", "feat/shared.jpg")));
         given(repository.deleteMatchHistory(anyList())).willReturn(1);
 
         service.purgeMatchHistoryBatch(CUTOFF, 500);
@@ -170,5 +176,61 @@ class HistoryPurgeServiceTest {
 
         assertThat(service.purgeFeatureHistoryBatch(CUTOFF, 500)).isZero();
         verify(repository, never()).deleteFeatureHistory(anyList());
+    }
+
+    /**
+     * <b>등록 사진은 절대 지우지 않는다</b> — 1:N·1:1(id) 계열.
+     *
+     * <p>{@code MatchHistory.updateBiometricFeature} 가 {@code feature_image_path} 에 살아 있는
+     * {@code biometric_feature} 의 경로를 <b>복사해</b> 넣는다. 같은 파일을 그 특징점과 다른
+     * 이력 행들이 함께 가리킨다. 여기서 지우면 등록된 사용자의 사진이 사라진다.
+     */
+    @Test
+    @DisplayName("IDENTIFY 행은 등록 사진 경로를 건드리지 않는다")
+    void 등록_사진은_남긴다() {
+        given(repository.findMatchHistoryToPurge(any(), anyInt())).willReturn(
+                List.of(target(1L, MatchType.IDENTIFY, "probe/p.jpg", "feat/registered.jpg")));
+        given(repository.deleteMatchHistory(anyList())).willReturn(1);
+
+        service.purgeMatchHistoryBatch(CUTOFF, 500);
+
+        verify(fileService).delete("probe/p.jpg");
+        verify(fileService, never()).delete("feat/registered.jpg");
+    }
+
+    /**
+     * <b>VERIFY_IMAGE 의 신분증 사진은 지운다</b> (반박 리뷰가 잡은 결함).
+     *
+     * <p>사진 두 장을 맞춰 보는 1:1 은 등록된 특징점이 개입하지 않는다.
+     * {@code FaceVerifyByFeatureImageUseCase} 가 {@code feature_image_path} 에 <b>그 요청에서
+     * 올린 신분증 이미지</b>를 넣고, 성공 전이도 1:1 변형이라 덮어써지지 않는다.
+     *
+     * <p>이 행에서 그 경로를 남기면, 행이 지워진 뒤 <b>아무도 가리키지 않는 신분증 파일이
+     * 영구히 남는다.</b> 이 기능이 막으려던 바로 그 상태를 정상 동작 시 매 행마다 만든다.
+     */
+    @Test
+    @DisplayName("VERIFY_IMAGE 행은 신분증 사진도 함께 지운다")
+    void 신분증_사진도_지운다() {
+        given(repository.findMatchHistoryToPurge(any(), anyInt())).willReturn(
+                List.of(target(1L, MatchType.VERIFY_IMAGE, "probe/p.jpg", "doc/id-card.jpg")));
+        given(repository.deleteMatchHistory(anyList())).willReturn(1);
+
+        service.purgeMatchHistoryBatch(CUTOFF, 500);
+
+        verify(fileService).delete("probe/p.jpg");
+        verify(fileService).delete("doc/id-card.jpg");
+    }
+
+    /** 동의가 없어 한쪽만 비어 있어도 나머지는 지운다. */
+    @Test
+    @DisplayName("VERIFY_IMAGE 에서 한쪽 경로가 비어도 나머지는 지운다")
+    void 한쪽만_비어도_지운다() {
+        given(repository.findMatchHistoryToPurge(any(), anyInt())).willReturn(
+                List.of(target(1L, MatchType.VERIFY_IMAGE, null, "doc/id-card.jpg")));
+        given(repository.deleteMatchHistory(anyList())).willReturn(1);
+
+        service.purgeMatchHistoryBatch(CUTOFF, 500);
+
+        verify(fileService).delete("doc/id-card.jpg");
     }
 }

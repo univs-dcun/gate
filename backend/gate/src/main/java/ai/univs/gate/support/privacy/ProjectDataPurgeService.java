@@ -195,8 +195,9 @@ public class ProjectDataPurgeService {
      * <p>실패해도 특징점 삭제는 진행한다. 이미지만 남은 고아 파일은 저장소 문제이지 접근
      * 경로가 있는 상태가 아니다 — 반대로 여기서 멈추면 특징점이 계속 살아 있어 더 나쁘다.
      *
-     * <p>동의를 받지 않은 프로젝트는 애초에 이미지를 올리지 않으므로 경로가 빈 문자열이다
-     * ({@code FileService.uploadIfConsent}).
+     * <p>동의를 받지 않은 프로젝트는 애초에 이미지를 올리지 않으므로 경로가 비어 있다 —
+     * {@code FileService.uploadIfConsent} 는 {@code null} 을, 업로드 자체가 꺼진 환경
+     * ({@code FILE_ENABLE_UPLOAD=false})은 빈 문자열을 돌려준다. 아래 검사가 둘 다 막는다.
      */
     private void deleteImage(BiometricFeature feature) {
         String path = feature.getFeatureImagePath();
