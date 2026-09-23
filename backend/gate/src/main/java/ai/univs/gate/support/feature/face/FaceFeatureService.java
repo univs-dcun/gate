@@ -20,8 +20,7 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,22 +36,28 @@ public class FaceFeatureService {
     private final FileService fileService;
     private final FaceService faceService;
     private final ProjectSettingsService projectSettingsService;
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * @param callerType 무인증 데모({@link CallerType#DEMO})는 대조할 accountId 가 없어 소유 검증을
      *                   건너뛴다. 인증 경로는 반드시 {@link CallerType#API} 를 넘긴다. (UG-281)
-      *
-     * <p><b>UG-293: 이력 커밋이 이 트랜잭션과 분리됐다.</b> 예전에는 {@code noRollbackFor} 로
-     * "이 예외들에서는 롤백하지 말라" 고 열거했고, 목록에 없는 예외 — 특히 우리 코드의 NPE —
-     * 에서는 이력이 그대로 사라졌다. 지금은 {@link HistoryRecorder} 가 행을 먼저 커밋한다.
      *
-     * <p><b>전파도 함께 바뀌었다: {@code REQUIRES_NEW} → {@code REQUIRED}.</b> 이력이 더는 이
-     * 트랜잭션에 묶여 있지 않으므로 경계를 따로 열 이유가 없어졌고, 호출자와 합류하는 편이
-     * 특징점 저장의 원자성에 맞다. 성공 이력도 {@code succeed} 로 이 트랜잭션에 합류하므로
-     * "특징점은 롤백됐는데 등록 성공 이력만 남는" 상태가 생기지 않는다 (반박 리뷰 지적).
-     * 실패 이력만 별도 트랜잭션으로 빠져나간다 — 그것이 이 티켓의 목적이다.
+     * <p><b>트랜잭션을 메서드 전체에 걸지 않는다 (UG-336).</b> 예전에는 {@code @Transactional}
+     * 이 메서드 전체를 감쌌고, 그러면 첫 조회에서 잡은 커넥션을 커밋까지 붙든다 — face 서비스
+     * <b>원격 호출 내내</b> 커넥션 하나가 묶이고, 그 안에서 {@code HistoryRecorder.start}
+     * ({@code REQUIRES_NEW})가 <b>두 번째</b> 커넥션을 요구했다. 기본 풀 10에서 동시 등록 10건이
+     * 각자 첫 번째를 쥔 채 두 번째를 기다리면 아무도 진행하지 못한다. 매칭 경로는 UG-293 에서
+     * 같은 이유로 트랜잭션을 뗐다.
+     *
+     * <p>지금은 각 단계가 자기 경계를 연다. 조회는 {@code ApiKeyService} 가(지연 연관도 거기서
+     * 초기화한다, UG-335), 시작·실패 이력은 {@code HistoryRecorder} 가, 원격 호출은 어떤
+     * 트랜잭션에도 들지 않는다. 한 시점에 쥐는 커넥션은 최대 하나다.
+     *
+     * <p><b>성공만은 한 트랜잭션으로 묶는다.</b> 특징점 저장과 성공 이력은 원자적이어야 한다 —
+     * 따로 커밋하면 "특징점은 없는데 등록 성공 이력만 있는" 상태가 가능해진다(UG-293 반박 리뷰).
+     * 그 두 쓰기만 {@link TransactionTemplate} 으로 감싼다. {@code succeed} 는 {@code REQUIRED}
+     * 라 그 트랜잭션에 합류한다.
      */
-    @Transactional
     public CreateFaceFeatureServiceResult createFaceFeature(CallerType callerType,
                                                             Long accountId,
                                                             String apiKey,
@@ -114,10 +119,11 @@ public class FaceFeatureService {
                 .transactionUuid(transactionUuid)
                 .externalKey(normalizeExternalKey(externalKey))
                 .build();
-        biometricFeatureRepository.save(biometricFeature);
-
-        featureHistory.successRegister(biometricFeature);
-        historyRecorder.succeed(featureHistory);
+        transactionTemplate.executeWithoutResult(status -> {
+            biometricFeatureRepository.save(biometricFeature);
+            featureHistory.successRegister(biometricFeature);
+            historyRecorder.succeed(featureHistory);
+        });
 
         return new CreateFaceFeatureServiceResult(biometricFeature, projectSettingsService.isLivenessEnabled(findProjectSettings, FeatureType.FACE, LivenessOperation.REGISTER));
     }
@@ -137,8 +143,9 @@ public class FaceFeatureService {
      *
      * <p>{@code consentSnapshot} 은 계속 저장한다. 응답에서만 빼기로 한 값이고, 이력 통계와
      * 기존 행과의 일관성을 위해 DB 에는 남기는 편이 맞다.
+     *
+     * <p>트랜잭션 경계는 {@link #createFaceFeature} 와 같다 (UG-336).
      */
-    @Transactional
     public BiometricFeature createFaceFeatureByDescriptor(Long accountId,
                                                          String apiKey,
                                                          String descriptor,
@@ -191,10 +198,11 @@ public class FaceFeatureService {
                 .transactionUuid(transactionUuid)
                 .externalKey(normalizeExternalKey(externalKey))
                 .build();
-        biometricFeatureRepository.save(biometricFeature);
-
-        featureHistory.successRegister(biometricFeature);
-        historyRecorder.succeed(featureHistory);
+        transactionTemplate.executeWithoutResult(status -> {
+            biometricFeatureRepository.save(biometricFeature);
+            featureHistory.successRegister(biometricFeature);
+            historyRecorder.succeed(featureHistory);
+        });
 
         return biometricFeature;
     }

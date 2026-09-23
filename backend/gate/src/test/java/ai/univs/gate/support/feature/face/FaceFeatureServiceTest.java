@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -35,8 +36,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import ai.univs.gate.support.tx.RecordingTransactionTemplate;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -58,6 +61,9 @@ class FaceFeatureServiceTest {
     @Mock private FileService fileService;
     @Mock private FaceService faceService;
     @Mock private ProjectSettingsService projectSettingsService;
+
+    // UG-336: 성공 쓰기가 짧은 트랜잭션 안에서 일어난다. null 이면 NPE, 목이면 콜백이 안 돈다.
+    @Spy private RecordingTransactionTemplate transactionTemplate = new RecordingTransactionTemplate();
 
     @InjectMocks private FaceFeatureService faceFeatureService;
 
@@ -88,6 +94,12 @@ class FaceFeatureServiceTest {
     }
 
     private void givenCommonFlow(boolean consentEnabled, boolean livenessEnabled, String uploadedImagePath) {
+        givenCommonFlowWithoutStart(consentEnabled, livenessEnabled, uploadedImagePath);
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    /** 시작 이력 스텁을 테스트가 직접 거는 경우 (UG-336 — 호출 시점의 경계를 기록한다). strict stubs 라 겹쳐 걸 수 없다. */
+    private void givenCommonFlowWithoutStart(boolean consentEnabled, boolean livenessEnabled, String uploadedImagePath) {
         settings = ProjectSettings.builder()
                 .id(2L)
                 .project(project)
@@ -98,7 +110,6 @@ class FaceFeatureServiceTest {
         given(fileService.uploadIfConsent(featureImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.FACE, LivenessOperation.REGISTER))
                 .willReturn(livenessEnabled);
-        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
     }
 
     private FeatureHistory capturedFeatureHistory() {
@@ -317,5 +328,44 @@ class FaceFeatureServiceTest {
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
         verify(fileService, never()).uploadIfConsent(any(), any(Boolean.class));
         verify(faceService, never()).createFace(any(CreateFaceFeignRequestDTO.class));
+    }
+
+    /**
+     * <b>특징점 저장과 성공 이력만 트랜잭션 안에서 일어난다</b> (UG-336).
+     *
+     * <p>예전에는 메서드 전체가 트랜잭션이었다. 그러면 첫 조회에서 잡은 커넥션을 원격 호출 내내
+     * 붙들고, 그 안에서 시작 이력({@code REQUIRES_NEW})이 두 번째 커넥션을 요구한다 — 동시
+     * 등록이 풀 크기만큼 몰리면 서로를 기다리며 멈춘다.
+     *
+     * <p>반대로 저장과 성공 이력이 경계 밖으로 새면 따로 커밋돼 "특징점은 없는데 등록 성공
+     * 이력만 있는" 상태가 가능해진다(UG-293 반박 리뷰). 호출 <b>시점</b>에 경계 안이었는지를
+     * 기록해 두 방향을 함께 고정한다.
+     */
+    @Test
+    @DisplayName("UG-336: 시작 이력·원격 호출은 트랜잭션 밖, 특징점 저장·성공 이력은 안이다")
+    void 성공_쓰기만_트랜잭션_안이다() {
+        givenCommonFlowWithoutStart(true, true, UPLOADED_IMAGE_PATH);
+        java.util.List<String> 기록 = new java.util.ArrayList<>();
+        given(historyRecorder.start(any(FeatureHistory.class)))
+                .willAnswer(inv -> { 기록.add("start:" + transactionTemplate.isActive()); return inv.getArgument(0); });
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class)))
+                .willAnswer(inv -> { 기록.add("원격:" + transactionTemplate.isActive()); return CREATED_FACE_ID; });
+        given(biometricFeatureRepository.save(any(BiometricFeature.class))).willAnswer(inv -> {
+            기록.add("save:" + transactionTemplate.isActive());
+            BiometricFeature saved = inv.getArgument(0);
+            saved.setId(SAVED_FEATURE_ID);
+            return saved;
+        });
+        willAnswer(inv -> { 기록.add("succeed:" + transactionTemplate.isActive()); return null; })
+                .given(historyRecorder).succeed(any(FeatureHistory.class));
+
+        faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
+
+        assertThat(기록).containsExactly(
+                "start:false",    // REQUIRES_NEW 가 바깥 트랜잭션 없이 → 커넥션 하나
+                "원격:false",     // 원격 호출 동안 커넥션을 쥐지 않는다
+                "save:true",      // 특징점 저장과
+                "succeed:true");  // 성공 이력이 한 트랜잭션
+        assertThat(transactionTemplate.executions()).as("경계는 성공 블록 하나뿐이다").isEqualTo(1);
     }
 }

@@ -9,7 +9,6 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import ai.univs.gate.shared.web.enums.CallerType;
 
 @Component
@@ -20,7 +19,10 @@ public class CreateFaceFeatureUseCase {
     private final FileService fileService;
     private final ProjectSettingsService projectSettingsService;
 
-    @Transactional
+    /**
+     * 트랜잭션을 열지 않는다 (UG-336) — 이유와 지연 연관이 안전한 근거는 쌍둥이인
+     * {@code CreatePalmFeatureUseCase} 참고.
+     */
     public FaceFeatureResult execute(CreateFeatureInput input) {
         CreateFaceFeatureServiceResult result = faceFeatureService.createFaceFeature(
                 CallerType.API,

@@ -11,7 +11,6 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import ai.univs.gate.shared.web.enums.CallerType;
 
 @Component
@@ -23,7 +22,6 @@ public class CreatePalmFeatureByApiKeyUseCase {
     private final ApiKeyService apiKeyService;
     private final ProjectSettingsService projectSettingsService;
 
-    @Transactional
     public PalmFeatureResult execute(CreatePalmFeatureByApiKeyInput input) {
         ApiKey findApiKey = apiKeyService.findByApiKeyUnverified(input.apiKey());
 

@@ -34,8 +34,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import ai.univs.gate.support.tx.RecordingTransactionTemplate;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -240,6 +242,9 @@ class DescriptorMatchHistoryTest {
         @Mock private FileService fileService;
         @Mock private FaceService faceService;
         @Mock private ProjectSettingsService projectSettingsService;
+
+        // UG-336: 성공 쓰기가 짧은 트랜잭션 안에서 일어난다. null 이면 NPE, 목이면 콜백이 안 돈다.
+        @Spy private RecordingTransactionTemplate transactionTemplate = new RecordingTransactionTemplate();
 
         @InjectMocks private FaceFeatureService faceFeatureService;
 
