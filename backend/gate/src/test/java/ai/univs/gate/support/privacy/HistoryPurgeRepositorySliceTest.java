@@ -227,6 +227,24 @@ class HistoryPurgeRepositorySliceTest {
                     .containsExactly("feat/soft-deleted.jpg");
         }
 
+        /**
+         * 상한 자체를 고정한다.
+         *
+         * <p>H2 에는 {@code IN} 한도가 없어, 이 상수를 1,000,000 으로 바꿔도 다른 테스트는
+         * 전부 초록이다 — 4차 반박 리뷰가 변이로 확인했다. 즉 <b>오라클 납품을 지키는 것이
+         * 이 상수 하나뿐인데 아무도 방어하지 않는</b> 상태였다.
+         *
+         * <p>Oracle 19c 는 {@code IN} 리스트 1000 초과를 {@code ORA-01795} 로 거절한다.
+         */
+        @Test
+        @DisplayName("IN 절 상한이 오라클 한도 안에 있다")
+        void 상한이_오라클_한도_안이다() {
+            assertThat(HistoryPurgeRepository.IN_절_상한)
+                    .as("Oracle 19c 의 IN 리스트 한도는 1000 이다 (ORA-01795)")
+                    .isLessThanOrEqualTo(1000)
+                    .isPositive();
+        }
+
         @Test
         @DisplayName("후보가 비면 쿼리를 날리지 않는다")
         void 참조_검사_빈_목록() {

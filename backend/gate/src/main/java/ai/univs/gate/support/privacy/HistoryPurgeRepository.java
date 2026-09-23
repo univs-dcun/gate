@@ -87,10 +87,12 @@ public class HistoryPurgeRepository {
      * <p>Hibernate 의 {@code in_clause_parameter_padding} 이 켜지면 1000 이 1024 로 패딩돼
      * 그것만으로도 넘는다. 지금은 꺼져 있지만 그 기본값에 안전을 맡기지 않는다.
      *
-     * <p>그래서 쪼갠다. 상한과 배치 크기의 결합 자체를 없애는 편이 주석으로 경고하는 것보다
-     * 낫다.
+     * <p>그래서 참조 조회는 쪼갠다. 다만 <b>아래 벌크 삭제는 쪼개지 않는다</b> — 그쪽은
+     * {@code BATCH_SIZE} 만큼의 id 를 그대로 넘기므로, {@code BATCH_SIZE} 를 1000 초과로 올리면
+     * 이번에는 그쪽이 터진다. 지금은 500 이라 무해하고 그 상수는 private 이지만, "쪼갰으니
+     * 안전하다" 로 읽지 말 것 (4차 반박 리뷰 지적).
      */
-    private static final int IN_절_상한 = 500;
+    static final int IN_절_상한 = 500;
 
     /**
      * 주어진 경로 중 <b>살아 있는 특징점이 아직 가리키는</b> 것.
@@ -103,11 +105,14 @@ public class HistoryPurgeRepository {
      * 그 파일을 여기서 지우면 살아 있는 특징점 행이 깨진 경로를 가리키게 된다 — 지우는 것은
      * {@link ProjectDataPurgeService} 가 특징점과 함께 할 일이다.
      *
-     * <p>인덱스는 두지 않았다. 이 조회는 밤에 배치당 한 번 돌고 실행당 최대 40회다. 등록
+     * <p>인덱스는 두지 않았다. 이 조회는 밤에만 돌고 실행당 최대 60회다 — 배치 40개
+     * (인증 20 + 특징점 20) 중 인증 배치는 후보가 최대 1000개라 2회로 쪼개진다. 등록
      * 특징점이 수백만 행인 납품에서도 야간 수십 초 수준이라 판단했다 — 꺼져 있는 기능을 위해
      * 등록 경로에 쓰기 비용을 얹지 않는다. 실측해서 문제가 되면 그때 넣는다.
      */
     public Set<String> findPathsStillReferencedByFeatures(Collection<String> paths) {
+        // null 원소는 받지 않는다 — List.copyOf 가 NPE 를 던진다. 호출자가
+        // MatchHistoryPurgeTarget.candidateImagePaths() 로 이미 걸러서 넘긴다.
         List<String> 남은것 = List.copyOf(paths);
         Set<String> referenced = new HashSet<>();
 
