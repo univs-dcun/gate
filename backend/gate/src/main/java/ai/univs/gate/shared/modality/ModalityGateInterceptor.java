@@ -33,8 +33,14 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * 조회까지 막으면 그 화면들이 오류로 바뀐다.
  *
  * <p>이 구분이 성립하는 것은 modality 경로의 동작이 전부 {@code POST}·{@code DELETE} 이고 조회가
- * 전부 {@code GET} 이기 때문이다. 그 전제는 {@code ModalityGateCoverageTest} 가 고정한다 — 새
- * 엔드포인트가 이 규칙을 깨면 거기서 실패한다.
+ * 전부 {@code GET} 이기 때문이다. {@code ModalityGateCoverageTest} 가 두 방향을 지킨다 — 동작
+ * 엔드포인트가 차단 경로 밖에 생기면 실패하고, modality 경로에 <b>새 GET</b> 이 생기면 실패한다.
+ * 다만 GET 이 정말 조회인지는 코드를 읽어야 알 수 있어서, 새 GET 은 사람이 확인하고 그 테스트의
+ * 목록에 넣는다.
+ *
+ * <p>끄기 전에 그 방식의 특징점이 이미 있으면 조회는 보이는데 삭제는 거절된다. face 전용 납품에서는
+ * palm 특징점이 생길 수 없어(등록이 palm-service 성공을 요구한다) 일어나지 않는다. 운영 중인 방식을
+ * 끄게 되면 이 점을 먼저 판단할 것.
  *
  * <p><b>경로 패턴은 여기 한 곳에만 둔다.</b> {@code WebMvcConfig} 와 테스트가 같은 상수를 쓴다.
  */

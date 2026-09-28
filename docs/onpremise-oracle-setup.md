@@ -200,6 +200,17 @@ gate DB 만 읽기 때문이다.
 기동할 때 한 번 읽는다 — 바꾸면 gate-service 를 재기동한다. 꺼져 있으면 기동 로그에
 `PALM 동작 API 가 꺼져 있다 (gate.features.palm=false)` 가 한 줄 남는다.
 
+**값을 비워 두면 기동에 실패한다.** `GATE_FEATURES_PALM=` (빈 문자열·공백)은 기본값으로 떨어지지
+않고 `A null value cannot be assigned to a primitive type` 으로 멈춘다 — 컨테이너가 재시작 루프에
+빠진다. compose 에서 `${GATE_FEATURES_PALM}` 처럼 치환하면 미설정일 때 빈 값이 되므로, 값을 직접
+쓰거나(`"false"`) `${GATE_FEATURES_PALM:-true}` 처럼 기본값을 준다. 켜 둘 방식은 변수를 아예 빼도
+된다.
+
+받아들이는 값: `true`/`false` (대소문자 무관), `yes`/`no`, `on`/`off`, `1`/`0`. 그 밖의 값(`flase`
+같은 오타)도 기동 실패다 — 조용히 켜진 채로 넘어가지 않는다. 반면 **변수 이름** 오타
+(`GATE_FEATURE_PALM` 등)는 아무도 읽지 않아 palm 이 켜진 채로 뜬다. 끈 것을 확인하려면 위 기동 로그
+한 줄을 본다.
+
 값은 compose 환경변수로 준다. gate-config 의 공용 `gate-service.yml` 에 넣지 않는다 — 모든 환경이
 읽는 파일이라 클라우드까지 꺼진다.
 

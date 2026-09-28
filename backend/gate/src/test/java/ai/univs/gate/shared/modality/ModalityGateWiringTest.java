@@ -132,4 +132,31 @@ class ModalityGateWiringTest {
         mvc.perform(post("/api/v1/feature/palm")).andExpect(status().isOk());
         mvc.perform(post("/api/v1/demo/feature/palm/identify")).andExpect(status().isOk());
     }
+
+    /**
+     * <b>로케일 인터셉터가 먼저다</b> (반박 리뷰 지적).
+     *
+     * <p>거절 메시지는 요청 언어로 나가야 한다. 차단 인터셉터가 먼저 던지면 로케일이 정해지기 전이라
+     * 한국어 클라이언트가 영어 메시지를 받는다 — 리뷰가 실제 Tomcat 에서 순서를 뒤집어 확인했다.
+     */
+    @Test
+    @DisplayName("로케일 인터셉터 뒤에 등록한다 — 거절 메시지가 요청 언어로 나간다")
+    void 로케일_인터셉터가_먼저다() {
+        HandlerInterceptor 로케일 = new HandlerInterceptor() { };
+        LocaleConfig localeConfig = mock(LocaleConfig.class);
+        given(localeConfig.localeChangeInterceptor()).willReturn(로케일);
+
+        var registry = new 들여다보는_레지스트리();
+        new WebMvcConfig(mock(UserContextInterceptor.class), localeConfig, new ModalityProperties(true, false))
+                .addInterceptors(registry);
+        List<Object> 순서 = registry.등록된_것();
+
+        int 로케일_위치 = 순서.indexOf(로케일);
+        assertThat(로케일_위치).as("로케일 인터셉터가 등록돼야 한다").isNotNegative();
+        for (int i = 0; i < 순서.size(); i++) {
+            if (순서.get(i) instanceof MappedInterceptor m && m.getInterceptor() instanceof ModalityGateInterceptor) {
+                assertThat(i).as("차단 인터셉터는 로케일 인터셉터 뒤여야 한다").isGreaterThan(로케일_위치);
+            }
+        }
+    }
 }

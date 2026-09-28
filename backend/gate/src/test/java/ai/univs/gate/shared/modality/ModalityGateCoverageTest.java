@@ -35,6 +35,16 @@ import org.springframework.web.util.pattern.PathPatternParser;
  *
  * <p>인터셉터 단위 테스트로는 둘 다 잡을 수 없다 — 경로 문자열을 테스트가 직접 넣기 때문이다.
  * 여기서는 {@code @RestController} 를 전부 스캔해 실제 매핑을 모은다.
+ *
+ * <p><b>이 가드가 지키지 못하는 것.</b> 규칙의 전제는 "조회는 GET, 동작은 POST·DELETE" 다. 그런데
+ * GET 핸들러가 조회인지 동작인지는 코드를 읽어야 안다 — 여기서 판정할 수 없다. 그래서 modality
+ * 경로의 GET 은 <b>목록을 고정</b>한다({@link #조회_목록}). 새 GET 이 생기면 실패하고, 그때 사람이
+ * "이것이 정말 조회인가(하위 서비스를 부르지 않고, 아무것도 쓰지 않는가)" 를 판단해 목록에 넣는다.
+ * palm 동작을 GET 으로 만들면 꺼진 배포에서도 통과해 이미지와 이력이 다시 쌓인다(반박 리뷰가 변이로
+ * 보였다).
+ *
+ * <p>경로 변수로 방식을 받는 엔드포인트({@code /{featureType}/...})도 이름으로는 가를 수 없다. 지금은
+ * 그런 매핑이 없다 — 만들게 되면 인터셉터 대신 핸들러 안에서 막아야 한다.
  */
 @DisplayName("UG-223: 차단 규칙의 엔드포인트 커버리지")
 class ModalityGateCoverageTest {
@@ -47,9 +57,11 @@ class ModalityGateCoverageTest {
         }
 
         boolean 경로에_있다(String 방식) {
-            // 세그먼트 단위로 본다. "/palms" 같은 목록 경로도 palm 의 것이다.
+            // 세그먼트에 그 이름이 <b>들어 있기만</b> 하면 그 방식의 것으로 본다 (반박 리뷰 지적).
+            // 정확 일치만 보면 "palmliveness"·"palm-vein" 같은 이름의 동작이 차단도 이 가드도 피한다.
+            // "/palms" 같은 목록 경로도 여기에 걸린다.
             return Arrays.stream(path.toLowerCase(Locale.ROOT).split("/"))
-                    .anyMatch(seg -> seg.equals(방식) || seg.equals(방식 + "s"));
+                    .anyMatch(seg -> seg.contains(방식));
         }
 
         @Override
@@ -67,6 +79,11 @@ class ModalityGateCoverageTest {
 
         for (var bd : scanner.findCandidateComponents("ai.univs.gate")) {
             Class<?> c = Class.forName(bd.getBeanClassName());
+            if (테스트_클래스(c)) {
+                // 테스트의 ProbeController 들도 같은 패키지에 있어 스캔에 걸린다. 그것까지 세면
+                // 공회전 방지 개수가 부풀고, 조회 목록 고정이 테스트 코드에 따라 흔들린다.
+                continue;
+            }
             RequestMapping onClass = AnnotatedElementUtils.findMergedAnnotation(c, RequestMapping.class);
             String[] prefixes = onClass == null || onClass.path().length == 0 ? new String[]{""} : onClass.path();
 
@@ -85,11 +102,54 @@ class ModalityGateCoverageTest {
         }
     }
 
+    private static boolean 테스트_클래스(Class<?> c) {
+        var source = c.getProtectionDomain().getCodeSource();
+        return source != null && source.getLocation().getPath().contains("/test/");
+    }
+
     private static boolean 막히는가(FeatureType 방식, String path) {
         PathContainer container = PathContainer.parsePath(path);
         return ModalityGateInterceptor.pathsOf(방식).stream()
                 .map(PathPatternParser.defaultInstance::parse)
                 .anyMatch(pattern -> pattern.matches(container));
+    }
+
+    /**
+     * modality 경로에서 허용된 GET — <b>조회라고 확인한 것</b>만 여기에 둔다.
+     *
+     * <p>확인한 내용 (UG-223, 반박 리뷰가 유스케이스까지 추적): 전부 {@code @Transactional(readOnly =
+     * true)} 이고, 부르는 것은 DB 조회와 {@code fileService.getFileServerPath()} 뿐이다. face·palm·match
+     * 서비스를 부르지 않는다.
+     */
+    private static final List<String> 조회_목록 = List.of(
+            "FaceController [GET] /api/v1/feature/face",
+            "FaceController [GET] /api/v1/feature/face/{faceFeatureId}",
+            "FaceController [GET] /api/v1/feature/face/faceId/{faceId}",
+            "PalmController [GET] /api/v1/feature/palm",
+            "PalmController [GET] /api/v1/feature/palm/{palmFeatureId}",
+            "DemoController [GET] /api/v1/demo/feature/faces",
+            "DemoController [GET] /api/v1/demo/feature/palms");
+
+    /**
+     * modality 경로의 GET 은 확인된 조회뿐이다.
+     *
+     * <p>인터셉터는 GET 을 통과시킨다. 여기 없는 GET 이 생기면 꺼진 배포에서 그대로 실행된다 — 그것이
+     * 동작이면 막으려던 흔적이 다시 남는다.
+     */
+    @Test
+    @DisplayName("face·palm 경로의 GET 은 조회로 확인된 목록뿐이다 — 새 GET 은 사람이 판단한다")
+    void 조회_목록이_고정돼_있다() {
+        List<String> 실제 = 전체.stream()
+                .filter(m -> m.조회뿐() && (m.경로에_있다("face") || m.경로에_있다("palm")))
+                .map(Mapping::toString)
+                .sorted()
+                .toList();
+
+        assertThat(실제)
+                .as("""
+                        인터셉터는 GET 을 막지 않는다. 새 GET 이 조회(하위 서비스 호출·쓰기 없음)라면
+                        조회_목록에 넣고, 동작이라면 POST·DELETE 로 바꿀 것 (UG-223).""")
+                .containsExactlyInAnyOrderElementsOf(조회_목록);
     }
 
     /** 스캔이 공회전하면 아래 테스트는 전부 초록이 된다. */
