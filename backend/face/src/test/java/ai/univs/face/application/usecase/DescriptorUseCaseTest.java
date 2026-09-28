@@ -16,6 +16,7 @@ import ai.univs.face.infrastructure.feign.match.MatchFeign;
 import ai.univs.face.infrastructure.feign.match.dto.IdentifyFeignRequestDTO;
 import ai.univs.face.infrastructure.feign.match.dto.IdentifyFeignResponseDTO;
 import ai.univs.face.infrastructure.feign.match.dto.MatchFeignResponseDTO;
+import ai.univs.face.infrastructure.feign.match.dto.RegisterFeignRequestDTO;
 import ai.univs.face.infrastructure.feign.match.dto.RegisterV2FeignRequestDTO;
 import ai.univs.face.shared.exception.CustomFeignException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
@@ -70,7 +71,7 @@ class DescriptorUseCaseTest {
         @InjectMocks private RegisterByDescriptorUseCase useCase;
 
         private final RegisterByDescriptorInput input =
-                new RegisterByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT);
+                new RegisterByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT, null);
 
         @Test
         @DisplayName("성공 — faceId 없는 register(v2) 경로로 descriptor 를 그대로 넘기고 성공 이력을 남긴다")
@@ -101,6 +102,43 @@ class DescriptorUseCaseTest {
                     .as("descriptor 경로에는 검사할 이미지가 없다")
                     .isFalse();
             assertThat(history.isCheckMultiFace()).isFalse();
+        }
+
+        /**
+         * <b>호출자가 id 를 주면 그 id 로 등록한다</b> (UG-337).
+         *
+         * <p>gate 가 id 를 먼저 발급해 자기 이력에 남긴다. 원격 등록 뒤 gate 쓰기가 실패하면 그 id 로
+         * 되돌린다(UG-338). 여기서 매처가 다른 id 를 발급하면 gate 가 남긴 id 가 가리키는 것이 없어진다.
+         */
+        @Test
+        @DisplayName("UG-337: 호출자가 faceId 를 주면 registerWithFaceId 로 그 id 를 등록한다")
+        void 호출자_id_로_등록() {
+            String 발급 = "0f8fad5b-d9cb-469f-a165-70867728950e";
+            given(matchFeign.registerWithFaceId(any(RegisterFeignRequestDTO.class)))
+                    .willReturn(new FeignResponseApi<>(true, new MatchFeignResponseDTO(BRANCH, 발급), null));
+
+            RegisterResult result = useCase.execute(
+                    new RegisterByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT, 발급));
+
+            assertThat(result.faceId()).isEqualTo(발급);
+            ArgumentCaptor<RegisterFeignRequestDTO> request = ArgumentCaptor.forClass(RegisterFeignRequestDTO.class);
+            verify(matchFeign).registerWithFaceId(request.capture());
+            assertThat(request.getValue().getFaceId()).isEqualTo(발급);
+            assertThat(request.getValue().getDescriptor()).isEqualTo(DESCRIPTOR);
+            assertThat(request.getValue().getBranchName()).isEqualTo(BRANCH);
+            org.mockito.Mockito.verify(matchFeign, org.mockito.Mockito.never()).register(any());
+            assertThat(capturedHistory(faceHistoryRepository).getFaceId()).isEqualTo(발급);
+        }
+
+        @Test
+        @DisplayName("UG-337: 입력의 faceId 가 빈 문자열이면 매처가 발급하는 경로로 간다")
+        void 빈_id_는_서버_발급() {
+            given(matchFeign.register(any(RegisterV2FeignRequestDTO.class)))
+                    .willReturn(new FeignResponseApi<>(true, new MatchFeignResponseDTO(BRANCH, "issued-face-id"), null));
+
+            useCase.execute(new RegisterByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT, ""));
+
+            org.mockito.Mockito.verify(matchFeign, org.mockito.Mockito.never()).registerWithFaceId(any());
         }
 
         @Test

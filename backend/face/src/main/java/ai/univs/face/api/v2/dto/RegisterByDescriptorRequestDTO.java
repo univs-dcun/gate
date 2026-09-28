@@ -4,6 +4,7 @@ import ai.univs.face.application.input.RegisterByDescriptorInput;
 import ai.univs.face.shared.swagger.SwaggerDescriptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.util.StringUtils;
 
@@ -29,7 +30,11 @@ public record RegisterByDescriptorRequestDTO(
         String transactionUuid,
 
         @Schema(description = SwaggerDescriptions.CLIENT_ID)
-        String clientId
+        String clientId,
+
+        @Schema(description = CallerIssuedFaceId.DESCRIPTION)
+        @Pattern(regexp = CallerIssuedFaceId.PATTERN, message = "INVALID_FACE_ID_FORMAT")
+        String faceId
 ) {
 
     public RegisterByDescriptorInput toRegisterByDescriptorInput() {
@@ -37,6 +42,7 @@ public record RegisterByDescriptorRequestDTO(
                 branchName,
                 descriptor,
                 StringUtils.hasText(transactionUuid) ? transactionUuid : UUID.randomUUID().toString(),
-                StringUtils.hasText(clientId) ? clientId : "SYSTEM");
+                StringUtils.hasText(clientId) ? clientId : "SYSTEM",
+                StringUtils.hasText(faceId) ? faceId : null);
     }
 }

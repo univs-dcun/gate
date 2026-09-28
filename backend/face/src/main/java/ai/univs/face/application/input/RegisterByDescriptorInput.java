@@ -11,6 +11,8 @@ public record RegisterByDescriptorInput(
         String branchName,
         String descriptor,
         String transactionUuid,
-        String clientId
+        String clientId,
+        /** UG-337: 호출자가 발급한 id. {@code null} 이면 매처가 발급한다. */
+        String faceId
 ) {
 }

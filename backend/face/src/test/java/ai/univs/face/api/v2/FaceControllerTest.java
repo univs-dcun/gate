@@ -124,6 +124,48 @@ class FaceControllerTest {
                     .andExpect(status().isBadRequest());
         }
 
+        /** UG-337: gate 가 발급한 id 가 유스케이스까지 그대로 가야 한다. 빠지면 매처가 다른 id 를 만든다. */
+        @Test
+        @DisplayName("UG-337: faceId(UUID) 를 주면 그 값이 유스케이스 입력으로 간다")
+        void register_호출자_id_를_넘긴다() throws Exception {
+            String 발급 = "0f8fad5b-d9cb-469f-a165-70867728950e";
+            mockMvc.perform(multipart("/api/v2/face")
+                            .file(validJpgFile)
+                            .param("branchName", "branch-A")
+                            .param("faceId", 발급))
+                    .andExpect(status().isOk());
+
+            var input = org.mockito.ArgumentCaptor.forClass(ai.univs.face.application.input.RegisterInput.class);
+            org.mockito.Mockito.verify(registerUseCase).execute(input.capture());
+            org.assertj.core.api.Assertions.assertThat(input.getValue().faceId()).isEqualTo(발급);
+        }
+
+        @Test
+        @DisplayName("UG-337: faceId 가 UUID 형식이 아니면 400 — 매처 컬럼(36자)을 넘는 값이 DB 까지 가지 않는다")
+        void register_형식이_틀린_id_는_거절() throws Exception {
+            mockMvc.perform(multipart("/api/v2/face")
+                            .file(validJpgFile)
+                            .param("branchName", "branch-A")
+                            .param("faceId", "not-a-uuid"))
+                    .andExpect(status().isBadRequest());
+            org.mockito.Mockito.verifyNoInteractions(registerUseCase);
+        }
+
+        @Test
+        @DisplayName("UG-337: faceId 를 빈 값으로 주면 없는 것으로 본다 — 서버가 발급한다")
+        void register_빈_id_는_없는_것() throws Exception {
+            mockMvc.perform(multipart("/api/v2/face")
+                            .file(validJpgFile)
+                            .param("branchName", "branch-A")
+                            .param("faceId", ""))
+                    .andExpect(status().isOk());
+
+            var input = org.mockito.ArgumentCaptor.forClass(ai.univs.face.application.input.RegisterInput.class);
+            org.mockito.Mockito.verify(registerUseCase).execute(input.capture());
+            org.assertj.core.api.Assertions.assertThat(input.getValue().faceId())
+                    .as("빈 값이면 RegisterUseCase 가 서버 발급(register) 경로로 간다").isEmpty();
+        }
+
         @Test
         @DisplayName("V1과 달리 faceId 파라미터 없이도 성공 (서버에서 생성)")
         void register_noFaceIdParam_returns200() throws Exception {
@@ -274,6 +316,60 @@ class FaceControllerTest {
                     .andExpect(jsonPath("$.success").value(true))
                     .andExpect(jsonPath("$.data.faceId").value("server-generated-id"))
                     .andExpect(jsonPath("$.data.branchName").value("branch-A"));
+        }
+
+        @Test
+        @DisplayName("UG-337: faceId(UUID) 를 주면 그 값이 유스케이스 입력으로 간다")
+        void 호출자_id_를_넘긴다() throws Exception {
+            String 발급 = "0f8fad5b-d9cb-469f-a165-70867728950e";
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\",\"faceId\":\"" + 발급 + "\"}"))
+                    .andExpect(status().isOk());
+
+            var input = org.mockito.ArgumentCaptor.forClass(ai.univs.face.application.input.RegisterByDescriptorInput.class);
+            org.mockito.Mockito.verify(registerByDescriptorUseCase).execute(input.capture());
+            org.assertj.core.api.Assertions.assertThat(input.getValue().faceId()).isEqualTo(발급);
+        }
+
+        @Test
+        @DisplayName("UG-337: faceId 가 UUID 형식이 아니면 400")
+        void 형식이_틀린_id_는_거절() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\",\"faceId\":\"x\"}"))
+                    .andExpect(status().isBadRequest());
+            org.mockito.Mockito.verifyNoInteractions(registerByDescriptorUseCase);
+        }
+
+        /**
+         * 빈 문자열도 "없음" 이다 (반박 리뷰 지적). 빈 id 로 registerWithFaceId 를 부르면 매처가
+         * {@code REQUIRED_FACE_ID} 로 거절해, 지금 성공하는 요청이 실패로 바뀐다.
+         */
+        @Test
+        @DisplayName("UG-337: faceId 를 빈 문자열로 주면 null 로 간다 — 매처가 발급한다")
+        void 빈_id_는_null() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\",\"faceId\":\"\"}"))
+                    .andExpect(status().isOk());
+
+            var input = org.mockito.ArgumentCaptor.forClass(ai.univs.face.application.input.RegisterByDescriptorInput.class);
+            org.mockito.Mockito.verify(registerByDescriptorUseCase).execute(input.capture());
+            org.assertj.core.api.Assertions.assertThat(input.getValue().faceId()).isNull();
+        }
+
+        @Test
+        @DisplayName("UG-337: faceId 를 주지 않으면 null 로 간다 — 매처가 발급한다")
+        void id_가_없으면_null() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\"}"))
+                    .andExpect(status().isOk());
+
+            var input = org.mockito.ArgumentCaptor.forClass(ai.univs.face.application.input.RegisterByDescriptorInput.class);
+            org.mockito.Mockito.verify(registerByDescriptorUseCase).execute(input.capture());
+            org.assertj.core.api.Assertions.assertThat(input.getValue().faceId()).isNull();
         }
 
         @Test
