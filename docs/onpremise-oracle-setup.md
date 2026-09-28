@@ -186,6 +186,33 @@ gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고
 | `FILE_SECRET_KEY` | `file.secret-key` | ✅ | 비밀값 |
 | `FILE_ALGORITHM_WAY` / `FILE_ALGORITHM_MOD` | `file.algorithm.way` / `.mod` | ✅ | 예: `AES` / `AES/ECB/PKCS5Padding` |
 | `FILE_API-ENDPOINT_GET` | `file.api-endpoint.get` | | ⚠️ 이 변수만 이름에 **하이픈**이 들어간다. Spring 의 legacy 환경변수 해석으로 동작하지만 셸에서 `export` 가 안 되므로, 형태를 바꾼다면 실제 컨테이너로 확인할 것 |
+| `GATE_FEATURES_FACE` / `GATE_FEATURES_PALM` | `gate.features.face` / `.palm` | | 기본값 `true`. 납품에 없는 방식은 `false` 로 준다 — **face 전용 납품은 `GATE_FEATURES_PALM=false`** (UG-223, 아래 설명) |
+
+**`GATE_FEATURES_*` (UG-223).** 끈 방식의 **동작** API(등록·삭제·인증·라이브니스)를 컨트롤러에
+닿기 전에 `CMMN-104 FEATURE_NOT_ENABLED`(HTTP 400)로 거절한다. **조회는 막지 않는다** — 그 방식의
+화면(gate-web 의 탭·차트·로그)은 오류 대신 0/빈 값을 보인다. 조회는 palm-service 를 부르지 않고
+gate DB 만 읽기 때문이다.
+
+끄지 않으면 palm-service 가 없는 납품에서 palm 동작을 부를 때마다 원격 호출이 실패하기 **전에**
+실패 이력 행이 남고, 프로젝트 동의가 켜져 있으면 생체 이미지까지 업로드된다(134 서버 실측,
+2026-09-28). 한 번이라도 누르면 palm 대시보드에 건수가 잡힌다.
+
+기동할 때 한 번 읽는다 — 바꾸면 gate-service 를 재기동한다. 꺼져 있으면 기동 로그에
+`PALM 동작 API 가 꺼져 있다 (gate.features.palm=false)` 가 한 줄 남는다.
+
+**값을 비워 두면 기동에 실패한다.** `GATE_FEATURES_PALM=` (빈 문자열·공백)은 기본값으로 떨어지지
+않고 `A null value cannot be assigned to a primitive type` 으로 멈춘다 — 컨테이너가 재시작 루프에
+빠진다. compose 에서 `${GATE_FEATURES_PALM}` 처럼 치환하면 미설정일 때 빈 값이 되므로, 값을 직접
+쓰거나(`"false"`) `${GATE_FEATURES_PALM:-true}` 처럼 기본값을 준다. 켜 둘 방식은 변수를 아예 빼도
+된다.
+
+받아들이는 값: `true`/`false` (대소문자 무관), `yes`/`no`, `on`/`off`, `1`/`0`. 그 밖의 값(`flase`
+같은 오타)도 기동 실패다 — 조용히 켜진 채로 넘어가지 않는다. 반면 **변수 이름** 오타
+(`GATE_FEATURE_PALM` 등)는 아무도 읽지 않아 palm 이 켜진 채로 뜬다. 끈 것을 확인하려면 위 기동 로그
+한 줄을 본다.
+
+값은 compose 환경변수로 준다. gate-config 의 공용 `gate-service.yml` 에 넣지 않는다 — 모든 환경이
+읽는 파일이라 클라우드까지 꺼진다.
 
 ### palm-service / match-server 추가
 
