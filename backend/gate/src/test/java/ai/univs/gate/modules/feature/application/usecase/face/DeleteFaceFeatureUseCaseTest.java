@@ -143,6 +143,30 @@ class DeleteFaceFeatureUseCaseTest {
         assertThat(feature.isDeleted()).isTrue();
     }
 
+    /**
+     * <b>face 에 이미 없으면 gate 도 지워 수렴시킨다</b> (UG-338).
+     *
+     * <p>앞선 삭제가 face 에서는 성공했는데 gate 의 성공 쓰기가 실패했을 때 이 상태가 된다. 예전에는 여기서
+     * 실패로 끝나서, 클라이언트가 몇 번을 다시 불러도 face 는 매번 "없음" 을 주고 gate 에는 특징점이 영원히
+     * 남았다.
+     */
+    @Test
+    @DisplayName("UG-338: face 가 '없음'(INVALID_FACE_ID) 을 주면 gate 도 지우고 삭제 성공으로 남긴다")
+    void 하위에_이미_없으면_수렴() {
+        정상_흐름_스텁();
+        willThrow(new CustomFeignException("MATCH-004", "INVALID_FACE_ID", "no such face"))
+                .given(faceService).deleteFace(any(DeleteFaceFeignRequestDTO.class));
+
+        useCase.execute(input);
+
+        assertThat(feature.isDeleted()).as("원하던 상태 — gate 도 지운다").isTrue();
+        FeatureHistory history = 저장된_이력();
+        assertThat(history.isSuccess()).isTrue();
+        assertThat(history.getFailureType()).isNull();
+        verify(historyRecorder).succeed(history);
+        verify(historyRecorder, org.mockito.Mockito.never()).fail(any(FeatureHistory.class));
+    }
+
     @Test
     @DisplayName("face 가 비즈니스 오류(CustomFeignException)를 내면 이력은 실패로 남고 대상은 지워지지 않는다")
     void 하위_비즈니스_오류() {

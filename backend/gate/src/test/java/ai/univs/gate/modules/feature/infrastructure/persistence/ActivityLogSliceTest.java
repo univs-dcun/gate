@@ -83,7 +83,7 @@ class ActivityLogSliceTest {
                 .description(memo).isDeleted(false).transactionUuid(UUID.randomUUID().toString())
                 .externalKey(externalKey).build();
         em.persist(f);
-        FeatureHistory h = FeatureHistory.register(p, ft, false, null, UUID.randomUUID().toString(), true);
+        FeatureHistory h = FeatureHistory.register(p, ft, false, null, UUID.randomUUID().toString(), true, null);
         h.successRegister(f); em.persist(h);
         시각("FeatureHistory", h.getId(), T0.plusMinutes(minutes)); return h;
     }

@@ -7,12 +7,12 @@ import ai.univs.gate.modules.feature.infrastructure.client.palm.dto.DeletePalmFe
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.utils.TransactionUtil;
+import ai.univs.gate.support.feature.DownstreamAbsence;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -120,7 +120,7 @@ public class ProjectDataPurgeService {
         try {
             deleteFromBiometricService(project, feature);
         } catch (CustomFeignException e) {
-            if (!알려진_없음_응답(e)) {
+            if (!DownstreamAbsence.이미_없다(e)) {
                 log.warn("하위 서비스 삭제 실패로 남겨 둔다. projectId={}, featureId={}, type={}, 사유={}",
                         project.getId(), feature.getFeatureId(), feature.getType(), e.getType());
                 return false;
@@ -169,25 +169,7 @@ public class ProjectDataPurgeService {
         }
     }
 
-    /**
-     * 하위 서비스가 "그런 특징점 없다" 고 답한 경우.
-     *
-     * <p>위의 소프트 삭제 건너뛰기로 대부분 걸러지지만, <b>부분 실패 뒤 재시도</b>가 남는다 —
-     * 하위 삭제는 성공했는데 그 뒤 커밋이 실패하면 행이 살아 있는 채로 다음 실행에 다시 온다.
-     * 그때도 없음 응답을 실패로 세면 수렴하지 않는다.
-     *
-     * <p>face 경로는 코드가 확인됐다. match 가 {@code INVALID_FACE_ID}(MATCH-004)를 던지고
-     * face 가 {@code code}·{@code type} 을 그대로 전파한다.
-     *
-     * <p><b>palm 은 미확인이다.</b> 벤더 모듈의 응답 코드를 확인하지 못했다. palm 쪽은 위
-     * 소프트 삭제 건너뛰기에만 기댄다 — 부분 실패 재시도에서 막히면 로그의 사유를 보고 이
-     * 목록에 추가할 것.
-     */
-    private boolean 알려진_없음_응답(CustomFeignException e) {
-        return 없음을_뜻하는_사유.contains(e.getType());
-    }
-
-    private static final Set<String> 없음을_뜻하는_사유 = Set.of("INVALID_FACE_ID");
+    // "없음" 판정은 DownstreamAbsence 로 옮겼다 (UG-338) — 삭제 유스케이스·등록 정리 잡과 같은 목록을 쓴다.
 
     /**
      * 원본 이미지 파일을 지운다 ({@code FileUtil} 이 {@code ${file.root-path}} 아래 로컬 경로에 쓴다).

@@ -139,12 +139,24 @@ public class FeatureHistory extends BaseEntity {
      * 등록 시도. 하위 서비스를 호출하기 <b>전에</b> 저장한다 — 실패하면 {@link #fail} 로 남긴다.
      * 특징점은 아직 없으므로 스냅샷은 {@link #successRegister} 에서 채운다.
      */
+    /**
+     * 등록 시작 행.
+     *
+     * <p><b>{@code issuedFeatureId} 를 시작 시점에 남긴다</b> (UG-338). gate 가 특징점 id 를 먼저 발급해
+     * 하위 서비스에 그 id 로 등록을 요청한다. 원격 등록은 성공했는데 gate 쪽 성공 쓰기가 실패하면 —
+     * 커넥션을 못 얻거나 배포 중 프로세스가 끊기면 — 하위에는 특징점이 있는데 gate 는 모른다. 이 행이
+     * 그 id 를 들고 있어야 정리 잡({@code OrphanRegistrationReconciler})이 무엇을 지울지 안다.
+     *
+     * <p>성공하면 {@link #successRegister} 가 하위가 돌려준 id 로 덮는다 — 하위 서비스가 호출자 id 를
+     * 무시하는 구버전이어도 이력은 실제 id 를 가리킨다.
+     */
     public static FeatureHistory register(Project project,
                                           FeatureType featureType,
                                           boolean checkLiveness,
                                           String featureImagePath,
                                           String transactionUuid,
-                                          Boolean consentSnapshot) {
+                                          Boolean consentSnapshot,
+                                          String issuedFeatureId) {
         return FeatureHistory.builder()
                 .project(project)
                 .featureType(featureType)
@@ -154,6 +166,7 @@ public class FeatureHistory extends BaseEntity {
                 .featureImagePath(featureImagePath)
                 .transactionUuid(transactionUuid)
                 .consentSnapshot(consentSnapshot)
+                .featureId(issuedFeatureId)
                 .build();
     }
 
@@ -194,6 +207,29 @@ public class FeatureHistory extends BaseEntity {
 
     public void fail(String failureType) {
         this.failureType = failureType;
+        clearIssuedIdIfRegister();
+    }
+
+    /**
+     * 등록이 <b>확정적으로</b> 실패하면 발급 id 를 지운다 (UG-338).
+     *
+     * <p>{@link #fail} 은 하위가 <b>코드를 주며 거절</b>한 경우다 — 그 id 로 등록된 것이 없다. 남겨 두면
+     * 로그 상세가 "등록 실패인데 특징점 id 가 있다" 로 나간다. UG-338 이전의 실패 행도 비어 있었다.
+     *
+     * <p>{@link #failUpstream}(응답 없음·5xx)에서는 <b>지우지 않는다.</b> 읽기 타임아웃은 "하위가 실패했다" 가
+     * 아니라 "결과를 모른다" 다 — 하위는 등록을 끝냈는데 응답만 늦었을 수 있다. 그 id 를 지우면 정리 잡이
+     * 고아를 영영 찾지 못한다.
+     *
+     * <p>그래서 불변식이 하나로 선다. <b>등록 행에 id 가 남아 있고 성공이 아니면 결과를 모른다</b> — 정리
+     * 잡({@code OrphanRegistrationReconciler})이 그 조건 하나로 대상을 고른다. 되돌린 뒤에는
+     * {@link #markReconciled} 가 id 를 지운다.
+     *
+     * <p>삭제 행은 건드리지 않는다 — 그 id 는 지우려던 실제 특징점을 가리킨다.
+     */
+    private void clearIssuedIdIfRegister() {
+        if (this.actionType == FeatureActionType.REGISTER) {
+            this.featureId = null;
+        }
     }
 
     /**
@@ -202,5 +238,20 @@ public class FeatureHistory extends BaseEntity {
     public void failUpstream(RemoteCallException e) {
         this.failureType = e.getErrorType().name();
         this.upstreamStatus = e.getUpstreamStatus();
+        // 등록 행의 발급 id 는 남긴다 — 결과를 모른다 (clearIssuedIdIfRegister 설명 참고).
+    }
+
+    /**
+     * 정리 잡이 결과를 모르던 등록을 되돌린 뒤 닫는다 (UG-338).
+     *
+     * <p>하위에서 지웠거나 하위에 없음을 확인했다. 클라이언트는 이 요청을 실패로 받았으므로 실패로 닫는다 —
+     * 시작 상태로 멈췄던 행에는 {@code INTERNAL_SERVER_ERROR} 를 넣고, 이미 하위 실패 사유가 있는 행은 그대로
+     * 둔다. 발급 id 를 지워 다시 집히지 않게 한다. 무엇을 지웠는지는 정리 잡의 로그에 남는다.
+     */
+    public void markReconciled() {
+        if (this.failureType == null || this.failureType.isEmpty()) {
+            this.failureType = ai.univs.gate.shared.web.enums.ErrorType.INTERNAL_SERVER_ERROR.name();
+        }
+        this.featureId = null;
     }
 }

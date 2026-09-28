@@ -416,4 +416,49 @@ class FaceFeatureServiceTest {
         assertThat(req.getValue().isCheckLiveness()).as("face 요청의 라이브니스").isEqualTo(라이브니스);
         assertThat(req.getValue().isCheckMultiFace()).as("face 요청의 다중 얼굴 검사 — 같은 설정을 따른다").isEqualTo(라이브니스);
     }
+
+    /**
+     * <b>하위로 보낸 id 가 시작 이력에 남은 id 와 같다</b> (UG-338).
+     *
+     * <p>원격 등록 뒤 gate 쓰기가 실패하면 정리 잡이 시작 이력의 id 로 하위를 지운다. 둘이 다르면 엉뚱한 것을
+     * 지우거나 고아를 못 찾는다. 시작 이력 객체는 성공 뒤 응답 id 로 덮이므로 {@code start} 시점의 값을
+     * 따로 잡는다.
+     */
+    @Test
+    @DisplayName("UG-338: 발급한 id 를 시작 이력에 남기고 같은 id 로 하위에 등록한다")
+    void 발급_id_를_남기고_그_id_로_등록() {
+        givenCommonFlowWithoutStart(true, true, UPLOADED_IMAGE_PATH);
+        java.util.concurrent.atomic.AtomicReference<String> 시작_id = new java.util.concurrent.atomic.AtomicReference<>();
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> {
+            시작_id.set(((FeatureHistory) inv.getArgument(0)).getFeatureId());
+            return inv.getArgument(0);
+        });
+        ArgumentCaptor<CreateFaceFeignRequestDTO> req = ArgumentCaptor.forClass(CreateFaceFeignRequestDTO.class);
+        given(faceService.createFace(req.capture())).willAnswer(inv -> ((CreateFaceFeignRequestDTO) inv.getArgument(0)).getFaceId());
+        given(biometricFeatureRepository.save(any(BiometricFeature.class))).willAnswer(inv -> inv.getArgument(0));
+
+        faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
+
+        assertThat(시작_id.get()).as("시작 이력에 발급 id 가 있어야 정리 잡이 무엇을 지울지 안다")
+                .isNotBlank().matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+        assertThat(req.getValue().getFaceId()).as("하위로 보낸 id").isEqualTo(시작_id.get());
+    }
+
+    /**
+     * 하위가 호출자 id 를 무시하는 구버전(UG-337 이전)이면 돌려받은 id 를 쓴다. 이력과 특징점은 <b>실제</b>
+     * id 를 가리켜야 한다 — 발급 id 를 쓰면 gate 가 존재하지 않는 특징점을 가리킨다.
+     */
+    @Test
+    @DisplayName("UG-338: 하위가 다른 id 를 돌려주면(구버전) 그 실제 id 로 저장한다")
+    void 하위가_id_를_무시하면_실제_id() {
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willReturn("server-issued-id");
+        ArgumentCaptor<BiometricFeature> saved = ArgumentCaptor.forClass(BiometricFeature.class);
+        given(biometricFeatureRepository.save(saved.capture())).willAnswer(inv -> inv.getArgument(0));
+
+        faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
+
+        assertThat(saved.getValue().getFeatureId()).isEqualTo("server-issued-id");
+        assertThat(capturedFeatureHistory().getFeatureId()).isEqualTo("server-issued-id");
+    }
 }
