@@ -54,8 +54,9 @@ class ErrorTypeClassificationTest {
             // Swagger 공통 — 프레임워크 예외 핸들러가 쓴다
             "UNAUTHORIZED", "NEED_SERVICE_ROLE", "NOT_FOUND", "METHOD_NOT_ALLOWED",
             "INTERNAL_SERVER_ERROR",
-            // Common
+            // Common — FEATURE_NOT_ENABLED(UG-223)는 4xx: 배포가 제공하지 않는 기능을 부른 것이지 우리 쪽 장애가 아니다
             "INVALID_PAGE_COUNT", "INVALID_TRANSACTION_UUID_LENGTH", "REQUIRED_TRANSACTION_UUID",
+            "FEATURE_NOT_ENABLED",
             // JWT
             "EXPIRATION_TOKEN", "INVALID_TOKEN",
             // Project
