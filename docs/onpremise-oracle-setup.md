@@ -187,6 +187,7 @@ gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고
 | `FILE_ALGORITHM_WAY` / `FILE_ALGORITHM_MOD` | `file.algorithm.way` / `.mod` | ✅ | 예: `AES` / `AES/ECB/PKCS5Padding` |
 | `FILE_API-ENDPOINT_GET` | `file.api-endpoint.get` | | ⚠️ 이 변수만 이름에 **하이픈**이 들어간다. Spring 의 legacy 환경변수 해석으로 동작하지만 셸에서 `export` 가 안 되므로, 형태를 바꾼다면 실제 컨테이너로 확인할 것 |
 | `GATE_FEATURES_FACE` / `GATE_FEATURES_PALM` | `gate.features.face` / `.palm` | | 기본값 `true`. 납품에 없는 방식은 `false` 로 준다 — **face 전용 납품은 `GATE_FEATURES_PALM=false`** (UG-223, 아래 설명) |
+| `GATE_RECONCILE_REGISTRATION_ENABLED` | `gate.reconcile.registration.enabled` | | 기본값 `true`. 결과를 모르는 등록을 5분마다 되돌리는 정리 잡 (UG-338, 아래 설명). 보통은 주지 않는다 |
 
 **`GATE_FEATURES_*` (UG-223).** 끈 방식의 **동작** API(등록·삭제·인증·라이브니스)를 컨트롤러에
 닿기 전에 `CMMN-104 FEATURE_NOT_ENABLED`(HTTP 400)로 거절한다. **조회는 막지 않는다** — 그 방식의
@@ -213,6 +214,20 @@ gate DB 만 읽기 때문이다.
 
 값은 compose 환경변수로 준다. gate-config 의 공용 `gate-service.yml` 에 넣지 않는다 — 모든 환경이
 읽는 파일이라 클라우드까지 꺼진다.
+
+**`GATE_RECONCILE_REGISTRATION_ENABLED` (UG-338).** 원격 등록(face·palm)은 성공했는데 gate 쪽 기록이
+실패하면 — 커넥션을 못 얻거나, **배포 중 프로세스가 끊기면** — 하위에는 특징점이 있는데 gate 에는
+없는 고아가 생긴다. 고아가 있으면 그 사람은 identify 가 실패하고(`INVALID_USER`), 다시 등록하려 해도
+중복으로 거절된다. 정리 잡이 5분마다 **10분~24시간 전의 결과를 모르는 등록**을 찾아 하위에서 지운다.
+
+- 기본값이 켜짐이다. 지우는 것은 gate 가 기록하지 못한 것뿐이고, 클라이언트는 그 요청을 이미 실패로
+  받았다. 끄면 위의 증상이 그대로 남는다.
+- gate 에 그 특징점이 **있으면 절대 지우지 않는다**(안전장치).
+- 되돌리면 gate 로그에 `결과를 모르는 등록을 되돌렸다. historyId=…` WARN 이 남는다. 배포 직후에
+  몇 건 보이는 것은 정상이다(끊긴 요청의 정리).
+- face·palm 이 호출자 발급 id 를 받는 버전(UG-337, face `20260928-b2473da` · palm `20260928-9899ae4` 이후)
+  이어야 한다. 그보다 옛 face·palm 이면 gate 로그에 `… 가 발급 id 를 무시했다 (UG-337 미배포?)` WARN 이
+  남고, 그 요청의 고아는 정리하지 못한다.
 
 ### palm-service / match-server 추가
 

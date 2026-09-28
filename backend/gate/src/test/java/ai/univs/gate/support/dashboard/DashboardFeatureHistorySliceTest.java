@@ -93,7 +93,7 @@ class DashboardFeatureHistorySliceTest {
     }
 
     private FeatureHistory 등록(FeatureType type, String featureId, LocalDateTime at, boolean success) {
-        FeatureHistory h = FeatureHistory.register(project, type, false, null, UUID.randomUUID().toString(), true);
+        FeatureHistory h = FeatureHistory.register(project, type, false, null, UUID.randomUUID().toString(), true, null);
         if (success) {
             h.successRegister(특징점(type, featureId));
         } else {
