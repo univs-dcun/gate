@@ -12,6 +12,7 @@ import ai.univs.face.shared.exception.CustomFeignException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -45,7 +46,9 @@ public class RegisterByDescriptorUseCase {
             // 특징점 등록 — 호출자가 id 를 주면 그 id 로, 아니면 매처가 발급한다 (UG-337).
             // 이미지 등록(RegisterUseCase)과 같은 분기다. 매처는 같은 브랜치에 이미 있는 id 를
             // ALREADY_REGISTERED_DESCRIPTOR 로 거절한다 — 덮어쓰지 않는다.
-            var registerData = input.faceId() != null
+            // 빈 값은 "없음" 이다 — 이미지 등록(RegisterUseCase)과 같은 판정을 쓴다. DTO 가 null 로 바꿔 주지만
+            // 그 한 겹에 기대지 않는다(반박 리뷰: 그 한 줄을 빼도 테스트가 초록이었다).
+            var registerData = StringUtils.hasText(input.faceId())
                     ? matchFeign.registerWithFaceId(new RegisterFeignRequestDTO(
                             input.branchName(), input.faceId(), input.descriptor())).getData()
                     : matchFeign.register(new RegisterV2FeignRequestDTO(

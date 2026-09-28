@@ -131,6 +131,17 @@ class DescriptorUseCaseTest {
         }
 
         @Test
+        @DisplayName("UG-337: 입력의 faceId 가 빈 문자열이면 매처가 발급하는 경로로 간다")
+        void 빈_id_는_서버_발급() {
+            given(matchFeign.register(any(RegisterV2FeignRequestDTO.class)))
+                    .willReturn(new FeignResponseApi<>(true, new MatchFeignResponseDTO(BRANCH, "issued-face-id"), null));
+
+            useCase.execute(new RegisterByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT, ""));
+
+            org.mockito.Mockito.verify(matchFeign, org.mockito.Mockito.never()).registerWithFaceId(any());
+        }
+
+        @Test
         @DisplayName("매처 실패 — 실패 이력을 남기고 InvalidFaceModuleException 으로 변환한다")
         void 매처_실패() {
             given(matchFeign.register(any(RegisterV2FeignRequestDTO.class)))

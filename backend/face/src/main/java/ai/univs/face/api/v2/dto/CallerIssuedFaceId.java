@@ -12,8 +12,15 @@ package ai.univs.face.api.v2.dto;
  *
  * <p><b>UUID 형식만 받는다.</b> 매처의 {@code descriptor.face_id} 가 {@code VARCHAR(36)} 이라 그보다
  * 긴 값은 검증을 통과해도 DB 에서 터진다(v1 의 {@code faceId} 는 255자까지 받아 이 문제가 있다).
- * 같은 브랜치에 이미 있는 id 는 매처가 {@code ALREADY_REGISTERED_DESCRIPTOR} 로 거절한다 — 덮어쓰지
- * 않는다.
+ *
+ * <p><b>중복 id.</b> 같은 브랜치에 이미 있는 id 로 <b>차례로</b> 등록하면 매처가
+ * {@code ALREADY_REGISTERED_DESCRIPTOR} 로 거절한다 — 덮어쓰지 않는다. 그러나 <b>동시에</b> 두 요청이
+ * 오면 막지 못한다. 매처의 {@code descriptor} 에 {@code (branch_id, face_id)} 유니크 제약이 없고
+ * {@code RegisterService} 가 조회한 뒤 저장하기 때문이다(반박 리뷰가 postgres 로 재현했다). 두 행이
+ * 생기면 그 id 로 하는 삭제·검증이 영구히 실패한다.
+ *
+ * <p>gate 는 요청마다 새 UUID 를 발급하고 같은 id 로 다시 등록하지 않으므로 지금은 그 경로가 없다.
+ * 같은 id 를 재사용하는 호출자가 생기기 전에 매처에 유니크 제약을 넣어야 한다.
  */
 final class CallerIssuedFaceId {
 
@@ -23,7 +30,7 @@ final class CallerIssuedFaceId {
 
     static final String DESCRIPTION =
             "호출자가 발급한 얼굴 식별자(UUID). 주지 않으면 서버가 발급한다. "
-                    + "같은 브랜치에 이미 있는 값이면 등록이 거절된다 (UG-337)";
+                    + "요청마다 새 값을 쓸 것 — 같은 값을 동시에 두 번 보내면 막지 못한다 (UG-337)";
 
     private CallerIssuedFaceId() {
     }

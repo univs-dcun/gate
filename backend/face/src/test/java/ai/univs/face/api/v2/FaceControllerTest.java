@@ -342,6 +342,23 @@ class FaceControllerTest {
             org.mockito.Mockito.verifyNoInteractions(registerByDescriptorUseCase);
         }
 
+        /**
+         * 빈 문자열도 "없음" 이다 (반박 리뷰 지적). 빈 id 로 registerWithFaceId 를 부르면 매처가
+         * {@code REQUIRED_FACE_ID} 로 거절해, 지금 성공하는 요청이 실패로 바뀐다.
+         */
+        @Test
+        @DisplayName("UG-337: faceId 를 빈 문자열로 주면 null 로 간다 — 매처가 발급한다")
+        void 빈_id_는_null() throws Exception {
+            mockMvc.perform(post("/api/v2/face/descriptor")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"branchName\":\"branch-A\",\"descriptor\":\"AAAAAAAAAAAA\",\"faceId\":\"\"}"))
+                    .andExpect(status().isOk());
+
+            var input = org.mockito.ArgumentCaptor.forClass(ai.univs.face.application.input.RegisterByDescriptorInput.class);
+            org.mockito.Mockito.verify(registerByDescriptorUseCase).execute(input.capture());
+            org.assertj.core.api.Assertions.assertThat(input.getValue().faceId()).isNull();
+        }
+
         @Test
         @DisplayName("UG-337: faceId 를 주지 않으면 null 로 간다 — 매처가 발급한다")
         void id_가_없으면_null() throws Exception {
