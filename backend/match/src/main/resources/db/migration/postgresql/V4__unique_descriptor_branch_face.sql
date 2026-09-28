@@ -1,0 +1,14 @@
+-- UG-340: 같은 브랜치에 같은 face_id 가 두 번 생기지 않게 한다.
+--
+-- 등록은 "조회한 뒤 저장" 이라 동시 요청 둘이 모두 조회를 통과하면 두 행이 생긴다. 그 뒤로는
+-- findByFaceIdAndBranch 가 결과 둘을 받아 예외를 던진다 — 그 특징점을 API 로 지우지도 고치지도
+-- 못한다. 제약이 두 번째 저장을 막는다.
+--
+-- 이미 중복이 있으면 이 파일은 실패한다(의도). 어떤 행을 남길지는 데이터를 보고 사람이 정한다.
+-- 적용 전 확인 쿼리: docs/onpremise-oracle-setup.md 「match V4·V5 적용 전 중복 확인」.
+--
+-- 파일 하나에 DDL 하나다 (V5 와 나눈 이유): Oracle 은 DDL 이 트랜잭션에 묶이지 않아, 한 파일에 둘을
+-- 넣으면 첫 문장만 적용된 채 실패로 남을 수 있다. 방언 쌍둥이를 같은 모양으로 둔다.
+--
+-- (branch_id, face_id) 순서: countByBranch 도 같은 인덱스의 앞부분을 쓴다.
+ALTER TABLE "descriptor" ADD CONSTRAINT uk_descriptor_branch_face UNIQUE (branch_id, face_id);
