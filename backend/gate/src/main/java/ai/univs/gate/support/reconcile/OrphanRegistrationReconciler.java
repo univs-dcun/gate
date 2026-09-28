@@ -77,12 +77,16 @@ public class OrphanRegistrationReconciler {
     /** 이보다 오래된 행은 다시 집지 않는다 — 정리하지 못한 행을 무한히 반복하지 않는다. */
     static final Duration 다시_보지_않는_나이 = Duration.ofHours(24);
 
-    /** 실행당 처리할 행 수. */
+    /** 한 번에 읽는 행 수. 페이지가 꽉 차면 시간 한도 안에서 다음 페이지를 이어 읽는다. */
     static final int 실행당_상한 = 50;
 
     /**
      * 실행당 시간 한도. 스케줄러는 기본 스레드 하나를 퍼지 잡들과 나눠 쓴다 — 하위가 느리면 50행 × 10초로
      * 한 실행이 8분 넘게 스레드를 쥘 수 있다. 한도를 넘으면 남은 행은 다음 실행(커서가 이어받는다)에 넘긴다.
+     *
+     * <p>한도 안에서는 페이지를 계속 읽는다 (UG-338 2차 반박 리뷰). 한 실행에 한 페이지만 보면 처리량이
+     * 하루 14,400행에 묶인다 — match 장애가 몇 시간 이어져 후보가 수만 행이 되면 한 바퀴가 24시간을 넘기고,
+     * 한 번도 보지 못한 행이 창 밖으로 나간다. "없음" 응답은 수 ms 라 한 실행에 수천 행을 볼 수 있다.
      */
     static final Duration 실행당_시간_한도 = Duration.ofMinutes(2);
 
@@ -110,33 +114,47 @@ public class OrphanRegistrationReconciler {
         }
         Instant 시작 = clock.instant();
         LocalDateTime now = LocalDateTime.ofInstant(시작, ZoneOffset.UTC);
-        List<FeatureHistory> 대상 = repository.findStaleRegistrations(
-                now.minus(결과를_모른다고_볼_시간), now.minus(다시_보지_않는_나이), cursor, 실행당_상한);
+        LocalDateTime staleBefore = now.minus(결과를_모른다고_볼_시간);
+        LocalDateTime oldest = now.minus(다시_보지_않는_나이);
 
         int 본 = 0;
         int 닫음 = 0;
-        for (FeatureHistory row : 대상) {
-            if (Duration.between(시작, clock.instant()).compareTo(실행당_시간_한도) > 0) {
+        boolean 한도_초과 = false;
+        while (!한도_초과) {
+            List<FeatureHistory> 페이지 = repository.findStaleRegistrations(staleBefore, oldest, cursor, 실행당_상한);
+            for (FeatureHistory row : 페이지) {
+                if (시간_초과(시작)) {
+                    한도_초과 = true;
+                    break;
+                }
+                본++;
+                cursor = row.getId();
+                try {
+                    if (reconcileOne(row)) {
+                        닫음++;
+                    }
+                } catch (RuntimeException e) {
+                    // 존재 확인·닫기의 DB 예외. 한 행 때문에 이 실행의 나머지를 버리지 않는다.
+                    log.warn("고아 등록 정리 중 오류 — 다음 바퀴에서 다시 본다. historyId={}, 원인={}",
+                            row.getId(), e.getClass().getSimpleName());
+                }
+            }
+            if (한도_초과) {
+                break; // 커서는 마지막으로 본 행에 둔다 — 다음 실행이 이어받는다
+            }
+            if (페이지.size() < 실행당_상한) {
+                cursor = 0; // 한 바퀴를 다 돌았다
                 break;
             }
-            본++;
-            cursor = row.getId();
-            try {
-                if (reconcileOne(row)) {
-                    닫음++;
-                }
-            } catch (RuntimeException e) {
-                // 존재 확인·닫기의 DB 예외. 한 행 때문에 이 실행의 나머지를 버리지 않는다.
-                log.warn("고아 등록 정리 중 오류 — 다음 바퀴에서 다시 본다. historyId={}, 원인={}",
-                        row.getId(), e.getClass().getSimpleName());
-            }
+            한도_초과 = 시간_초과(시작);
         }
-        if (본 == 대상.size() && 대상.size() < 실행당_상한) {
-            cursor = 0;
+        if (본 > 0) {
+            log.info("결과를 모르는 등록 정리. 본={}, 닫음={}, 남음={}", 본, 닫음, 본 - 닫음);
         }
-        if (!대상.isEmpty()) {
-            log.info("결과를 모르는 등록 정리. 대상={}, 본={}, 닫음={}, 남음={}", 대상.size(), 본, 닫음, 본 - 닫음);
-        }
+    }
+
+    private boolean 시간_초과(Instant 시작) {
+        return Duration.between(시작, clock.instant()).compareTo(실행당_시간_한도) > 0;
     }
 
     /**
@@ -158,7 +176,7 @@ public class OrphanRegistrationReconciler {
         try {
             deleteDownstream(project, row);
         } catch (CustomFeignException e) {
-            if (!DownstreamAbsence.이미_없다(e)) {
+            if (!DownstreamAbsence.등록이_닿지_않았다(e)) {
                 log.warn("고아 등록 삭제 실패 — 다음 실행에서 재시도한다. historyId={}, featureId={}, 사유={}",
                         row.getId(), row.getFeatureId(), e.getType());
                 return false;

@@ -40,8 +40,10 @@ import org.hibernate.annotations.Synchronize;
  * <p><b>성공하지 않은 등록의 {@code feature_id} 는 가린다</b> (UG-338 반박 리뷰). UG-338 부터 gate 가 id 를
  * 먼저 발급해 시작 행에 남긴다 — 결과를 모르는 등록을 정리 잡이 찾게 하려는 내부 값이다. 가리지 않으면
  * 실패한 등록이 "특징점 id 가 있다" 로 나가고, 정리 잡이 닫은 뒤에는 같은 조회가 다른 값을 준다. UG-338
- * 이전처럼 실패한 등록은 비어 있다. 성공 판정은 {@code feature_seq} 로 한다 — 등록 행에서는
- * {@code successRegister} 만 그 값을 채우고, 불리언 리터럴은 DB 마다 달라 피했다.
+ * 이전처럼 실패한 등록은 비어 있다. 성공 판정은 {@code success} 를 정수로 CAST 해 본다 — 불리언 리터럴은
+ * DB 마다 달라 피했다(반박 리뷰가 PG16·Oracle 23ai 컨테이너에서 실측, H2 는 슬라이스 테스트). {@code feature_seq IS NULL} 로 보면 안 된다:
+ * V26 백필은 원본 특징점을 찾지 못한 옛 성공 등록의 {@code feature_seq} 를 비워 뒀고, 그 행의 id 까지
+ * 가려진다 (UG-338 2차 반박 리뷰).
  *
  * <p>{@code id} 는 두 테이블이 공유하는 사건 시퀀스 {@code activity_seq} (UG-328, V29) — 통합 목록에서 유일하고
  * 시간순으로 단조 증가한다. 응답의 {@code sequence} 가 이것이고, {@code matchingHistoryId} 는 원 테이블의
@@ -85,7 +87,7 @@ import org.hibernate.annotations.Synchronize;
                fh.created_at,
                fh.check_liveness,
                fh.success,
-               CASE WHEN fh.action_type = 'REGISTER' AND fh.feature_seq IS NULL THEN NULL
+               CASE WHEN fh.action_type = 'REGISTER' AND CAST(fh.success AS INTEGER) = 0 THEN NULL
                     ELSE fh.feature_id END,
                fh.feature_seq,
                fh.user_description,

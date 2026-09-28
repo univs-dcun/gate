@@ -167,6 +167,23 @@ class DeleteFaceFeatureUseCaseTest {
         verify(historyRecorder, org.mockito.Mockito.never()).fail(any(FeatureHistory.class));
     }
 
+    /**
+     * UG-338 2차 반박 리뷰: 성공 등록된 특징점을 지우는데 브랜치가 없다는 답은 match 데이터 유실이나 face 가 다른
+     * match 를 보는 설정 오류다. "없음" 으로 받으면 gate 만 지우고 원래 match 에 템플릿이 남는다 — 실패로 드러낸다.
+     */
+    @Test
+    @DisplayName("UG-338: 브랜치가 없다(EMPTY_GALLERY)는 답은 수렴시키지 않는다 — 실패로 남고 대상은 살아 있다")
+    void 브랜치_없음은_수렴하지_않는다() {
+        정상_흐름_스텁();
+        CustomFeignException e = new CustomFeignException("MATCH-001", "EMPTY_GALLERY", "no branch");
+        willThrow(e).given(faceService).deleteFace(any(DeleteFaceFeignRequestDTO.class));
+
+        assertThatThrownBy(() -> useCase.execute(input)).isSameAs(e);
+
+        assertThat(저장된_이력().isSuccess()).isFalse();
+        assertThat(feature.isDeleted()).isFalse();
+    }
+
     @Test
     @DisplayName("face 가 비즈니스 오류(CustomFeignException)를 내면 이력은 실패로 남고 대상은 지워지지 않는다")
     void 하위_비즈니스_오류() {

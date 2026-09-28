@@ -16,16 +16,19 @@ import org.junit.jupiter.params.provider.CsvSource;
 @DisplayName("UG-338: 하위의 '없음' 판정")
 class DownstreamAbsenceTest {
 
-    @ParameterizedTest(name = "{0}/{1} → {2}")
+    @ParameterizedTest(name = "{0}/{1} → 이미_없다={2}, 등록이_닿지_않았다={3}")
     @CsvSource({
-            "MATCH-004, INVALID_FACE_ID, true",
-            // 브랜치가 없다 — 첫 등록이 match 에 닿지 않은 새 프로젝트 (반박 리뷰)
-            "MATCH-001, EMPTY_GALLERY, true",
-            "SWAGGER-005, INTERNAL_SERVER_ERROR, false",
-            "FACE-404, FACE_NOT_FOUND, false",
-            "PALM-008, PALM_NOT_FOUND, false",
+            "MATCH-004, INVALID_FACE_ID, true, true",
+            // 브랜치가 없다 — 정리 잡에서만 없음이다 (2차 반박 리뷰). 성공 등록된 특징점의 삭제·퍼지에서는
+            // match 데이터 유실이나 설정 오류를 뜻하므로 실패로 드러나야 한다.
+            "MATCH-001, EMPTY_GALLERY, false, true",
+            "SWAGGER-005, INTERNAL_SERVER_ERROR, false, false",
+            "FACE-404, FACE_NOT_FOUND, false, false",
+            "PALM-008, PALM_NOT_FOUND, false, false",
     })
-    void 판정(String code, String type, boolean 없다) {
-        assertThat(DownstreamAbsence.이미_없다(new CustomFeignException(code, type, "m"))).isEqualTo(없다);
+    void 판정(String code, String type, boolean 없다, boolean 닿지_않았다) {
+        CustomFeignException e = new CustomFeignException(code, type, "m");
+        assertThat(DownstreamAbsence.이미_없다(e)).isEqualTo(없다);
+        assertThat(DownstreamAbsence.등록이_닿지_않았다(e)).isEqualTo(닿지_않았다);
     }
 }

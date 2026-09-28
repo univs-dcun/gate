@@ -4,7 +4,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
-import ai.univs.gate.shared.exception.GlobalExceptionHandler;
+import ai.univs.gate.shared.exception.UpstreamErrorTypes;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -205,7 +205,7 @@ public class FeatureHistory extends BaseEntity {
 
     public void fail(String failureType) {
         this.failureType = failureType;
-        if (!GlobalExceptionHandler.isUpstreamServerError(failureType)) {
+        if (!UpstreamErrorTypes.isServerError(failureType)) {
             clearIssuedIdIfRegister();
         }
     }
@@ -219,8 +219,7 @@ public class FeatureHistory extends BaseEntity {
      * <p><b>단, 하위가 자기 오류를 알린 유형({@code INTERNAL_SERVER_ERROR} 등)은 예외다</b> (UG-338 반박
      * 리뷰). face·palm 은 그 아래 모듈(match·SmartFace)의 5xx 를 HTTP 400 + 유형으로 바꿔 돌려주므로
      * gate 에는 {@code CustomFeignException} 으로 온다. match 가 등록을 커밋한 뒤 응답 도중 실패했을 수
-     * 있다 — 이것도 "결과를 모른다" 다. 판정 기준은 로그 분류와 같은
-     * {@link GlobalExceptionHandler#isUpstreamServerError} 를 쓴다.
+     * 있다 — 이것도 "결과를 모른다" 다. 판정 기준은 로그 분류와 같은 {@link UpstreamErrorTypes} 를 쓴다.
      *
      * <p>{@link #failUpstream}(응답 없음·5xx)에서는 <b>지우지 않는다.</b> 읽기 타임아웃은 "하위가 실패했다" 가
      * 아니라 "결과를 모른다" 다 — 하위는 등록을 끝냈는데 응답만 늦었을 수 있다. 그 id 를 지우면 정리 잡이

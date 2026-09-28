@@ -245,10 +245,11 @@ class OrphanRegistrationReconcilerTest {
 
     /**
      * <b>커서로 한 바퀴씩 돈다</b> (UG-338 반박 리뷰). 매번 앞에서부터 집으면 닫히지 않는 행이 상한만큼 쌓였을
-     * 때 뒤의 고아에 차례가 오지 않는다.
+     * 때 뒤의 고아에 차례가 오지 않는다. 페이지가 꽉 차면 시간 한도 안에서 다음 페이지를 이어 읽는다
+     * (2차 리뷰) — 한 실행에 한 페이지면 장애 뒤 후보가 수만 행일 때 한 바퀴가 24시간을 넘긴다.
      */
     @Test
-    @DisplayName("상한만큼 나오면 다음 실행은 마지막 id 뒤부터, 모자라면 처음부터 다시 본다")
+    @DisplayName("페이지가 꽉 차면 같은 실행에서 마지막 id 뒤를 이어 읽고, 모자라면 다음 실행은 처음부터 본다")
     void 커서() {
         켠다();
         given(repository.featureExists(any())).willReturn(true); // 전부 남는 행 — 닫히지 않아도 커서는 나아간다
@@ -258,11 +259,29 @@ class OrphanRegistrationReconcilerTest {
                 .willReturn(행들(51, 3));
 
         reconciler.reconcile();
+        verify(repository).findStaleRegistrations(any(), any(), eq(0L), eq(OrphanRegistrationReconciler.실행당_상한));
+        verify(repository).findStaleRegistrations(any(), any(), eq(50L), eq(OrphanRegistrationReconciler.실행당_상한));
+        verify(repository, times(53)).featureExists(any());
+        assertThat(ReflectionTestUtils.getField(reconciler, "cursor")).as("한 바퀴를 다 돌면 되감는다").isEqualTo(0L);
+
+        reconciler.reconcile();
+        verify(repository, times(2)).findStaleRegistrations(any(), any(), eq(0L), anyInt());
+    }
+
+    /** 시간 한도로 멈추면 다음 실행은 멈춘 곳에서 이어 간다 — 처음으로 돌아가면 뒤의 행에 차례가 오지 않는다. */
+    @Test
+    @DisplayName("시간 한도로 멈춘 다음 실행은 멈춘 곳 뒤부터 읽는다")
+    void 멈춘_곳에서_잇는다() {
+        켠다();
+        ReflectionTestUtils.setField(reconciler, "clock", 흐르는_시계(Duration.ofSeconds(50)));
+        given(repository.featureExists(any())).willReturn(true);
+        given(repository.findStaleRegistrations(any(), any(), eq(0L), anyInt())).willReturn(행들(1, 10));
+        given(repository.findStaleRegistrations(any(), any(), eq(2L), anyInt())).willReturn(List.of());
+
         reconciler.reconcile();
         reconciler.reconcile();
 
-        verify(repository, times(2)).findStaleRegistrations(any(), any(), eq(0L), eq(OrphanRegistrationReconciler.실행당_상한));
-        verify(repository).findStaleRegistrations(any(), any(), eq(50L), anyInt());
+        verify(repository).findStaleRegistrations(any(), any(), eq(2L), anyInt());
     }
 
     /** 존재 확인이나 닫기에서 DB 예외가 나도 그 실행의 나머지 행은 처리한다. */

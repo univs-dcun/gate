@@ -341,4 +341,24 @@ class ActivityLogSliceTest {
                 .extracting(ActivityLog::getSourceId, ActivityLog::getFeatureId)
                 .contains(tuple(성공.getId(), "fid-ok"), tuple(삭제실패.getId(), "fid-ok"));
     }
+
+    /**
+     * UG-338 2차 반박 리뷰: V26 백필은 원본 특징점을 찾지 못한 옛 성공 등록의 feature_seq 를 비워 뒀다. 가림
+     * 조건을 feature_seq 로 잡으면 이 행의 id 까지 사라진다 — 성공 여부로 가린다.
+     */
+    @Test
+    @DisplayName("UG-338: feature_seq 가 비어 있는 옛 성공 등록의 id 는 가리지 않는다")
+    void 옛_성공_등록은_가리지_않는다() {
+        FeatureHistory 옛 = FeatureHistory.register(project, FeatureType.FACE, false, null,
+                UUID.randomUUID().toString(), true, "legacy-fid");
+        org.springframework.test.util.ReflectionTestUtils.setField(옛, "success", true);
+        em.persist(옛);
+        시각("FeatureHistory", 옛.getId(), T0);
+
+        assertThat(repo.findLatestByProjectIdAndTransactionUuid(project.getId(), 옛.getTransactionUuid()))
+                .isPresent().get().satisfies(l -> {
+                    assertThat(l.getFeatureSeq()).isNull();
+                    assertThat(l.getFeatureId()).isEqualTo("legacy-fid");
+                });
+    }
 }
