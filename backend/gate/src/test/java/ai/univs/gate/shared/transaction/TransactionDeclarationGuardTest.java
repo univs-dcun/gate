@@ -238,4 +238,105 @@ class TransactionDeclarationGuardTest {
                         + "위와 같은 문제가 난다")
                 .isIn((Object[]) 트랜잭션이_열리는_전파);
     }
+
+    /**
+     * <b>등록·삭제 경로는 메서드 전체에 트랜잭션을 걸지 않는다</b> (UG-336).
+     *
+     * <p>위의 가드들과 방향이 <b>반대</b>다 — 여기는 선언이 <b>생기는</b> 것을 막는다.
+     *
+     * <p>메서드 전체가 트랜잭션이면 첫 조회에서 잡은 커넥션을 하위 서비스 원격 호출 내내
+     * 붙들고, 그 안에서 {@code HistoryRecorder.start}({@code REQUIRES_NEW})가 두 번째 커넥션을
+     * 요구한다. 기본 풀 10에서 동시 요청 10건이 각자 첫 번째를 쥔 채 두 번째를 기다리면 아무도
+     * 진행하지 못한다. 매칭 경로는 UG-293, 등록·삭제 경로는 UG-336 에서 뗐다.
+     *
+     * <p>단위 테스트로는 잡을 수 없다 — Mockito 테스트에는 스프링 프록시가 없어 선언이 있든 없든
+     * 똑같이 돈다. "지연 로딩이 터지니 트랜잭션을 걸자" 는 수정이 가장 흔한 되돌림 경로다(UG-335
+     * 가 실제로 {@code CreatePalmFeatureUseCase} 에 그렇게 붙였다). 필요한 지연 연관은
+     * {@code ApiKeyService} 가 자기 경계 안에서 초기화한다.
+     *
+     * <p>호출 유스케이스도 함께 본다. 서비스에서 떼도 그것을 부르는 쪽이 감싸면 같은 문제가 된다.
+     */
+    @Test
+    @DisplayName("UG-336: 등록·삭제 경로와 그 호출 유스케이스에는 메서드 전체 트랜잭션이 없다")
+    void 등록_삭제_경로는_전체_트랜잭션이_없다() {
+        List<Class<?>> 대상 = List.of(
+                ai.univs.gate.support.feature.face.FaceFeatureService.class,
+                ai.univs.gate.support.feature.palm.PalmFeatureService.class,
+                ai.univs.gate.modules.feature.application.usecase.face.DeleteFaceFeatureUseCase.class,
+                ai.univs.gate.modules.feature.application.usecase.palm.DeletePalmFeatureUseCase.class,
+                ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureUseCase.class,
+                ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureByDescriptorUseCase.class,
+                ai.univs.gate.modules.feature.application.usecase.palm.CreatePalmFeatureUseCase.class,
+                ai.univs.gate.facade.demo.application.usecase.CreateFaceFeatureByApiKeyUseCase.class,
+                ai.univs.gate.facade.demo.application.usecase.CreatePalmFeatureByApiKeyUseCase.class);
+        List<String> 이름 = List.of("createFaceFeature", "createFaceFeatureByDescriptor",
+                "createPalmFeature", "execute");
+
+        List<String> 위반 = new java.util.ArrayList<>();
+        List<String> 검사한_메서드 = new java.util.ArrayList<>();
+        for (Class<?> c : 대상) {
+            for (Method m : c.getDeclaredMethods()) {
+                if (!이름.contains(m.getName()) || m.isSynthetic()) {
+                    continue;
+                }
+                검사한_메서드.add(c.getSimpleName() + "." + m.getName());
+                if (transactionalOf(m) != null) {
+                    위반.add(c.getSimpleName() + "." + m.getName());
+                }
+            }
+        }
+
+        // 개수가 아니라 목록을 단언한다. 이름이 바뀌면 검사에서 조용히 빠지는데, 그러면 이 가드가
+        // 공회전한다. 새 진입점을 추가했다면 여기에도 추가할 것.
+        assertThat(검사한_메서드).containsExactlyInAnyOrder(
+                "FaceFeatureService.createFaceFeature",
+                "FaceFeatureService.createFaceFeatureByDescriptor",
+                "PalmFeatureService.createPalmFeature",
+                "DeleteFaceFeatureUseCase.execute",
+                "DeletePalmFeatureUseCase.execute",
+                "CreateFaceFeatureUseCase.execute",
+                "CreateFaceFeatureByDescriptorUseCase.execute",
+                "CreatePalmFeatureUseCase.execute",
+                "CreateFaceFeatureByApiKeyUseCase.execute",
+                "CreatePalmFeatureByApiKeyUseCase.execute");
+        assertThat(위반)
+                .as("""
+                        메서드 전체 트랜잭션은 원격 호출 내내 커넥션을 쥐고 HistoryRecorder.start 가
+                        두 번째 커넥션을 요구하게 만든다 (UG-336). 원자성이 필요한 쓰기는
+                        TransactionTemplate 으로 그 쓰기만 감쌀 것. 지연 로딩이 이유라면
+                        ApiKeyService 가 초기화해 돌려주는지 먼저 볼 것.""")
+                .isEmpty();
+    }
+
+    /**
+     * <b>그 진입점을 부르는 컨트롤러에도 트랜잭션이 없다</b> (UG-336 반박 리뷰).
+     *
+     * <p>위 가드는 서비스와 유스케이스만 본다. 컨트롤러에 클래스 레벨 {@code @Transactional} 을
+     * 붙이면 그 아래 전부가 바깥 트랜잭션 안에 들어가 UG-336 이 무효가 되는데, 반박 리뷰가 그
+     * 변이로 스위트가 초록인 것을 보였다.
+     */
+    @Test
+    @DisplayName("UG-336: 등록·삭제를 부르는 컨트롤러에는 트랜잭션 선언이 없다")
+    void 등록_삭제_컨트롤러에는_트랜잭션이_없다() {
+        List<Class<?>> 컨트롤러 = List.of(
+                ai.univs.gate.modules.feature.api.controller.FaceController.class,
+                ai.univs.gate.modules.feature.api.controller.PalmController.class,
+                ai.univs.gate.facade.demo.api.controller.DemoController.class);
+
+        List<String> 위반 = new java.util.ArrayList<>();
+        for (Class<?> c : 컨트롤러) {
+            if (AnnotatedElementUtils.findMergedAnnotation(c, Transactional.class) != null) {
+                위반.add(c.getSimpleName() + " (클래스)");
+            }
+            for (Method m : c.getDeclaredMethods()) {
+                if (AnnotatedElementUtils.findMergedAnnotation(m, Transactional.class) != null) {
+                    위반.add(c.getSimpleName() + "." + m.getName());
+                }
+            }
+        }
+
+        assertThat(위반)
+                .as("컨트롤러의 트랜잭션은 그 아래 등록·삭제 경로 전체를 바깥 트랜잭션으로 감싼다 (UG-336)")
+                .isEmpty();
+    }
 }

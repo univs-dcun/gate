@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -36,8 +37,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import ai.univs.gate.support.tx.RecordingTransactionTemplate;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +64,9 @@ class DeleteFaceFeatureUseCaseTest {
     @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FaceService faceService;
+
+    // UG-336: 성공 쓰기가 짧은 트랜잭션 안에서 일어난다. null 이면 NPE, 목이면 콜백이 안 돈다.
+    @Spy private RecordingTransactionTemplate transactionTemplate = new RecordingTransactionTemplate();
 
     @InjectMocks private DeleteFaceFeatureUseCase useCase;
 
@@ -209,4 +215,72 @@ class DeleteFaceFeatureUseCaseTest {
      * <p>대신 {@code HistoryRecorderSliceTest} 가 실제 트랜잭션을 열고 롤백시켜 <b>행이 남는지</b>
      * 를 직접 본다 — 선언이 아니라 동작을 보므로, 열거하지 않은 예외에서도 성립한다.
      */
+
+    /**
+     * <b>다른 영속성 컨텍스트에서 온 같은 프로젝트면 지운다</b> (UG-336).
+     *
+     * <p>이 유스케이스에서 트랜잭션을 떼면서 특징점과 API 키가 <b>서로 다른 컨텍스트</b>에서
+     * 온다. {@code Project} 는 {@code equals} 를 재정의하지 않으므로, 소유 확인이 인스턴스
+     * 비교로 남아 있으면 <b>모든 삭제가 INVALID_USER 로 거부된다.</b>
+     *
+     * <p>나머지 테스트는 특징점과 키가 <b>같은 객체</b>를 공유해서 이 회귀를 잡지 못한다. 여기서는
+     * id 만 같은 별개 인스턴스를 쓴다.
+     */
+    @Test
+    @DisplayName("UG-336: 다른 컨텍스트에서 온 같은 프로젝트면 지운다 — 인스턴스가 아니라 id 로 비교한다")
+    void 다른_컨텍스트의_같은_프로젝트면_지운다() {
+        Project 같은_프로젝트_다른_객체 = Project.builder()
+                .id(project.getId()).accountId(ACCOUNT_ID).projectName("p").branchName("branch-1")
+                .isDeleted(false).status(project.getStatus()).build();
+        BiometricFeature 다른_컨텍스트의_특징점 = BiometricFeature.builder()
+                .id(FEATURE_SEQ).project(같은_프로젝트_다른_객체).type(FeatureType.FACE)
+                .featureId(FEATURE_ID).isDeleted(false).build();
+        assertThat(다른_컨텍스트의_특징점.getProject()).isNotSameAs(project);
+
+        given(biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(FEATURE_SEQ, FeatureType.FACE))
+                .willReturn(Optional.of(다른_컨텍스트의_특징점));
+        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+
+        useCase.execute(input);
+
+        assertThat(다른_컨텍스트의_특징점.isDeleted()).isTrue();
+    }
+
+    /**
+     * <b>소프트 삭제와 성공 이력만 트랜잭션 안에서 일어난다</b> (UG-336).
+     *
+     * <p>이 유스케이스의 목적이 이것이다. 시작 이력({@code REQUIRES_NEW})이 바깥 트랜잭션
+     * 안에서 불리면 커넥션을 두 개 쥐고, 원격 호출이 트랜잭션 안에 있으면 그동안 커넥션 하나가
+     * 묶인다. 반대로 소프트 삭제와 성공 이력이 경계 <b>밖</b>으로 새면 따로 커밋돼
+     * "지워지지 않았는데 삭제 성공 이력만 있는" 상태가 가능해진다.
+     *
+     * <p>"둘 다 호출됐다" 만 보면 어느 쪽 회귀도 잡지 못한다. 호출 <b>시점</b>에 경계 안이었는지를
+     * 기록한다.
+     */
+    @Test
+    @DisplayName("UG-336: 시작 이력·원격 호출은 트랜잭션 밖, 소프트 삭제·성공 이력은 안이다")
+    void 성공_쓰기만_트랜잭션_안이다() {
+        java.util.List<String> 기록 = new java.util.ArrayList<>();
+        given(biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(FEATURE_SEQ, FeatureType.FACE))
+                .willAnswer(inv -> { 기록.add("조회:" + transactionTemplate.isActive()); return Optional.of(feature); });
+        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
+        given(historyRecorder.start(any(FeatureHistory.class)))
+                .willAnswer(inv -> { 기록.add("start:" + transactionTemplate.isActive()); return inv.getArgument(0); });
+        willAnswer(inv -> { 기록.add("원격:" + transactionTemplate.isActive()); return null; })
+                .given(faceService).deleteFace(any(DeleteFaceFeignRequestDTO.class));
+        willAnswer(inv -> { 기록.add("succeed:" + transactionTemplate.isActive()); return null; })
+                .given(historyRecorder).succeed(any(FeatureHistory.class));
+
+        useCase.execute(input);
+
+        assertThat(기록).containsExactly(
+                "조회:false",     // 소유 확인용 — 경계 밖
+                "start:false",    // REQUIRES_NEW 가 바깥 트랜잭션 없이 → 커넥션 하나
+                "원격:false",     // 원격 호출 동안 커넥션을 쥐지 않는다
+                "조회:true",      // 성공 트랜잭션 안에서 다시 읽어 소프트 삭제
+                "succeed:true");  // 소프트 삭제와 같은 트랜잭션
+        assertThat(feature.isDeleted()).isTrue();
+        assertThat(transactionTemplate.executions()).as("경계는 성공 블록 하나뿐이다").isEqualTo(1);
+    }
 }

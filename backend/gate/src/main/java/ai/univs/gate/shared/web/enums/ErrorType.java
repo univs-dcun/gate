@@ -47,6 +47,16 @@ public enum ErrorType {
     INVALID_PAGE_COUNT("CMMN-101", HttpStatus.BAD_REQUEST),
     INVALID_TRANSACTION_UUID_LENGTH("CMMN-102", HttpStatus.BAD_REQUEST),
     REQUIRED_TRANSACTION_UUID("CMMN-103", HttpStatus.BAD_REQUEST),
+    /**
+     * 이 배포에서 꺼 둔 생체 인증 방식의 동작을 호출했다 (UG-223).
+     *
+     * <p>{@code gate.features.face} / {@code gate.features.palm} 로 끈다. 조회는 막지 않고 등록·삭제·
+     * 인증 같은 동작만 막는다 — 이유는 {@code ModalityGateInterceptor} 참고.
+     *
+     * <p>4xx 인 이유: 우리 쪽 장애가 아니라 배포가 제공하지 않는 기능을 부른 것이다. 응답의 HTTP
+     * 상태는 다른 비즈니스 오류처럼 400 이고, 여기 적은 상태는 로그 분류(UG-290)에만 쓰인다.
+     */
+    FEATURE_NOT_ENABLED("CMMN-104", HttpStatus.NOT_FOUND),
 
     // JWT
     EXPIRATION_TOKEN("AUTH-104", HttpStatus.BAD_REQUEST),
