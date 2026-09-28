@@ -7,6 +7,8 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * 등록 행의 발급 id 가 언제 남고 언제 지워지는가 (UG-338).
@@ -43,6 +45,21 @@ class FeatureHistoryIssuedIdTest {
 
         assertThat(h.getFeatureId()).isNull();
         assertThat(h.getFailureType()).isEqualTo("FACE_NOT_FOUND");
+    }
+
+    /**
+     * UG-338 반박 리뷰: face·palm 은 그 아래 모듈의 5xx 를 400 + 오류 유형으로 바꿔 돌려준다. 코드가 있어도
+     * 결과를 모른다 — match 가 커밋한 뒤 응답 중 실패했을 수 있다.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"INTERNAL_SERVER_ERROR", "SERVER_ERROR", "INTERNAL_ERROR"})
+    @DisplayName("하위가 자기 오류 유형을 알리면 fail 이어도 id 를 남긴다")
+    void 하위_오류_유형은_id_를_남긴다(String type) {
+        FeatureHistory h = 시작_행();
+        h.fail(type);
+
+        assertThat(h.getFeatureId()).isEqualTo(발급);
+        assertThat(h.getFailureType()).isEqualTo(type);
     }
 
     /**

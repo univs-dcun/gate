@@ -233,7 +233,27 @@ class FaceFeatureServiceTest {
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.isSuccess()).isFalse();
         assertThat(featureHistory.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        assertThat(featureHistory.getFeatureId()).as("UG-338: 결과를 모른다 — 정리 잡이 이 id 로 하위를 지운다")
+                .isNotNull();
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+    }
+
+    /**
+     * UG-338 반박 리뷰: face 는 match 의 5xx 를 400 + {@code INTERNAL_SERVER_ERROR} 로 돌려준다 — gate 에는
+     * {@code CustomFeignException} 으로 온다. match 가 커밋한 뒤 응답 중 실패했을 수 있으므로 id 를 남긴다.
+     */
+    @Test
+    @DisplayName("UG-338: face 가 하위 오류 유형(INTERNAL_SERVER_ERROR)을 알리면 발급 id 를 남긴다")
+    void 하위_오류_유형이면_id_를_남긴다() {
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        CustomFeignException exception = new CustomFeignException("SWAGGER-005", "INTERNAL_SERVER_ERROR", "match 504");
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willThrow(exception);
+
+        assertThatThrownBy(() -> faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null)).isSameAs(exception);
+
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.getFailureType()).isEqualTo("INTERNAL_SERVER_ERROR");
+        assertThat(featureHistory.getFeatureId()).isNotNull();
     }
 
     @Test

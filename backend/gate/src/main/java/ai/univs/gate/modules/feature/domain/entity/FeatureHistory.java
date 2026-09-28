@@ -4,6 +4,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.shared.domain.BaseEntity;
+import ai.univs.gate.shared.exception.GlobalExceptionHandler;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -136,11 +137,8 @@ public class FeatureHistory extends BaseEntity {
     // ── 팩토리 ─────────────────────────────────────────────────────────────────────
 
     /**
-     * 등록 시도. 하위 서비스를 호출하기 <b>전에</b> 저장한다 — 실패하면 {@link #fail} 로 남긴다.
-     * 특징점은 아직 없으므로 스냅샷은 {@link #successRegister} 에서 채운다.
-     */
-    /**
-     * 등록 시작 행.
+     * 등록 시작 행. 하위 서비스를 호출하기 <b>전에</b> 저장한다. 특징점은 아직 없으므로 스냅샷은
+     * {@link #successRegister} 에서 채운다.
      *
      * <p><b>{@code issuedFeatureId} 를 시작 시점에 남긴다</b> (UG-338). gate 가 특징점 id 를 먼저 발급해
      * 하위 서비스에 그 id 로 등록을 요청한다. 원격 등록은 성공했는데 gate 쪽 성공 쓰기가 실패하면 —
@@ -207,14 +205,22 @@ public class FeatureHistory extends BaseEntity {
 
     public void fail(String failureType) {
         this.failureType = failureType;
-        clearIssuedIdIfRegister();
+        if (!GlobalExceptionHandler.isUpstreamServerError(failureType)) {
+            clearIssuedIdIfRegister();
+        }
     }
 
     /**
      * 등록이 <b>확정적으로</b> 실패하면 발급 id 를 지운다 (UG-338).
      *
-     * <p>{@link #fail} 은 하위가 <b>코드를 주며 거절</b>한 경우다 — 그 id 로 등록된 것이 없다. 남겨 두면
-     * 로그 상세가 "등록 실패인데 특징점 id 가 있다" 로 나간다. UG-338 이전의 실패 행도 비어 있었다.
+     * <p>{@link #fail} 은 하위가 <b>코드를 주며 거절</b>한 경우다 — 그 id 로 등록된 것이 없다. UG-338 이전의
+     * 실패 행도 비어 있었다.
+     *
+     * <p><b>단, 하위가 자기 오류를 알린 유형({@code INTERNAL_SERVER_ERROR} 등)은 예외다</b> (UG-338 반박
+     * 리뷰). face·palm 은 그 아래 모듈(match·SmartFace)의 5xx 를 HTTP 400 + 유형으로 바꿔 돌려주므로
+     * gate 에는 {@code CustomFeignException} 으로 온다. match 가 등록을 커밋한 뒤 응답 도중 실패했을 수
+     * 있다 — 이것도 "결과를 모른다" 다. 판정 기준은 로그 분류와 같은
+     * {@link GlobalExceptionHandler#isUpstreamServerError} 를 쓴다.
      *
      * <p>{@link #failUpstream}(응답 없음·5xx)에서는 <b>지우지 않는다.</b> 읽기 타임아웃은 "하위가 실패했다" 가
      * 아니라 "결과를 모른다" 다 — 하위는 등록을 끝냈는데 응답만 늦었을 수 있다. 그 id 를 지우면 정리 잡이

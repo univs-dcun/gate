@@ -37,6 +37,12 @@ import org.hibernate.annotations.Synchronize;
  * 원본을 지운다. 그래도 필터를 둔 이유는 어떤 경로로든 남은 REGISTER 행이 두 번 세어지지 않게 하려는
  * 것이다.
  *
+ * <p><b>성공하지 않은 등록의 {@code feature_id} 는 가린다</b> (UG-338 반박 리뷰). UG-338 부터 gate 가 id 를
+ * 먼저 발급해 시작 행에 남긴다 — 결과를 모르는 등록을 정리 잡이 찾게 하려는 내부 값이다. 가리지 않으면
+ * 실패한 등록이 "특징점 id 가 있다" 로 나가고, 정리 잡이 닫은 뒤에는 같은 조회가 다른 값을 준다. UG-338
+ * 이전처럼 실패한 등록은 비어 있다. 성공 판정은 {@code feature_seq} 로 한다 — 등록 행에서는
+ * {@code successRegister} 만 그 값을 채우고, 불리언 리터럴은 DB 마다 달라 피했다.
+ *
  * <p>{@code id} 는 두 테이블이 공유하는 사건 시퀀스 {@code activity_seq} (UG-328, V29) — 통합 목록에서 유일하고
  * 시간순으로 단조 증가한다. 응답의 {@code sequence} 가 이것이고, {@code matchingHistoryId} 는 원 테이블의
  * 숫자 id({@link #sourceId})로 인증 API 응답의 같은 이름 필드와 뜻이 같다.
@@ -79,7 +85,8 @@ import org.hibernate.annotations.Synchronize;
                fh.created_at,
                fh.check_liveness,
                fh.success,
-               fh.feature_id,
+               CASE WHEN fh.action_type = 'REGISTER' AND fh.feature_seq IS NULL THEN NULL
+                    ELSE fh.feature_id END,
                fh.feature_seq,
                fh.user_description,
                CAST(NULL AS DECIMAL(5,2)),

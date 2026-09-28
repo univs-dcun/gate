@@ -11,7 +11,9 @@ import ai.univs.gate.support.feature.DownstreamAbsence;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.history.HistoryRecorder;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -78,31 +80,62 @@ public class OrphanRegistrationReconciler {
     /** 실행당 처리할 행 수. */
     static final int 실행당_상한 = 50;
 
+    /**
+     * 실행당 시간 한도. 스케줄러는 기본 스레드 하나를 퍼지 잡들과 나눠 쓴다 — 하위가 느리면 50행 × 10초로
+     * 한 실행이 8분 넘게 스레드를 쥘 수 있다. 한도를 넘으면 남은 행은 다음 실행(커서가 이어받는다)에 넘긴다.
+     */
+    static final Duration 실행당_시간_한도 = Duration.ofMinutes(2);
+
     private final OrphanRegistrationRepository repository;
     private final HistoryRecorder historyRecorder;
     private final FaceService faceService;
     private final PalmService palmService;
 
+    /** 시간 한도·조회 창의 기준 시각. 테스트가 바꿔 끼운다. */
+    private Clock clock = Clock.systemUTC();
+
     @Value("${gate.reconcile.registration.enabled:true}")
     private boolean enabled;
+
+    /**
+     * 다음 실행이 이어서 볼 위치 — 마지막으로 본 이력 id. 한 바퀴를 다 돌면(상한보다 적게 나오면) 0 으로
+     * 되감는다. 메모리에만 둔다: 재기동하면 처음부터 다시 돌 뿐 잃는 것이 없다.
+     */
+    private long cursor;
 
     @Scheduled(fixedDelay = 5 * 60 * 1000L, initialDelay = 60 * 1000L)
     public void reconcile() {
         if (!enabled) {
             return;
         }
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        Instant 시작 = clock.instant();
+        LocalDateTime now = LocalDateTime.ofInstant(시작, ZoneOffset.UTC);
         List<FeatureHistory> 대상 = repository.findStaleRegistrations(
-                now.minus(결과를_모른다고_볼_시간), now.minus(다시_보지_않는_나이), 실행당_상한);
+                now.minus(결과를_모른다고_볼_시간), now.minus(다시_보지_않는_나이), cursor, 실행당_상한);
 
+        int 본 = 0;
         int 닫음 = 0;
         for (FeatureHistory row : 대상) {
-            if (reconcileOne(row)) {
-                닫음++;
+            if (Duration.between(시작, clock.instant()).compareTo(실행당_시간_한도) > 0) {
+                break;
+            }
+            본++;
+            cursor = row.getId();
+            try {
+                if (reconcileOne(row)) {
+                    닫음++;
+                }
+            } catch (RuntimeException e) {
+                // 존재 확인·닫기의 DB 예외. 한 행 때문에 이 실행의 나머지를 버리지 않는다.
+                log.warn("고아 등록 정리 중 오류 — 다음 바퀴에서 다시 본다. historyId={}, 원인={}",
+                        row.getId(), e.getClass().getSimpleName());
             }
         }
+        if (본 == 대상.size() && 대상.size() < 실행당_상한) {
+            cursor = 0;
+        }
         if (!대상.isEmpty()) {
-            log.info("결과를 모르는 등록 정리. 대상={}, 닫음={}, 남음={}", 대상.size(), 닫음, 대상.size() - 닫음);
+            log.info("결과를 모르는 등록 정리. 대상={}, 본={}, 닫음={}, 남음={}", 대상.size(), 본, 닫음, 본 - 닫음);
         }
     }
 
@@ -114,7 +147,7 @@ public class OrphanRegistrationReconciler {
     boolean reconcileOne(FeatureHistory row) {
         Project project = row.getProject();
 
-        if (repository.featureExists(project.getId(), row.getFeatureType(), row.getFeatureId())) {
+        if (repository.featureExists(row.getFeatureId())) {
             // 성공 이력은 특징점 저장과 한 트랜잭션이다 — 특징점이 있는데 이력이 시작 상태일 수는 없다.
             // 그래도 있다면 모르는 경로다. 하위를 지우면 살아 있는 사용자의 템플릿을 지운다.
             log.error("특징점이 gate 에 있는데 등록 이력이 시작 상태다 — 건드리지 않는다. historyId={}, featureId={}",

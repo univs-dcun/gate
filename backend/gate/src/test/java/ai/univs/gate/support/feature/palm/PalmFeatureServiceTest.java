@@ -215,7 +215,24 @@ class PalmFeatureServiceTest {
         FeatureHistory featureHistory = capturedFeatureHistory();
         assertThat(featureHistory.isSuccess()).isFalse();
         assertThat(featureHistory.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        assertThat(featureHistory.getFeatureId()).as("UG-338: 결과를 모른다 — 정리 잡이 이 id 로 하위를 지운다")
+                .isNotNull();
         verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+    }
+
+    /** UG-338 반박 리뷰: palm 도 SmartFace 의 5xx 를 400 + 오류 유형으로 돌려준다 — 결과를 모른다. */
+    @Test
+    @DisplayName("UG-338: palm 이 하위 오류 유형(INTERNAL_SERVER_ERROR)을 알리면 발급 id 를 남긴다")
+    void 하위_오류_유형이면_id_를_남긴다() {
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        CustomFeignException exception = new CustomFeignException("SWAGGER-005", "INTERNAL_SERVER_ERROR", "smartface 502");
+        given(palmService.registerPalm(any(RegisterPalmFeignRequestDTO.class))).willThrow(exception);
+
+        assertThatThrownBy(() -> palmFeatureService.createPalmFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null)).isSameAs(exception);
+
+        FeatureHistory featureHistory = capturedFeatureHistory();
+        assertThat(featureHistory.getFailureType()).isEqualTo("INTERNAL_SERVER_ERROR");
+        assertThat(featureHistory.getFeatureId()).isNotNull();
     }
 
     @Test

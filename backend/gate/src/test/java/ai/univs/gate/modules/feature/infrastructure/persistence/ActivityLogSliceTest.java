@@ -317,4 +317,28 @@ class ActivityLogSliceTest {
         assertThat(repo.findAllByQuery(조회("ALL", "ALL", "ALL", "other-cust", 1, 10, true), project.getId()).getTotalElements())
                 .isZero();
     }
+    /**
+     * UG-338 반박 리뷰: 발급 id 는 정리 잡이 쓰는 내부 값이다. 성공하지 않은 등록(시작 상태·응답 없음)의
+     * featureId 는 응답에 나가지 않는다 — UG-338 이전처럼 비어 있다. 검색어로도 걸리지 않는다.
+     * 삭제 행의 featureId 는 지우려던 실제 특징점이라 그대로 나간다.
+     */
+    @Test
+    @DisplayName("UG-338: 성공하지 않은 등록의 발급 id 는 목록·단건·검색 어디에도 나가지 않는다")
+    void 성공하지_않은_등록의_발급_id_는_가린다() {
+        String 발급 = "b0000000-0000-0000-0000-000000000001";
+        FeatureHistory 멈춘 = FeatureHistory.register(project, FeatureType.FACE, false, null,
+                UUID.randomUUID().toString(), true, 발급);
+        em.persist(멈춘);
+        시각("FeatureHistory", 멈춘.getId(), T0);
+        FeatureHistory 성공 = 등록(project, FeatureType.FACE, "ok", 1);
+        FeatureHistory 삭제실패 = 삭제(project, 성공, false, 2);
+
+        assertThat(repo.findLatestByProjectIdAndTransactionUuid(project.getId(), 멈춘.getTransactionUuid()))
+                .isPresent().get().extracting(ActivityLog::getFeatureId).isNull();
+        assertThat(repo.findAllByQuery(조회("ALL", "ALL", "ALL", 발급, 1, 10, true), project.getId())
+                .getTotalElements()).as("검색어로도 걸리지 않는다").isZero();
+        assertThat(repo.findAllByQuery(조회("ALL", true), project.getId()).getContent())
+                .extracting(ActivityLog::getSourceId, ActivityLog::getFeatureId)
+                .contains(tuple(성공.getId(), "fid-ok"), tuple(삭제실패.getId(), "fid-ok"));
+    }
 }

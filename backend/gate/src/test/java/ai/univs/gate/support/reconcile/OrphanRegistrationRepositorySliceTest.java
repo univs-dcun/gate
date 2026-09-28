@@ -67,7 +67,7 @@ class OrphanRegistrationRepositorySliceTest {
     }
 
     private List<Long> 고른_것() {
-        return repository.findStaleRegistrations(분전(10), 분전(24 * 60), 50).stream()
+        return repository.findStaleRegistrations(분전(10), 분전(24 * 60), 0L, 50).stream()
                 .map(FeatureHistory::getId).toList();
     }
 
@@ -159,7 +159,7 @@ class OrphanRegistrationRepositorySliceTest {
     void 프로젝트를_함께_읽는다() {
         저장(등록행(30, "a0000000-0000-0000-0000-000000000008"), 30);
 
-        FeatureHistory 고른 = repository.findStaleRegistrations(분전(10), 분전(24 * 60), 50).get(0);
+        FeatureHistory 고른 = repository.findStaleRegistrations(분전(10), 분전(24 * 60), 0L, 50).get(0);
         em.clear();
         assertThat(고른.getProject().getBranchName()).isEqualTo("branch-reconcile");
     }
@@ -171,9 +171,35 @@ class OrphanRegistrationRepositorySliceTest {
                 .featureId("a0000000-0000-0000-0000-000000000009").isDeleted(true).build());
         em.flush();
 
-        assertThat(repository.featureExists(프로젝트.getId(), FeatureType.FACE, "a0000000-0000-0000-0000-000000000009")).isTrue();
-        assertThat(repository.featureExists(프로젝트.getId(), FeatureType.PALM, "a0000000-0000-0000-0000-000000000009"))
-                .as("방식이 다르면 다른 특징점이다").isFalse();
-        assertThat(repository.featureExists(프로젝트.getId(), FeatureType.FACE, "a0000000-0000-0000-0000-000000000099")).isFalse();
+        assertThat(repository.featureExists("a0000000-0000-0000-0000-000000000009")).isTrue();
+        assertThat(repository.featureExists("a0000000-0000-0000-0000-000000000099")).isFalse();
+    }
+
+    /** 안전장치는 넓을수록 안전하다 — 다른 프로젝트·방식에 있어도 있다고 본다 (UG-338 반박 리뷰). */
+    @Test
+    @DisplayName("featureExists — 프로젝트·방식으로 좁히지 않는다")
+    void 특징점_존재_범위() {
+        Project 다른 = Project.builder().accountId(8L).projectName("other").branchName("branch-other")
+                .isDeleted(false).status(ProjectStatus.ACTIVE).build();
+        em.persist(다른);
+        em.persist(BiometricFeature.builder().project(다른).type(FeatureType.PALM)
+                .featureId("a0000000-0000-0000-0000-000000000010").isDeleted(false).build());
+        em.flush();
+
+        assertThat(repository.featureExists("a0000000-0000-0000-0000-000000000010")).isTrue();
+    }
+
+    @Test
+    @DisplayName("상한만큼만, id 순으로, 커서 뒤의 것만 고른다")
+    void 상한과_커서() {
+        Long a = 저장(등록행(30, "a0000000-0000-0000-0000-000000000011"), 30);
+        Long b = 저장(등록행(30, "a0000000-0000-0000-0000-000000000012"), 40);
+        Long c = 저장(등록행(30, "a0000000-0000-0000-0000-000000000013"), 50);
+
+        assertThat(repository.findStaleRegistrations(분전(10), 분전(24 * 60), 0L, 2).stream()
+                .map(FeatureHistory::getId).toList())
+                .as("created_at 이 아니라 id 순 — 커서가 id 다").containsExactly(a, b);
+        assertThat(repository.findStaleRegistrations(분전(10), 분전(24 * 60), b, 2).stream()
+                .map(FeatureHistory::getId).toList()).containsExactly(c);
     }
 }
