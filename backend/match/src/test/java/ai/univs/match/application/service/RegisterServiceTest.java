@@ -7,6 +7,7 @@ import ai.univs.match.infrastructure.persistence.BranchRepository;
 import ai.univs.match.infrastructure.persistence.DescriptorRepository;
 import ai.univs.match.shared.exception.CustomFaceMatcherException;
 import ai.univs.match.shared.web.enums.ErrorType;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,7 +17,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
+import java.sql.SQLException;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -74,7 +77,7 @@ class RegisterServiceTest {
         @BeforeEach
         void setUp() {
             when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.empty());
-            when(branchRepository.save(any(Branch.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(branchRepository.saveAndFlush(any(Branch.class))).thenAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -83,7 +86,7 @@ class RegisterServiceTest {
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
             ArgumentCaptor<Branch> captor = ArgumentCaptor.forClass(Branch.class);
-            verify(branchRepository).save(captor.capture());
+            verify(branchRepository).saveAndFlush(captor.capture());
             assertThat(captor.getValue().getBranchName()).isEqualTo(BRANCH_NAME);
         }
 
@@ -93,7 +96,7 @@ class RegisterServiceTest {
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
             ArgumentCaptor<Descriptor> captor = ArgumentCaptor.forClass(Descriptor.class);
-            verify(descriptorRepository).save(captor.capture());
+            verify(descriptorRepository).saveAndFlush(captor.capture());
             assertThat(captor.getValue().getFaceId()).isEqualTo(FACE_ID);
         }
 
@@ -140,7 +143,7 @@ class RegisterServiceTest {
 
             assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor));
 
-            verify(descriptorRepository, never()).save(any());
+            verify(descriptorRepository, never()).saveAndFlush(any());
         }
 
         @Nested
@@ -170,7 +173,7 @@ class RegisterServiceTest {
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
-                verify(descriptorRepository).save(any(Descriptor.class));
+                verify(descriptorRepository).saveAndFlush(any(Descriptor.class));
             }
 
             @Test
@@ -198,7 +201,7 @@ class RegisterServiceTest {
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
                 ArgumentCaptor<Descriptor> captor = ArgumentCaptor.forClass(Descriptor.class);
-                verify(descriptorRepository).save(captor.capture());
+                verify(descriptorRepository).saveAndFlush(captor.capture());
                 assertThat(captor.getValue().getFaceId()).isEqualTo(FACE_ID);
                 assertThat(captor.getValue().getBranch()).isEqualTo(existingBranch);
             }
@@ -211,7 +214,7 @@ class RegisterServiceTest {
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
                 ArgumentCaptor<Descriptor> captor = ArgumentCaptor.forClass(Descriptor.class);
-                verify(descriptorRepository).save(captor.capture());
+                verify(descriptorRepository).saveAndFlush(captor.capture());
                 assertThat(captor.getValue().getDescriptorVersion())
                         .isEqualTo(descriptorDetail.descriptorSpec().getVersion());
             }
@@ -241,7 +244,7 @@ class RegisterServiceTest {
 
                 assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor));
 
-                verify(descriptorRepository, never()).save(any());
+                verify(descriptorRepository, never()).saveAndFlush(any());
             }
         }
     }
@@ -264,7 +267,86 @@ class RegisterServiceTest {
 
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
-            verify(branchRepository, never()).save(any());
+            verify(branchRepository, never()).saveAndFlush(any());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // UG-340: 동시 등록 — 사전 조회를 함께 통과한 두 번째 저장은 제약이 막는다
+    // -------------------------------------------------------------------------
+
+    private static DataIntegrityViolationException 제약_위반(String constraint) {
+        return new DataIntegrityViolationException("could not execute statement",
+                new ConstraintViolationException("duplicate key", new SQLException(
+                        "ERROR: duplicate key value violates unique constraint \"" + constraint + "\""), constraint));
+    }
+
+    @Nested
+    @DisplayName("UG-340: 동시 등록")
+    class ConcurrentRegistration {
+
+        @BeforeEach
+        void setUp() {
+            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.of(existingBranch));
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
+            when(descriptorRepository.countByBranch(existingBranch)).thenReturn(0);
+        }
+
+        @Test
+        @DisplayName("같은 faceId 가 먼저 저장됐으면(유니크 위반) 순차 요청과 같은 ALREADY_REGISTERED_DESCRIPTOR 로 거절한다")
+        void 특징점_유니크_위반은_이미_등록됨() {
+            when(descriptorRepository.saveAndFlush(any(Descriptor.class)))
+                    .thenThrow(제약_위반("uk_descriptor_branch_face"));
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class)
+                    .extracting(ex -> ((CustomFaceMatcherException) ex).getErrorType())
+                    .isEqualTo(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
+        }
+
+        /** NOT NULL·길이 초과 같은 다른 위반을 "이미 등록됨" 으로 바꾸면 프로그래밍 오류가 비즈니스 거절로 숨는다. */
+        @Test
+        @DisplayName("다른 제약 위반은 바꾸지 않고 그대로 던진다")
+        void 다른_위반은_그대로() {
+            DataIntegrityViolationException other = 제약_위반("descriptor_face_id_not_null");
+            when(descriptorRepository.saveAndFlush(any(Descriptor.class))).thenThrow(other);
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor)).isSameAs(other);
+        }
+    }
+
+    @Nested
+    @DisplayName("UG-340: 새 브랜치 동시 생성")
+    class ConcurrentBranchCreation {
+
+        @BeforeEach
+        void setUp() {
+            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.empty());
+        }
+
+        /**
+         * 다른 요청이 같은 브랜치를 먼저 만들었다. 이 트랜잭션은 이미 오류 상태라 이어 갈 수 없다 — 재시도하면
+         * 정상 경로를 탄다. 서버 오류 유형이라 gate 는 "결과를 모른다" 로 다룬다(UG-338).
+         */
+        @Test
+        @DisplayName("브랜치 이름 유니크 위반은 INTERNAL_SERVER_ERROR 로 돌려주고 특징점은 저장하지 않는다")
+        void 브랜치_경합은_서버_오류() {
+            when(branchRepository.saveAndFlush(any(Branch.class))).thenThrow(제약_위반("uk_branch_branch_name"));
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class)
+                    .extracting(ex -> ((CustomFaceMatcherException) ex).getErrorType())
+                    .isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+            verify(descriptorRepository, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("브랜치 저장의 다른 위반은 그대로 던진다")
+        void 브랜치_다른_위반은_그대로() {
+            DataIntegrityViolationException other = 제약_위반("branch_name_not_null");
+            when(branchRepository.saveAndFlush(any(Branch.class))).thenThrow(other);
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor)).isSameAs(other);
         }
     }
 
