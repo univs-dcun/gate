@@ -66,10 +66,10 @@ Migration checksum mismatch for migration version 1
 
 | 계정 | 서비스 | 마이그레이션 | PostgreSQL 에서의 DB 이름 |
 |---|---|---|---|
-| `univs_gate` | gate-service | V1 ~ V29 | `gate` |
+| `univs_gate` | gate-service | V1 ~ V33 | `gate` |
 | `univs_face` | face-service | V1 | `faces` |
 | `univs_palm` | palm-service | V1 | `palm` |
-| `univs_match` | match-server | V1 ~ V3 | `match` |
+| `univs_match` | match-server | V1 ~ V5 | `match` |
 | `univs_auth` | auth-service (msa-scaffold 레포) | V1 ~ V3 | `auth` |
 
 ### 생성 DDL
@@ -443,6 +443,30 @@ V29 는 **gate-service 를 모두 내린 뒤** 기동해 적용한다 — 오라
 컬럼이 즉시 열리므로, 구버전 인스턴스가 백필(MERGE) 뒤 `MODIFY (… NOT NULL)` 전에 행을 넣으면 NULL 이
 남아 ORA-02296 으로 실패한다. PostgreSQL 은 한 트랜잭션 안에서 락이 유지되어 이 창이 없다.
 
+
+### match V4·V5 적용 전 중복 확인 (UG-340)
+
+match V4 는 `descriptor (branch_id, face_id)`, V5 는 `branch (branch_name)` 에 유니크 제약을 건다. 이전에는
+제약이 없어 동시 등록이 같은 키로 두 행을 만들 수 있었다 — 그런 행이 **이미 있으면 V4·V5 가 실패한다.**
+PostgreSQL 은 롤백되어 다음 기동에서 다시 시도할 뿐이지만(중복이 남아 있으면 계속 실패), 오라클은 이 절
+앞부분의 함정대로 실패 행이 남아 크래시 루프가 된다. **match-server 를 올리기 전에** match 계정에서 확인한다.
+
+```sql
+-- 전부 0 행이어야 한다. 테이블 이름이 따옴표 식별자라 방언마다 표기가 다르다.
+-- 오라클
+SELECT branch_id, face_id, COUNT(*) FROM "DESCRIPTOR" GROUP BY branch_id, face_id HAVING COUNT(*) > 1;
+-- PostgreSQL
+SELECT branch_id, face_id, COUNT(*) FROM "descriptor" GROUP BY branch_id, face_id HAVING COUNT(*) > 1;
+-- 공통
+SELECT branch_name, COUNT(*) FROM branch GROUP BY branch_name HAVING COUNT(*) > 1;
+```
+
+행이 나오면 올리지 말고 알린다. 어느 행을 남길지는 gate 쪽 특징점과 대조해 정해야 한다 — 같은 브랜치 이름이
+둘이면 그 아래 특징점을 한 브랜치로 옮기는 작업이 필요하다.
+
+V4 와 V5 는 파일 하나에 DDL 하나다. 한쪽이 실패해도 다른 쪽이 반만 적용된 상태는 생기지 않는다. 실패했다면
+중복을 정리한 뒤 실패 행을 지우고(또는 Flyway repair) 재기동하면 그 버전부터 다시 적용된다 — 로컬 PostgreSQL 17·
+Oracle Free 23ai 에서 중복 적재 → 실패 → 정리 → repair → 성공까지 확인했다 (2026-09-28).
 ---
 
 ## 6. 설치 후 검증
