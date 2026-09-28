@@ -18,6 +18,7 @@ import ai.univs.palm.shared.exception.InvalidPalmModuleException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -63,8 +64,17 @@ public class RegisterUseCase {
                 performLivenessCheck(input, palmHistory);
             }
 
-            // palmId 생성 (우리 서버에서 UUID 생성)
-            String palmId = UUID.randomUUID().toString();
+            // palmId — 호출자가 주면 그 값, 아니면 이 서버가 UUID 로 발급한다 (UG-337).
+            //
+            // 호출자(gate)가 id 를 먼저 발급하는 이유: 원격 등록 뒤 gate 쪽 쓰기가 실패하면 gate 는
+            // 여기서 만든 id 를 모른다. 먼저 발급해 자기 이력에 남기면 무엇을 되돌릴지 안다(UG-338).
+            //
+            // 미확인: SmartFace 가 이미 있는 WatchlistMember id 로 등록 요청을 받으면 어떻게 하는지는
+            // 벤더 API 동작이라 여기서 확인하지 못했다. UUID 라 충돌 확률은 무시할 수 있고, gate 는
+            // 같은 id 로 다시 등록하지 않는다(실패하면 되돌리기만 한다).
+            String palmId = StringUtils.hasText(input.palmId())
+                    ? input.palmId()
+                    : UUID.randomUUID().toString();
             String base64Image = Base64.getEncoder().encodeToString(getImageBytes(input.palmImage()));
 
             // SmartFace WatchlistMember 등록 요청
