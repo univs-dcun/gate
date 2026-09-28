@@ -5,6 +5,7 @@ import ai.univs.face.shared.swagger.SwaggerDescriptions;
 import ai.univs.face.shared.utils.ValidImageFile;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,12 +32,17 @@ public record RegisterRequestDTO(
         Boolean checkLiveness,
 
         @Schema(description = SwaggerDescriptions.CHECK_MULTI_FACE)
-        Boolean checkMultiFace
+        Boolean checkMultiFace,
+
+        @Schema(description = CallerIssuedFaceId.DESCRIPTION)
+        @Pattern(regexp = CallerIssuedFaceId.PATTERN, message = "INVALID_FACE_ID_FORMAT")
+        String faceId
 ) {
 
     public RegisterInput toV2RegisterInput() {
         return new RegisterInput(
-                "",
+                // UG-337: 호출자가 준 id 가 있으면 그것으로 등록한다(RegisterUseCase 가 registerWithFaceId 로 간다).
+                StringUtils.hasText(faceId) ? faceId : "",
                 faceImage,
                 branchName,
                 StringUtils.hasText(transactionUuid) ? transactionUuid : UUID.randomUUID().toString(),
