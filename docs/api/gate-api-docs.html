@@ -2024,6 +2024,11 @@ var ERR_CATALOG = [
           act: '해당 엔드포인트의 메서드와 Content-Type 을 확인한다.' },
     en: { when: 'The path is right but the method or <code>Content-Type</code> is not. This is <b>HTTP 405</b> — sending JSON to an endpoint that expects <code>multipart/form-data</code> lands here.',
           act: 'Check the method and Content-Type for that endpoint.' } },
+  { g: 'common', code: 'CMMN-104', type: 'FEATURE_NOT_ENABLED',
+    ko: { when: '이 환경의 설치 구성에서 제공하지 않는 생체 인증 방식의 <b>동작</b>(등록·삭제·인증·라이브니스 등)을 호출했다. 조회는 이 코드로 거절되지 않는다. HTTP 상태는 400 이다. 요청이 처리되기 전에 거절되므로 이미지 업로드나 이력 기록은 일어나지 않는다.',
+          act: '요청을 고치거나 재시도해도 결과가 같다. 해당 기능이 필요하면 설치 구성을 관리자에게 문의한다.' },
+    en: { when: 'An <b>action</b> (register, delete, authenticate, liveness, etc.) was called for a biometric modality that this installation does not provide. Reads are never rejected with this code. The HTTP status is 400. The request is rejected before processing, so no image is uploaded and no history is recorded.',
+          act: 'Changing or retrying the request gives the same result. If you need the feature, ask your administrator about the installation.' } },
 
   { g: 'auth', code: 'AUTH-110', type: 'FAILED_WRONG_PASSWORD',
     ko: { when: '비밀번호가 틀렸다. <b>가입되지 않은 이메일도 같은 코드로 응답한다</b> — 계정의 존재 여부를 알려주지 않기 위한 것이다.',
