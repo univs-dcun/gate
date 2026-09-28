@@ -79,7 +79,8 @@ public class RegisterService {
                 .build();
         try {
             // 위의 사전 조회는 빠른 경로다. 동시 요청 둘이 함께 통과할 수 있어 최종 판정은 제약이 한다 (UG-340).
-            // flush 로 여기서 INSERT 를 내보내야 위반을 이 자리에서 받아 바꿀 수 있다.
+            // 위반을 이 자리에서 받아 바꾸려면 INSERT 가 여기서 나가야 한다. 지금은 IDENTITY 라 save 도 즉시
+            // INSERT 하지만, id 전략이 바뀌면 커밋 시점으로 밀려 catch 를 빠져나간다 — flush 로 명시한다.
             descriptorRepository.saveAndFlush(descriptor);
         } catch (DataIntegrityViolationException e) {
             if (!UniqueViolation.of(e, UniqueViolation.DESCRIPTOR_BRANCH_FACE)) {

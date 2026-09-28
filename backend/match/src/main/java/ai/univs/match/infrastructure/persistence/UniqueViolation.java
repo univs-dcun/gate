@@ -32,9 +32,6 @@ public final class UniqueViolation {
             if (mentions(t.getMessage(), target)) {
                 return true;
             }
-            if (t.getCause() == t) {
-                break;
-            }
         }
         return false;
     }

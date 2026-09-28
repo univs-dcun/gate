@@ -467,6 +467,7 @@ SELECT branch_name, COUNT(*) FROM branch GROUP BY branch_name HAVING COUNT(*) > 
 V4 와 V5 는 파일 하나에 DDL 하나다. 한쪽이 실패해도 다른 쪽이 반만 적용된 상태는 생기지 않는다. 실패했다면
 중복을 정리한 뒤 실패 행을 지우고(또는 Flyway repair) 재기동하면 그 버전부터 다시 적용된다 — 로컬 PostgreSQL 17·
 Oracle Free 23ai 에서 중복 적재 → 실패 → 정리 → repair → 성공까지 확인했다 (2026-09-28).
+
 ---
 
 ## 6. 설치 후 검증
