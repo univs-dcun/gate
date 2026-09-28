@@ -23,7 +23,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Arrays;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -142,12 +141,12 @@ public class GlobalExceptionHandler {
      * 읽는 셈이다. 판정 불가일 때는 4xx 로 둔다. 여기서 잘못 올리면 라이브니스 오류처럼 정상
      * 흐름에서 흡수되는 것까지 ERROR 가 된다.
      */
-    private static final Set<String> UPSTREAM_SERVER_ERROR_TYPES =
-            Set.of("INTERNAL_SERVER_ERROR", "SERVER_ERROR", "INTERNAL_ERROR");
-
-    /** {@code LoggingAspect} 가 같은 기준을 쓰도록 공개한다 — 두 지점이 갈리면 한쪽만 조용해진다. */
+    /**
+     * {@code LoggingAspect} 가 같은 기준을 쓰도록 공개한다 — 두 지점이 갈리면 한쪽만 조용해진다.
+     * 판정 집합은 {@link UpstreamErrorTypes} 에 있다 (UG-338: 등록 이력도 같은 기준을 쓴다).
+     */
     public static boolean isUpstreamServerError(String type) {
-        return type != null && UPSTREAM_SERVER_ERROR_TYPES.contains(type);
+        return UpstreamErrorTypes.isServerError(type);
     }
 
     @ExceptionHandler(CustomFeignException.class)

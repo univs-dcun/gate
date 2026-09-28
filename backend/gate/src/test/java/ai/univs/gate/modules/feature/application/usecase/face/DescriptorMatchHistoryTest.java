@@ -322,6 +322,39 @@ class DescriptorMatchHistoryTest {
         }
 
         @Test
+        @DisplayName("UG-338: 발급한 id 를 시작 이력에 남기고 같은 id 로 descriptor 등록한다")
+        void 발급_id_로_등록() {
+            공통_start_없이();
+            java.util.concurrent.atomic.AtomicReference<String> 시작_id = new java.util.concurrent.atomic.AtomicReference<>();
+            given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> {
+                시작_id.set(((FeatureHistory) inv.getArgument(0)).getFeatureId());
+                return inv.getArgument(0);
+            });
+            ArgumentCaptor<CreateFaceByDescriptorFeignRequestDTO> req = ArgumentCaptor.forClass(CreateFaceByDescriptorFeignRequestDTO.class);
+            given(faceService.createFaceByDescriptor(req.capture())).willAnswer(inv ->
+                    ((CreateFaceByDescriptorFeignRequestDTO) inv.getArgument(0)).getFaceId());
+
+            faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, null);
+
+            assertThat(시작_id.get()).isNotBlank();
+            assertThat(req.getValue().getFaceId()).isEqualTo(시작_id.get());
+        }
+
+        /** 응답이 없으면 결과를 모른다 — 하위가 등록을 끝냈을 수 있다. 정리 잡이 이 id 로 되돌린다. */
+        @Test
+        @DisplayName("UG-338: 응답 없음으로 실패해도 발급 id 가 이력에 남는다 — 정리 잡 대상")
+        void 응답_없음이면_id_가_남는다() {
+            공통();
+            given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
+                    .willThrow(new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFaceByDescriptor", new RuntimeException("read timeout")));
+
+            assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(ACCOUNT_ID, API_KEY, DESCRIPTOR, TX, null))
+                    .isInstanceOf(RemoteCallException.class);
+
+            assertThat(저장된_특징점_이력().getFeatureId()).as("결과를 모른다 — 지우면 고아를 못 찾는다").isNotBlank();
+        }
+
+        @Test
         @DisplayName("응답 없음(RemoteCallException) — INTERNAL_SERVER_ERROR 사유를 남기고 특징점은 저장하지 않는다")
         void 장애() {
             공통();
