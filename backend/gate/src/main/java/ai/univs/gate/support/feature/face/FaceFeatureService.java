@@ -18,7 +18,9 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
@@ -26,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import ai.univs.gate.shared.web.enums.CallerType;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FaceFeatureService {
@@ -83,9 +86,12 @@ public class FaceFeatureService {
 
         // UG-325/326: 등록은 인증 시도가 아니라 특징점의 생애주기 사건이다 — feature_history 에만 쓴다.
         // (UG-325 의 과도기 이중 기록은 통합 조회가 나가면서 끝났고, V27 이 옛 REGISTER 행을 지웠다.)
+        // UG-338: 특징점 id 를 gate 가 먼저 발급해 시작 이력에 남긴다. 원격 등록 뒤 gate 쪽 성공 쓰기가
+        // 실패하면 하위에는 특징점이 있는데 gate 는 모른다 — 이 id 가 있어야 정리 잡이 무엇을 지울지 안다.
+        String issuedFeatureId = UUID.randomUUID().toString();
         FeatureHistory featureHistory = historyRecorder.start(FeatureHistory.register(
                 project, FeatureType.FACE, livenessEnabled, imagePath, transactionUuid,
-                consentEnabled));
+                consentEnabled, issuedFeatureId));
 
         var createRequest = new CreateFaceFeignRequestDTO(
                 project.getBranchName(),
@@ -98,7 +104,8 @@ public class FaceFeatureService {
                 // 인증 경로에서는 소유 검증(ENFORCE)이 호출자 == 소유자를 보장하므로 값이 같다.
                 String.valueOf(accountId),
                 livenessEnabled,
-                livenessEnabled);
+                livenessEnabled,
+                issuedFeatureId);
         String featureId;
         try {
             featureId = faceService.createFace(createRequest);
@@ -112,6 +119,13 @@ public class FaceFeatureService {
             featureHistory.failUpstream(e);
             historyRecorder.fail(featureHistory);
             throw e;
+        }
+
+        if (!issuedFeatureId.equals(featureId)) {
+            // 하위 서비스가 호출자 id 를 무시했다 — UG-337 이전 버전이다. 이력은 돌려받은 실제 id 를
+            // 가리키게 된다(successRegister). 다만 이 요청의 gate 쓰기가 실패하면 정리 잡은 발급 id 로
+            // 지우려다 "없음" 을 받고, 실제 고아(featureId)는 남는다. 배포 순서(UG-337 → UG-338)를 지킬 것.
+            log.warn("face 가 발급 id 를 무시했다 (UG-337 미배포?). issued={}, actual={}", issuedFeatureId, featureId);
         }
 
         BiometricFeature biometricFeature = BiometricFeature.builder()
@@ -165,9 +179,12 @@ public class FaceFeatureService {
 
         // UG-325/326: 등록은 인증 시도가 아니라 특징점의 생애주기 사건이다 — feature_history 에만 쓴다.
         // (UG-325 의 과도기 이중 기록은 통합 조회가 나가면서 끝났고, V27 이 옛 REGISTER 행을 지웠다.)
+        // UG-338: 특징점 id 를 gate 가 먼저 발급해 시작 이력에 남긴다. 원격 등록 뒤 gate 쪽 성공 쓰기가
+        // 실패하면 하위에는 특징점이 있는데 gate 는 모른다 — 이 id 가 있어야 정리 잡이 무엇을 지울지 안다.
+        String issuedFeatureId = UUID.randomUUID().toString();
         FeatureHistory featureHistory = historyRecorder.start(FeatureHistory.register(
                 project, FeatureType.FACE, false, null, transactionUuid,
-                findProjectSettings.getConsentEnabled()));
+                findProjectSettings.getConsentEnabled(), issuedFeatureId));
 
         var createRequest = new CreateFaceByDescriptorFeignRequestDTO(
                 project.getBranchName(),
@@ -179,7 +196,8 @@ public class FaceFeatureService {
                 // 소유 검증이 먼저 거부하므로(Long.equals(null) 은 false) 지금은 도달하지 않는다.
                 // 그 한 겹에 기대지 않으려고 여기서도 방어한다 — LOG_ONLY 스위치가 있던 동안에는
                 // 실제로 통과했다 (UG-306 에서 제거).
-                String.valueOf(project.getAccountId()));
+                String.valueOf(project.getAccountId()),
+                issuedFeatureId);
         String featureId;
         try {
             featureId = faceService.createFaceByDescriptor(createRequest);
@@ -193,6 +211,13 @@ public class FaceFeatureService {
             featureHistory.failUpstream(e);
             historyRecorder.fail(featureHistory);
             throw e;
+        }
+
+        if (!issuedFeatureId.equals(featureId)) {
+            // 하위 서비스가 호출자 id 를 무시했다 — UG-337 이전 버전이다. 이력은 돌려받은 실제 id 를
+            // 가리키게 된다(successRegister). 다만 이 요청의 gate 쓰기가 실패하면 정리 잡은 발급 id 로
+            // 지우려다 "없음" 을 받고, 실제 고아(featureId)는 남는다. 배포 순서(UG-337 → UG-338)를 지킬 것.
+            log.warn("face 가 발급 id 를 무시했다 (UG-337 미배포?). issued={}, actual={}", issuedFeatureId, featureId);
         }
 
         BiometricFeature biometricFeature = BiometricFeature.builder()

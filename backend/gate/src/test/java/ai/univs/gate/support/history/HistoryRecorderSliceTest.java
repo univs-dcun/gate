@@ -263,7 +263,7 @@ class HistoryRecorderSliceTest {
 
     private FeatureHistory 특징점_이력() {
         Project project = tx.execute(status -> em.find(Project.class, projectId));
-        return FeatureHistory.register(project, FeatureType.FACE, false, "img/x", TX_UUID, false);
+        return FeatureHistory.register(project, FeatureType.FACE, false, "img/x", TX_UUID, false, null);
     }
 
     private List<FeatureHistory> 남은_특징점_이력() {

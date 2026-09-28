@@ -15,6 +15,7 @@ import ai.univs.gate.shared.utils.ApiKeyMasker;
 import ai.univs.gate.shared.utils.TransactionUtil;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
+import ai.univs.gate.support.feature.DownstreamAbsence;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceService;
 import lombok.RequiredArgsConstructor;
@@ -91,9 +92,18 @@ public class DeleteFaceFeatureUseCase {
         try {
             faceService.deleteFace(deleteRequest);
         } catch (CustomFeignException e) {
-            featureHistory.fail(e.getType());
-            historyRecorder.fail(featureHistory);
-            throw e;
+            if (!DownstreamAbsence.이미_없다(e)) {
+                featureHistory.fail(e.getType());
+                historyRecorder.fail(featureHistory);
+                throw e;
+            }
+            // UG-338: face 에 이미 없다 = 우리가 원하던 상태다. gate 도 지워 수렴시킨다.
+            //
+            // 이렇게 되는 경로: 앞선 삭제 요청이 face 에서는 성공했는데 gate 의 성공 쓰기가 실패했다
+            // (커넥션을 못 얻거나 배포 중 프로세스가 끊겼다). 예전에는 여기서 실패로 끝나서, 클라이언트가
+            // 몇 번을 다시 불러도 face 는 매번 "없음" 을 주고 gate 에는 특징점이 영원히 남았다.
+            log.info("face 에 이미 없다 — gate 도 삭제해 수렴시킨다. featureSeq={}, featureId={}",
+                    biometricFeature.getId(), biometricFeature.getFeatureId());
         } catch (RemoteCallException e) {
             featureHistory.failUpstream(e);
             historyRecorder.fail(featureHistory);

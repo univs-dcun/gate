@@ -83,7 +83,7 @@ class ActivityLogSliceTest {
                 .description(memo).isDeleted(false).transactionUuid(UUID.randomUUID().toString())
                 .externalKey(externalKey).build();
         em.persist(f);
-        FeatureHistory h = FeatureHistory.register(p, ft, false, null, UUID.randomUUID().toString(), true);
+        FeatureHistory h = FeatureHistory.register(p, ft, false, null, UUID.randomUUID().toString(), true, null);
         h.successRegister(f); em.persist(h);
         시각("FeatureHistory", h.getId(), T0.plusMinutes(minutes)); return h;
     }
@@ -316,5 +316,49 @@ class ActivityLogSliceTest {
         assertThat(page.getContent().get(0).getExternalKey()).as("남의 프로젝트 키가 붙으면 교차 노출").isNull();
         assertThat(repo.findAllByQuery(조회("ALL", "ALL", "ALL", "other-cust", 1, 10, true), project.getId()).getTotalElements())
                 .isZero();
+    }
+    /**
+     * UG-338 반박 리뷰: 발급 id 는 정리 잡이 쓰는 내부 값이다. 성공하지 않은 등록(시작 상태·응답 없음)의
+     * featureId 는 응답에 나가지 않는다 — UG-338 이전처럼 비어 있다. 검색어로도 걸리지 않는다.
+     * 삭제 행의 featureId 는 지우려던 실제 특징점이라 그대로 나간다.
+     */
+    @Test
+    @DisplayName("UG-338: 성공하지 않은 등록의 발급 id 는 목록·단건·검색 어디에도 나가지 않는다")
+    void 성공하지_않은_등록의_발급_id_는_가린다() {
+        String 발급 = "b0000000-0000-0000-0000-000000000001";
+        FeatureHistory 멈춘 = FeatureHistory.register(project, FeatureType.FACE, false, null,
+                UUID.randomUUID().toString(), true, 발급);
+        em.persist(멈춘);
+        시각("FeatureHistory", 멈춘.getId(), T0);
+        FeatureHistory 성공 = 등록(project, FeatureType.FACE, "ok", 1);
+        FeatureHistory 삭제실패 = 삭제(project, 성공, false, 2);
+
+        assertThat(repo.findLatestByProjectIdAndTransactionUuid(project.getId(), 멈춘.getTransactionUuid()))
+                .isPresent().get().extracting(ActivityLog::getFeatureId).isNull();
+        assertThat(repo.findAllByQuery(조회("ALL", "ALL", "ALL", 발급, 1, 10, true), project.getId())
+                .getTotalElements()).as("검색어로도 걸리지 않는다").isZero();
+        assertThat(repo.findAllByQuery(조회("ALL", true), project.getId()).getContent())
+                .extracting(ActivityLog::getSourceId, ActivityLog::getFeatureId)
+                .contains(tuple(성공.getId(), "fid-ok"), tuple(삭제실패.getId(), "fid-ok"));
+    }
+
+    /**
+     * UG-338 2차 반박 리뷰: V26 백필은 원본 특징점을 찾지 못한 옛 성공 등록의 feature_seq 를 비워 뒀다. 가림
+     * 조건을 feature_seq 로 잡으면 이 행의 id 까지 사라진다 — 성공 여부로 가린다.
+     */
+    @Test
+    @DisplayName("UG-338: feature_seq 가 비어 있는 옛 성공 등록의 id 는 가리지 않는다")
+    void 옛_성공_등록은_가리지_않는다() {
+        FeatureHistory 옛 = FeatureHistory.register(project, FeatureType.FACE, false, null,
+                UUID.randomUUID().toString(), true, "legacy-fid");
+        org.springframework.test.util.ReflectionTestUtils.setField(옛, "success", true);
+        em.persist(옛);
+        시각("FeatureHistory", 옛.getId(), T0);
+
+        assertThat(repo.findLatestByProjectIdAndTransactionUuid(project.getId(), 옛.getTransactionUuid()))
+                .isPresent().get().satisfies(l -> {
+                    assertThat(l.getFeatureSeq()).isNull();
+                    assertThat(l.getFeatureId()).isEqualTo("legacy-fid");
+                });
     }
 }

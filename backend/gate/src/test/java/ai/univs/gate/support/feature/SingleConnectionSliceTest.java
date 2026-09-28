@@ -185,7 +185,7 @@ class SingleConnectionSliceTest {
         assertThatThrownBy(() -> tx.executeWithoutResult(status -> {
             em.createQuery("SELECT COUNT(p) FROM Project p").getSingleResult();   // 첫 번째 확보
             historyRecorder.start(FeatureHistory.register(
-                    project, FeatureType.FACE, false, null, UUID.randomUUID().toString(), true));
+                    project, FeatureType.FACE, false, null, UUID.randomUUID().toString(), true, null));
         })).isInstanceOf(CannotCreateTransactionException.class);
     }
 
