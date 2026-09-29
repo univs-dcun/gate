@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
     public ResponseApi<?> handleBusinessException(BusinessException ex) {
         logByStatus(ex.getErrorType(), ex, null);
 
-        return getExceptionResponse(ex.getErrorType());
+        return getExceptionResponse(ex.getErrorType(), messageService.getMessage(ex.getMessageKey()));
     }
 
     /**
