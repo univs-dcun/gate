@@ -1,0 +1,16 @@
+[Unit]
+Description=UG-343 block internal ports on the internet-facing interface
+Documentation=https://univsai.atlassian.net/browse/UG-343
+After=docker.service network-online.target
+Wants=network-online.target
+# docker 가 재시작되면 이 서비스도 다시 돈다 (멱등).
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/gate-edge-firewall.sh
+# 멈출 때 규칙을 지우지 않는다 — 막는 것이 기본 상태다.
+
+[Install]
+WantedBy=multi-user.target docker.service
