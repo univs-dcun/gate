@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Locale;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -52,6 +53,11 @@ public class WebhookTargetPolicy {
     private final boolean allowPrivateTargets;
     private final Lookup lookup;
 
+    /**
+     * Spring 이 쓰는 생성자. 생성자가 둘이라 지정하지 않으면 빈을 만들지 못하고 gate-service 기동이 실패한다
+     * (UG-111 dev 배포 실패 — 단위 테스트는 직접 생성해 못 잡았다. {@code WebhookBeanWiringTest} 가 지킨다).
+     */
+    @Autowired
     public WebhookTargetPolicy(WebhookProperties properties) {
         this(properties, InetAddress::getAllByName);
     }
