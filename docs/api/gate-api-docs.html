@@ -189,6 +189,12 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     </ul>
   </div>
   <div class="sb-sec">
+    <div class="sb-grp" onclick="tog('g-webhook')">WEBHOOK <span class="sb-arr open" id="arr-g-webhook">▶</span></div>
+    <ul class="sb-list" id="g-webhook">
+      <li class="sb-item" onclick="show('webhook',this)"><span data-i18n="nav-webhook">결과 수신 (웹훅)</span></li>
+    </ul>
+  </div>
+  <div class="sb-sec">
     <div class="sb-grp" onclick="tog('g-errors')">ERRORS <span class="sb-arr open" id="arr-g-errors">▶</span></div>
     <ul class="sb-list" id="g-errors">
       <li class="sb-item" onclick="show('errors-format',this)"><span data-i18n="nav-errors-format">오류 응답 형식</span></li>
@@ -1810,6 +1816,17 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   </div>
 </div>
 <!-- ERRORS: RESPONSE FORMAT -->
+<!-- WEBHOOK (UG-111) — 본문은 WEBHOOK_DOC 에서 그린다. 위치 매핑(.pdsc)을 쓰지 않는다 -->
+<div class="page" id="p-webhook">
+  <div class="ep-hdr">
+    <div class="ep-crumb"><span>Webhook</span> › 결과 수신 (웹훅)</div>
+    <div class="ep-title">결과 수신 (웹훅)</div>
+    <div class="ep-desc">매칭·라이브니스 결과를 프로젝트에 등록한 URL 로 보내 드립니다. 응답과 같은 결과를 서버에서 따로 받아야 할 때 씁니다.</div>
+  </div>
+  <div class="ep-body err-single">
+    <div id="webhook-body"></div>
+  </div>
+</div>
 <div class="page" id="p-errors-format">
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Errors</span> › 오류 응답 형식</div>
@@ -1876,7 +1893,8 @@ var T = {
     'nav-history-list': '매칭 이력 목록',
     'nav-history-get': '이력 단건 조회',
     'nav-errors-format': '오류 응답 형식',
-    'nav-errors-catalog': '오류 코드 목록'
+    'nav-errors-catalog': '오류 코드 목록',
+    'nav-webhook': '결과 수신 (웹훅)'
   },
   en: {
     'nav-overview': 'Overview',
@@ -1898,7 +1916,8 @@ var T = {
     'nav-history-list': 'Match History',
     'nav-history-get': 'History by UUID',
     'nav-errors-format': 'Response Format',
-    'nav-errors-catalog': 'Error Codes'
+    'nav-errors-catalog': 'Error Codes',
+    'nav-webhook': 'Receiving Results (Webhook)'
   }
 };
 
@@ -2389,14 +2408,74 @@ function renderErrorFormat(lang) {
   if (host) host.innerHTML = ERR_FMT[lang];
 }
 
+/* UG-111: 웹훅 페이지 본문. 오류 페이지와 같은 방식으로 언어별 마크업을 통째로 둔다.
+   event 목록은 backend WebhookEvent 와 같아야 한다 (WebhookEventTest 가 백엔드 쪽 목록을 고정한다). */
+var WEBHOOK_DOC = {
+  ko: '<div class="sec-blk"><div class="sec-ttl">설정</div>'
+    + '<p class="err-p">콘솔의 <b>개발 지원 → 웹훅 설정</b>에서 URL 을 등록하고, 어떤 호출의 결과를 받을지 고릅니다. <b>API</b> 를 켜면 API Key 로 호출한 결과가, <b>데모</b>를 켜면 콘솔 데모로 호출한 결과가 옵니다. 프로젝트마다 URL 하나입니다.</p>'
+    + '<ul class="err-ul"><li>URL 은 <b>외부에서 접근할 수 있는 <code>http</code>·<code>https</code> 주소</b>여야 합니다. 루프백·사설망·링크 로컬 주소는 저장할 때 <code>PJ-111</code> 로 거절됩니다(설치형은 설정에 따라 사설망을 허용할 수 있습니다).</li>'
+    + '<li><b>HTTPS 를 쓰세요.</b> 본문에 매칭 결과가 실립니다.</li>'
+    + '<li>요청에 서명이 없습니다. 제3자가 추측하기 어려운 경로를 쓰고(예: <code>/hooks/gate/8f2c…</code>), 받은 결과는 필요하면 <code>transactionUuid</code> 로 매칭 이력과 대조하세요.</li></ul></div>'
+    + '<div class="sec-blk"><div class="sec-ttl">보내는 결과</div>'
+    + '<table class="tbl"><thead><tr><th style="width:30%">event</th><th style="width:44%">엔드포인트</th><th>기능</th></tr></thead><tbody><tr><td><code>LIVENESS</code></td><td class="edsc"><code>POST /api/v1/feature/face/liveness</code></td><td class="edsc">라이브니스</td></tr><tr><td><code>VERIFY_ID</code></td><td class="edsc"><code>POST /api/v1/feature/face/verify/id</code></td><td class="edsc">1:1 확인 (featureId)</td></tr><tr><td><code>VERIFY_IMAGE</code></td><td class="edsc"><code>POST /api/v1/feature/face/verify/image</code></td><td class="edsc">1:1 확인 (이미지)</td></tr><tr><td><code>VERIFY_DESCRIPTOR</code></td><td class="edsc"><code>POST /api/v1/feature/face/verify/descriptor</code></td><td class="edsc">1:1 확인 (특징점)</td></tr><tr><td><code>IDENTIFY</code></td><td class="edsc"><code>POST /api/v1/feature/face/identify</code></td><td class="edsc">1:N 매칭</td></tr><tr><td><code>IDENTIFY_DESCRIPTOR</code></td><td class="edsc"><code>POST /api/v1/feature/face/identify/descriptor</code></td><td class="edsc">1:N 매칭 (특징점)</td></tr><tr><td><code>IDENTIFY_CANDIDATES_DESCRIPTOR</code></td><td class="edsc"><code>POST /api/v1/feature/face/identify/descriptor/candidates</code></td><td class="edsc">1:N 후보 목록 (특징점)</td></tr></tbody></table>'
+    + '<p class="err-foot">결과가 나온 요청만 보냅니다 — 매칭 불일치·라이브니스 실패처럼 <b>HTTP 200</b> 으로 끝난 요청은 성공·실패 모두 보내고, <b>오류 응답(4xx·5xx)으로 끝난 요청은 보내지 않습니다.</b> 그 오류는 호출한 쪽이 응답으로 이미 받습니다.</p></div>'
+    + '<div class="sec-blk"><div class="sec-ttl">요청 형식</div>'
+    + '<p class="err-p"><code>POST</code>, <code>Content-Type: application/json</code>, <code>User-Agent: UNIVS-Gate-Webhook/1.0</code>, <code>X-Gate-Event-Id</code>.</p>'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Body</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"eventId"</span>: <span class="js">"3f6c1f0e-8a2b-4d0e-9c1a-2b7d5e4f9a10"</span>,\n  <span class="jk">"event"</span>: <span class="js">"IDENTIFY"</span>,\n  <span class="jk">"source"</span>: <span class="js">"API"</span>,\n  <span class="jk">"transactionUuid"</span>: <span class="js">"0b8e1c52-..."</span>,\n  <span class="jk">"occurredAt"</span>: <span class="js">"2026-09-29T05:00:00Z"</span>,\n  <span class="jk">"data"</span>: { ... }\n}</pre></div>'
+    + '<table class="tbl"><thead><tr><th style="width:22%">필드</th><th>설명</th></tr></thead><tbody><tr><td><code>eventId</code></td><td class="edsc">전송 한 건의 고유 값입니다. <b>재시도해도 같은 값</b>이므로 중복을 거르는 데 씁니다. 헤더 <code>X-Gate-Event-Id</code> 에도 같은 값이 옵니다.</td></tr><tr><td><code>event</code></td><td class="edsc">결과 종류. 위 표의 값 중 하나입니다.</td></tr><tr><td><code>source</code></td><td class="edsc"><code>API</code>(API Key 로 호출) 또는 <code>DEMO</code>(콘솔 데모로 호출).</td></tr><tr><td><code>transactionUuid</code></td><td class="edsc">그 요청의 거래 ID. 응답과 매칭 이력의 값과 같습니다.</td></tr><tr><td><code>occurredAt</code></td><td class="edsc">결과가 만들어진 시각. UTC, ISO-8601.</td></tr><tr><td><code>data</code></td><td class="edsc">그 API 응답의 <code>data</code> 와 <b>같은 구조</b>입니다. 필드 설명은 각 엔드포인트 페이지를 보세요.</td></tr></tbody></table></div>'
+    + '<div class="sec-blk"><div class="sec-ttl">전달 규칙</div><ul class="err-ul">'
+    + '<li><b>2xx 로 응답하면 전달 완료</b>입니다. 응답 본문의 내용은 쓰지 않습니다.</li>'
+    + '<li>연결 실패, 응답 지연(연결 3초, 응답이 5초 넘게 멈추거나 한 번의 시도가 9초를 넘길 때), <b>5xx</b>, <b>429</b> 는 <b>최대 3번</b>까지 시도합니다. 간격은 약 1초에서 시작해 늘어납니다.</li>'
+    + '<li>그 밖의 <b>4xx 와 3xx 는 다시 보내지 않습니다.</b> 리다이렉트를 따라가지 않으므로 최종 URL 을 등록하세요. <b>존재하지 않는 호스트</b>와 <b>인증서 오류</b>도 다시 보내지 않습니다.</li>'
+    + '<li><b>같은 결과가 두 번 올 수 있습니다</b>(최소 한 번 전달). <code>eventId</code> 로 중복을 거르세요. <b>순서는 보장하지 않습니다.</b></li>'
+    + '<li>재시도가 모두 실패하면 그 결과는 다시 보내지 않습니다. 빠진 결과는 매칭 이력 API 로 확인하세요.</li>'
+    + '<li>받는 쪽은 <b>먼저 2xx 로 응답하고 처리는 나중에</b> 하세요. 제때 응답하지 않으면 실패로 보고 다시 보냅니다.</li>'
+    + '</ul></div>',
+
+  en: '<div class="sec-blk"><div class="sec-ttl">Setup</div>'
+    + '<p class="err-p">Register the URL under <b>Developer Support → Webhook settings</b> in the console and choose which calls to receive. Turn on <b>API</b> for calls made with an API Key, and <b>Demo</b> for calls made from the console demo. Each project has one URL.</p>'
+    + '<ul class="err-ul"><li>The URL must be a <b>publicly reachable <code>http</code> or <code>https</code> address</b>. Loopback, private-network and link-local addresses are rejected on save with <code>PJ-111</code> (on-premises installations can be configured to allow private networks).</li>'
+    + '<li><b>Use HTTPS.</b> The body carries match results.</li>'
+    + '<li>Requests are not signed. Use a path that is hard for a third party to guess (for example <code>/hooks/gate/8f2c…</code>), and if needed check a result against match history by its <code>transactionUuid</code>.</li></ul></div>'
+    + '<div class="sec-blk"><div class="sec-ttl">Results Sent</div>'
+    + '<table class="tbl"><thead><tr><th style="width:30%">event</th><th style="width:44%">Endpoint</th><th>Feature</th></tr></thead><tbody><tr><td><code>LIVENESS</code></td><td class="edsc"><code>POST /api/v1/feature/face/liveness</code></td><td class="edsc">Liveness</td></tr><tr><td><code>VERIFY_ID</code></td><td class="edsc"><code>POST /api/v1/feature/face/verify/id</code></td><td class="edsc">1:1 Verify (featureId)</td></tr><tr><td><code>VERIFY_IMAGE</code></td><td class="edsc"><code>POST /api/v1/feature/face/verify/image</code></td><td class="edsc">1:1 Verify (image)</td></tr><tr><td><code>VERIFY_DESCRIPTOR</code></td><td class="edsc"><code>POST /api/v1/feature/face/verify/descriptor</code></td><td class="edsc">1:1 Verify (descriptor)</td></tr><tr><td><code>IDENTIFY</code></td><td class="edsc"><code>POST /api/v1/feature/face/identify</code></td><td class="edsc">1:N Identify</td></tr><tr><td><code>IDENTIFY_DESCRIPTOR</code></td><td class="edsc"><code>POST /api/v1/feature/face/identify/descriptor</code></td><td class="edsc">1:N Identify (descriptor)</td></tr><tr><td><code>IDENTIFY_CANDIDATES_DESCRIPTOR</code></td><td class="edsc"><code>POST /api/v1/feature/face/identify/descriptor/candidates</code></td><td class="edsc">1:N Candidates (descriptor)</td></tr></tbody></table>'
+    + '<p class="err-foot">Only requests that produced a result are sent. Requests that ended in <b>HTTP 200</b> are sent whether the match or liveness check passed or failed; <b>requests that ended in an error response (4xx or 5xx) are not sent.</b> The caller already received that error in the response.</p></div>'
+    + '<div class="sec-blk"><div class="sec-ttl">Request Format</div>'
+    + '<p class="err-p"><code>POST</code>, <code>Content-Type: application/json</code>, <code>User-Agent: UNIVS-Gate-Webhook/1.0</code>, <code>X-Gate-Event-Id</code>.</p>'
+    + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Body</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"eventId"</span>: <span class="js">"3f6c1f0e-8a2b-4d0e-9c1a-2b7d5e4f9a10"</span>,\n  <span class="jk">"event"</span>: <span class="js">"IDENTIFY"</span>,\n  <span class="jk">"source"</span>: <span class="js">"API"</span>,\n  <span class="jk">"transactionUuid"</span>: <span class="js">"0b8e1c52-..."</span>,\n  <span class="jk">"occurredAt"</span>: <span class="js">"2026-09-29T05:00:00Z"</span>,\n  <span class="jk">"data"</span>: { ... }\n}</pre></div>'
+    + '<table class="tbl"><thead><tr><th style="width:22%">Field</th><th>Description</th></tr></thead><tbody><tr><td><code>eventId</code></td><td class="edsc">Unique per delivery. <b>It stays the same across retries</b>, so use it to drop duplicates. The <code>X-Gate-Event-Id</code> header carries the same value.</td></tr><tr><td><code>event</code></td><td class="edsc">The kind of result — one of the values in the table above.</td></tr><tr><td><code>source</code></td><td class="edsc"><code>API</code> (called with an API Key) or <code>DEMO</code> (called from the console demo).</td></tr><tr><td><code>transactionUuid</code></td><td class="edsc">The transaction ID of that request, identical to the one in the response and in match history.</td></tr><tr><td><code>occurredAt</code></td><td class="edsc">When the result was produced. UTC, ISO-8601.</td></tr><tr><td><code>data</code></td><td class="edsc"><b>The same structure</b> as the <code>data</code> of that API response. See each endpoint page for its fields.</td></tr></tbody></table></div>'
+    + '<div class="sec-blk"><div class="sec-ttl">Delivery Rules</div><ul class="err-ul">'
+    + '<li><b>A 2xx response completes the delivery.</b> The content of the response body is not used.</li>'
+    + '<li>Connection failures, slow responses (over 3 s to connect, a 5 s stall in the response, or more than 9 s for one attempt), <b>5xx</b> and <b>429</b> are tried <b>up to 3 times</b>, starting about 1 second apart and backing off.</li>'
+    + '<li><b>Other 4xx and all 3xx responses are not retried.</b> Redirects are not followed, so register the final URL. <b>A host that does not exist</b> and <b>certificate errors</b> are not retried either.</li>'
+    + '<li><b>The same result can arrive twice</b> (at-least-once delivery). Drop duplicates by <code>eventId</code>. <b>Ordering is not guaranteed.</b></li>'
+    + '<li>If every attempt fails, that result is not sent again. Use the match history API to recover missing results.</li>'
+    + '<li><b>Respond with 2xx first and process afterwards.</b> A receiver that does not answer in time is treated as failed and the result is sent again.</li>'
+    + '</ul></div>'
+};
+
+function renderWebhookDoc(lang) {
+  var host = document.getElementById('webhook-body');
+  if (host) host.innerHTML = WEBHOOK_DOC[lang];
+}
+
 function renderErrorDocs(lang) {
   renderEndpointErrors(lang);
   renderErrorCatalog(lang);
   renderErrorFormat(lang);
   renderFailureReasons(lang);
+  renderWebhookDoc(lang);   // UG-111: 같은 시점(초기 렌더·언어 전환)에 그리려고 여기 둔다
 }
 
 var PAGES = {
+  'p-webhook': {
+    crumb: { ko: '<span>Webhook</span> › 결과 수신 (웹훅)', en: '<span>Webhook</span> › Receiving Results' },
+    title: { ko: '결과 수신 (웹훅)', en: 'Receiving Results (Webhook)' },
+    desc: {
+      ko: '매칭·라이브니스 결과를 프로젝트에 등록한 URL 로 보내 드립니다. 응답과 같은 결과를 서버에서 따로 받아야 할 때 씁니다.',
+      en: 'Match and liveness results are sent to the URL registered for your project. Use it when your server needs its own copy of the result the API returned.'
+    }
+  },
   'p-errors-format': {
     crumb: { ko: '<span>Errors</span> › 오류 응답 형식', en: '<span>Errors</span> › Response Format' },
     title: { ko: '오류 응답 형식', en: 'Error Response Format' },

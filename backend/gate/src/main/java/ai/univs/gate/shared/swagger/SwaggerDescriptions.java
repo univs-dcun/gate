@@ -132,9 +132,9 @@ public class SwaggerDescriptions {
 
     /* Webhooks 요청/응답 DTO */
     public static final String WEBHOOK_CONFIG_ID = "웹훅 설정 식별 번호";
-    public static final String WEBHOOK_URL = "웹훅 URL (https:// 형태)";
-    public static final String WEBHOOK_DEMO_ENABLED = "웹훅 데모 활성화 여부";
-    public static final String WEBHOOK_API_ENABLED = "웹훅 API 활성화 여부";
+    public static final String WEBHOOK_URL = "웹훅 URL. 외부에서 접근할 수 있는 http(s) 주소여야 합니다 — 루프백·사설망·링크 로컬 주소는 PJ-111 로 거절됩니다";
+    public static final String WEBHOOK_DEMO_ENABLED = "데모 호출 결과를 웹훅으로 보낼지 여부";
+    public static final String WEBHOOK_API_ENABLED = "API 호출 결과를 웹훅으로 보낼지 여부";
 
     /* 공통 추가 */
     public static final String PAGE_INFO = "페이징 정보";

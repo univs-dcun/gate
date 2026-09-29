@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
+import ai.univs.gate.support.webhook.WebhookEvent;
+import ai.univs.gate.shared.web.enums.CallerType;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyByDescriptorInput;
@@ -45,6 +48,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -128,6 +133,7 @@ class DescriptorMatchHistoryTest {
         @Mock private ApiKeyService apiKeyService;
         @Mock private FaceService faceService;
 
+        @Mock private UseCaseNotifyService useCaseNotifyService;
         @InjectMocks private IdentifyByDescriptorUseCase useCase;
 
         private final IdentifyByDescriptorInput input =
@@ -157,6 +163,7 @@ class DescriptorMatchHistoryTest {
                             .featureId("registered-face-id").isDeleted(false).build());
 
             IdentifyByDescriptorResult result = useCase.execute(input);
+            verify(useCaseNotifyService).notify(eq(CallerType.API), eq(WebhookEvent.IDENTIFY_DESCRIPTOR), any(), any(), same(result));   // UG-111
 
             assertThat(result.matchingHistoryId()).isEqualTo(SAVED_ID);
             assertThat(result.projectId()).isEqualTo(PROJECT_ID);
@@ -186,6 +193,7 @@ class DescriptorMatchHistoryTest {
                             .transactionUuid(TX).similarity(new BigDecimal("0.10")).result(false).build());
 
             IdentifyByDescriptorResult result = useCase.execute(input);
+            verify(useCaseNotifyService).notify(eq(CallerType.API), eq(WebhookEvent.IDENTIFY_DESCRIPTOR), any(), any(), same(result));   // UG-111
 
             assertThat(result.success()).isFalse();
             assertThat(result.featureId()).isEmpty();
@@ -222,6 +230,7 @@ class DescriptorMatchHistoryTest {
                     .willThrow(new CustomFeignException(ErrorType.FACE_NOT_FOUND.getCode(), ErrorType.FACE_NOT_FOUND.name(), "no face"));
 
             assertThatThrownBy(() -> useCase.execute(input)).isInstanceOf(CustomFeignException.class);
+            verifyNoInteractions(useCaseNotifyService);   // UG-111: 예외로 끝나면 알리지 않는다
 
             MatchHistory saved = captureSaved(historyRecorder);
             assertThat(saved.getFailureType())
@@ -396,6 +405,7 @@ class DescriptorMatchHistoryTest {
         @Mock private FaceService faceService;
         @Mock private HistoryRecorder historyRecorder;
 
+        @Mock private UseCaseNotifyService useCaseNotifyService;
         @InjectMocks private VerifyByDescriptorUseCase useCase;
 
         private final VerifyByDescriptorInput input =
@@ -419,6 +429,7 @@ class DescriptorMatchHistoryTest {
                     .willReturn(응답("0.98230", true));
 
             var result = useCase.execute(input);
+            verify(useCaseNotifyService).notify(eq(CallerType.API), eq(WebhookEvent.VERIFY_DESCRIPTOR), any(), any(), same(result));   // UG-111
 
             // UG-283: 응답 구조를 descriptor 1:N 과 동일하게 맞췄다. face 원값 문자열이 아니라
             // MatchHistory 의 백분율을 내보낸다.
@@ -458,6 +469,7 @@ class DescriptorMatchHistoryTest {
                     .willReturn(응답("0.10000", false));
 
             var result = useCase.execute(input);
+            verify(useCaseNotifyService).notify(eq(CallerType.API), eq(WebhookEvent.VERIFY_DESCRIPTOR), any(), any(), same(result));   // UG-111
 
             assertThat(result.success()).isFalse();
             assertThat(result.similarity()).isEqualTo(new BigDecimal("10.00"));
@@ -479,6 +491,7 @@ class DescriptorMatchHistoryTest {
                     .willThrow(new CustomFeignException(ErrorType.INVALID_INPUT.getCode(), ErrorType.INVALID_INPUT.name(), "bad descriptor"));
 
             assertThatThrownBy(() -> useCase.execute(input)).isInstanceOf(CustomFeignException.class);
+            verifyNoInteractions(useCaseNotifyService);   // UG-111: 예외로 끝나면 알리지 않는다
 
             assertThat(captureSaved(historyRecorder).getFailureType())
                     .isEqualTo(ErrorType.INVALID_INPUT.name());

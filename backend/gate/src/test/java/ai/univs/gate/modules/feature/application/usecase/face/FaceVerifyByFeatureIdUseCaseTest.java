@@ -30,6 +30,7 @@ import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -194,7 +195,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
 
         // then: 알림 발송 검증
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.VERIFY_ID.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.VERIFY_ID, PROJECT_ID, TRANSACTION_UUID, result);
     }
 
     @Test
@@ -227,7 +228,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
         assertThat(saved.getFeatureId()).isEqualTo(INPUT_FACE_ID);
 
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.VERIFY_ID.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.VERIFY_ID, PROJECT_ID, TRANSACTION_UUID, result);
     }
 
     @Test
@@ -254,7 +255,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
         assertThat(saved.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
 
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.VERIFY_ID.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.VERIFY_ID, PROJECT_ID, TRANSACTION_UUID, result);
     }
 
     @Test
@@ -303,7 +304,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
         assertThat(saved.getSimilarity()).isEqualTo(new BigDecimal("33.00"));
 
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.VERIFY_ID.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.VERIFY_ID, PROJECT_ID, TRANSACTION_UUID, result);
     }
 
     @Test
