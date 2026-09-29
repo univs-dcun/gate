@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,9 +21,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 @DisplayName("UG-111: 웹훅 대상 주소 정책")
 class WebhookTargetPolicyTest {
 
+    private static WebhookProperties props(boolean allowPrivate) {
+        return new WebhookProperties(
+                allowPrivate, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000);
+    }
+
     private static WebhookTargetPolicy policy(boolean allowPrivate) {
-        return new WebhookTargetPolicy(new WebhookProperties(
-                allowPrivate, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000));
+        return new WebhookTargetPolicy(props(allowPrivate));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -29,6 +36,9 @@ class WebhookTargetPolicyTest {
             "http://1.1.1.1:8080/hook?token=abc",
             "HTTPS://8.8.8.8/hook",
             "https://[2001:4860:4860::8888]/hook",
+            "https://100.63.255.255/hook",     // 100.64/10 바로 앞
+            "https://100.128.0.1/hook",        // 100.64/10 바로 뒤
+            "https://[64:ff9b::808:808]/hook", // NAT64 안의 8.8.8.8
     })
     @DisplayName("공인 주소는 허용한다")
     void 공인_주소(String url) {
@@ -43,6 +53,10 @@ class WebhookTargetPolicyTest {
             "http://100.64.0.1/hook",
             "http://[fc00::1]/hook",
             "http://[fd12:3456::1]/hook",
+            "http://100.127.255.255/hook",     // 100.64/10 의 끝 — /16 으로 잘못 판정하면 빠진다
+            "http://198.18.0.1/hook",
+            "http://[::10.0.0.1]/hook",        // IPv4 호환 IPv6 — netty 는 ::ffff:10.0.0.1 로 연결한다 (반박 리뷰 B1)
+            "http://[64:ff9b::a00:1]/hook",    // NAT64 안의 10.0.0.1
     })
     @DisplayName("사설망은 기본으로 막고, allow-private-targets 를 켜면 허용한다 (온프레미스)")
     void 사설망(String url) {
@@ -63,6 +77,17 @@ class WebhookTargetPolicyTest {
             "http://255.255.255.255/",
             "http://[::ffff:127.0.0.1]/",                   // IPv4 매핑 IPv6 로 루프백 우회
             "http://2130706433/",                           // 127.0.0.1 의 10진 표기
+            "http://[::]/",                                 // 미지정 — Linux 에서는 로컬호스트로 연결된다
+            "http://240.0.0.1/",
+            // 반박 리뷰 B1: JDK 는 ::7f00:1 (루프백 아님)로, netty 는 ::ffff:127.0.0.1 로 읽는다.
+            "http://[::127.0.0.1]:8888/actuator",
+            "http://[0:0:0:0:0:0:127.0.0.1]/",
+            "http://[::0:127.0.0.1]/",
+            "http://[::169.254.169.254]/latest/meta-data/",
+            "http://[::ffff:0:127.0.0.1]/",                 // SIIT
+            "http://[64:ff9b::7f00:1]/",                    // NAT64 안의 127.0.0.1
+            "http://[2002:7f00:1::1]/",                     // 6to4 안의 127.0.0.1
+            "http://[2002:a9fe:a9fe::1]/",                  // 6to4 안의 169.254.169.254
     })
     @DisplayName("루프백·링크 로컬·미지정·멀티캐스트·브로드캐스트는 온프레미스에서도 막는다")
     void 항상_막는_주소(String url) {
@@ -92,6 +117,44 @@ class WebhookTargetPolicyTest {
     @DisplayName("null 도 같은 오류로 막는다 (NPE 가 아니다)")
     void null_URL() {
         assertRejected(policy(false), null);
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("저장할 때: 공인 주소와 내부 주소가 섞인 레코드는 거절한다 — 첫 주소만 보면 뚫린다")
+    void 섞인_레코드_저장() {
+        WebhookTargetPolicy mixed = new WebhookTargetPolicy(props(false), host -> new InetAddress[] {
+                InetAddress.getByName("8.8.8.8"), InetAddress.getByName("10.0.0.1")});
+        assertRejected(mixed, "https://mixed.example.com/hook");
+
+        WebhookTargetPolicy publicOnly = new WebhookTargetPolicy(props(false), host -> new InetAddress[] {
+                InetAddress.getByName("8.8.8.8"), InetAddress.getByName("1.1.1.1")});
+        assertThat(publicOnly.validate("https://ok.example.com/hook").getHost()).isEqualTo("ok.example.com");
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("연결할 때: 푼 주소에 막힌 주소가 하나라도 있으면 연결하지 않는다 (DNS 리바인딩)")
+    void 섞인_레코드_연결() throws Exception {
+        WebhookTargetPolicy policy = policy(false);
+        List<InetSocketAddress> mixed = List.of(
+                new InetSocketAddress(InetAddress.getByName("8.8.8.8"), 443),
+                new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 443));
+        List<InetSocketAddress> ok = List.of(new InetSocketAddress(InetAddress.getByName("8.8.8.8"), 443));
+
+        assertThatThrownBy(() -> policy.selectAllowed(mixed))
+                .hasCauseInstanceOf(WebhookTargetPolicy.TargetNotAllowedException.class);
+        assertThat(policy.selectAllowed(ok)).isEqualTo(ok);
+    }
+
+    @org.junit.jupiter.api.Test
+    @DisplayName("보내기 직전 검사는 DNS 를 조회하지 않는다 — 응답 없는 네임서버가 전송 스레드를 붙잡지 않게")
+    void 보내기_직전은_조회하지_않는다() {
+        WebhookTargetPolicy noLookup = new WebhookTargetPolicy(props(false), host -> {
+            throw new AssertionError("DNS 를 조회했다: " + host);
+        });
+        assertThat(noLookup.checkWithoutLookup("https://receiver.example.com/hook").getHost())
+                .isEqualTo("receiver.example.com");
+        assertThatThrownBy(() -> noLookup.checkWithoutLookup("http://[::127.0.0.1]/"))
+                .isInstanceOf(CustomGateException.class);
     }
 
     private static void assertRejected(WebhookTargetPolicy policy, String url) {

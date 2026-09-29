@@ -23,14 +23,15 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 public record WebhookProperties(
         @DefaultValue("false") boolean allowPrivateTargets,
         @DefaultValue("3s") Duration connectTimeout,
+        /** 읽기 사이의 최대 공백. 시도 한 번의 전체 상한은 connectTimeout + responseTimeout + 1초다. */
         @DefaultValue("5s") Duration responseTimeout,
         /** 첫 시도를 포함한 총 시도 횟수. 1 이면 재시도하지 않는다. */
         @DefaultValue("3") int maxAttempts,
         /** 재시도 간격의 시작값. 시도마다 지수로 늘어난다(지터 포함). */
         @DefaultValue("1s") Duration retryBackoff,
-        /** 동시에 열어 둘 연결 수 상한. 넘으면 대기열에서 기다린다. */
+        /** 수신 주소 하나당 동시에 열어 둘 연결 수 상한 (reactor-netty 풀은 원격 주소별이다). */
         @DefaultValue("50") int maxConnections,
-        /** 연결을 기다리는 전송 수 상한. 넘으면 그 전송은 버린다(로그만 남긴다). */
+        /** 수신 주소 하나당 연결을 기다리는 전송 수 상한. 넘으면 그 전송은 버린다(로그만 남긴다). */
         @DefaultValue("500") int maxPending,
         /** 설정 조회·페이로드 조립을 기다리는 작업 수 상한. 넘으면 버린다. */
         @DefaultValue("1000") int queueCapacity) {

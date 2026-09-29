@@ -2,12 +2,16 @@ package ai.univs.gate.support.webhook;
 
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
+import io.netty.util.NetUtil;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
@@ -19,68 +23,141 @@ import org.springframework.stereotype.Component;
  * {@code http://gate-postgres:5432} 나 {@code http://config-server:8888/actuator/...} 같은
  * 내부 주소를 넣어 우리 내부망에 POST 를 보내게 할 수 있다(SSRF).
  *
- * <p>두 곳에서 쓴다.
+ * <p>세 곳에서 쓴다.
  * <ul>
- *   <li><b>저장할 때</b> ({@link #validate}) — 잘못된 주소를 화면에서 바로 알려 준다.
- *   <li><b>보낼 때</b> — 저장 뒤에 DNS 가 내부 주소로 바뀔 수 있다(DNS 리바인딩). 그래서
- *       {@link WebhookService} 는 보내기 직전에 다시 확인하고, 실제 연결에 쓰는 주소도
- *       {@link PolicyAddressResolverGroup} 가 이 정책으로 거른다.
+ *   <li><b>저장할 때</b> ({@link #validate}) — 호스트 이름까지 풀어 본다. 잘못된 주소를 화면에서
+ *       바로 알려 주기 위해서다.
+ *   <li><b>보내기 직전</b> ({@link #checkWithoutLookup}) — 형식과 IP 리터럴만 본다. DNS 를
+ *       조회하지 않는다 — 응답하지 않는 네임서버 하나가 전송 스레드를 붙잡으면 모든 프로젝트의
+ *       웹훅이 밀린다(반박 리뷰 W2).
+ *   <li><b>연결할 때</b> ({@link #selectAllowed}) — reactor-netty 의 비동기 DNS 가 푼 주소를
+ *       거른다. 저장 뒤 DNS 가 내부 주소로 바뀌는 경우(DNS 리바인딩)가 여기서 막힌다.
  * </ul>
  *
+ * <p><b>IP 리터럴은 두 파서로 읽는다</b> (반박 리뷰 B1). JDK 는 {@code [::127.0.0.1]} 을 IPv4
+ * 호환 IPv6 주소 {@code ::7f00:1} 로 읽어 루프백이 아니라고 판정하는데, netty 는 같은 문자열을
+ * {@code ::ffff:127.0.0.1} 로 바꿔 루프백에 연결한다. 실제로 연결에 쓰는 쪽(netty)의 해석을
+ * 함께 검사하고, IPv6 안에 IPv4 가 든 대역은 안의 IPv4 로 다시 판정한다.
+ *
  * <p>항상 막는 것: 루프백, 링크 로컬(클라우드 메타데이터 169.254.169.254 포함), 미지정 주소,
- * 멀티캐스트. 사설망(10/8, 172.16/12, 192.168/16, 100.64/10, fc00::/7)은
- * {@code gate.webhook.allow-private-targets=true} 일 때만 허용한다 — 온프레미스용.
+ * 멀티캐스트, 0/8, 240/4(예약·브로드캐스트). 사설망(10/8, 172.16/12, 192.168/16, 100.64/10,
+ * 198.18/15, fc00::/7, fec0::/10)은 {@code gate.webhook.allow-private-targets=true} 일 때만
+ * 허용한다 — 온프레미스용.
  */
 @Component
 public class WebhookTargetPolicy {
 
+    /** 호스트 이름 → 주소. 테스트가 섞인 레코드를 흉내 내려고 바꾼다. */
+    interface Lookup {
+        InetAddress[] resolve(String host) throws UnknownHostException;
+    }
+
     private final boolean allowPrivateTargets;
+    private final Lookup lookup;
 
     public WebhookTargetPolicy(WebhookProperties properties) {
+        this(properties, InetAddress::getAllByName);
+    }
+
+    WebhookTargetPolicy(WebhookProperties properties, Lookup lookup) {
         this.allowPrivateTargets = properties.allowPrivateTargets();
+        this.lookup = lookup;
     }
 
     /**
-     * 저장·전송 전에 URL 을 검사하고 파싱한 결과를 돌려준다.
+     * 저장 전에 URL 을 검사한다. 호스트 이름이면 DNS 로 풀어 <b>모든</b> 주소를 본다.
      *
      * @throws CustomGateException {@link ErrorType#WEBHOOK_URL_NOT_ALLOWED} — 형식이 틀렸거나,
      *         http(s) 가 아니거나, 호스트를 찾을 수 없거나, 허용하지 않는 주소로 풀릴 때
      */
     public URI validate(String rawUrl) {
-        URI uri = parse(rawUrl);
+        URI uri = checkWithoutLookup(rawUrl);
+        String host = hostOf(uri);
+        if (isIpLiteral(host)) return uri;   // checkWithoutLookup 이 이미 봤다
         try {
-            resolveAllowed(uri.getHost());
-        } catch (UnknownHostException e) {   // TargetNotAllowedException 도 여기로 온다
+            InetAddress[] addresses = lookup.resolve(host);
+            if (addresses.length == 0 || !Arrays.stream(addresses).allMatch(this::isAllowed)) {
+                throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            }
+        } catch (UnknownHostException e) {
             throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
         }
         return uri;
     }
 
     /**
-     * 호스트를 풀어서 <b>모든</b> 주소가 허용될 때만 돌려준다.
-     *
-     * <p>하나라도 막힌 주소가 섞이면 거절한다. 공인 주소 하나와 내부 주소 하나를 함께 돌려주는
-     * 레코드로 우회하지 못하게 하기 위해서다.
+     * DNS 를 조회하지 않고 볼 수 있는 것만 본다 — 스킴, 형식, IP 리터럴.
+     * 호스트 이름의 주소는 연결 단계({@link #selectAllowed})가 거른다.
      */
-    List<InetAddress> resolveAllowed(String host) throws UnknownHostException {
-        List<InetAddress> addresses = List.of(InetAddress.getAllByName(host));
-        for (InetAddress address : addresses) {
-            if (!isAllowed(address)) {
-                throw new TargetNotAllowedException(host);
+    URI checkWithoutLookup(String rawUrl) {
+        URI uri = parse(rawUrl);
+        String host = hostOf(uri);
+        if (isIpLiteral(host) && !isLiteralAllowed(host)) {
+            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+        }
+        return uri;
+    }
+
+    /**
+     * reactor-netty 가 호스트 이름을 푼 결과를 거른다. 하나라도 막힌 주소가 섞이면 연결하지 않는다 —
+     * 공인 주소 하나와 내부 주소 하나를 함께 돌려주는 레코드로 우회하지 못하게 하기 위해서다.
+     *
+     * @throws java.io.UncheckedIOException 막힌 주소가 있을 때 (원인은 {@link TargetNotAllowedException}).
+     *         연결 실패로 올라가고 재시도하지 않는다.
+     */
+    List<? extends SocketAddress> selectAllowed(List<? extends SocketAddress> resolved) {
+        for (SocketAddress address : resolved) {
+            if (!(address instanceof InetSocketAddress inet) || inet.getAddress() == null
+                    || !isAllowed(inet.getAddress())) {
+                // 풀린 주소는 로그·예외에 남기지 않는다 — 우리 내부 주소를 알려 주는 통로가 된다.
+                // 선택 함수(BiFunction)는 검사 예외를 못 던진다. 원인 사슬에 남기면 재시도 판정이 알아본다.
+                throw new java.io.UncheckedIOException(new TargetNotAllowedException(
+                        address instanceof InetSocketAddress i ? i.getHostString() : "?"));
             }
         }
-        return addresses;
+        return resolved;
     }
 
     boolean isAllowed(InetAddress address) {
+        InetAddress embedded = embeddedIpv4(address);
+        if (embedded != null) return isAllowed(embedded);
         if (address.isAnyLocalAddress()
                 || address.isLoopbackAddress()
                 || address.isLinkLocalAddress()
                 || address.isMulticastAddress()
-                || isUnspecifiedOrBroadcast(address)) {
+                || isReservedIpv4(address)) {
             return false;
         }
         return allowPrivateTargets || !isPrivate(address);
+    }
+
+    /** JDK 와 netty 가 같은 리터럴을 다르게 읽을 수 있다. 둘 다 허용될 때만 통과시킨다. */
+    private boolean isLiteralAllowed(String host) {
+        try {
+            InetAddress byJdk = InetAddress.getByName(host);   // 리터럴이라 DNS 를 타지 않는다
+            InetAddress byNetty = NetUtil.createInetAddressFromIpAddressString(host);
+            return isAllowed(byJdk) && byNetty != null && isAllowed(byNetty);
+        } catch (UnknownHostException e) {
+            return false;
+        }
+    }
+
+    /**
+     * netty 가 IP 리터럴로 보는가. 그렇다면 reactor-netty 는 DNS 리졸버를 거치지 않고 바로 연결하므로
+     * {@link #selectAllowed} 가 볼 기회가 없다 — 여기서 막아야 한다.
+     *
+     * <p>{@code 2130706433} 같은 비표준 표기는 netty 에게 리터럴이 아니라 호스트 이름이다. 비동기 DNS 로
+     * 조회되고(풀리지 않는다), 풀린다면 {@link #selectAllowed} 가 거른다. 저장할 때는 JDK 가 이 표기를
+     * 127.0.0.1 로 읽어 {@link #validate} 에서 거절된다.
+     */
+    private static boolean isIpLiteral(String host) {
+        return NetUtil.isValidIpV4Address(host) || NetUtil.isValidIpV6Address(host);
+    }
+
+    /** URI 의 IPv6 호스트는 대괄호가 붙어 온다. */
+    private static String hostOf(URI uri) {
+        String host = uri.getHost();
+        return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
     }
 
     private static URI parse(String rawUrl) {
@@ -104,28 +181,63 @@ public class WebhookTargetPolicy {
         return uri;
     }
 
-    /** 0.0.0.0/8 과 255.255.255.255. JDK 판정 메서드가 0.0.0.0 외의 0/8 은 잡지 않는다. */
-    private static boolean isUnspecifiedOrBroadcast(InetAddress address) {
-        if (!(address instanceof Inet4Address)) return false;
+    /**
+     * IPv6 안에 IPv4 가 든 대역이면 그 IPv4 를 돌려준다. 아니면 null.
+     *
+     * <p>::/96(IPv4 호환), ::ffff:0:0/96(IPv4 매핑 — JDK 는 보통 Inet4Address 로 바꾸지만 바이트로
+     * 만든 주소는 아니다), ::ffff:0:0:0/96(SIIT), 64:ff9b::/96(NAT64), 2002::/16(6to4).
+     * {@code ::} 와 {@code ::1} 은 IPv4 호환 형태지만 그 자체로 미지정·루프백이라 여기서 제외한다.
+     */
+    private static InetAddress embeddedIpv4(InetAddress address) {
+        if (!(address instanceof Inet6Address)) return null;
         byte[] b = address.getAddress();
-        return (b[0] & 0xff) == 0
-                || ((b[0] & 0xff) == 255 && (b[1] & 0xff) == 255 && (b[2] & 0xff) == 255 && (b[3] & 0xff) == 255);
+        int from;
+        if (allZero(b, 0, 12)) {
+            if (allZero(b, 12, 15) && (b[15] == 0 || b[15] == 1)) return null;   // :: , ::1
+            from = 12;
+        } else if (allZero(b, 0, 10) && (b[10] & 0xff) == 0xff && (b[11] & 0xff) == 0xff) {
+            from = 12;
+        } else if (allZero(b, 0, 8) && (b[8] & 0xff) == 0xff && (b[9] & 0xff) == 0xff && allZero(b, 10, 12)) {
+            from = 12;
+        } else if ((b[0] & 0xff) == 0x00 && (b[1] & 0xff) == 0x64 && (b[2] & 0xff) == 0xff && (b[3] & 0xff) == 0x9b
+                && allZero(b, 4, 12)) {
+            from = 12;
+        } else if ((b[0] & 0xff) == 0x20 && (b[1] & 0xff) == 0x02) {
+            from = 2;
+        } else {
+            return null;
+        }
+        try {
+            return InetAddress.getByAddress(Arrays.copyOfRange(b, from, from + 4));
+        } catch (UnknownHostException e) {
+            return null;   // 길이 4 라 일어나지 않는다
+        }
+    }
+
+    private static boolean allZero(byte[] b, int from, int to) {
+        for (int i = from; i < to; i++) if (b[i] != 0) return false;
+        return true;
+    }
+
+    /** 0.0.0.0/8 과 240.0.0.0/4(예약, 255.255.255.255 포함). JDK 판정 메서드가 잡지 않는다. */
+    private static boolean isReservedIpv4(InetAddress address) {
+        if (!(address instanceof Inet4Address)) return false;
+        int first = address.getAddress()[0] & 0xff;
+        return first == 0 || first >= 240;
     }
 
     private static boolean isPrivate(InetAddress address) {
         if (address.isSiteLocalAddress()) return true;   // 10/8, 172.16/12, 192.168/16, fec0::/10
         byte[] b = address.getAddress();
         if (address instanceof Inet4Address) {
-            // 100.64.0.0/10 — 통신사 NAT. 컨테이너·VPN 환경에서 내부 주소로 쓰인다.
-            return (b[0] & 0xff) == 100 && (b[1] & 0xc0) == 64;
+            int b0 = b[0] & 0xff, b1 = b[1] & 0xff;
+            return (b0 == 100 && (b1 & 0xc0) == 64)      // 100.64.0.0/10 — 통신사 NAT, 컨테이너·VPN 내부
+                    || (b0 == 198 && (b1 & 0xfe) == 18); // 198.18.0.0/15 — 벤치마크 대역, 내부망에 쓰인다
         }
-        if (address instanceof Inet6Address) {
-            return (b[0] & 0xfe) == 0xfc;                // fc00::/7 — IPv6 사설(ULA)
-        }
-        return false;
+        return (b[0] & 0xfe) == 0xfc;                     // fc00::/7 — IPv6 사설(ULA)
     }
 
-    /** 허용하지 않는 주소로 풀렸다. 전송 경로(리졸버)에서 연결 실패로 올라간다. */
+    /** 허용하지 않는 주소로 풀렸다. 연결 실패로 올라간다. */
     static final class TargetNotAllowedException extends UnknownHostException {
         TargetNotAllowedException(String host) {
             super("webhook target not allowed: " + host);

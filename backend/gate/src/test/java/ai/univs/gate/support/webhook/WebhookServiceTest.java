@@ -55,6 +55,8 @@ class WebhookServiceTest {
     private HttpServer server;
     private final List<Received> received = new CopyOnWriteArrayList<>();
     private IntSupplier status = () -> 200;
+    private final AtomicInteger redirected = new AtomicInteger();
+    private final AtomicInteger dripStarted = new AtomicInteger();
     private volatile long delayMillis = 0;
     private WebhookService service;
 
@@ -75,7 +77,31 @@ class WebhookServiceTest {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            exchange.sendResponseHeaders(status.getAsInt(), -1);
+            int code = status.getAsInt();
+            if (code / 100 == 3) {
+                // 리다이렉트를 켜면 따라갈 곳이 있어야 테스트가 의미가 있다 (반박 리뷰 M24)
+                exchange.getResponseHeaders().add("Location", "http://127.0.0.1:" + server.getAddress().getPort() + "/other");
+            }
+            exchange.sendResponseHeaders(code, -1);
+            exchange.close();
+        });
+        server.createContext("/other", exchange -> {
+            redirected.incrementAndGet();
+            exchange.sendResponseHeaders(200, -1);
+            exchange.close();
+        });
+        server.createContext("/drip", exchange -> {
+            dripStarted.incrementAndGet();
+            exchange.sendResponseHeaders(200, 0);   // chunked — 본문을 조금씩 흘려 보낸다
+            try (var out = exchange.getResponseBody()) {
+                for (int i = 0; i < 100; i++) {
+                    out.write('x');
+                    out.flush();
+                    Thread.sleep(100);
+                }
+            } catch (IOException | InterruptedException e) {
+                // 클라이언트가 끊었다 — 기대한 동작
+            }
             exchange.close();
         });
         // 기본 실행기는 스레드 하나라, 늦게 응답하는 요청이 다음 요청(재시도)의 접수를 막는다.
@@ -201,6 +227,18 @@ class WebhookServiceTest {
     }
 
     @Test
+    @DisplayName("IPv4 호환 IPv6 리터럴로 루프백에 닿지 못한다 — netty 는 [::127.0.0.1] 을 ::ffff:127.0.0.1 로 연결한다 (반박 리뷰 B1)")
+    void IPv4_호환_리터럴() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        configure("http://[::127.0.0.1]:" + server.getAddress().getPort() + "/hook", true, true);
+
+        service(new WebhookTargetPolicy(props), props)
+                .send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx", Map.of());
+
+        assertNothingSent();
+    }
+
+    @Test
     @DisplayName("호스트 이름이 내부 주소로 풀리면 연결 단계의 리졸버가 막는다 — DNS 리바인딩 대비")
     void 리졸버가_막는다() throws Exception {
         WebhookProperties props = props(3, Duration.ofSeconds(5));
@@ -261,6 +299,26 @@ class WebhookServiceTest {
         assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
                 .isInstanceOf(WebhookService.RejectedByReceiverException.class);
         assertThat(received).hasSize(1);
+        assertThat(redirected).hasValue(0);
+    }
+
+    @Test
+    @DisplayName("본문을 1바이트씩 흘려 보내는 수신 서버도 시도당 전체 시간 상한에서 끊는다 (반박 리뷰 W1)")
+    void 흘려_보내기() {
+        // 읽기 공백 300ms 보다 자주(100ms) 1바이트씩 보낸다 — responseTimeout 만으로는 10초간 끊기지 않는다.
+        // 시도당 상한 = connect 200ms + response 300ms + 1초 = 1.5초.
+        WebhookProperties props = new WebhookProperties(false, Duration.ofMillis(200), Duration.ofMillis(300),
+                1, Duration.ofMillis(20), 10, 100, 100);
+        WebhookService s = service(loopbackAllowed(props), props);
+        URI drip = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/drip");
+
+        long started = System.nanoTime();
+        assertThatThrownBy(() -> s.deliver(drip, "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+                .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isTrue());
+        long elapsedMillis = (System.nanoTime() - started) / 1_000_000;
+
+        assertThat(dripStarted).hasValue(1);
+        assertThat(elapsedMillis).isBetween(1_000L, 4_000L);
     }
 
     @Test
@@ -287,5 +345,9 @@ class WebhookServiceTest {
         assertThat(WebhookService.isRetryable(
                 new RuntimeException(new WebhookTargetPolicy.TargetNotAllowedException("h")))).isFalse();
         assertThat(WebhookService.isRetryable(new IllegalStateException("x"))).isFalse();
+        // 다시 보내도 같은 실패 — 없는 호스트, 인증서 오류
+        assertThat(WebhookService.isRetryable(new RuntimeException(new java.net.UnknownHostException("nx")))).isFalse();
+        assertThat(WebhookService.isRetryable(
+                new RuntimeException(new javax.net.ssl.SSLHandshakeException("bad cert")))).isFalse();
     }
 }

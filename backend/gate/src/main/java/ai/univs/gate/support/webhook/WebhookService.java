@@ -60,6 +60,7 @@ public class WebhookService {
     private final LoopResources loops;
     private final ConnectionProvider connections;
     private final WebClient webClient;
+    private final Duration attemptTimeout;
 
     /** 테스트가 시각을 고정하려고 바꾼다. */
     Clock clock = Clock.systemUTC();
@@ -84,10 +85,14 @@ public class WebhookService {
                 .build();
         HttpClient httpClient = HttpClient.create(connections)
                 .runOn(loops)
-                .resolver(new PolicyAddressResolverGroup(targetPolicy))
+                // 호스트 이름은 reactor-netty 의 비동기 DNS 로 풀고, 푼 주소를 정책으로 거른다.
+                // 연결에 실제로 쓰는 주소를 보므로 DNS 리바인딩도 여기서 막힌다. IP 리터럴은 이 단계를
+                // 거치지 않아 dispatch 가 먼저 막는다.
+                .resolvedAddressesSelector((config, resolved) -> targetPolicy.selectAllowed(resolved))
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) properties.connectTimeout().toMillis())
                 .responseTimeout(properties.responseTimeout())
                 .followRedirect(false);   // 공인 주소가 내부 주소로 리다이렉트하는 우회를 막는다
+        this.attemptTimeout = properties.connectTimeout().plus(properties.responseTimeout()).plusSeconds(1);
         this.webClient = WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
@@ -115,8 +120,10 @@ public class WebhookService {
 
             URI target;
             try {
-                // 저장할 때 검사했어도 다시 본다 — 그 사이 DNS 가 내부 주소로 바뀌었을 수 있다.
-                target = targetPolicy.validate(config.getWebhookUrl());
+                // 저장할 때 검사했어도 다시 본다. 여기서는 DNS 를 조회하지 않는다 — 응답하지 않는
+                // 네임서버가 전송 스레드 둘을 붙잡으면 모든 프로젝트의 웹훅이 밀린다(반박 리뷰 W2).
+                // 호스트 이름이 푼 주소는 연결 단계(resolvedAddressesSelector)가 거른다.
+                target = targetPolicy.checkWithoutLookup(config.getWebhookUrl());
             } catch (CustomGateException e) {
                 log.warn("Webhook skipped (target not allowed): projectId={}, event={}", projectId, event);
                 return;
@@ -159,6 +166,10 @@ public class WebhookService {
                             ? drained
                             : drained.then(Mono.error(new RejectedByReceiverException(status)));
                 })
+                // 시도 한 번의 전체 시간 상한. responseTimeout 은 "읽기 사이의 공백" 이라, 1바이트씩
+                // 흘려 보내는 수신 서버는 그것만으로 끊기지 않는다(반박 리뷰 W1). 넘으면 구독이
+                // 취소되고 연결은 버려진다.
+                .timeout(attemptTimeout)
                 .retryWhen(Retry.backoff(Math.max(0, properties.maxAttempts() - 1), properties.retryBackoff())
                         .filter(WebhookService::isRetryable)
                         .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
@@ -176,9 +187,12 @@ public class WebhookService {
      *
      * <p>막힌 주소({@link WebhookTargetPolicy.TargetNotAllowedException})는 연결 오류처럼 올라오지만
      * 재시도해도 같으므로 제외한다. 3xx 는 리다이렉트를 따르지 않으므로 실패로 보고 재시도하지 않는다.
+     * 시도 한 번의 전체 시간 초과({@code Mono.timeout})는 JDK {@link TimeoutException} 으로 온다.
      */
     static boolean isRetryable(Throwable error) {
-        if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return false;
+        // 막힌 주소·없는 호스트(NXDOMAIN)·인증서 오류는 다시 보내도 같다.
+        if (hasCause(error, java.net.UnknownHostException.class)) return false;
+        if (hasCause(error, javax.net.ssl.SSLException.class)) return false;
         if (error instanceof RejectedByReceiverException rejected) {
             return rejected.status >= 500 || rejected.status == 429;
         }
@@ -214,6 +228,12 @@ public class WebhookService {
     @PreDestroy
     void shutdown() {
         dispatcher.shutdown();
+        try {
+            // 대기열에 남은 전송을 잠깐 흘려보낸다. 넘치면 버린다 — 재기동이 웹훅을 기다리지 않는다.
+            dispatcher.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         connections.disposeLater().block(Duration.ofSeconds(5));
         loops.disposeLater().block(Duration.ofSeconds(5));
     }

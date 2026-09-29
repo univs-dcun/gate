@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 @DisplayName("UG-111: 결과 알림 경로")
 class UseCaseNotifyServiceTest {
@@ -31,7 +32,10 @@ class UseCaseNotifyServiceTest {
 
         service.notify(CallerType.DEMO, WebhookEvent.LIVENESS, 1L, "tx", result);
 
-        verify(redis).publish(anyString());
+        ArgumentCaptor<String> published = ArgumentCaptor.forClass(String.class);
+        verify(redis).publish(published.capture());
+        // 데모 화면이 이 문자열로 분기한다 — MatchType 이름 그대로여야 한다 (반박 리뷰 W5)
+        assertThat(published.getValue()).contains("\"event\":\"LIVENESS\"").contains("\"transactionUuid\":\"tx\"");
         verify(webhook).send(1L, CallerType.DEMO, WebhookEvent.LIVENESS, "tx", result);
     }
 
