@@ -80,10 +80,10 @@ public class WebhookTargetPolicy {
         try {
             InetAddress[] addresses = lookup.resolve(host);
             if (addresses.length == 0 || !Arrays.stream(addresses).allMatch(this::isAllowed)) {
-                throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+                throw rejected();
             }
         } catch (UnknownHostException e) {
-            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            throw rejected();
         }
         return uri;
     }
@@ -96,7 +96,7 @@ public class WebhookTargetPolicy {
         URI uri = parse(rawUrl);
         String host = hostOf(uri);
         if (isIpLiteral(host) && !isLiteralAllowed(host)) {
-            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            throw rejected();
         }
         return uri;
     }
@@ -143,23 +143,23 @@ public class WebhookTargetPolicy {
         return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
     }
 
-    private static URI parse(String rawUrl) {
+    private URI parse(String rawUrl) {
         if (rawUrl == null || rawUrl.isBlank()) {
-            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            throw rejected();
         }
         URI uri;
         try {
             uri = new URI(rawUrl.trim());
         } catch (URISyntaxException e) {
-            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            throw rejected();
         }
         String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
         if (!scheme.equals("http") && !scheme.equals("https")) {
-            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            throw rejected();
         }
         // getHost() 는 호스트 부분이 표준 문법이 아니면 null 이다 (예: 밑줄이 든 이름).
         if (uri.getHost() == null || uri.getHost().isBlank()) {
-            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+            throw rejected();
         }
         return uri;
     }
@@ -201,6 +201,19 @@ public class WebhookTargetPolicy {
         for (int i = from; i < to; i++) if (b[i] != 0) return false;
         return true;
     }
+
+    /**
+     * PJ-111. 사설망을 허용한 설치(온프레미스)에서는 "외부에서 접근할 수 있는 주소" 대신 "루프백·링크 로컬은
+     * 안 된다, 사내망 주소로 등록하라" 로 안내한다 — 온프레미스 고객은 사설망 주소를 넣으라는 안내를
+     * 받았으므로 기본 문구가 정반대로 읽힌다 (onprem 3.0.7 검증에서 발견). 코드·type 은 같다.
+     */
+    private CustomGateException rejected() {
+        return allowPrivateTargets
+                ? new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_PRIVATE_ALLOWED)
+                : new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+    }
+
+    static final String MESSAGE_KEY_PRIVATE_ALLOWED = "WEBHOOK_URL_NOT_ALLOWED_PRIVATE_ALLOWED";
 
     /** 0.0.0.0/8 과 240.0.0.0/4(예약, 255.255.255.255 포함). JDK 판정 메서드가 잡지 않는다. */
     private static boolean isReservedIpv4(InetAddress address) {
