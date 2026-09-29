@@ -31,6 +31,7 @@ import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -181,7 +182,7 @@ class IdentifyFaceUseCaseTest {
         // then: 상호작용 검증
         verify(fileService).uploadIfConsent(matchingImage, true);
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.IDENTIFY.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.IDENTIFY, PROJECT_ID, TRANSACTION_UUID, result);
 
         // then: feign 요청 파라미터 검증
         ArgumentCaptor<IdentifyFaceFeignRequestDTO> requestCaptor =
@@ -224,7 +225,7 @@ class IdentifyFaceUseCaseTest {
 
         // then: 상호작용 검증
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.IDENTIFY.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.IDENTIFY, PROJECT_ID, TRANSACTION_UUID, result);
         verifyNoInteractions(faceFeatureService);
     }
 
@@ -272,7 +273,7 @@ class IdentifyFaceUseCaseTest {
         assertThat(saved.getSimilarity()).isEqualTo(new BigDecimal("42.00"));
 
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.IDENTIFY.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.IDENTIFY, PROJECT_ID, TRANSACTION_UUID, result);
         verifyNoInteractions(faceFeatureService);
     }
 
@@ -306,7 +307,7 @@ class IdentifyFaceUseCaseTest {
         assertThat(saved.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
 
         verify(useCaseNotifyService)
-                .notify(CallerType.API, MatchType.IDENTIFY.name(), PROJECT_ID, TRANSACTION_UUID, result);
+                .notify(CallerType.API, WebhookEvent.IDENTIFY, PROJECT_ID, TRANSACTION_UUID, result);
     }
 
     @Test

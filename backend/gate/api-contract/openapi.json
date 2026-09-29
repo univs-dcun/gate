@@ -711,6 +711,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "WEBHOOK_URL_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-111",
+                        "type": "WEBHOOK_URL_NOT_ALLOWED",
+                        "message": "The webhook URL must be a publicly reachable http(s) address."
+                      }
+                    }
+                  },
                   "INVALID_INPUT": {
                     "value": {
                       "success": false,
@@ -9001,16 +9011,16 @@
         "properties": {
           "webhookUrl": {
             "type": "string",
-            "description": "웹훅 URL (https:// 형태)",
+            "description": "웹훅 URL. 외부에서 접근할 수 있는 http(s) 주소여야 합니다 — 루프백·사설망·링크 로컬 주소는 PJ-111 로 거절됩니다",
             "minLength": 1
           },
           "demoEnabled": {
             "type": "boolean",
-            "description": "웹훅 데모 활성화 여부"
+            "description": "데모 호출 결과를 웹훅으로 보낼지 여부"
           },
           "apiEnabled": {
             "type": "boolean",
-            "description": "웹훅 API 활성화 여부"
+            "description": "API 호출 결과를 웹훅으로 보낼지 여부"
           }
         },
         "required": [
@@ -9051,15 +9061,15 @@
           },
           "webhookUrl": {
             "type": "string",
-            "description": "웹훅 URL (https:// 형태)"
+            "description": "웹훅 URL. 외부에서 접근할 수 있는 http(s) 주소여야 합니다 — 루프백·사설망·링크 로컬 주소는 PJ-111 로 거절됩니다"
           },
           "demoEnabled": {
             "type": "boolean",
-            "description": "웹훅 데모 활성화 여부"
+            "description": "데모 호출 결과를 웹훅으로 보낼지 여부"
           },
           "apiEnabled": {
             "type": "boolean",
-            "description": "웹훅 API 활성화 여부"
+            "description": "API 호출 결과를 웹훅으로 보낼지 여부"
           }
         }
       },

@@ -52,6 +52,7 @@ public class WebhookConfigController {
     @SecurityRequirements({@SecurityRequirement(name = "Authentication")})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.WEBHOOK_URL_NOT_ALLOWED, status = 400),
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })

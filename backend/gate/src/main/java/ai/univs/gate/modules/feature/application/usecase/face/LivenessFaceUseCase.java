@@ -17,6 +17,7 @@ import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -119,7 +120,7 @@ public class LivenessFaceUseCase {
 
         useCaseNotifyService.notify(
                 input.callerType(),
-                MatchType.LIVENESS.name(),
+                WebhookEvent.LIVENESS,
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 result);

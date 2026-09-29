@@ -21,6 +21,7 @@ import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -135,7 +136,7 @@ public class FaceVerifyByFeatureImageUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.VERIFY_IMAGE.name(),
+                WebhookEvent.VERIFY_IMAGE,
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 failResult);
@@ -148,7 +149,7 @@ public class FaceVerifyByFeatureImageUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.VERIFY_IMAGE.name(),
+                WebhookEvent.VERIFY_IMAGE,
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 successResult);

@@ -101,6 +101,8 @@ public enum ErrorType {
     COMPANY_ALREADY_EXISTS("PJ-107", HttpStatus.BAD_REQUEST),
     PROJECT_LIMIT_EXCEEDED("PJ-109", HttpStatus.BAD_REQUEST),
     WEBHOOK_CONFIG_NOT_FOUND("PJ-110", HttpStatus.BAD_REQUEST),
+    /** UG-111: 웹훅 URL 이 http(s) 가 아니거나, 호스트를 찾을 수 없거나, 내부 주소로 풀린다. 고객 입력 문제다. */
+    WEBHOOK_URL_NOT_ALLOWED("PJ-111", HttpStatus.BAD_REQUEST),
 
     // User
     INVALID_USER("USER-101", HttpStatus.BAD_REQUEST),

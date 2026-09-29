@@ -136,7 +136,7 @@ print('\n;\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', t, re.S)))
 ")
 ```
 
-3) 브라우저로 열어 nav 가 `AUTH / FACE FEATURE / FACE MATCH / HISTORY` 인지, 한/영 토글이
+3) 브라우저로 열어 nav 가 `AUTH / FACE FEATURE / FACE MATCH / HISTORY / WEBHOOK / ERRORS` 인지, 한/영 토글이
    정상인지, 콘솔 에러가 없는지 확인한다.
 
 ## ERRORS 두 페이지는 데이터에서 렌더링된다 (UG-321)

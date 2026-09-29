@@ -25,6 +25,7 @@ import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -148,7 +149,7 @@ public class IdentifyFaceUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.IDENTIFY.name(),
+                WebhookEvent.IDENTIFY,
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 failResult);
@@ -161,7 +162,7 @@ public class IdentifyFaceUseCase {
 
         useCaseNotifyService.notify(
                 callerType,
-                MatchType.IDENTIFY.name(),
+                WebhookEvent.IDENTIFY,
                 matchHistory.getProject().getId(),
                 matchHistory.getTransactionUuid(),
                 successResult);
