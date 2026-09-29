@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
+import ai.univs.gate.shared.web.enums.CallerType;
+import ai.univs.gate.support.webhook.WebhookEvent;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.face.VerifyByDescriptorInput;
 import ai.univs.gate.modules.feature.application.result.face.VerifyByDescriptorResult;
@@ -41,6 +44,7 @@ public class VerifyByDescriptorUseCase {
     private final HistoryRecorder historyRecorder;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
+    private final UseCaseNotifyService useCaseNotifyService;
 
     /**
      * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
@@ -128,7 +132,7 @@ public class VerifyByDescriptorUseCase {
 
         // UG-283: 응답을 face 원값이 아니라 MatchHistory 에서 만든다. descriptor 1:N 과 같은
         // 구조·같은 유사도 스케일(백분율)을 내보내기 위해서다.
-        return VerifyByDescriptorResult.from(matchHistory);
+        return 알린다(project, input.transactionUuid(), VerifyByDescriptorResult.from(matchHistory));
     }
 
     /**
@@ -142,5 +146,15 @@ public class VerifyByDescriptorUseCase {
             log.warn("특징점 1:1 확인 유사도를 해석할 수 없어 이력에 남기지 않는다. similarity={}", similarity);
             return null;
         }
+    }
+
+    /**
+     * 결과를 웹훅으로 알리고 그대로 돌려준다 (UG-111). descriptor 경로는 데모 DTO 가 없어 API 전용이다.
+     * 예외로 끝나는 경로(하위 서비스 오류 등)는 알리지 않는다 — 호출자가 오류 응답으로 이미 받는다.
+     */
+    private VerifyByDescriptorResult 알린다(Project project, String transactionUuid, VerifyByDescriptorResult result) {
+        useCaseNotifyService.notify(
+                CallerType.API, WebhookEvent.VERIFY_DESCRIPTOR, project.getId(), transactionUuid, result);
+        return result;
     }
 }
