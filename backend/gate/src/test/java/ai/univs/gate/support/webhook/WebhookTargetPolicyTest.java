@@ -174,6 +174,41 @@ class WebhookTargetPolicyTest {
                 .isInstanceOf(CustomGateException.class);
     }
 
+    @org.junit.jupiter.api.Test
+    @DisplayName("사설망을 허용한 설치(온프레미스)는 PJ-111 안내 문구 키가 다르다 — 코드는 같다")
+    void 온프레미스_안내_문구() {
+        CustomGateException cloud = catchRejected(policy(false), "http://127.0.0.1/");
+        CustomGateException onprem = catchRejected(policy(true), "http://127.0.0.1/");
+
+        assertThat(cloud.getErrorType()).isEqualTo(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+        assertThat(onprem.getErrorType()).isEqualTo(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+        assertThat(cloud.getMessageKey()).isEqualTo("WEBHOOK_URL_NOT_ALLOWED");
+        assertThat(onprem.getMessageKey()).isEqualTo(WebhookTargetPolicy.MESSAGE_KEY_PRIVATE_ALLOWED);
+        // 형식 오류도 같은 키로 — 설치에 맞는 안내가 한 가지로 나가야 한다
+        assertThat(catchRejected(policy(true), "ftp://x/").getMessageKey())
+                .isEqualTo(WebhookTargetPolicy.MESSAGE_KEY_PRIVATE_ALLOWED);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"messages_ko", "messages_en"})
+    @DisplayName("온프레미스용 PJ-111 문구가 한국어·영어 메시지 파일에 모두 있다")
+    void 온프레미스_문구_번역(String bundle) {
+        var messages = java.util.ResourceBundle.getBundle(bundle);
+        assertThat(messages.getString(WebhookTargetPolicy.MESSAGE_KEY_PRIVATE_ALLOWED))
+                .isNotBlank()
+                .doesNotContainIgnoringCase("publicly")
+                .doesNotContain("외부에서 접근");
+    }
+
+    private static CustomGateException catchRejected(WebhookTargetPolicy policy, String url) {
+        try {
+            policy.validate(url);
+        } catch (CustomGateException e) {
+            return e;
+        }
+        throw new AssertionError("거절되지 않았다: " + url);
+    }
+
     private static void assertRejected(WebhookTargetPolicy policy, String url) {
         assertThatThrownBy(() -> policy.validate(url))
                 .isInstanceOf(CustomGateException.class)
