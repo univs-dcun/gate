@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>항상 막는 것: 루프백, 링크 로컬(클라우드 메타데이터 169.254.169.254 포함), 미지정 주소,
  * 멀티캐스트, 0/8, 240/4(예약·브로드캐스트). 사설망(10/8, 172.16/12, 192.168/16, 100.64/10,
- * 198.18/15, fc00::/7, fec0::/10)은 {@code gate.webhook.allow-private-targets=true} 일 때만
+ * 198.18/15, fc00::/7, fec0::/10, 64:ff9b:1::/48)은 {@code gate.webhook.allow-private-targets=true} 일 때만
  * 허용한다 — 온프레미스용.
  */
 @Component

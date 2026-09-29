@@ -272,6 +272,18 @@ class WebhookServiceTest {
     }
 
     @Test
+    @DisplayName("deliver 만 불러도 IP 리터럴 내부 주소에는 연결하지 않는다 — 연결 뒤에 막으면 채널이 남는다")
+    void deliver_리터럴_사전검사() {
+        WebhookProperties props = props(3, Duration.ofSeconds(5));
+        WebhookService s = service(new WebhookTargetPolicy(props), props);
+
+        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+                .hasCauseInstanceOf(WebhookTargetPolicy.TargetNotAllowedException.class)   // block() 이 검사 예외를 감싼다
+                .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isFalse());
+        assertThat(received).isEmpty();
+    }
+
+    @Test
     @DisplayName("5xx 는 재시도하고, 재시도해도 eventId 는 같다")
     void 서버_오류_재시도() {
         AtomicInteger calls = new AtomicInteger();

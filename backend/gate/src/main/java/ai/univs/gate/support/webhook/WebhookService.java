@@ -26,7 +26,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.dns.DnsResponseCode;
 import io.netty.handler.ssl.SslHandshakeTimeoutException;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
@@ -57,6 +57,8 @@ public class WebhookService {
 
     static final String EVENT_ID_HEADER = "X-Gate-Event-Id";
     static final String USER_AGENT = "UNIVS-Gate-Webhook/1.0";
+    /** NIO 로 고정한다. 연결과 DNS 가 같은 값을 써야 한다 — 한 상수로 묶는다. */
+    private static final boolean PREFER_NATIVE = false;
 
     private final WebhookConfigRepository webhookConfigRepository;
     private final ObjectMapper objectMapper;
@@ -90,12 +92,16 @@ public class WebhookService {
                 .pendingAcquireMaxCount(properties.maxPending())
                 .pendingAcquireTimeout(Duration.ofSeconds(10))
                 .build();
+        // DNS 의 UDP 채널 종류를 연결에 쓰는 이벤트 루프에서 유도한다 — 둘이 어긋나면 Linux(epoll)에서
+        // "incompatible event loop type" 으로 호스트 이름 웹훅이 전부 실패한다 (3차 반박 리뷰 W2).
+        Class<? extends DatagramChannel> datagramType =
+                loops.onChannelClass(DatagramChannel.class, loops.onClient(PREFER_NATIVE));
         this.resolvers = new PolicyAddressResolverGroup(
-                new DnsAddressResolverGroup(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault()),
+                new DnsAddressResolverGroup(datagramType, DnsServerAddressStreamProviders.platformDefault()),
                 targetPolicy);
         HttpClient httpClient = HttpClient.create(connections)
-                // NIO 로 고정한다 — 아래 DNS 리졸버의 UDP 채널 종류와 이벤트 루프 종류가 맞아야 한다.
-                .runOn(loops, false)
+                // DNS 리졸버의 UDP 채널과 같은 이벤트 루프 종류를 쓴다 (위 datagramType).
+                .runOn(loops, PREFER_NATIVE)
                 // 호스트 이름은 netty 비동기 DNS 로 풀고, 푼 주소를 정책으로 거른다. 연결에 실제로 쓰는
                 // 주소를 보므로 DNS 리바인딩도 여기서 막힌다. 해석을 실패시키는 방식이어야 막힌 연결의
                 // 채널이 닫힌다 (PolicyAddressResolverGroup 주석, 2차 반박 리뷰 B1).
@@ -133,7 +139,7 @@ public class WebhookService {
             try {
                 // 저장할 때 검사했어도 다시 본다. 여기서는 DNS 를 조회하지 않는다 — 응답하지 않는
                 // 네임서버가 전송 스레드 둘을 붙잡으면 모든 프로젝트의 웹훅이 밀린다(반박 리뷰 W2).
-                // 호스트 이름이 푼 주소는 연결 단계(resolvedAddressesSelector)가 거른다.
+                // 호스트 이름이 푼 주소는 연결 단계(PolicyAddressResolverGroup)가 거른다.
                 target = targetPolicy.checkWithoutLookup(config.getWebhookUrl());
             } catch (CustomGateException e) {
                 log.warn("Webhook skipped (target not allowed): projectId={}, event={}", projectId, event);
@@ -239,12 +245,18 @@ public class WebhookService {
         return false;
     }
 
-    /** URL 전체는 남기지 않는다 — 쿼리에 수신 측 토큰이 들어 있는 경우가 흔하다. */
-    private static String describe(Throwable error) {
+    /**
+     * URL 전체는 남기지 않는다 — 쿼리에 수신 측 토큰이 들어 있는 경우가 흔하다.
+     * 가장 안쪽 원인을 붙여 NXDOMAIN·DNS 타임아웃·연결 거부를 로그에서 구분한다.
+     */
+    static String describe(Throwable error) {
         if (error instanceof RejectedByReceiverException rejected) return "HTTP " + rejected.status;
         // 온프레미스에서 allow-private-targets 를 빠뜨렸을 때 연결 거부와 구분돼야 한다 (2차 반박 리뷰 W3)
         if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return "TARGET_NOT_ALLOWED";
-        return error.getClass().getSimpleName();
+        Throwable root = error;
+        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
+        String detail = root instanceof DnsErrorCauseException dns ? "DNS " + dns.getCode() : root.getClass().getSimpleName();
+        return root == error ? detail : error.getClass().getSimpleName() + "/" + detail;
     }
 
     private static java.util.concurrent.ThreadFactory namedDaemonThreads(String prefix) {
