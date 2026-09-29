@@ -188,6 +188,7 @@ gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고
 | `FILE_API-ENDPOINT_GET` | `file.api-endpoint.get` | | ⚠️ 이 변수만 이름에 **하이픈**이 들어간다. Spring 의 legacy 환경변수 해석으로 동작하지만 셸에서 `export` 가 안 되므로, 형태를 바꾼다면 실제 컨테이너로 확인할 것 |
 | `GATE_FEATURES_FACE` / `GATE_FEATURES_PALM` | `gate.features.face` / `.palm` | | 기본값 `true`. 납품에 없는 방식은 `false` 로 준다 — **face 전용 납품은 `GATE_FEATURES_PALM=false`** (UG-223, 아래 설명) |
 | `GATE_RECONCILE_REGISTRATION_ENABLED` | `gate.reconcile.registration.enabled` | | 기본값 `true`. 결과를 모르는 등록을 5분마다 되돌리는 정리 잡 (UG-338, 아래 설명). 보통은 주지 않는다 |
+| `GATE_WEBHOOK_ALLOW_PRIVATE_TARGETS` | `gate.webhook.allow-private-targets` | | 기본값 `false`. **고객사 내부망의 웹훅 수신 서버를 쓰려면 `true`** (UG-111, 아래 설명) |
 
 **`GATE_FEATURES_*` (UG-223).** 끈 방식의 **동작** API(등록·삭제·인증·라이브니스)를 컨트롤러에
 닿기 전에 `CMMN-104 FEATURE_NOT_ENABLED`(HTTP 400)로 거절한다. **조회는 막지 않는다** — 그 방식의
@@ -228,6 +229,24 @@ gate DB 만 읽기 때문이다.
 - face·palm 이 호출자 발급 id 를 받는 버전(UG-337, face `20260928-b2473da` · palm `20260928-9899ae4` 이후)
   이어야 한다. 그보다 옛 face·palm 이면 gate 로그에 `… 가 발급 id 를 무시했다 (UG-337 미배포?)` WARN 이
   남고, 그 요청의 고아는 정리하지 못한다.
+
+**`GATE_WEBHOOK_ALLOW_PRIVATE_TARGETS` (UG-111).** 웹훅 URL 이 사설망 주소(10/8, 172.16/12,
+192.168/16, 100.64/10, 198.18/15, fc00::/7, 64:ff9b:1::/48)으로 풀리면 기본값에서는 **저장할 때 `PJ-111` 로 거절하고,
+이미 저장된 URL 이면 보내지 않는다**. 로그는 URL 이 IP 주소면 `Webhook skipped (target not allowed)`,
+호스트 이름이면 `Webhook delivery failed ... cause=TARGET_NOT_ALLOWED` 로 남는다 — 연결 거부와 구분된다.
+클라우드에서 고객이 우리 내부망으로 요청을 보내게 하는 통로(SSRF)를 막기 위한 기본값이다.
+
+온프레미스는 수신 서버가 고객사 내부망에 있는 것이 정상이므로 **웹훅을 쓰는 납품은 `true` 로 준다.**
+업그레이드 전에 사설망 URL 이 저장돼 있던 설치에서 이 값을 빠뜨리면, 업그레이드 뒤 웹훅이 조용히
+끊긴다. 켜도 루프백·링크 로컬(169.254/16)·멀티캐스트·0/8·240/4 는 계속 막는다 — 수신 서버를 gate 와
+같은 호스트에 두려면 루프백이 아니라 그 호스트의 내부망 주소로 등록한다.
+
+⚠️ `true` 로 주면 웹훅 URL 을 등록할 수 있는 사람은 **같은 내부망의 다른 서비스**(config-server, DB,
+관리 콘솔 등)로도 POST 를 보내게 할 수 있다. 콘솔 계정을 고객사 담당자에게만 발급하는 온프레미스
+전제에서 허용하는 값이다.
+
+`GATE_FEATURES_*` 와 같은 이유로 **빈 값은 기동 실패**다. 공용 `gate-service.yml` 에 넣지 않는다 —
+onprem 이 통째로 복사해 클라우드까지 열린다.
 
 ### palm-service / match-server 추가
 

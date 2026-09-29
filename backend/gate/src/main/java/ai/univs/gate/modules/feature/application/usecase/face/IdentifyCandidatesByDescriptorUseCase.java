@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
+import ai.univs.gate.shared.web.enums.CallerType;
+import ai.univs.gate.support.webhook.WebhookEvent;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyCandidatesByDescriptorInput;
 import ai.univs.gate.modules.feature.application.result.face.IdentifyCandidatesByDescriptorResult;
@@ -56,6 +59,7 @@ public class IdentifyCandidatesByDescriptorUseCase {
     private final ProjectSettingsService projectSettingsService;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
+    private final UseCaseNotifyService useCaseNotifyService;
 
     /**
      * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
@@ -120,8 +124,8 @@ public class IdentifyCandidatesByDescriptorUseCase {
             // "아무도 근접하지 않았다" 와 "아깝게 미달했다" 가 이력에서 같아 보인다.
             matchHistory.fail(최근접_유사도(data), ErrorType.NOT_MATCH.name());
             historyRecorder.fail(matchHistory);
-            return IdentifyCandidatesByDescriptorResult.failResult(
-                    matchHistory, input.thresholdPercent());
+            return 알린다(project, input.transactionUuid(), IdentifyCandidatesByDescriptorResult.failResult(
+                    matchHistory, input.thresholdPercent()));
         }
 
         Map<String, BiometricFeature> found = gate에_살아있는_특징점(후보, project.getId());
@@ -131,8 +135,8 @@ public class IdentifyCandidatesByDescriptorUseCase {
         if (found.isEmpty()) {
             matchHistory.fail(최근접_유사도(data), ErrorType.INVALID_USER.name());
             historyRecorder.fail(matchHistory);
-            return IdentifyCandidatesByDescriptorResult.failResult(
-                    matchHistory, input.thresholdPercent());
+            return 알린다(project, input.transactionUuid(), IdentifyCandidatesByDescriptorResult.failResult(
+                    matchHistory, input.thresholdPercent()));
         }
 
         List<IdentifyCandidatesByDescriptorResult.Candidate> candidates = 후보.stream()
@@ -150,8 +154,8 @@ public class IdentifyCandidatesByDescriptorUseCase {
         matchHistory.success(found.get(top.featureId()), 도메인_스케일_유사도(후보, top.featureId()));
         historyRecorder.succeed(matchHistory);
 
-        return IdentifyCandidatesByDescriptorResult.successResult(
-                matchHistory, input.thresholdPercent(), candidates);
+        return 알린다(project, input.transactionUuid(), IdentifyCandidatesByDescriptorResult.successResult(
+                matchHistory, input.thresholdPercent(), candidates));
     }
 
     /**
@@ -222,5 +226,15 @@ public class IdentifyCandidatesByDescriptorUseCase {
     private static List<IdentifyCandidatesFaceFeignResponseDTO.Candidate> 후보들(
             IdentifyCandidatesFaceFeignResponseDTO data) {
         return data == null || data.getCandidates() == null ? List.of() : data.getCandidates();
+    }
+
+    /**
+     * 결과를 웹훅으로 알리고 그대로 돌려준다 (UG-111). descriptor 경로는 데모 DTO 가 없어 API 전용이다.
+     * 예외로 끝나는 경로(하위 서비스 오류 등)는 알리지 않는다 — 호출자가 오류 응답으로 이미 받는다.
+     */
+    private IdentifyCandidatesByDescriptorResult 알린다(Project project, String transactionUuid, IdentifyCandidatesByDescriptorResult result) {
+        useCaseNotifyService.notify(
+                CallerType.API, WebhookEvent.IDENTIFY_CANDIDATES_DESCRIPTOR, project.getId(), transactionUuid, result);
+        return result;
     }
 }

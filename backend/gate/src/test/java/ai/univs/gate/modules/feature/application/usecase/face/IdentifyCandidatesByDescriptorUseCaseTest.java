@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
+import ai.univs.gate.support.webhook.WebhookEvent;
+import ai.univs.gate.shared.web.enums.CallerType;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyCandidatesByDescriptorInput;
@@ -42,6 +45,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,6 +93,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
     @Mock private ApiKeyService apiKeyService;
     @Mock private FaceService faceService;
 
+    @Mock private UseCaseNotifyService useCaseNotifyService;
     @InjectMocks private IdentifyCandidatesByDescriptorUseCase useCase;
 
     private Project project;
@@ -217,6 +224,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
             gate에_있다("face-a", "홍길동", "face-b", "김철수");
 
             IdentifyCandidatesByDescriptorResult result = useCase.execute(입력("85.00", 10));
+            verify(useCaseNotifyService).notify(eq(CallerType.API), eq(WebhookEvent.IDENTIFY_CANDIDATES_DESCRIPTOR), any(), any(), same(result));   // UG-111
 
             assertThat(result.success()).isTrue();
             assertThat(result.matchingHistoryId()).isEqualTo(SAVED_ID);
@@ -363,6 +371,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
             face가_돌려준다();
 
             IdentifyCandidatesByDescriptorResult result = useCase.execute(입력("85.00", 10));
+            verify(useCaseNotifyService).notify(eq(CallerType.API), eq(WebhookEvent.IDENTIFY_CANDIDATES_DESCRIPTOR), any(), any(), same(result));   // UG-111
 
             assertThat(result.success()).isFalse();
             assertThat(result.candidates()).isEmpty();

@@ -1,5 +1,8 @@
 package ai.univs.gate.modules.feature.application.usecase.face;
 
+import ai.univs.gate.shared.web.enums.CallerType;
+import ai.univs.gate.support.webhook.WebhookEvent;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.face.IdentifyByDescriptorInput;
 import ai.univs.gate.modules.feature.application.result.face.IdentifyByDescriptorResult;
@@ -56,6 +59,7 @@ public class IdentifyByDescriptorUseCase {
     private final FaceFeatureService faceFeatureService;
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
+    private final UseCaseNotifyService useCaseNotifyService;
 
     /**
      * 트랜잭션을 열지 않는다 (UG-293 반박 리뷰).
@@ -120,7 +124,7 @@ public class IdentifyByDescriptorUseCase {
         if (!data.isResult()) {
             matchHistory.fail(data.getSimilarity(), ErrorType.NOT_MATCH.name());
             historyRecorder.fail(matchHistory);
-            return IdentifyByDescriptorResult.failResult(matchHistory);
+            return 알린다(project, input.transactionUuid(), IdentifyByDescriptorResult.failResult(matchHistory));
         }
 
         BiometricFeature biometricFeature;
@@ -130,12 +134,22 @@ public class IdentifyByDescriptorUseCase {
             // 하위 서비스 실패가 아니라 우리 쪽 조회 실패(특징점 없음)다 — upstream_status 는 남기지 않는다.
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             historyRecorder.fail(matchHistory);
-            return IdentifyByDescriptorResult.failResult(matchHistory);
+            return 알린다(project, input.transactionUuid(), IdentifyByDescriptorResult.failResult(matchHistory));
         }
 
         matchHistory.success(biometricFeature, data.getSimilarity());
         historyRecorder.succeed(matchHistory);
 
-        return IdentifyByDescriptorResult.successResult(matchHistory);
+        return 알린다(project, input.transactionUuid(), IdentifyByDescriptorResult.successResult(matchHistory));
+    }
+
+    /**
+     * 결과를 웹훅으로 알리고 그대로 돌려준다 (UG-111). descriptor 경로는 데모 DTO 가 없어 API 전용이다.
+     * 예외로 끝나는 경로(하위 서비스 오류 등)는 알리지 않는다 — 호출자가 오류 응답으로 이미 받는다.
+     */
+    private IdentifyByDescriptorResult 알린다(Project project, String transactionUuid, IdentifyByDescriptorResult result) {
+        useCaseNotifyService.notify(
+                CallerType.API, WebhookEvent.IDENTIFY_DESCRIPTOR, project.getId(), transactionUuid, result);
+        return result;
     }
 }
