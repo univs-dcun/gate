@@ -26,6 +26,12 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.handler.codec.dns.DnsResponseCode;
+import io.netty.handler.ssl.SslHandshakeTimeoutException;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsErrorCauseException;
+import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.netty.resources.LoopResources;
@@ -61,6 +67,7 @@ public class WebhookService {
     private final ConnectionProvider connections;
     private final WebClient webClient;
     private final Duration attemptTimeout;
+    private final PolicyAddressResolverGroup resolvers;
 
     /** 테스트가 시각을 고정하려고 바꾼다. */
     Clock clock = Clock.systemUTC();
@@ -83,12 +90,16 @@ public class WebhookService {
                 .pendingAcquireMaxCount(properties.maxPending())
                 .pendingAcquireTimeout(Duration.ofSeconds(10))
                 .build();
+        this.resolvers = new PolicyAddressResolverGroup(
+                new DnsAddressResolverGroup(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault()),
+                targetPolicy);
         HttpClient httpClient = HttpClient.create(connections)
-                .runOn(loops)
-                // 호스트 이름은 reactor-netty 의 비동기 DNS 로 풀고, 푼 주소를 정책으로 거른다.
-                // 연결에 실제로 쓰는 주소를 보므로 DNS 리바인딩도 여기서 막힌다. IP 리터럴은 이 단계를
-                // 거치지 않아 dispatch 가 먼저 막는다.
-                .resolvedAddressesSelector((config, resolved) -> targetPolicy.selectAllowed(resolved))
+                // NIO 로 고정한다 — 아래 DNS 리졸버의 UDP 채널 종류와 이벤트 루프 종류가 맞아야 한다.
+                .runOn(loops, false)
+                // 호스트 이름은 netty 비동기 DNS 로 풀고, 푼 주소를 정책으로 거른다. 연결에 실제로 쓰는
+                // 주소를 보므로 DNS 리바인딩도 여기서 막힌다. 해석을 실패시키는 방식이어야 막힌 연결의
+                // 채널이 닫힌다 (PolicyAddressResolverGroup 주석, 2차 반박 리뷰 B1).
+                .resolver(resolvers)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) properties.connectTimeout().toMillis())
                 .responseTimeout(properties.responseTimeout())
                 .followRedirect(false);   // 공인 주소가 내부 주소로 리다이렉트하는 우회를 막는다
@@ -153,6 +164,13 @@ public class WebhookService {
     }
 
     Mono<Void> deliver(URI target, String eventId, byte[] body) {
+        try {
+            // IP 리터럴은 리졸버를 거치지 않는다. dispatch 가 이미 봤지만, 이 메서드만 부르는 경로에서도
+            // 연결 전에 막는다 — 연결 뒤에 막으면 채널이 남는다.
+            targetPolicy.checkWithoutLookup(target.toString());
+        } catch (CustomGateException e) {
+            return Mono.error(new WebhookTargetPolicy.TargetNotAllowedException(target.getHost()));
+        }
         return webClient.post()
                 .uri(target)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -190,8 +208,11 @@ public class WebhookService {
      * 시도 한 번의 전체 시간 초과({@code Mono.timeout})는 JDK {@link TimeoutException} 으로 온다.
      */
     static boolean isRetryable(Throwable error) {
-        // 막힌 주소·없는 호스트(NXDOMAIN)·인증서 오류는 다시 보내도 같다.
-        if (hasCause(error, java.net.UnknownHostException.class)) return false;
+        // 막힌 주소·없는 호스트(NXDOMAIN)·인증서 오류는 다시 보내도 같다. 그 밖의 DNS 실패(조회 타임아웃,
+        // SERVFAIL)도 UnknownHostException 으로 오지만 일시적일 수 있어 재시도한다 (2차 반박 리뷰 W2).
+        if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return false;
+        if (isNxDomain(error)) return false;
+        if (hasCause(error, SslHandshakeTimeoutException.class)) return true;
         if (hasCause(error, javax.net.ssl.SSLException.class)) return false;
         if (error instanceof RejectedByReceiverException rejected) {
             return rejected.status >= 500 || rejected.status == 429;
@@ -210,9 +231,19 @@ public class WebhookService {
         return false;
     }
 
+    private static boolean isNxDomain(Throwable error) {
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            if (t instanceof DnsErrorCauseException dns && DnsResponseCode.NXDOMAIN.equals(dns.getCode())) return true;
+            if (t.getCause() == t) break;
+        }
+        return false;
+    }
+
     /** URL 전체는 남기지 않는다 — 쿼리에 수신 측 토큰이 들어 있는 경우가 흔하다. */
     private static String describe(Throwable error) {
         if (error instanceof RejectedByReceiverException rejected) return "HTTP " + rejected.status;
+        // 온프레미스에서 allow-private-targets 를 빠뜨렸을 때 연결 거부와 구분돼야 한다 (2차 반박 리뷰 W3)
+        if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return "TARGET_NOT_ALLOWED";
         return error.getClass().getSimpleName();
     }
 
@@ -234,6 +265,7 @@ public class WebhookService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        resolvers.close();
         connections.disposeLater().block(Duration.ofSeconds(5));
         loops.disposeLater().block(Duration.ofSeconds(5));
     }

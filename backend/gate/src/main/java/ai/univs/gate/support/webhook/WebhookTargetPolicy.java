@@ -6,13 +6,10 @@ import io.netty.util.NetUtil;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +27,7 @@ import org.springframework.stereotype.Component;
  *   <li><b>보내기 직전</b> ({@link #checkWithoutLookup}) — 형식과 IP 리터럴만 본다. DNS 를
  *       조회하지 않는다 — 응답하지 않는 네임서버 하나가 전송 스레드를 붙잡으면 모든 프로젝트의
  *       웹훅이 밀린다(반박 리뷰 W2).
- *   <li><b>연결할 때</b> ({@link #selectAllowed}) — reactor-netty 의 비동기 DNS 가 푼 주소를
+ *   <li><b>연결할 때</b> ({@link PolicyAddressResolverGroup}) — netty 비동기 DNS 가 푼 주소를
  *       거른다. 저장 뒤 DNS 가 내부 주소로 바뀌는 경우(DNS 리바인딩)가 여기서 막힌다.
  * </ul>
  *
@@ -87,7 +84,7 @@ public class WebhookTargetPolicy {
 
     /**
      * DNS 를 조회하지 않고 볼 수 있는 것만 본다 — 스킴, 형식, IP 리터럴.
-     * 호스트 이름의 주소는 연결 단계({@link #selectAllowed})가 거른다.
+     * 호스트 이름의 주소는 연결 단계({@link PolicyAddressResolverGroup})가 거른다.
      */
     URI checkWithoutLookup(String rawUrl) {
         URI uri = parse(rawUrl);
@@ -96,26 +93,6 @@ public class WebhookTargetPolicy {
             throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
         }
         return uri;
-    }
-
-    /**
-     * reactor-netty 가 호스트 이름을 푼 결과를 거른다. 하나라도 막힌 주소가 섞이면 연결하지 않는다 —
-     * 공인 주소 하나와 내부 주소 하나를 함께 돌려주는 레코드로 우회하지 못하게 하기 위해서다.
-     *
-     * @throws java.io.UncheckedIOException 막힌 주소가 있을 때 (원인은 {@link TargetNotAllowedException}).
-     *         연결 실패로 올라가고 재시도하지 않는다.
-     */
-    List<? extends SocketAddress> selectAllowed(List<? extends SocketAddress> resolved) {
-        for (SocketAddress address : resolved) {
-            if (!(address instanceof InetSocketAddress inet) || inet.getAddress() == null
-                    || !isAllowed(inet.getAddress())) {
-                // 풀린 주소는 로그·예외에 남기지 않는다 — 우리 내부 주소를 알려 주는 통로가 된다.
-                // 선택 함수(BiFunction)는 검사 예외를 못 던진다. 원인 사슬에 남기면 재시도 판정이 알아본다.
-                throw new java.io.UncheckedIOException(new TargetNotAllowedException(
-                        address instanceof InetSocketAddress i ? i.getHostString() : "?"));
-            }
-        }
-        return resolved;
     }
 
     boolean isAllowed(InetAddress address) {
@@ -144,10 +121,10 @@ public class WebhookTargetPolicy {
 
     /**
      * netty 가 IP 리터럴로 보는가. 그렇다면 reactor-netty 는 DNS 리졸버를 거치지 않고 바로 연결하므로
-     * {@link #selectAllowed} 가 볼 기회가 없다 — 여기서 막아야 한다.
+     * {@link PolicyAddressResolverGroup} 가 볼 기회가 없다 — 여기서 막아야 한다.
      *
      * <p>{@code 2130706433} 같은 비표준 표기는 netty 에게 리터럴이 아니라 호스트 이름이다. 비동기 DNS 로
-     * 조회되고(풀리지 않는다), 풀린다면 {@link #selectAllowed} 가 거른다. 저장할 때는 JDK 가 이 표기를
+     * 조회되고(풀리지 않는다), 풀린다면 {@link PolicyAddressResolverGroup} 가 거른다. 저장할 때는 JDK 가 이 표기를
      * 127.0.0.1 로 읽어 {@link #validate} 에서 거절된다.
      */
     private static boolean isIpLiteral(String host) {
@@ -234,7 +211,10 @@ public class WebhookTargetPolicy {
             return (b0 == 100 && (b1 & 0xc0) == 64)      // 100.64.0.0/10 — 통신사 NAT, 컨테이너·VPN 내부
                     || (b0 == 198 && (b1 & 0xfe) == 18); // 198.18.0.0/15 — 벤치마크 대역, 내부망에 쓰인다
         }
-        return (b[0] & 0xfe) == 0xfc;                     // fc00::/7 — IPv6 사설(ULA)
+        return (b[0] & 0xfe) == 0xfc                      // fc00::/7 — IPv6 사설(ULA)
+                // 64:ff9b:1::/48 — 로컬 NAT64(RFC 8215). IPv4 가 든 위치가 접두 길이마다 달라 풀지 않고 사설로 본다
+                || ((b[0] & 0xff) == 0x00 && (b[1] & 0xff) == 0x64 && (b[2] & 0xff) == 0xff && (b[3] & 0xff) == 0x9b
+                        && (b[4] & 0xff) == 0x00 && (b[5] & 0xff) == 0x01);
     }
 
     /** 허용하지 않는 주소로 풀렸다. 연결 실패로 올라간다. */

@@ -251,6 +251,27 @@ class WebhookServiceTest {
     }
 
     @Test
+    @DisplayName("막힌 호스트로 계속 보내도 소켓이 새지 않는다 — 해석 단계에서 막아야 채널이 닫힌다 (2차 반박 리뷰 B1)")
+    void 막힌_주소_소켓_누수() {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        WebhookService s = service(new WebhookTargetPolicy(props), props);
+        URI blocked = URI.create("http://localhost:" + server.getAddress().getPort() + "/hook");   // hosts 파일 → 동기 해석
+        var os = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+        org.junit.jupiter.api.Assumptions.assumeTrue(os instanceof com.sun.management.UnixOperatingSystemMXBean);
+        var unix = (com.sun.management.UnixOperatingSystemMXBean) os;
+
+        s.deliver(blocked, "warm", "{}".getBytes()).onErrorComplete().block(Duration.ofSeconds(10));   // 풀·루프 기동
+        long before = unix.getOpenFileDescriptorCount();
+        for (int i = 0; i < 200; i++) {
+            s.deliver(blocked, "e" + i, "{}".getBytes()).onErrorComplete().block(Duration.ofSeconds(10));
+        }
+        long after = unix.getOpenFileDescriptorCount();
+
+        assertThat(received).isEmpty();
+        assertThat(after - before).as("fd 증가 (수정 전: 200회에 +100 이상)").isLessThan(20);
+    }
+
+    @Test
     @DisplayName("5xx 는 재시도하고, 재시도해도 eventId 는 같다")
     void 서버_오류_재시도() {
         AtomicInteger calls = new AtomicInteger();
@@ -307,8 +328,9 @@ class WebhookServiceTest {
     void 흘려_보내기() {
         // 읽기 공백 300ms 보다 자주(100ms) 1바이트씩 보낸다 — responseTimeout 만으로는 10초간 끊기지 않는다.
         // 시도당 상한 = connect 200ms + response 300ms + 1초 = 1.5초.
+        // 시도 2번 — 상한이 시도마다 걸리는지(전체 한 번이 아닌지) 본다 (2차 반박 리뷰 S2).
         WebhookProperties props = new WebhookProperties(false, Duration.ofMillis(200), Duration.ofMillis(300),
-                1, Duration.ofMillis(20), 10, 100, 100);
+                2, Duration.ofMillis(20), 10, 100, 100);
         WebhookService s = service(loopbackAllowed(props), props);
         URI drip = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/drip");
 
@@ -317,8 +339,8 @@ class WebhookServiceTest {
                 .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isTrue());
         long elapsedMillis = (System.nanoTime() - started) / 1_000_000;
 
-        assertThat(dripStarted).hasValue(1);
-        assertThat(elapsedMillis).isBetween(1_000L, 4_000L);
+        assertThat(dripStarted).hasValue(2);
+        assertThat(elapsedMillis).isBetween(2_500L, 7_000L);
     }
 
     @Test
@@ -345,9 +367,12 @@ class WebhookServiceTest {
         assertThat(WebhookService.isRetryable(
                 new RuntimeException(new WebhookTargetPolicy.TargetNotAllowedException("h")))).isFalse();
         assertThat(WebhookService.isRetryable(new IllegalStateException("x"))).isFalse();
-        // 다시 보내도 같은 실패 — 없는 호스트, 인증서 오류
-        assertThat(WebhookService.isRetryable(new RuntimeException(new java.net.UnknownHostException("nx")))).isFalse();
+        // 다시 보내도 같은 실패 — 막힌 주소, 인증서 오류
         assertThat(WebhookService.isRetryable(
                 new RuntimeException(new javax.net.ssl.SSLHandshakeException("bad cert")))).isFalse();
+        // 일시적일 수 있다 — 조회 타임아웃·SERVFAIL(UnknownHostException 으로 온다), TLS 핸드셰이크 타임아웃
+        assertThat(WebhookService.isRetryable(new RuntimeException(new java.net.UnknownHostException("timeout")))).isTrue();
+        assertThat(WebhookService.isRetryable(new RuntimeException(
+                new io.netty.handler.ssl.SslHandshakeTimeoutException("slow")))).isTrue();
     }
 }

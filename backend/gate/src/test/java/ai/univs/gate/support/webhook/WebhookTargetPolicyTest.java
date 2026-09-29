@@ -6,9 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -132,17 +130,36 @@ class WebhookTargetPolicyTest {
     }
 
     @org.junit.jupiter.api.Test
-    @DisplayName("연결할 때: 푼 주소에 막힌 주소가 하나라도 있으면 연결하지 않는다 (DNS 리바인딩)")
-    void 섞인_레코드_연결() throws Exception {
+    @DisplayName("IPv6 안의 IPv4 는 바이트로 만든 주소(변환되지 않은 형태)로 와도 풀어서 판정한다 — DNS AAAA 로 올 수 있다")
+    void 내장_IPv4_바이트() throws Exception {
         WebhookTargetPolicy policy = policy(false);
-        List<InetSocketAddress> mixed = List.of(
-                new InetSocketAddress(InetAddress.getByName("8.8.8.8"), 443),
-                new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 443));
-        List<InetSocketAddress> ok = List.of(new InetSocketAddress(InetAddress.getByName("8.8.8.8"), 443));
+        // Inet6Address.getByAddress 는 ::ffff:a.b.c.d 를 Inet4 로 바꾸지 않는다 (JDK 파서와 다르다)
+        assertThat(policy.isAllowed(v6("0000:0000:0000:0000:0000:0000:7f00:0001"))).isFalse();   // ::127.0.0.1
+        assertThat(policy.isAllowed(v6("0000:0000:0000:0000:0000:ffff:7f00:0001"))).isFalse();   // ::ffff:127.0.0.1
+        assertThat(policy.isAllowed(v6("0000:0000:0000:0000:0000:ffff:a9fe:a9fe"))).isFalse();   // ::ffff:169.254.169.254
+        assertThat(policy.isAllowed(v6("2002:7f00:0001:0000:0000:0000:0808:0808"))).isFalse();   // 6to4 — 뒤쪽이 공인이어도 앞의 IPv4 로 본다
+        assertThat(policy.isAllowed(v6("2002:0808:0808:0000:0000:0000:0000:0001"))).isTrue();    // 6to4 안의 8.8.8.8
+        assertThat(policy.isAllowed(v6("0000:0000:0000:0000:0000:0000:0808:0808"))).isTrue();    // ::8.8.8.8
+    }
 
-        assertThatThrownBy(() -> policy.selectAllowed(mixed))
-                .hasCauseInstanceOf(WebhookTargetPolicy.TargetNotAllowedException.class);
-        assertThat(policy.selectAllowed(ok)).isEqualTo(ok);
+    @org.junit.jupiter.api.Test
+    @DisplayName("198.18/15 의 뒤쪽 절반(198.19)과 로컬 NAT64(64:ff9b:1::/48)도 사설로 본다")
+    void 사설_경계() throws Exception {
+        assertThat(policy(false).isAllowed(InetAddress.getByName("198.19.255.1"))).isFalse();
+        assertThat(policy(false).isAllowed(InetAddress.getByName("198.20.0.1"))).isTrue();
+        assertThat(policy(false).isAllowed(v6("0064:ff9b:0001:0000:0000:0000:0a00:0001"))).isFalse();
+        assertThat(policy(true).isAllowed(v6("0064:ff9b:0001:0000:0000:0000:0a00:0001"))).isTrue();
+    }
+
+    private static InetAddress v6(String full) throws Exception {
+        byte[] b = new byte[16];
+        String[] groups = full.split(":");
+        for (int i = 0; i < 8; i++) {
+            int g = Integer.parseInt(groups[i], 16);
+            b[2 * i] = (byte) (g >> 8);
+            b[2 * i + 1] = (byte) g;
+        }
+        return java.net.Inet6Address.getByAddress(null, b, -1);
     }
 
     @org.junit.jupiter.api.Test
