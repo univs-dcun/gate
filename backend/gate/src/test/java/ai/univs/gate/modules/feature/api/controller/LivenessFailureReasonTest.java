@@ -66,6 +66,7 @@ class LivenessFailureReasonTest {
 
         assertEquals("", body.failureReason(),
                 "성공인데 failureReason 이 채워졌다 — prdioctionDesc(\"REAL\")가 그대로 새어 나온다");
+        verify(messageService, never()).getLivenessFailureMessage(any());
         verify(messageService, never()).getFailureMessageOrEmpty(any());
     }
 
@@ -73,7 +74,7 @@ class LivenessFailureReasonTest {
     @DisplayName("실패 — prdioctionDesc 는 i18n 메시지로 변환된다")
     void 실패() {
         given(livenessFaceUseCase.execute(any())).willReturn(result(false, "FAKE"));
-        given(messageService.getFailureMessageOrEmpty("FAKE"))
+        given(messageService.getLivenessFailureMessage("FAKE"))
                 .willReturn("실제 얼굴 이미지로 확인되지 않습니다. 다시 시도해 주시기 바랍니다.");
 
         LivenessResponseDTO body = call();

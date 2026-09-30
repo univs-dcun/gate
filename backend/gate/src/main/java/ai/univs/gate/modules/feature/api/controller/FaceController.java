@@ -383,7 +383,7 @@ public class FaceController {
         // 공표한다. Palm 라이브니스는 이미 같은 방식으로 막고 있다 (PalmController).
         String failureReason = result.success()
                 ? ""
-                : messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
+                : messageService.getLivenessFailureMessage(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }

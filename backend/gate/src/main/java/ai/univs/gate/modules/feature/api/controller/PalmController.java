@@ -173,7 +173,7 @@ public class PalmController {
         UserContext ctx = UserContext.get();
         var input = request.toInput(ctx.getAccountIdAsLong(), ctx.getApiKey());
         var result = livenessPalmUseCase.execute(input);
-        String failureReason = result.success() ? "" : messageService.getFailureMessageOrEmpty(result.message());
+        String failureReason = result.success() ? "" : messageService.getLivenessFailureMessage(result.message());
         var response = PalmLivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
