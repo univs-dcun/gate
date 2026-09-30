@@ -258,7 +258,7 @@ public class DemoController {
         // "REAL" 이 실린다. 상세는 FaceController.liveness 주석 참고.
         String failureReason = result.success()
                 ? ""
-                : messageService.getFailureMessageOrEmpty(result.prdioctionDesc());
+                : messageService.getLivenessFailureMessage(result.prdioctionDesc());
         var response = LivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
@@ -348,7 +348,7 @@ public class DemoController {
     ) {
         var input = request.toInput();
         var result = livenessPalmUseCase.execute(input);
-        String failureReason = result.success() ? "" : messageService.getFailureMessageOrEmpty(result.message());
+        String failureReason = result.success() ? "" : messageService.getLivenessFailureMessage(result.message());
         var response = PalmLivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
