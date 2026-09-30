@@ -36,6 +36,7 @@ public class MessageService {
 
     /** 처음 본 미등록 유형만 한 번 경고한다 — 이력 목록은 같은 유형을 행마다 다시 찾는다. */
     private final Set<String> warnedUnknownTypes = ConcurrentHashMap.newKeySet();
+    private static final int MAX_WARNED_TYPES = 256;
 
     /**
      * 실패 사유 문구. 빈 값이면 빈 문자열.
@@ -67,8 +68,10 @@ public class MessageService {
             if (!MISSING.equals(message)) {
                 return message;
             }
-            if (warnedUnknownTypes.add(key)) {
-                log.warn("번들에 없는 실패 유형 — 대체 문구로 표시한다 (messages_*.properties 에 추가할 것): {}", key);
+            // 상한을 둔다 — palm 엔진 message 는 자유 문장이라 가변 값이 섞이면 종류가 끝없이 늘 수 있다 (반박 리뷰).
+            if (warnedUnknownTypes.size() < MAX_WARNED_TYPES && warnedUnknownTypes.add(key)) {
+                log.warn("번들에 없는 실패 유형 — 대체 문구로 표시한다 (messages_*.properties 에 추가할 것): {}",
+                        key.length() > 100 ? key.substring(0, 100) + "…" : key);
             }
             return messageSource.getMessage(fallbackKey, null, fallbackKey, locale);
         } catch (NoSuchMessageException e) {
