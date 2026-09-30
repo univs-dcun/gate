@@ -127,7 +127,11 @@ public class ExtractService {
         // prdioction = 0 : 라이브니스 성공
         // -777 : 라이브니스 실패의 경우 -777 고정 코드 사용
         if (dto.getPrdioction() != 0) {
-            fail(history, "-777", dto.getPrdioctionDesc().toUpperCase(), clientId);
+            // UG-346: 엔진이 준 문자열이라 번들에 없을 수 있다 — 없으면 「라이브니스 검증에 실패하였습니다」.
+            String type = dto.getPrdioctionDesc().toUpperCase();
+            String message = messageService.getMessageOr(type, "LIVENESS_FAILED");
+            history.fail(type, clientId);
+            throw new InvalidFaceModuleException("-777", type, message);
         }
     }
 

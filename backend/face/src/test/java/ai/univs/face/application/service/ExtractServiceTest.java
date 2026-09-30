@@ -173,7 +173,7 @@ class ExtractServiceTest {
             given(extractFeign.extractWithOptionalLivenessAndMultiFace(
                     anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), any()))
                     .willReturn(successResponse("desc", 1, livenessFail("FAKE")));
-            given(messageService.getMessage("FAKE")).willReturn("위조된 얼굴입니다.");
+            given(messageService.getMessageOr("FAKE", "LIVENESS_FAILED")).willReturn("위조된 얼굴입니다.");   // UG-346: 모르는 엔진 문자열은 대체 문구
 
             assertThatThrownBy(() ->
                     extractService.extract(faceHistory, faceImage, CLIENT_ID, true, false))
