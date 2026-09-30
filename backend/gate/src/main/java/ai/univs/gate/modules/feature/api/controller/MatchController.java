@@ -1,5 +1,7 @@
 package ai.univs.gate.modules.feature.api.controller;
 
+import ai.univs.gate.modules.feature.domain.enums.ActivityType;
+import ai.univs.gate.modules.feature.application.result.match.MatchHistoryResult;
 import ai.univs.gate.modules.feature.api.dto.match.*;
 import ai.univs.gate.modules.feature.application.usecase.face.*;
 import ai.univs.gate.modules.feature.application.usecase.match.*;
@@ -56,7 +58,7 @@ public class MatchController {
                 .map(history ->
                         MatchingHistoryResponseDTO.from(
                                 history,
-                                messageService.getFailureMessageOrEmpty(history.failureType()),
+                                failureReason(history),
                                 ctx.getTimezone()
                         )
                 )
@@ -86,8 +88,18 @@ public class MatchController {
         UserContext ctx = UserContext.get();
         var result = getMatchHistoryByTransactionUuidUseCase.execute(
                 ctx.getAccountIdAsLong(), ctx.getApiKey(), transactionUuid);
-        String failureReason = messageService.getFailureMessageOrEmpty(result.failureType());
-        var response = MatchingHistoryResponseDTO.from(result, failureReason, ctx.getTimezone());
+        var response = MatchingHistoryResponseDTO.from(result, failureReason(result), ctx.getTimezone());
         return ResponseEntity.ok(ResponseApi.ok(response));
+    }
+
+    /**
+     * 이력 행의 실패 사유. 라이브니스 행은 라이브니스 API 응답과 같은 규칙으로 만든다 (UG-346 반박 리뷰) — 엔진이 준
+     * 모르는 문자열이면 두 곳 모두 「라이브니스 검증에 실패하였습니다」. 일반 대체 문구를 쓰면 같은 거래가 응답과 이력에서
+     * 다른 문장으로 보인다.
+     */
+    private String failureReason(MatchHistoryResult history) {
+        return history.matchType() == ActivityType.LIVENESS
+                ? messageService.getLivenessFailureMessage(history.failureType())
+                : messageService.getFailureMessageOrEmpty(history.failureType());
     }
 }
