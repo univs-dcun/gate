@@ -36,8 +36,8 @@ public class UpsertWebhookConfigUseCase {
         // 응답 없는 네임서버를 기다리면 그 프로젝트의 수정·삭제·재발급이 리졸버 타임아웃 동안 모두 멈춘다.
         webhookTargetPolicy.validate(input.webhookUrl());
         // UG-344 반박 리뷰 W1: 그다음 프로젝트 행을 잠근다. 설정이 아직 없으면 아래 FOR UPDATE 는 잠글 행이 없어,
-        // 저장을 두 번 누르면 설정이 둘 생긴다(project_id 유니크 제약이 없다) — 그 뒤로 조회가 깨지고 웹훅이 멈춘다.
-        // 순서는 DeleteProjectUseCase 와 같다(프로젝트 → 하위 행).
+        // 저장을 동시에 두 번 하면 둘 다 INSERT 로 간다. V38 의 유니크 제약이 두 번째를 막지만 그건 500 이다 —
+        // 잠가서 두 번째가 첫 번째의 행을 보고 수정으로 가게 한다. 순서는 DeleteProjectUseCase 와 같다(프로젝트 → 하위 행).
         Project project = projectService.validateOwnershipForUpdate(input.projectId(), input.accountId());
 
         // UG-344: 행을 잠근다. 이 트랜잭션은 키 컬럼까지 통째로 다시 쓰므로, 그사이 전송 쪽이 채운 키나 다른 탭의
