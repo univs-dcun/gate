@@ -52,6 +52,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -104,6 +105,7 @@ class SingleConnectionSliceTest {
 
     @MockitoBean private FaceService faceService;
     @MockitoBean private FileService fileService;
+    @MockitoBean private UseCaseNotifyService useCaseNotifyService;
 
     @Autowired private FaceFeatureService faceFeatureService;
     @Autowired private DeleteFaceFeatureUseCase deleteFaceFeatureUseCase;

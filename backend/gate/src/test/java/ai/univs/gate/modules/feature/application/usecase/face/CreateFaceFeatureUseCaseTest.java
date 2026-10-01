@@ -2,6 +2,7 @@ package ai.univs.gate.modules.feature.application.usecase.face;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.feature.application.input.CreateFeatureInput;
@@ -14,6 +15,8 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +40,7 @@ class CreateFaceFeatureUseCaseTest {
 
     @Mock private FaceFeatureService faceFeatureService;
     @Mock private FileService fileService;
+    @Mock private UseCaseNotifyService useCaseNotifyService;
 
     @InjectMocks private CreateFaceFeatureUseCase createFaceFeatureUseCase;
 
@@ -99,6 +103,9 @@ class CreateFaceFeatureUseCaseTest {
         assertThat(result.featureImagePath()).isEqualTo(FILE_SERVER_PATH + "feature/registered.jpg");
         assertThat(result.transactionUuid()).isEqualTo(TRANSACTION_UUID);
         assertThat(result.checkLiveness()).isTrue();
+        // UG-345: 응답과 같은 결과를 웹훅으로 알린다
+        verify(useCaseNotifyService).notifyWebhook(
+                CallerType.API, WebhookEvent.FEATURE_REGISTERED, PROJECT_ID, TRANSACTION_UUID, result);
     }
 
     @Test

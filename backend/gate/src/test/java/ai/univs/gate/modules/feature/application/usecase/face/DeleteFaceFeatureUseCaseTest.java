@@ -3,6 +3,7 @@ package ai.univs.gate.modules.feature.application.usecase.face;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
@@ -13,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.modules.feature.application.input.face.DeleteFaceFeatureInput;
+import ai.univs.gate.modules.feature.application.result.face.FaceFeatureDeletedResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
@@ -24,9 +26,12 @@ import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.exception.RemoteCallException;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceService;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -64,6 +69,7 @@ class DeleteFaceFeatureUseCaseTest {
     @Mock private HistoryRecorder historyRecorder;
     @Mock private ApiKeyService apiKeyService;
     @Mock private FaceService faceService;
+    @Mock private UseCaseNotifyService useCaseNotifyService;
 
     // UG-336: 성공 쓰기가 짧은 트랜잭션 안에서 일어난다. null 이면 NPE, 목이면 콜백이 안 돈다.
     @Spy private RecordingTransactionTemplate transactionTemplate = new RecordingTransactionTemplate();
@@ -141,6 +147,33 @@ class DeleteFaceFeatureUseCaseTest {
                 .isNotBlank();
 
         assertThat(feature.isDeleted()).isTrue();
+
+        // UG-345: 커밋 뒤 삭제 웹훅 — transactionUuid 는 삭제 요청의 값이다
+        ArgumentCaptor<Object> data = ArgumentCaptor.forClass(Object.class);
+        verify(useCaseNotifyService).notifyWebhook(
+                eq(CallerType.API), eq(WebhookEvent.FEATURE_DELETED), eq(1L),
+                eq(history.getTransactionUuid()), data.capture());
+        assertThat(data.getValue()).isEqualTo(new FaceFeatureDeletedResult(
+                FEATURE_SEQ, 1L, FEATURE_ID, "emp-42", history.getTransactionUuid()));
+    }
+
+    /**
+     * UG-345: 동시에 온 두 삭제 요청이 둘 다 하위 삭제에 성공하면, 성공 트랜잭션에서 다시 읽었을 때 이미 지워진
+     * 쪽은 아무것도 바꾸지 않는다. 그 요청은 성공이지만 웹훅을 다시 보내지 않는다 — 수신 측이 같은 삭제를 서로
+     * 다른 eventId 로 두 번 받으면 중복을 거를 수 없다.
+     */
+    @Test
+    @DisplayName("UG-345: 성공 트랜잭션에서 이미 지워져 있으면 삭제 웹훅을 보내지 않는다")
+    void 다른_요청이_먼저_지웠으면_웹훅_없음() {
+        given(biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(FEATURE_SEQ, FeatureType.FACE))
+                .willReturn(Optional.of(feature), Optional.empty());
+        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(inv -> inv.getArgument(0));
+
+        useCase.execute(input);
+
+        assertThat(저장된_이력().isSuccess()).isTrue();
+        verify(useCaseNotifyService, never()).notifyWebhook(any(), any(), any(), any(), any());
     }
 
     /**
@@ -212,6 +245,7 @@ class DeleteFaceFeatureUseCaseTest {
         assertThat(history.isSuccess()).isFalse();
         assertThat(history.getFailureType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
         assertThat(feature.isDeleted()).isFalse();
+        verify(useCaseNotifyService, never()).notifyWebhook(any(), any(), any(), any(), any());
     }
 
     @Test

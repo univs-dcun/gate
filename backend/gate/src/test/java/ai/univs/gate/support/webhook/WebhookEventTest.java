@@ -24,6 +24,7 @@ class WebhookEventTest {
     void 목록_고정() {
         assertThat(Arrays.stream(WebhookEvent.values()).map(Enum::name))
                 .containsExactly("LIVENESS", "VERIFY_ID", "VERIFY_IMAGE", "IDENTIFY",
-                        "VERIFY_DESCRIPTOR", "IDENTIFY_DESCRIPTOR", "IDENTIFY_CANDIDATES_DESCRIPTOR");
+                        "VERIFY_DESCRIPTOR", "IDENTIFY_DESCRIPTOR", "IDENTIFY_CANDIDATES_DESCRIPTOR",
+                        "FEATURE_REGISTERED", "FEATURE_REGISTERED_DESCRIPTOR", "FEATURE_DELETED");
     }
 }

@@ -3,7 +3,10 @@ package ai.univs.gate.modules.feature.application.usecase.face;
 import ai.univs.gate.modules.feature.application.input.face.CreateFaceFeatureByDescriptorInput;
 import ai.univs.gate.modules.feature.application.result.face.FaceFeatureByDescriptorResult;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
+import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class CreateFaceFeatureByDescriptorUseCase {
 
     private final FaceFeatureService faceFeatureService;
+    private final UseCaseNotifyService useCaseNotifyService;
 
     public FaceFeatureByDescriptorResult execute(CreateFaceFeatureByDescriptorInput input) {
         BiometricFeature biometricFeature = faceFeatureService.createFaceFeatureByDescriptor(
@@ -28,6 +32,10 @@ public class CreateFaceFeatureByDescriptorUseCase {
                 input.transactionUuid(),
                 input.externalKey());
 
-        return FaceFeatureByDescriptorResult.from(biometricFeature);
+        FaceFeatureByDescriptorResult result = FaceFeatureByDescriptorResult.from(biometricFeature);
+        // UG-345: 이미지 등록과 결과 구조가 달라 이벤트 이름을 나눴다 (WebhookEvent 주석)
+        useCaseNotifyService.notifyWebhook(CallerType.API, WebhookEvent.FEATURE_REGISTERED_DESCRIPTOR,
+                biometricFeature.getProject().getId(), result.transactionUuid(), result);
+        return result;
     }
 }
