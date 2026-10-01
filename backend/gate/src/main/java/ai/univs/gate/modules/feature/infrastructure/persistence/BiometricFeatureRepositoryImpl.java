@@ -30,6 +30,11 @@ public class BiometricFeatureRepositoryImpl implements BiometricFeatureRepositor
     }
 
     @Override
+    public Optional<BiometricFeature> findForUpdateByIdAndTypeAndIsDeletedFalse(Long id, FeatureType type) {
+        return jpaRepository.findForUpdateByIdAndTypeAndIsDeletedFalse(id, type);
+    }
+
+    @Override
     public Optional<BiometricFeature> findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
             String featureId, Long projectId, FeatureType type) {
         return jpaRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(featureId, projectId, type);

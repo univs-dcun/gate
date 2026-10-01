@@ -5,6 +5,7 @@ import ai.univs.gate.modules.webhook.api.dto.WebhookConfigResponseDTO;
 import ai.univs.gate.modules.webhook.application.input.UpsertWebhookConfigInput;
 import ai.univs.gate.modules.webhook.application.usecase.DeleteWebhookConfigUseCase;
 import ai.univs.gate.modules.webhook.application.usecase.GetWebhookConfigUseCase;
+import ai.univs.gate.modules.webhook.application.usecase.RotateWebhookSecretUseCase;
 import ai.univs.gate.modules.webhook.application.usecase.UpsertWebhookConfigUseCase;
 import ai.univs.gate.shared.auth.UserContext;
 import ai.univs.gate.shared.swagger.SwaggerDescriptions;
@@ -31,6 +32,7 @@ public class WebhookConfigController {
     private final GetWebhookConfigUseCase getWebhookConfigUseCase;
     private final UpsertWebhookConfigUseCase upsertWebhookConfigUseCase;
     private final DeleteWebhookConfigUseCase deleteWebhookConfigUseCase;
+    private final RotateWebhookSecretUseCase rotateWebhookSecretUseCase;
 
     @Operation(summary = "웹훅 설정 조회", description = "프로젝트의 웹훅 설정을 조회합니다. 설정이 없으면 null을 반환합니다.")
     @SecurityRequirements({@SecurityRequirement(name = "Authentication")})
@@ -44,7 +46,7 @@ public class WebhookConfigController {
             @PathVariable Long projectId
     ) {
         var result = getWebhookConfigUseCase.execute(projectId);
-        var response = result != null ? WebhookConfigResponseDTO.from(result) : null;
+        var response = result != null ? WebhookConfigResponseDTO.from(result, UserContext.get().getTimezone()) : null;
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
@@ -71,7 +73,25 @@ public class WebhookConfigController {
                 request.apiEnabled());
 
         var result = upsertWebhookConfigUseCase.execute(input);
-        return ResponseEntity.ok(ResponseApi.ok(WebhookConfigResponseDTO.from(result)));
+        return ResponseEntity.ok(ResponseApi.ok(WebhookConfigResponseDTO.from(result, ctx.getTimezone())));
+    }
+
+    @Operation(summary = "웹훅 서명 키 재발급",
+            description = "새 서명 키를 발급합니다. 재발급 후 24시간 동안은 이전 키로도 함께 서명해(X-Gate-Signature 에 v1 이 두 개) "
+                    + "수신 측이 끊김 없이 키를 바꿀 수 있습니다. 웹훅 설정이 없으면 PJ-110 입니다.")
+    @SecurityRequirements({@SecurityRequirement(name = "Authentication")})
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.WEBHOOK_CONFIG_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
+    })
+    @PostMapping("/secret/rotate")
+    public ResponseEntity<ResponseApi<WebhookConfigResponseDTO>> rotateWebhookSecret(
+            @Parameter(description = SwaggerDescriptions.PROJECT_ID)
+            @PathVariable Long projectId
+    ) {
+        var result = rotateWebhookSecretUseCase.execute(projectId);
+        return ResponseEntity.ok(ResponseApi.ok(WebhookConfigResponseDTO.from(result, UserContext.get().getTimezone())));
     }
 
     @Operation(summary = "웹훅 설정 삭제", description = "프로젝트의 웹훅 설정을 삭제합니다.")

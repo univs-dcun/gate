@@ -2,6 +2,7 @@ package ai.univs.gate.facade.demo.application.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import ai.univs.gate.facade.demo.application.input.CreateFaceFeatureByApiKeyInput;
 import ai.univs.gate.facade.demo.application.input.CreatePalmFeatureByApiKeyInput;
@@ -14,6 +15,8 @@ import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.feature.palm.CreatePalmFeatureServiceResult;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +63,7 @@ class CreateFeatureByApiKeyUseCaseTest {
 
         @Mock private FaceFeatureService faceFeatureService;
         @Mock private FileService fileService;
+        @Mock private UseCaseNotifyService useCaseNotifyService;
         @InjectMocks private CreateFaceFeatureByApiKeyUseCase useCase;
 
         @BeforeEach
@@ -82,6 +86,8 @@ class CreateFeatureByApiKeyUseCaseTest {
             } else {
                 assertThat(result.featureImagePath()).as("동의가 꺼지면 이미지 경로를 내보내지 않는다").isEmpty();
             }
+            // UG-345: 데모 호출자로 웹훅만 알린다 (데모 화면 실시간 알림은 보내지 않는다)
+            verify(useCaseNotifyService).notifyWebhook(CallerType.DEMO, WebhookEvent.FEATURE_REGISTERED, 1L, TX, result);
         }
     }
 
