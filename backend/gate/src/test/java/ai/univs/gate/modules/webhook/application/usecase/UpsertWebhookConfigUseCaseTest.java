@@ -40,7 +40,7 @@ class UpsertWebhookConfigUseCaseTest {
     @Test
     @DisplayName("내부 주소는 저장하지 않고 PJ-111 로 거절한다 — 새로 만들 때")
     void 신규_거절() {
-        when(repository.findByProjectId(10L)).thenReturn(Optional.empty());
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(input("http://172.18.0.1:7888/actuator")))
                 .isInstanceOf(CustomGateException.class)
@@ -54,7 +54,7 @@ class UpsertWebhookConfigUseCaseTest {
     void 수정_거절() {
         WebhookConfig existing = WebhookConfig.builder()
                 .webhookUrl("https://8.8.8.8/hook").demoEnabled(true).apiEnabled(true).build();
-        when(repository.findByProjectId(10L)).thenReturn(Optional.of(existing));
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> useCase.execute(input("http://127.0.0.1:7432/")))
                 .isInstanceOf(CustomGateException.class);
@@ -64,10 +64,32 @@ class UpsertWebhookConfigUseCaseTest {
     @Test
     @DisplayName("공인 주소는 저장한다")
     void 저장() {
-        when(repository.findByProjectId(10L)).thenReturn(Optional.empty());
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
 
         assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookUrl()).isEqualTo("https://8.8.8.8/hook");
         verify(repository).save(any());
+    }
+
+    @Test
+    @DisplayName("UG-344: 새 설정에는 서명 키가 발급된다")
+    void 신규_키() {
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
+
+        assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).startsWith("whsec_");
+    }
+
+    @Test
+    @DisplayName("UG-344: 키가 없던 기존 설정은 저장할 때 채우고, 있던 키는 바꾸지 않는다")
+    void 기존_키() {
+        WebhookConfig 없음 = WebhookConfig.builder().project(Project.builder().id(10L).build())
+                .webhookUrl("https://8.8.8.8/a").demoEnabled(true).apiEnabled(true).build();
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(없음));
+        assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).startsWith("whsec_");
+
+        WebhookConfig 있음 = WebhookConfig.builder().project(Project.builder().id(10L).build())
+                .webhookUrl("https://8.8.8.8/a").demoEnabled(true).apiEnabled(true).webhookSecret("whsec_keep").build();
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(있음));
+        assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).isEqualTo("whsec_keep");
     }
 
     private static UpsertWebhookConfigInput input(String url) {

@@ -60,7 +60,7 @@ class WebhookServiceTest {
     private volatile long delayMillis = 0;
     private WebhookService service;
 
-    record Received(String eventId, String userAgent, String contentType, JsonNode body) { }
+    record Received(String eventId, String userAgent, String contentType, JsonNode body, String signature, byte[] raw) { }
 
     @BeforeEach
     void startServer() throws IOException {
@@ -71,7 +71,9 @@ class WebhookServiceTest {
                     exchange.getRequestHeaders().getFirst(WebhookService.EVENT_ID_HEADER),
                     exchange.getRequestHeaders().getFirst("User-Agent"),
                     exchange.getRequestHeaders().getFirst("Content-Type"),
-                    objectMapper.readTree(new String(raw, StandardCharsets.UTF_8))));
+                    objectMapper.readTree(new String(raw, StandardCharsets.UTF_8)),
+                    exchange.getRequestHeaders().getFirst(WebhookSignature.HEADER),
+                    raw));
             try {
                 if (delayMillis > 0) Thread.sleep(delayMillis);
             } catch (InterruptedException e) {
@@ -176,6 +178,81 @@ class WebhookServiceTest {
         assertThat(r.body().get("eventId").asText()).isNotBlank().isEqualTo(r.eventId());
         assertThat(r.userAgent()).isEqualTo(WebhookService.USER_AGENT);
         assertThat(r.contentType()).startsWith("application/json");
+    }
+
+    private void configureSigned(String url, String secret, String previous, java.time.LocalDateTime previousExpiresAt) {
+        WebhookConfig config = WebhookConfig.builder().id(9L).webhookUrl(url).demoEnabled(false).apiEnabled(true)
+                .webhookSecret(secret).previousWebhookSecret(previous).previousSecretExpiresAt(previousExpiresAt).build();
+        when(repository.findByProjectId(1L)).thenReturn(Optional.of(config));
+    }
+
+    @Test
+    @DisplayName("UG-344: 서명 헤더 — t 는 보낸 시각, v1 은 받은 본문 바이트 그대로의 HMAC 이다")
+    void 서명() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        configureSigned(url(), "whsec_k", null, null);
+
+        service(loopbackAllowed(props), props)
+                .send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-s", Map.of("result", true));
+
+        awaitReceived(1);
+        Received r = received.getFirst();
+        long t = NOW.getEpochSecond();
+        assertThat(r.signature()).isEqualTo("t=" + t + ",v1=" + WebhookSignature.sign("whsec_k", t, r.raw()));
+    }
+
+    @Test
+    @DisplayName("UG-344: 재발급 후 겹치는 동안에는 v1 이 둘 — 새 키가 먼저, 만료가 지나면 하나")
+    void 겹치는_기간() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        java.time.LocalDateTime now = java.time.LocalDateTime.ofInstant(NOW, ZoneOffset.UTC);
+        configureSigned(url(), "whsec_new", "whsec_old", now.plusHours(1));
+        WebhookService s = service(loopbackAllowed(props), props);
+
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-1", Map.of());
+        awaitReceived(1);
+        long t = NOW.getEpochSecond();
+        byte[] raw = received.getFirst().raw();
+        assertThat(received.getFirst().signature()).isEqualTo("t=" + t
+                + ",v1=" + WebhookSignature.sign("whsec_new", t, raw) + ",v1=" + WebhookSignature.sign("whsec_old", t, raw));
+
+        configureSigned(url(), "whsec_new", "whsec_old", now);   // 만료 시각 == 지금 → 이미 지났다
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-2", Map.of());
+        awaitReceived(2);
+        assertThat(received.get(1).signature()).doesNotContain(WebhookSignature.sign("whsec_old", t, received.get(1).raw()));
+        assertThat(received.get(1).signature().split(",v1=")).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("UG-344: 키가 없던 설정은 보내기 전에 채우고, 다시 읽은 키로 서명한다")
+    void 키_채우고_서명() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        WebhookConfig 없음 = WebhookConfig.builder().id(9L).webhookUrl(url()).demoEnabled(false).apiEnabled(true).build();
+        WebhookConfig 채워짐 = WebhookConfig.builder().id(9L).webhookUrl(url()).demoEnabled(false).apiEnabled(true)
+                .webhookSecret("whsec_assigned").build();
+        when(repository.findByProjectId(1L)).thenReturn(Optional.of(없음), Optional.of(채워짐));
+
+        service(loopbackAllowed(props), props).send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx", Map.of());
+
+        awaitReceived(1);
+        org.mockito.Mockito.verify(repository).assignSecretIfAbsent(org.mockito.ArgumentMatchers.eq(9L),
+                org.mockito.ArgumentMatchers.startsWith("whsec_"));
+        Received r = received.getFirst();
+        assertThat(r.signature()).endsWith(WebhookSignature.sign("whsec_assigned", NOW.getEpochSecond(), r.raw()));
+    }
+
+    @Test
+    @DisplayName("UG-344: 키를 채우다 DB 가 실패하면 서명 없이라도 보낸다 — 웹훅을 버리지 않는다")
+    void 키_채우기_실패() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        configure(url(), false, true);
+        when(repository.assignSecretIfAbsent(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenThrow(new IllegalStateException("db down"));
+
+        service(loopbackAllowed(props), props).send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx", Map.of());
+
+        awaitReceived(1);
+        assertThat(received.getFirst().signature()).isNull();
     }
 
     @Test
@@ -295,6 +372,30 @@ class WebhookServiceTest {
 
         assertThat(received).hasSize(3);
         assertThat(received).extracting(Received::eventId).containsOnly("evt-1");
+    }
+
+    @Test
+    @DisplayName("UG-344: 재시도마다 서명을 새로 만든다 — t 가 실제 보낸 시각이라 수신 측 시간 검사가 재시도를 오래된 요청으로 보지 않는다")
+    void 재시도_서명() {
+        AtomicInteger calls = new AtomicInteger();
+        status = () -> calls.incrementAndGet() < 3 ? 503 : 200;
+        WebhookProperties props = props(3, Duration.ofSeconds(5));
+        WebhookService s = service(loopbackAllowed(props), props);
+        java.util.concurrent.atomic.AtomicLong seconds = new java.util.concurrent.atomic.AtomicLong(NOW.getEpochSecond());
+        s.clock = new Clock() {
+            @Override public java.time.ZoneId getZone() { return ZoneOffset.UTC; }
+            @Override public Clock withZone(java.time.ZoneId zone) { return this; }
+            @Override public Instant instant() { return Instant.ofEpochSecond(seconds.getAndAdd(10)); }
+        };
+
+        s.deliver(URI.create(url()), "evt-1", "{\"a\":1}".getBytes(), List.of("whsec_k")).block(Duration.ofSeconds(10));
+
+        assertThat(received).hasSize(3);
+        assertThat(received).extracting(Received::signature).doesNotHaveDuplicates();
+        for (Received r : received) {
+            long t = Long.parseLong(r.signature().substring(2, r.signature().indexOf(',')));
+            assertThat(r.signature()).isEqualTo("t=" + t + ",v1=" + WebhookSignature.sign("whsec_k", t, r.raw()));
+        }
     }
 
     @Test

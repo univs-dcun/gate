@@ -1,0 +1,11 @@
+-- UG-344: 웹훅 요청에 서명이 없다.
+--
+-- URL 을 아는 사람은 누구든 가짜 매칭 결과를 수신 서버에 보낼 수 있다. 수신 측이 "gate 가 보낸 요청인가" 를
+-- 확인할 방법이 없었다. 프로젝트별 서명 키를 두고 요청 헤더 X-Gate-Signature 에 HMAC-SHA256 서명을 싣는다.
+--
+-- 서명하려면 키 원문이 필요해 평문으로 둔다(api_keys.secret_key 와 같은 취급).
+--
+-- 기존 행은 NULL 이다. DB 마다 난수 함수가 달라(PostgreSQL pgcrypto, Oracle DBMS_CRYPTO) 마이그레이션에서 채우지
+-- 않는다. 앱이 설정을 저장·조회하거나 웹훅을 보낼 때 "비어 있으면 채운다" 조건부 갱신으로 채운다 — 배포 직후 첫
+-- 전송부터 서명이 붙는다.
+ALTER TABLE webhook_configs ADD COLUMN webhook_secret VARCHAR(100);

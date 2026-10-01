@@ -12,6 +12,9 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -134,6 +137,7 @@ public class WebhookService {
         try {
             WebhookConfig config = webhookConfigRepository.findByProjectId(projectId).orElse(null);
             if (config == null || !isEnabled(config, source)) return;
+            config = withSecret(projectId, config);
 
             URI target;
             try {
@@ -157,7 +161,8 @@ public class WebhookService {
             // 응답 본문과 달라질 수 있다. 바이트로 한 번 만들어 재시도에도 그대로 쓴다.
             byte[] body = objectMapper.writeValueAsBytes(payload);
 
-            deliver(target, payload.eventId(), body).subscribe(
+            List<String> secrets = config.activeSecrets(LocalDateTime.ofInstant(Instant.now(clock), ZoneOffset.UTC));
+            deliver(target, payload.eventId(), body, secrets).subscribe(
                     ignored -> { },
                     error -> log.warn("Webhook delivery failed: projectId={}, event={}, eventId={}, host={}, cause={}",
                             projectId, event, payload.eventId(), target.getHost(), describe(error)),
@@ -169,7 +174,30 @@ public class WebhookService {
         }
     }
 
+    /**
+     * UG-344 이전에 만든 설정은 키가 없다. 화면에서 조회하기 전에도 서명이 붙도록 여기서 채운다 — 조건부 갱신이라 화면
+     * 쪽과 동시에 채워도 하나로 정해진다. 채우지 못하면(DB 오류) 서명 없이 보낸다: 웹훅을 아예 버리는 것보다 낫고,
+     * 수신 측은 서명이 없으면 거절하면 된다.
+     */
+    private WebhookConfig withSecret(Long projectId, WebhookConfig config) {
+        if (config.getWebhookSecret() != null) return config;
+        try {
+            webhookConfigRepository.assignSecretIfAbsent(config.getId(), WebhookSecrets.generate());
+            return webhookConfigRepository.findByProjectId(projectId).orElse(config);
+        } catch (Exception e) {
+            log.warn("Webhook secret assignment failed, sending unsigned: projectId={}, cause={}", projectId, e.toString());
+            return config;
+        }
+    }
+
     Mono<Void> deliver(URI target, String eventId, byte[] body) {
+        return deliver(target, eventId, body, List.of());
+    }
+
+    /**
+     * @param secrets 서명 키들 (UG-344). 비어 있으면 서명 헤더를 붙이지 않는다.
+     */
+    Mono<Void> deliver(URI target, String eventId, byte[] body, List<String> secrets) {
         try {
             // IP 리터럴은 리졸버를 거치지 않는다. dispatch 가 이미 봤지만, 이 메서드만 부르는 경로에서도
             // 연결 전에 막는다 — 연결 뒤에 막으면 채널이 남는다.
@@ -177,11 +205,19 @@ public class WebhookService {
         } catch (CustomGateException e) {
             return Mono.error(new WebhookTargetPolicy.TargetNotAllowedException(target.getHost()));
         }
-        return webClient.post()
+        // 시도마다 새로 만든다 — 서명의 타임스탬프가 실제 보낸 시각이어야 수신 측의 시간 허용 범위 검사가 재시도를
+        // 오래된 요청으로 오판하지 않는다 (UG-344).
+        return Mono.defer(() -> webClient.post()
                 .uri(target)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(EVENT_ID_HEADER, eventId)
                 .header(HttpHeaders.USER_AGENT, USER_AGENT)
+                .headers(headers -> {
+                    if (!secrets.isEmpty()) {
+                        headers.set(WebhookSignature.HEADER,
+                                WebhookSignature.header(Instant.now(clock).getEpochSecond(), body, secrets));
+                    }
+                })
                 .bodyValue(body)
                 .exchangeToMono(response -> {
                     int status = response.statusCode().value();
@@ -189,7 +225,7 @@ public class WebhookService {
                     return response.statusCode().is2xxSuccessful()
                             ? drained
                             : drained.then(Mono.error(new RejectedByReceiverException(status)));
-                })
+                }))
                 // 시도 한 번의 전체 시간 상한. responseTimeout 은 "읽기 사이의 공백" 이라, 1바이트씩
                 // 흘려 보내는 수신 서버는 그것만으로 끊기지 않는다(반박 리뷰 W1). 넘으면 구독이
                 // 취소되고 연결은 버려진다.
