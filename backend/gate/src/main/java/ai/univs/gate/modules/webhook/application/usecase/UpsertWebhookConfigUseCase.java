@@ -28,13 +28,17 @@ public class UpsertWebhookConfigUseCase {
 
     @Transactional
     public WebhookConfigResult execute(UpsertWebhookConfigInput input) {
-        // UG-344 반박 리뷰 W1: 프로젝트 행부터 잠근다. 설정이 아직 없으면 아래 FOR UPDATE 는 잠글 행이 없어, 저장을
-        // 두 번 누르면 설정이 둘 생긴다(project_id 유니크 제약이 없다) — 그 뒤로 조회가 깨지고 웹훅이 멈춘다.
-        // 순서는 DeleteProjectUseCase 와 같다(프로젝트 → 하위 행).
-        Project project = projectService.validateOwnershipForUpdate(input.projectId(), input.accountId());
+        // 소유 확인은 잠그지 않고 먼저 한다 — 남의 프로젝트로 아래 DNS 조회를 일으키지 못하게.
+        projectService.validateOwnership(input.projectId(), input.accountId());
         // UG-111: 내부 주소·http(s) 아닌 주소는 저장하지 않는다. 보낼 때도 다시 검사하지만,
         // 여기서 막아야 화면이 바로 알려 준다 — 보낼 때 막히면 로그에만 남는다.
+        // 잠그기 <b>전에</b> 한다 (2차 반박 리뷰 W-b) — 호스트 이름이면 DNS 를 블로킹으로 조회한다. 프로젝트 행을 쥔 채
+        // 응답 없는 네임서버를 기다리면 그 프로젝트의 수정·삭제·재발급이 리졸버 타임아웃 동안 모두 멈춘다.
         webhookTargetPolicy.validate(input.webhookUrl());
+        // UG-344 반박 리뷰 W1: 그다음 프로젝트 행을 잠근다. 설정이 아직 없으면 아래 FOR UPDATE 는 잠글 행이 없어,
+        // 저장을 두 번 누르면 설정이 둘 생긴다(project_id 유니크 제약이 없다) — 그 뒤로 조회가 깨지고 웹훅이 멈춘다.
+        // 순서는 DeleteProjectUseCase 와 같다(프로젝트 → 하위 행).
+        Project project = projectService.validateOwnershipForUpdate(input.projectId(), input.accountId());
 
         // UG-344: 행을 잠근다. 이 트랜잭션은 키 컬럼까지 통째로 다시 쓰므로, 그사이 전송 쪽이 채운 키나 다른 탭의
         // 재발급을 읽은 값으로 덮어쓰면 수신 측이 가진 키가 말없이 무효가 된다.

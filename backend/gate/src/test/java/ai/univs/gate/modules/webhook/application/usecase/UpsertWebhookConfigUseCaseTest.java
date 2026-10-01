@@ -34,6 +34,7 @@ class UpsertWebhookConfigUseCaseTest {
 
     @BeforeEach
     void 소유() {
+        when(projectService.validateOwnership(10L, 1L)).thenReturn(mock(Project.class));
         when(projectService.validateOwnershipForUpdate(10L, 1L)).thenReturn(mock(Project.class));
     }
 
@@ -47,6 +48,14 @@ class UpsertWebhookConfigUseCaseTest {
                 .extracting(e -> ((CustomGateException) e).getErrorType())
                 .isEqualTo(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("2차 반박 리뷰 W-b: 막힌 주소는 프로젝트 행을 잠그기 전에 거절한다 — DNS 조회 동안 잠금을 쥐지 않는다")
+    void 잠금_전에_URL_검사() {
+        assertThatThrownBy(() -> useCase.execute(input("http://127.0.0.1:7432/")))
+                .isInstanceOf(CustomGateException.class);
+        verify(projectService, never()).validateOwnershipForUpdate(any(), any());
     }
 
     @Test

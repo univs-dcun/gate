@@ -78,6 +78,8 @@ class WebhookConfigLockSqlSliceTest {
     private static void assertSingleLockingSelect() {
         List<String> sql = RecordingStatementInspector.SQL.stream().map(s -> s.toLowerCase(Locale.ROOT)).toList();
         assertThat(sql).as("잠금 없이 읽는 문장과 잠그는 문장으로 나뉘면 follow-on locking 이다").hasSize(1);
+        // 조인을 아예 금지한다 — 내부 조인은 PostgreSQL 에서도 한 문장(FOR NO KEY UPDATE OF ...)으로 되지만, 외부 조인으로
+        // 바뀌는 순간 follow-on locking 이 된다. 잠금 조회에는 조인이 필요 없으므로 엄격하게 둔다.
         assertThat(sql.getFirst()).contains(" for ").doesNotContain(" join ");
     }
 }
