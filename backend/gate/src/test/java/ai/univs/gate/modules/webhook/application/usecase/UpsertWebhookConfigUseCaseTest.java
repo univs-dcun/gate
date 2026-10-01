@@ -34,7 +34,7 @@ class UpsertWebhookConfigUseCaseTest {
 
     @BeforeEach
     void 소유() {
-        when(projectService.validateOwnership(10L, 1L)).thenReturn(mock(Project.class));
+        when(projectService.validateOwnershipForUpdate(10L, 1L)).thenReturn(mock(Project.class));
     }
 
     @Test
@@ -76,6 +76,8 @@ class UpsertWebhookConfigUseCaseTest {
         when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
 
         assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).startsWith("whsec_");
+        // 반박 리뷰 W1: 설정이 없을 때도 직렬화되도록 프로젝트 행을 잠근다
+        verify(projectService).validateOwnershipForUpdate(10L, 1L);
     }
 
     @Test

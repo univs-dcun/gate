@@ -190,10 +190,6 @@ public class WebhookService {
         }
     }
 
-    Mono<Void> deliver(URI target, String eventId, byte[] body) {
-        return deliver(target, eventId, body, List.of());
-    }
-
     /**
      * @param secrets 서명 키들 (UG-344). 비어 있으면 서명 헤더를 붙이지 않는다.
      */

@@ -39,6 +39,7 @@ class WebhookSecretUseCaseTest {
     void 사용자() {
         UserContext.set(UserContext.builder().accountId("1").timezone("Asia/Seoul").build());
         when(projectService.validateOwnership(10L, 1L)).thenReturn(mock(Project.class));
+        when(projectService.validateOwnershipForUpdate(10L, 1L)).thenReturn(mock(Project.class));
     }
 
     @AfterEach
@@ -85,6 +86,7 @@ class WebhookSecretUseCaseTest {
                 .isCloseTo(LocalDateTime.now(ZoneOffset.UTC).plusHours(24), org.assertj.core.api.Assertions.within(1, ChronoUnit.MINUTES));
         assertThat(c.getPreviousWebhookSecret()).isEqualTo("whsec_old");
         verify(repository, never()).findByProjectId(anyLong());
+        verify(projectService).validateOwnershipForUpdate(10L, 1L);
     }
 
     @Test

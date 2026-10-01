@@ -36,7 +36,8 @@ public class RotateWebhookSecretUseCase {
     @Transactional
     public WebhookConfigResult execute(Long projectId) {
         UserContext ctx = UserContext.get();
-        projectService.validateOwnership(projectId, ctx.getAccountIdAsLong());
+        // 저장과 같은 순서로 잠근다(프로젝트 → 설정) — 저장·재발급이 서로를 기다리기만 하고 교착하지 않게
+        projectService.validateOwnershipForUpdate(projectId, ctx.getAccountIdAsLong());
 
         // 잠근다 — 동시에 두 번 누르면 옛 키 자리를 서로 덮어 한쪽 결과의 키가 말없이 버려진다
         WebhookConfig config = webhookConfigRepository.findForUpdateByProjectId(projectId)

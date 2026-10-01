@@ -322,7 +322,7 @@ class WebhookServiceTest {
         WebhookService s = service(new WebhookTargetPolicy(props), props);
         URI target = URI.create("http://localhost:" + server.getAddress().getPort() + "/hook");
 
-        assertThatThrownBy(() -> s.deliver(target, "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+        assertThatThrownBy(() -> s.deliver(target, "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10)))
                 .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isFalse());
         assertThat(received).isEmpty();
     }
@@ -337,10 +337,10 @@ class WebhookServiceTest {
         org.junit.jupiter.api.Assumptions.assumeTrue(os instanceof com.sun.management.UnixOperatingSystemMXBean);
         var unix = (com.sun.management.UnixOperatingSystemMXBean) os;
 
-        s.deliver(blocked, "warm", "{}".getBytes()).onErrorComplete().block(Duration.ofSeconds(10));   // 풀·루프 기동
+        s.deliver(blocked, "warm", "{}".getBytes(), List.of()).onErrorComplete().block(Duration.ofSeconds(10));   // 풀·루프 기동
         long before = unix.getOpenFileDescriptorCount();
         for (int i = 0; i < 200; i++) {
-            s.deliver(blocked, "e" + i, "{}".getBytes()).onErrorComplete().block(Duration.ofSeconds(10));
+            s.deliver(blocked, "e" + i, "{}".getBytes(), List.of()).onErrorComplete().block(Duration.ofSeconds(10));
         }
         long after = unix.getOpenFileDescriptorCount();
 
@@ -354,7 +354,7 @@ class WebhookServiceTest {
         WebhookProperties props = props(3, Duration.ofSeconds(5));
         WebhookService s = service(new WebhookTargetPolicy(props), props);
 
-        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10)))
                 .hasCauseInstanceOf(WebhookTargetPolicy.TargetNotAllowedException.class)   // block() 이 검사 예외를 감싼다
                 .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isFalse());
         assertThat(received).isEmpty();
@@ -368,7 +368,7 @@ class WebhookServiceTest {
         WebhookProperties props = props(3, Duration.ofSeconds(5));
 
         service(loopbackAllowed(props), props)
-                .deliver(URI.create(url()), "evt-1", "{\"a\":1}".getBytes()).block(Duration.ofSeconds(10));
+                .deliver(URI.create(url()), "evt-1", "{\"a\":1}".getBytes(), List.of()).block(Duration.ofSeconds(10));
 
         assertThat(received).hasSize(3);
         assertThat(received).extracting(Received::eventId).containsOnly("evt-1");
@@ -406,7 +406,7 @@ class WebhookServiceTest {
         WebhookProperties props = props(3, Duration.ofSeconds(5));
 
         service(loopbackAllowed(props), props)
-                .deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10));
+                .deliver(URI.create(url()), "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10));
 
         assertThat(received).hasSize(2);
     }
@@ -418,7 +418,7 @@ class WebhookServiceTest {
         WebhookProperties props = props(3, Duration.ofSeconds(5));
         WebhookService s = service(loopbackAllowed(props), props);
 
-        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10)))
                 .isInstanceOf(WebhookService.RejectedByReceiverException.class);
         assertThat(received).hasSize(1);
     }
@@ -430,7 +430,7 @@ class WebhookServiceTest {
         WebhookProperties props = props(3, Duration.ofSeconds(5));
         WebhookService s = service(loopbackAllowed(props), props);
 
-        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10)))
                 .isInstanceOf(WebhookService.RejectedByReceiverException.class);
         assertThat(received).hasSize(1);
         assertThat(redirected).hasValue(0);
@@ -448,7 +448,7 @@ class WebhookServiceTest {
         URI drip = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/drip");
 
         long started = System.nanoTime();
-        assertThatThrownBy(() -> s.deliver(drip, "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+        assertThatThrownBy(() -> s.deliver(drip, "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10)))
                 .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isTrue());
         long elapsedMillis = (System.nanoTime() - started) / 1_000_000;
 
@@ -463,7 +463,7 @@ class WebhookServiceTest {
         WebhookProperties props = props(2, Duration.ofMillis(200));
         WebhookService s = service(loopbackAllowed(props), props);
 
-        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes()).block(Duration.ofSeconds(10)))
+        assertThatThrownBy(() -> s.deliver(URI.create(url()), "e", "{}".getBytes(), List.of()).block(Duration.ofSeconds(10)))
                 .satisfies(e -> assertThat(WebhookService.isRetryable(e)).isTrue());
         assertThat(received).hasSize(2);
     }

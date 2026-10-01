@@ -28,7 +28,10 @@ public class UpsertWebhookConfigUseCase {
 
     @Transactional
     public WebhookConfigResult execute(UpsertWebhookConfigInput input) {
-        Project project = projectService.validateOwnership(input.projectId(), input.accountId());
+        // UG-344 반박 리뷰 W1: 프로젝트 행부터 잠근다. 설정이 아직 없으면 아래 FOR UPDATE 는 잠글 행이 없어, 저장을
+        // 두 번 누르면 설정이 둘 생긴다(project_id 유니크 제약이 없다) — 그 뒤로 조회가 깨지고 웹훅이 멈춘다.
+        // 순서는 DeleteProjectUseCase 와 같다(프로젝트 → 하위 행).
+        Project project = projectService.validateOwnershipForUpdate(input.projectId(), input.accountId());
         // UG-111: 내부 주소·http(s) 아닌 주소는 저장하지 않는다. 보낼 때도 다시 검사하지만,
         // 여기서 막아야 화면이 바로 알려 준다 — 보낼 때 막히면 로그에만 남는다.
         webhookTargetPolicy.validate(input.webhookUrl());
