@@ -10,6 +10,10 @@ package ai.univs.gate.support.webhook;
  * <p>descriptor 1:N 두 경로는 매칭 이력에 {@code IDENTIFY} 로 저장되지만 응답 구조가 이미지 기반
  * 1:N 과 달라서 이벤트 이름을 나눴다. 수신 측이 {@code event} 만 보고 {@code data} 구조를 알 수
  * 있어야 한다.
+ *
+ * <p>{@code FEATURE_*} 는 특징점 등록·삭제를 알린다 (UG-345). 등록은 이미지와 descriptor 의 결과 구조가
+ * 달라 위와 같은 이유로 이름을 나눴다. 데모 화면 실시간 알림(Redis)으로는 보내지 않는다 —
+ * {@code UseCaseNotifyService#notifyWebhook}.
  */
 public enum WebhookEvent {
     LIVENESS,
@@ -19,4 +23,7 @@ public enum WebhookEvent {
     VERIFY_DESCRIPTOR,
     IDENTIFY_DESCRIPTOR,
     IDENTIFY_CANDIDATES_DESCRIPTOR,
+    FEATURE_REGISTERED,
+    FEATURE_REGISTERED_DESCRIPTOR,
+    FEATURE_DELETED,
 }

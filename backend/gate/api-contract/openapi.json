@@ -1951,6 +1951,169 @@
         ]
       }
     },
+    "/api/v1/projects/{projectId}/webhook/secret/rotate": {
+      "post": {
+        "tags": [
+          "웹훅 설정"
+        ],
+        "summary": "웹훅 서명 키 재발급",
+        "description": "새 서명 키를 발급합니다. 재발급 후 24시간 동안은 이전 키로도 함께 서명해(X-Gate-Signature 에 v1 이 두 개) 수신 측이 끊김 없이 키를 바꿀 수 있습니다. 웹훅 설정이 없으면 PJ-110 입니다.",
+        "operationId": "rotateWebhookSecret",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "프로젝트 식별 번호",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "응답 언어 설정 (기본값: ko)",
+            "required": false,
+            "example": "ko"
+          },
+          {
+            "name": "Accept-TimeZone",
+            "in": "header",
+            "description": "응답 시간대 설정 (기본값: Asia/Seoul)",
+            "required": false,
+            "example": "Asia/Seoul"
+          }
+        ],
+        "responses": {
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "PROJECT_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-103",
+                        "type": "PROJECT_NOT_FOUND",
+                        "message": "Project not found."
+                      }
+                    }
+                  },
+                  "WEBHOOK_CONFIG_NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-110",
+                        "type": "WEBHOOK_CONFIG_NOT_FOUND",
+                        "message": "Webhook configuration not found."
+                      }
+                    }
+                  },
+                  "NOT_OWNERSHIP": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-104",
+                        "type": "NOT_OWNERSHIP",
+                        "message": "You do not have permission to access this project."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseApiWebhookConfigResponseDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-001",
+                        "type": "UNAUTHORIZED",
+                        "message": "A request was attempted without authentication."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-003",
+                        "type": "NOT_FOUND",
+                        "message": "Your information requested to server is wrong. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-004",
+                        "type": "METHOD_NOT_ALLOWED",
+                        "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Authentication": []
+          }
+        ]
+      }
+    },
     "/api/v1/feature/palm": {
       "get": {
         "tags": [
@@ -9070,6 +9233,15 @@
           "apiEnabled": {
             "type": "boolean",
             "description": "API 호출 결과를 웹훅으로 보낼지 여부"
+          },
+          "webhookSecret": {
+            "type": "string",
+            "description": "웹훅 서명 키. 수신 측이 X-Gate-Signature 헤더를 이 키로 검증합니다 (HMAC-SHA256)"
+          },
+          "previousSecretExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "재발급 전 키로도 함께 서명하는 마지막 시각. 겹치는 기간(재발급 후 24시간)이 아니면 null"
           }
         }
       },

@@ -135,6 +135,8 @@ public class SwaggerDescriptions {
     public static final String WEBHOOK_URL = "웹훅 URL. 외부에서 접근할 수 있는 http(s) 주소여야 합니다 — 루프백·사설망·링크 로컬 주소는 PJ-111 로 거절됩니다";
     public static final String WEBHOOK_DEMO_ENABLED = "데모 호출 결과를 웹훅으로 보낼지 여부";
     public static final String WEBHOOK_API_ENABLED = "API 호출 결과를 웹훅으로 보낼지 여부";
+    public static final String WEBHOOK_SECRET = "웹훅 서명 키. 수신 측이 X-Gate-Signature 헤더를 이 키로 검증합니다 (HMAC-SHA256)";
+    public static final String WEBHOOK_PREVIOUS_SECRET_EXPIRES_AT = "재발급 전 키로도 함께 서명하는 마지막 시각. 겹치는 기간(재발급 후 24시간)이 아니면 null";
 
     /* 공통 추가 */
     public static final String PAGE_INFO = "페이징 정보";

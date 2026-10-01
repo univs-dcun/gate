@@ -5,6 +5,8 @@ import ai.univs.gate.modules.feature.application.result.face.FaceFeatureResult;
 import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.webhook.WebhookEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ai.univs.gate.shared.web.enums.CallerType;
@@ -15,6 +17,7 @@ public class CreateFaceFeatureByApiKeyUseCase {
 
     private final FaceFeatureService faceFeatureService;
     private final FileService fileService;
+    private final UseCaseNotifyService useCaseNotifyService;
 
     public FaceFeatureResult execute(CreateFaceFeatureByApiKeyInput input) {
         // UG-336: 동의 값은 서비스가 등록 전에 읽어 돌려준다. 예전에는 여기서 API 키와 설정을 따로
@@ -29,6 +32,10 @@ public class CreateFaceFeatureByApiKeyUseCase {
                 input.transactionUuid(),
                 // UG-333: 데모 등록은 고객사 식별자를 받지 않는다.
                 null);
-        return FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), result.consentEnabled());
+        FaceFeatureResult featureResult = FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), result.consentEnabled());
+        // UG-345: 데모 토글이 켜져 있으면 웹훅으로 알린다. 데모 화면 실시간 알림으로는 보내지 않는다.
+        useCaseNotifyService.notifyWebhook(CallerType.DEMO, WebhookEvent.FEATURE_REGISTERED,
+                featureResult.projectId(), featureResult.transactionUuid(), featureResult);
+        return featureResult;
     }
 }

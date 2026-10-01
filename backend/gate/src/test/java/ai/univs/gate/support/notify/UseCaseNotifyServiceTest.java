@@ -51,6 +51,25 @@ class UseCaseNotifyServiceTest {
     }
 
     @Test
+    @DisplayName("UG-345: 웹훅 전용 알림은 데모 호출이어도 데모 화면(Redis)으로 보내지 않는다")
+    void 웹훅_전용() {
+        Map<String, Object> result = Map.of("k", "v");
+
+        service.notifyWebhook(CallerType.DEMO, WebhookEvent.FEATURE_REGISTERED, 1L, "tx", result);
+
+        verify(redis, never()).publish(anyString());
+        verify(webhook).send(1L, CallerType.DEMO, WebhookEvent.FEATURE_REGISTERED, "tx", result);
+    }
+
+    @Test
+    @DisplayName("UG-345: 웹훅 전용 알림도 예외를 밖으로 내지 않는다")
+    void 웹훅_전용_실패() {
+        doThrow(new IllegalStateException("boom")).when(webhook).send(any(), any(), any(), any(), any());
+
+        service.notifyWebhook(CallerType.API, WebhookEvent.FEATURE_DELETED, 1L, "tx", Map.of());
+    }
+
+    @Test
     @DisplayName("웹훅 쪽이 예외를 던져도 결과는 그대로 돌아온다 — 알림은 부수 효과다")
     void 웹훅_실패() {
         doThrow(new IllegalStateException("boom")).when(webhook).send(any(), any(), any(), any(), any());
