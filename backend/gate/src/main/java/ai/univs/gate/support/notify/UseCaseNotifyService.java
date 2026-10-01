@@ -49,11 +49,26 @@ public class UseCaseNotifyService {
             }
             case API -> { }
         }
+        notifyWebhook(callerType, event, projectId, transactionUuid, result);
+        return result;
+    }
+
+    /**
+     * 웹훅으로만 알린다 — 특징점 등록·삭제처럼 데모 화면이 기다리지 않는 결과용이다 (UG-345).
+     *
+     * <p>데모 화면 실시간 알림은 매칭·라이브니스 결과 화면이 {@code event} 로 분기해 받는다. 거기에 모르는
+     * 이벤트를 흘리면 화면이 엉뚱한 결과로 그릴 수 있어 보내지 않는다. 데모 토글이 켜져 있으면 웹훅은 간다.
+     */
+    public void notifyWebhook(CallerType callerType,
+                              WebhookEvent event,
+                              Long projectId,
+                              String transactionUuid,
+                              Object result
+    ) {
         try {
             webhookService.send(projectId, callerType, event, transactionUuid, result);
         } catch (Exception e) {
             log.error("failure webhook enqueue: event={}", event, e);
         }
-        return result;
     }
 }
