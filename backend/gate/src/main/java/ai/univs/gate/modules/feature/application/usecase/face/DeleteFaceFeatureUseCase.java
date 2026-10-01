@@ -21,8 +21,8 @@ import ai.univs.gate.support.feature.DownstreamAbsence;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.webhook.WebhookEvent;
-import java.util.concurrent.atomic.AtomicBoolean;
 import ai.univs.gate.support.feature.face.FaceService;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -122,22 +122,25 @@ public class DeleteFaceFeatureUseCase {
         // 특징점은 여기서 다시 읽는다. 위에서 읽은 객체는 준영속이고 원격 호출을 가로질러 왔다.
         // 그것을 save(merge) 하면 그사이 다른 요청이 바꾼 컬럼까지 낡은 값으로 덮어쓴다.
         // 그사이 다른 요청이 이미 지웠다면 비어 있고, 하위 삭제는 성공했으므로 이력은 성공이다.
-        AtomicBoolean deletedHere = new AtomicBoolean();
+        //
+        // UG-345: 다시 읽을 때 행을 잠근다. 잠그지 않으면 동시에 온 두 삭제 요청이 둘 다 is_deleted = false 를
+        // 읽고 둘 다 "내가 지웠다" 가 되어 삭제 웹훅이 서로 다른 eventId 로 두 번 나간다. 잠금을 기다린 쪽은
+        // 조건을 다시 보므로 빈 결과를 받는다.
+        AtomicReference<FaceFeatureDeletedResult> deletedHere = new AtomicReference<>();
         transactionTemplate.executeWithoutResult(status -> {
-            biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(biometricFeature.getId(), FeatureType.FACE)
+            biometricFeatureRepository.findForUpdateByIdAndTypeAndIsDeletedFalse(biometricFeature.getId(), FeatureType.FACE)
                     .ifPresent(feature -> {
                         feature.delete();
-                        deletedHere.set(true);
+                        deletedHere.set(FaceFeatureDeletedResult.from(feature, project.getId(), transactionUuid));
                     });
             featureHistory.successDelete();
             historyRecorder.succeed(featureHistory);
         });
 
-        // UG-345: 이 요청이 지운 경우에만 알린다 — 동시에 온 두 삭제 요청이 둘 다 성공해도 웹훅은 한 번이다.
-        // 커밋 뒤라 수신 측이 조회하면 이미 없다.
-        if (deletedHere.get()) {
+        // UG-345: 이 요청이 지운 경우에만, 커밋 뒤에 알린다 — 수신 측이 조회하면 이미 없다.
+        if (deletedHere.get() != null) {
             useCaseNotifyService.notifyWebhook(CallerType.API, WebhookEvent.FEATURE_DELETED, project.getId(),
-                    transactionUuid, FaceFeatureDeletedResult.from(biometricFeature, project.getId(), transactionUuid));
+                    transactionUuid, deletedHere.get());
         }
     }
 }

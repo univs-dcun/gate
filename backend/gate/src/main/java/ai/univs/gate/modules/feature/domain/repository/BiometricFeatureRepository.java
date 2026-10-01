@@ -15,6 +15,9 @@ public interface BiometricFeatureRepository {
 
     Optional<BiometricFeature> findByIdAndTypeAndIsDeletedFalse(Long id, FeatureType type);
 
+    /** 행 잠금 조회 — 삭제 성공 쓰기 전용 (UG-345). 트랜잭션 안에서만 부른다. */
+    Optional<BiometricFeature> findForUpdateByIdAndTypeAndIsDeletedFalse(Long id, FeatureType type);
+
     Optional<BiometricFeature> findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
             String featureId, Long projectId, FeatureType type);
 
