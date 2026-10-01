@@ -35,12 +35,13 @@ class UpsertWebhookConfigUseCaseTest {
     @BeforeEach
     void 소유() {
         when(projectService.validateOwnership(10L, 1L)).thenReturn(mock(Project.class));
+        when(projectService.validateOwnershipForUpdate(10L, 1L)).thenReturn(mock(Project.class));
     }
 
     @Test
     @DisplayName("내부 주소는 저장하지 않고 PJ-111 로 거절한다 — 새로 만들 때")
     void 신규_거절() {
-        when(repository.findByProjectId(10L)).thenReturn(Optional.empty());
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(input("http://172.18.0.1:7888/actuator")))
                 .isInstanceOf(CustomGateException.class)
@@ -50,11 +51,19 @@ class UpsertWebhookConfigUseCaseTest {
     }
 
     @Test
+    @DisplayName("2차 반박 리뷰 W-b: 막힌 주소는 프로젝트 행을 잠그기 전에 거절한다 — DNS 조회 동안 잠금을 쥐지 않는다")
+    void 잠금_전에_URL_검사() {
+        assertThatThrownBy(() -> useCase.execute(input("http://127.0.0.1:7432/")))
+                .isInstanceOf(CustomGateException.class);
+        verify(projectService, never()).validateOwnershipForUpdate(any(), any());
+    }
+
+    @Test
     @DisplayName("기존 설정을 내부 주소로 바꾸려 해도 거절하고 기존 값을 건드리지 않는다")
     void 수정_거절() {
         WebhookConfig existing = WebhookConfig.builder()
                 .webhookUrl("https://8.8.8.8/hook").demoEnabled(true).apiEnabled(true).build();
-        when(repository.findByProjectId(10L)).thenReturn(Optional.of(existing));
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> useCase.execute(input("http://127.0.0.1:7432/")))
                 .isInstanceOf(CustomGateException.class);
@@ -64,10 +73,34 @@ class UpsertWebhookConfigUseCaseTest {
     @Test
     @DisplayName("공인 주소는 저장한다")
     void 저장() {
-        when(repository.findByProjectId(10L)).thenReturn(Optional.empty());
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
 
         assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookUrl()).isEqualTo("https://8.8.8.8/hook");
         verify(repository).save(any());
+    }
+
+    @Test
+    @DisplayName("UG-344: 새 설정에는 서명 키가 발급된다")
+    void 신규_키() {
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
+
+        assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).startsWith("whsec_");
+        // 반박 리뷰 W1: 설정이 없을 때도 직렬화되도록 프로젝트 행을 잠근다
+        verify(projectService).validateOwnershipForUpdate(10L, 1L);
+    }
+
+    @Test
+    @DisplayName("UG-344: 키가 없던 기존 설정은 저장할 때 채우고, 있던 키는 바꾸지 않는다")
+    void 기존_키() {
+        WebhookConfig 없음 = WebhookConfig.builder().project(Project.builder().id(10L).build())
+                .webhookUrl("https://8.8.8.8/a").demoEnabled(true).apiEnabled(true).build();
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(없음));
+        assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).startsWith("whsec_");
+
+        WebhookConfig 있음 = WebhookConfig.builder().project(Project.builder().id(10L).build())
+                .webhookUrl("https://8.8.8.8/a").demoEnabled(true).apiEnabled(true).webhookSecret("whsec_keep").build();
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(있음));
+        assertThat(useCase.execute(input("https://8.8.8.8/hook")).webhookSecret()).isEqualTo("whsec_keep");
     }
 
     private static UpsertWebhookConfigInput input(String url) {
