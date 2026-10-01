@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.test.context.TestPropertySource;
 
 /**
@@ -31,6 +32,9 @@ import org.springframework.test.context.TestPropertySource;
  * 별도 인메모리 DB 를 쓴다.
  */
 @JpaSliceTest
+// @DataJpaTest 의 기본값(replace=NON_TEST)은 DataSource 를 임의 이름의 임베디드 H2(REGULAR 모드)로 바꿔 아래 URL 을 무시한다.
+// 이 클래스는 DDL(자동 커밋)로 제약을 떼므로 반드시 자기 DB 에서 돌아야 한다 — 3차 반박 리뷰 W1.
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties =
         "spring.datasource.url=jdbc:h2:mem:gate-webhook-dedupe;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1")
 @DisplayName("UG-344: 웹훅 설정 중복 정리 SQL")
@@ -52,9 +56,12 @@ class WebhookConfigDuplicateCleanupSqlTest {
                  ORDER BY CASE constraint_type WHEN 'FOREIGN KEY' THEN 0 ELSE 1 END
                 """).getResultList();
         // H2 의 DDL 은 자동 커밋이라 한 번 떼면 같은 DB 의 다음 테스트에는 없다. V38 테스트가 다시 건 제약도 여기서 뗀다.
+        // 같은 이유로 V38 테스트가 넣은 행은 롤백되지 않고 남는다 — 매번 비우고 시작한다 (3차 반박 리뷰 N1).
         for (String name : names) {
             em.createNativeQuery("ALTER TABLE webhook_configs DROP CONSTRAINT \"" + name + "\"").executeUpdate();
         }
+        em.createNativeQuery("DELETE FROM webhook_configs").executeUpdate();
+        em.createNativeQuery("DELETE FROM projects").executeUpdate();
     }
 
     @Test
@@ -122,7 +129,8 @@ class WebhookConfigDuplicateCleanupSqlTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
             설정(p, "https://8.8.8.8/c", T0, T0);
             em.flush();
-        }).isInstanceOf(Exception.class);
+        }).hasRootCauseInstanceOf(java.sql.SQLIntegrityConstraintViolationException.class)
+                .rootCause().satisfies(t -> assertThat(t.getMessage()).containsIgnoringCase("uq_webhook_configs_project_id"));
     }
 
     @Test
