@@ -60,6 +60,8 @@ public class WebhookService {
 
     static final String EVENT_ID_HEADER = "X-Gate-Event-Id";
     static final String USER_AGENT = "UNIVS-Gate-Webhook/1.0";
+    /** 테스트 전송의 {@code source} (UG-344). 호출 경로(API·데모)가 아니라 콘솔의 시험이다. */
+    static final String TEST_SOURCE = "TEST";
     /** NIO 로 고정한다. 연결과 DNS 가 같은 값을 써야 한다 — 한 상수로 묶는다. */
     private static final boolean PREFER_NATIVE = false;
 
@@ -194,6 +196,19 @@ public class WebhookService {
      * @param secrets 서명 키들 (UG-344). 비어 있으면 서명 헤더를 붙이지 않는다.
      */
     Mono<Void> deliver(URI target, String eventId, byte[] body, List<String> secrets) {
+        return attempt(target, eventId, body, secrets)
+                .retryWhen(Retry.backoff(Math.max(0, properties.maxAttempts() - 1), properties.retryBackoff())
+                        .filter(WebhookService::isRetryable)
+                        .onRetryExhaustedThrow((spec, signal) -> signal.failure()))
+                .then();
+    }
+
+    /**
+     * 한 번의 시도. 재시도는 호출자가 정한다 — 실제 전송은 {@link #deliver}, 테스트 전송은 재시도 없이 이것만.
+     *
+     * @return 2xx 응답 코드. 2xx 가 아니면 {@link RejectedByReceiverException}
+     */
+    Mono<Integer> attempt(URI target, String eventId, byte[] body, List<String> secrets) {
         try {
             // IP 리터럴은 리졸버를 거치지 않는다. dispatch 가 이미 봤지만, 이 메서드만 부르는 경로에서도
             // 연결 전에 막는다 — 연결 뒤에 막으면 채널이 남는다.
@@ -219,16 +234,91 @@ public class WebhookService {
                     int status = response.statusCode().value();
                     Mono<Void> drained = response.releaseBody();
                     return response.statusCode().is2xxSuccessful()
-                            ? drained
-                            : drained.then(Mono.error(new RejectedByReceiverException(status)));
+                            ? drained.thenReturn(status)
+                            : drained.then(Mono.<Integer>error(new RejectedByReceiverException(status)));
                 }))
                 // 시도 한 번의 전체 시간 상한. responseTimeout 은 "읽기 사이의 공백" 이라, 1바이트씩
                 // 흘려 보내는 수신 서버는 그것만으로 끊기지 않는다(반박 리뷰 W1). 넘으면 구독이
                 // 취소되고 연결은 버려진다.
-                .timeout(attemptTimeout)
-                .retryWhen(Retry.backoff(Math.max(0, properties.maxAttempts() - 1), properties.retryBackoff())
-                        .filter(WebhookService::isRetryable)
-                        .onRetryExhaustedThrow((spec, signal) -> signal.failure()));
+                .timeout(attemptTimeout);
+    }
+
+    /**
+     * 콘솔 「테스트 전송」 (UG-344). 저장된 URL 로 {@code TEST} 이벤트 한 건을 <b>서명을 붙여, 재시도 없이</b> 보내고
+     * 결과를 돌려준다. 요청 스레드에서 기다린다 — 최대 시도 한 번의 상한({@code attemptTimeout}, 기본 약 9초).
+     *
+     * <p>토글(API·데모)과 무관하게 보낸다. 고객이 직접 누른 시험이기 때문이다. 대신 남용은 호출자
+     * ({@code SendWebhookTestUseCase})가 프로젝트별 간격과 동시 실행 수로 막는다.
+     */
+    public WebhookTestResult sendTest(Long projectId, WebhookConfig config) {
+        WebhookConfig signed = withSecret(projectId, config);
+        URI target;
+        try {
+            target = targetPolicy.checkWithoutLookup(signed.getWebhookUrl());
+        } catch (CustomGateException e) {
+            return WebhookTestResult.notSent(WebhookTestResult.TARGET_NOT_ALLOWED);
+        }
+        WebhookPayload payload = new WebhookPayload(
+                UUID.randomUUID().toString(),
+                WebhookEvent.TEST.name(),
+                TEST_SOURCE,
+                null,
+                Instant.now(clock),
+                objectMapper.valueToTree(java.util.Map.of("message", "This is a test webhook from UNIVS GATE.")));
+        byte[] body;
+        try {
+            body = objectMapper.writeValueAsBytes(payload);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
+        List<String> secrets = signed.activeSecrets(LocalDateTime.ofInstant(Instant.now(clock), ZoneOffset.UTC));
+        long started = System.nanoTime();
+        try {
+            Integer status = attempt(target, payload.eventId(), body, secrets).block(attemptTimeout.plusSeconds(2));
+            WebhookTestResult result = WebhookTestResult.success(status, elapsedMs(started), payload.eventId());
+            log.info("Webhook test sent: projectId={}, eventId={}", projectId, payload.eventId());
+            return result;
+        } catch (RuntimeException e) {
+            WebhookTestResult result = WebhookTestResult.failed(classify(e), statusOf(e), elapsedMs(started), payload.eventId());
+            log.info("Webhook test failed: projectId={}, result={}, host={}, cause={}",
+                    projectId, result.result(), target.getHost(), describe(e));
+            return result;
+        }
+    }
+
+    private static long elapsedMs(long startedNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+    }
+
+    private static Integer statusOf(Throwable error) {
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            if (t instanceof RejectedByReceiverException rejected) return rejected.status;
+            if (t.getCause() == t) break;
+        }
+        return null;
+    }
+
+    /**
+     * 테스트 전송 실패를 화면에 보일 값으로 나눈다 (UG-344). {@link #isRetryable} 과 같은 판별을 쓴다 — 실제 전송이
+     * 재시도하지 않는 실패와 화면의 실패 종류가 어긋나지 않게.
+     */
+    static String classify(Throwable error) {
+        if (statusOf(error) != null) return WebhookTestResult.HTTP_ERROR;
+        if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return WebhookTestResult.TARGET_NOT_ALLOWED;
+        // DNS 실패는 netty 가 모두 UnknownHostException 으로 감싼다(DnsResolveContext). 원인으로 나눈다 — 조회 시간 초과·
+        // SERVFAIL 을 「주소 없음」으로 보이면 고객은 URL 오타로 오해한다 (반박 리뷰 W5). isRetryable 과 같은 경계다.
+        if (isNxDomain(error)) return WebhookTestResult.HOST_NOT_FOUND;
+        if (hasCause(error, io.netty.resolver.dns.DnsNameResolverTimeoutException.class)) return WebhookTestResult.TIMEOUT;
+        if (hasCause(error, DnsErrorCauseException.class)) return WebhookTestResult.CONNECTION_FAILED;
+        if (hasCause(error, java.net.UnknownHostException.class)) return WebhookTestResult.HOST_NOT_FOUND;
+        if (hasCause(error, SslHandshakeTimeoutException.class)) return WebhookTestResult.TIMEOUT;
+        if (hasCause(error, javax.net.ssl.SSLException.class)) return WebhookTestResult.TLS_ERROR;
+        if (hasCause(error, TimeoutException.class)
+                || hasCause(error, io.netty.handler.timeout.TimeoutException.class)
+                || hasCause(error, io.netty.channel.ConnectTimeoutException.class)) {
+            return WebhookTestResult.TIMEOUT;
+        }
+        return WebhookTestResult.CONNECTION_FAILED;
     }
 
     private static boolean isEnabled(WebhookConfig config, CallerType source) {

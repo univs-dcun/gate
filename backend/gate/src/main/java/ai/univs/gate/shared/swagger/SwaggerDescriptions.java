@@ -136,6 +136,11 @@ public class SwaggerDescriptions {
     public static final String WEBHOOK_DEMO_ENABLED = "데모 호출 결과를 웹훅으로 보낼지 여부";
     public static final String WEBHOOK_API_ENABLED = "API 호출 결과를 웹훅으로 보낼지 여부";
     public static final String WEBHOOK_SECRET = "웹훅 서명 키. 수신 측이 X-Gate-Signature 헤더를 이 키로 검증합니다 (HMAC-SHA256)";
+    public static final String WEBHOOK_REVOKE_PREVIOUS = "true 면 이전 키를 즉시 폐기합니다(키 유출 대응). 생략하거나 false 면 이전 키를 24시간 함께 사용합니다";
+    public static final String WEBHOOK_TEST_RESULT = "테스트 전송 결과. SUCCESS(2xx) · HTTP_ERROR(2xx 아닌 응답, 3xx 포함) · TIMEOUT · CONNECTION_FAILED · HOST_NOT_FOUND · TLS_ERROR · TARGET_NOT_ALLOWED(내부·사설망 주소라 보내지 않음)";
+    public static final String WEBHOOK_TEST_STATUS_CODE = "수신 서버의 응답 코드. 응답을 받지 못했으면 null";
+    public static final String WEBHOOK_TEST_ELAPSED_MS = "보내기 시작부터 결과까지 걸린 시간(ms). 보내지 않았으면 null";
+    public static final String WEBHOOK_TEST_EVENT_ID = "보낸 테스트 요청의 eventId(수신 측 로그와 대조용). 보내지 않았으면 null";
     public static final String WEBHOOK_PREVIOUS_SECRET_EXPIRES_AT = "재발급 전 키로도 함께 서명하는 마지막 시각. 겹치는 기간(재발급 후 24시간)이 아니면 null";
 
     /* 공통 추가 */

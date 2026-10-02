@@ -77,4 +77,32 @@ class WebhookConfigSecretTest {
         assertThat(없음.getWebhookSecret()).isEqualTo("x");
         assertThat(있음.getWebhookSecret()).isEqualTo("keep");
     }
+
+    @Test
+    @DisplayName("즉시 폐기(겹침 0)면 옛 키를 남기지 않는다 — 겹치는 중이던 옛 키도 함께 버린다")
+    void 즉시_폐기() {
+        WebhookConfig c = config("k1");
+        c.rotateSecret("k2", NOW, DAY);
+
+        c.rotateSecret("k3", NOW.plusHours(1), Duration.ZERO);
+
+        assertThat(c.activeSecrets(NOW.plusHours(1))).containsExactly("k3");
+        assertThat(c.getPreviousWebhookSecret()).isNull();
+        assertThat(c.activePreviousSecretExpiresAt(NOW.plusHours(1))).isNull();
+    }
+
+    @Test
+    @DisplayName("토글은 준 값만 바꾼다")
+    void 토글() {
+        WebhookConfig c = config("k");
+
+        c.updateToggles(true, null);
+        assertThat(c.getDemoEnabled()).isTrue();
+        assertThat(c.getApiEnabled()).isTrue();
+
+        c.updateToggles(null, false);
+        assertThat(c.getDemoEnabled()).isTrue();
+        assertThat(c.getApiEnabled()).isFalse();
+        assertThat(c.getWebhookUrl()).isEqualTo("https://8.8.8.8/h");
+    }
 }

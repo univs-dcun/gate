@@ -200,6 +200,31 @@ class WebhookTargetPolicyTest {
                 .doesNotContain("외부에서 접근");
     }
 
+    @ParameterizedTest(name = "사설망 허용={0}")
+    @ValueSource(booleans = {false, true})
+    @DisplayName("UG-344: 주소를 찾지 못하면 코드는 PJ-111 그대로, 문구는 「주소를 찾을 수 없음」— 설치와 무관")
+    void 주소_없음(boolean allowPrivate) {
+        WebhookTargetPolicy policy = new WebhookTargetPolicy(props(allowPrivate), host -> {
+            throw new java.net.UnknownHostException(host);
+        });
+
+        CustomGateException e = catchRejected(policy, "https://dev.no-such-host.example/webhooks");
+
+        assertThat(e.getErrorType()).isEqualTo(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
+        assertThat(e.getMessageKey()).isEqualTo(WebhookTargetPolicy.MESSAGE_KEY_HOST_NOT_FOUND);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"messages_ko", "messages_en"})
+    @DisplayName("UG-344: 「주소를 찾을 수 없음」 문구가 한국어·영어에 모두 있고, 내부망 안내와 섞이지 않는다")
+    void 주소_없음_문구(String bundle) {
+        var messages = java.util.ResourceBundle.getBundle(bundle);
+        assertThat(messages.getString(WebhookTargetPolicy.MESSAGE_KEY_HOST_NOT_FOUND))
+                .isNotBlank()
+                .doesNotContain("외부에서 접근")
+                .doesNotContainIgnoringCase("publicly");
+    }
+
     private static CustomGateException catchRejected(WebhookTargetPolicy policy, String url) {
         try {
             policy.validate(url);
