@@ -15,7 +15,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 
 /**
  * 웹훅 차단 대역 (UG-348). 공인 주소라 기본 정책을 통과하는 gate 서버 자신의 주소를, 콘솔 「테스트 전송」으로
@@ -108,13 +111,54 @@ class WebhookDeniedCidrsTest {
     }
 
     @Test
-    @DisplayName("거절 문구는 다른 거절과 같다 — 어느 목록에 걸렸는지 알리지 않는다")
-    void 문구() {
+    @DisplayName("클라우드: 거절 문구는 다른 거절과 같다 — 어느 목록에 걸렸는지 알리지 않는다")
+    void 문구_클라우드() {
         CustomGateException denied = catchRejected(policy("203.0.113.0/24"), "https://203.0.113.7/hook");
+        CustomGateException byName = catchRejected(new WebhookTargetPolicy(props(false, List.of("203.0.113.0/24")),
+                host -> new InetAddress[] {InetAddress.getByAddress(new byte[] {(byte) 203, 0, 113, 7})}),
+                "https://receiver.example.com/hook");
         CustomGateException loopback = catchRejected(policy(), "http://127.0.0.1/hook");
 
         assertThat(denied.getErrorType()).isEqualTo(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
-        assertThat(denied.getMessageKey()).isEqualTo(loopback.getMessageKey());
+        assertThat(loopback.getMessageKey()).as("기본 키(ErrorType 이름)를 쓴다").isEqualTo("WEBHOOK_URL_NOT_ALLOWED");
+        assertThat(denied.getMessageKey()).isEqualTo("WEBHOOK_URL_NOT_ALLOWED");
+        assertThat(byName.getMessageKey()).isEqualTo("WEBHOOK_URL_NOT_ALLOWED");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {
+            "http://10.20.3.4/hook",
+            "http://[::ffff:10.20.3.4]/hook",
+            "http://[64:ff9b::a14:304]/hook",
+    })
+    @DisplayName("온프레미스: 차단 대역이면 「사내망 주소로 등록하라」 대신 별도 문구 — 이미 사내망 주소를 넣었다 (반박 리뷰 N1)")
+    void 문구_온프레미스(String url) {
+        var p = new WebhookTargetPolicy(props(true, List.of("10.20.0.0/16")));
+
+        assertThat(catchRejected(p, url).getMessageKey()).isEqualTo(WebhookTargetPolicy.MESSAGE_KEY_DENIED_RANGE);
+        assertThat(catchRejected(p, "http://127.0.0.1/hook").getMessageKey())
+                .as("루프백은 기존 안내 그대로").isEqualTo(WebhookTargetPolicy.MESSAGE_KEY_PRIVATE_ALLOWED);
+    }
+
+    @Test
+    @DisplayName("온프레미스: 호스트 이름이 차단 대역으로 풀려도 같은 별도 문구")
+    void 문구_온프레미스_호스트_이름() throws Exception {
+        var p = new WebhookTargetPolicy(props(true, List.of("10.20.0.0/16")),
+                host -> new InetAddress[] {InetAddress.getByAddress(new byte[] {10, 20, 3, 4})});
+
+        assertThat(catchRejected(p, "https://receiver.corp.example/hook").getMessageKey())
+                .isEqualTo(WebhookTargetPolicy.MESSAGE_KEY_DENIED_RANGE);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"ko", "en"})
+    @DisplayName("별도 문구는 두 번들에 있다")
+    void 문구_번역(String bundle) throws Exception {
+        var props = new java.util.Properties();
+        try (var in = getClass().getResourceAsStream("/messages_" + bundle + ".properties")) {
+            props.load(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        assertThat(props.getProperty(WebhookTargetPolicy.MESSAGE_KEY_DENIED_RANGE)).isNotBlank();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -128,6 +172,14 @@ class WebhookDeniedCidrsTest {
             "gate.univsgate.com",  // 호스트 이름은 받지 않는다
             "203.0.113",
             "300.0.113.0/24",
+            // 반박 리뷰 W1: 판정할 주소는 4바이트 IPv4 라 16바이트로 적힌 대역은 아무것도 막지 않는다
+            "::ffff:203.0.113.0/120",
+            "::ffff:203.0.113.7",
+            "::203.0.113.0/120",          // IPv4 호환 — netty 가 ::ffff: 로 바꾼다
+            // 반박 리뷰 N4: 판정에 쓰이지 않거나 파서마다 다르게 읽는 값
+            "fe80::%eth0/10",
+            "203.0.113.010",
+            "010.0.0.0/8",
     })
     @DisplayName("잘못된 값은 기동 실패다 — 조용히 건너뛰면 막았다고 믿는 주소가 열린다")
     void 잘못된_값(String value) {
@@ -148,6 +200,45 @@ class WebhookDeniedCidrsTest {
         assertThat(p.isAllowed(ip("203.0.113.9"))).isFalse();
         assertThat(p.isAllowed(ip("2001:db8::9"))).isFalse();
         assertThat(p.isAllowed(ip("8.8.8.8"))).isTrue();
+    }
+
+    @ParameterizedTest(name = "[{0}]")
+    @ValueSource(strings = {"", " ", ","})
+    @DisplayName("빈 환경변수 GATE_WEBHOOK_DENIED_CIDRS 는 빈 목록이다 — 기동 실패가 아니다 (반박 리뷰 N3)")
+    void 빈_환경변수(String value) throws Exception {
+        WebhookProperties bound = bindFromEnv(Map.of("GATE_WEBHOOK_DENIED_CIDRS", value));
+
+        assertThat(new WebhookTargetPolicy(bound).isAllowed(ip("203.0.113.7"))).isTrue();
+    }
+
+    @Test
+    @DisplayName("환경변수 이름 GATE_WEBHOOK_DENIED_CIDRS 로 바인딩된다")
+    void 환경변수_이름() throws Exception {
+        WebhookProperties bound = bindFromEnv(Map.of("GATE_WEBHOOK_DENIED_CIDRS", "203.0.113.0/24,198.51.100.7"));
+        WebhookTargetPolicy p = new WebhookTargetPolicy(bound);
+
+        assertThat(p.isAllowed(ip("203.0.113.9"))).isFalse();
+        assertThat(p.isAllowed(ip("198.51.100.7"))).isFalse();
+        assertThat(p.isAllowed(ip("198.51.100.8"))).isTrue();
+    }
+
+    @Test
+    @DisplayName("::/0 은 IPv6 만 막는다 — IPv4 는 IPv4 대역으로 적는다 (문서화한 동작)")
+    void IPv6_전체() throws Exception {
+        WebhookTargetPolicy p = policy("::/0");
+
+        assertThat(p.isAllowed(ip("2001:4860:4860::8888"))).isFalse();
+        assertThat(p.isAllowed(ip("8.8.8.8"))).isTrue();
+    }
+
+    private static WebhookProperties bindFromEnv(Map<String, Object> envVars) {
+        StandardEnvironment env = new StandardEnvironment();
+        env.getPropertySources().remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);
+        env.getPropertySources().remove(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME);
+        env.getPropertySources().addFirst(new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, envVars));
+        return new Binder(ConfigurationPropertySources.get(env))
+                .bind("gate.webhook", Bindable.of(WebhookProperties.class)).get();
     }
 
     @Test

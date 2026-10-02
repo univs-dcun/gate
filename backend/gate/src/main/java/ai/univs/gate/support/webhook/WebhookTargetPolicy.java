@@ -44,8 +44,10 @@ import org.springframework.stereotype.Component;
  * 허용한다 — 온프레미스용.
  *
  * <p>{@code gate.webhook.denied-cidrs} 에 넣은 대역은 위 판정과 상관없이 항상 막는다 (UG-348) — 클라우드는 gate 서버
- * 자신의 공인 주소, 온프레미스는 고객사가 지정한 대역. 거절 문구는 다른 거절과 같다. 어느 목록에 걸렸는지 알리면 그 자체로
- * 탐색에 쓰이는 정보가 된다.
+ * 자신의 공인 주소, 온프레미스는 고객사가 지정한 대역. 클라우드에서는 거절 문구가 다른 거절과 같다 — 어느 목록에 걸렸는지
+ * 알리면 그 자체로 탐색에 쓰이는 정보가 된다. 다만 「공인 주소인데 PJ-111」이라는 사실은 남는다(반박 리뷰 W3). gate 의 공인
+ * 주소는 이미 DNS 로 공개돼 있어 받아들인 트레이드오프다. 사설망을 허용한 설치(온프레미스)는 기본 안내(「사내망 주소로
+ * 등록하라」)가 차단 대역에는 틀린 말이라 별도 문구를 쓴다 — 콘솔 사용자가 고객사 담당자뿐이라 숨길 이유가 없다(N1).
  */
 @Component
 public class WebhookTargetPolicy {
@@ -95,7 +97,7 @@ public class WebhookTargetPolicy {
                 throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_HOST_NOT_FOUND);
             }
             if (!Arrays.stream(addresses).allMatch(this::isAllowed)) {
-                throw rejected();
+                throw rejected(Arrays.stream(addresses).anyMatch(this::hitsDenied));
             }
         } catch (UnknownHostException e) {
             // 주소를 찾지 못한 것은 「내부 주소」와 원인이 다르다 — 같은 문구면 오타 난 도메인을 넣은 사람이 내부망 주소를
@@ -114,7 +116,7 @@ public class WebhookTargetPolicy {
         URI uri = parse(rawUrl);
         String host = hostOf(uri);
         if (isIpLiteral(host) && !isLiteralAllowed(host)) {
-            throw rejected();
+            throw rejected(literalHitsDenied(host));
         }
         return uri;
     }
@@ -132,6 +134,22 @@ public class WebhookTargetPolicy {
             return false;
         }
         return allowPrivateTargets || !isPrivate(address);
+    }
+
+    /** 차단 대역에 걸렸는가 — 안의 IPv4 까지 본다. 거절 문구를 고를 때만 쓴다. */
+    private boolean hitsDenied(InetAddress address) {
+        if (isDenied(address)) return true;
+        InetAddress embedded = embeddedIpv4(address);
+        return embedded != null && hitsDenied(embedded);
+    }
+
+    private boolean literalHitsDenied(String host) {
+        try {
+            InetAddress byNetty = NetUtil.createInetAddressFromIpAddressString(host);
+            return hitsDenied(InetAddress.getByName(host)) || (byNetty != null && hitsDenied(byNetty));
+        } catch (UnknownHostException e) {
+            return false;
+        }
     }
 
     private boolean isDenied(InetAddress address) {
@@ -235,12 +253,21 @@ public class WebhookTargetPolicy {
      * 받았으므로 기본 문구가 정반대로 읽힌다 (onprem 3.0.7 검증에서 발견). 코드·type 은 같다.
      */
     private CustomGateException rejected() {
+        return rejected(false);
+    }
+
+    private CustomGateException rejected(boolean deniedRange) {
+        if (deniedRange && allowPrivateTargets) {
+            return new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_DENIED_RANGE);
+        }
         return allowPrivateTargets
                 ? new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_PRIVATE_ALLOWED)
                 : new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED);
     }
 
     static final String MESSAGE_KEY_PRIVATE_ALLOWED = "WEBHOOK_URL_NOT_ALLOWED_PRIVATE_ALLOWED";
+    /** 사설망을 허용한 설치에서 차단 대역에 걸렸다 (UG-348). 클라우드는 기본 문구를 그대로 쓴다. */
+    static final String MESSAGE_KEY_DENIED_RANGE = "WEBHOOK_URL_NOT_ALLOWED_DENIED_RANGE";
     /** 호스트 이름을 DNS 에서 찾지 못했다 (존재하지 않는 도메인, 또는 조회 실패). 설치와 무관하게 같은 안내다. */
     static final String MESSAGE_KEY_HOST_NOT_FOUND = "WEBHOOK_URL_HOST_NOT_FOUND";
 
