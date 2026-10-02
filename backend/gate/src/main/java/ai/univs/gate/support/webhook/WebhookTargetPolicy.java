@@ -79,12 +79,16 @@ public class WebhookTargetPolicy {
         if (isIpLiteral(host)) return uri;   // checkWithoutLookup 이 이미 봤다
         try {
             InetAddress[] addresses = lookup.resolve(host);
-            if (addresses.length == 0 || !Arrays.stream(addresses).allMatch(this::isAllowed)) {
+            if (addresses.length == 0) {
+                throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_HOST_NOT_FOUND);
+            }
+            if (!Arrays.stream(addresses).allMatch(this::isAllowed)) {
                 throw rejected();
             }
         } catch (UnknownHostException e) {
             // 주소를 찾지 못한 것은 「내부 주소」와 원인이 다르다 — 같은 문구면 오타 난 도메인을 넣은 사람이 내부망 주소를
-            // 넣은 줄로 읽는다 (UG-344 dev 확인 2026-10-02). 코드는 PJ-111 그대로, 문구만 나눈다.
+            // 넣은 줄로 읽는다 (UG-344 dev 확인 2026-10-02). 코드는 PJ-111 그대로, 문구만 나눈다. JDK 는 조회 시간 초과·
+            // SERVFAIL 도 같은 예외로 주므로 문구에 「잠시 후 다시 시도」를 함께 둔다 (반박 리뷰 W1).
             throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_HOST_NOT_FOUND);
         }
         return uri;
