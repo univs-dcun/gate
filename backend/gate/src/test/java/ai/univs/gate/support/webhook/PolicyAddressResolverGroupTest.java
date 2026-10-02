@@ -92,6 +92,11 @@ class PolicyAddressResolverGroupTest {
         var cloudCause = (WebhookTargetPolicy.TargetNotAllowedException) resolveAll(dns("10.20.3.4"), cloud).cause();
 
         assertThat(onpremCause.deniedRange).isTrue();
+        assertThat(((WebhookTargetPolicy.TargetNotAllowedException) resolveAll(dns("127.0.0.1", "10.20.3.4"), onprem).cause())
+                .deniedRange).as("레코드 순서와 무관 — 루프백이 먼저 와도 차단 대역 사유").isTrue();
+        var single = new PolicyAddressResolverGroup(dns("10.20.3.4"), onprem).getResolver(ImmediateEventExecutor.INSTANCE)
+                .resolve(InetSocketAddress.createUnresolved("receiver.example.com", 443));
+        assertThat(((WebhookTargetPolicy.TargetNotAllowedException) single.cause()).deniedRange).as("단일 resolve 경로").isTrue();
         assertThat(loopbackCause.deniedRange).as("루프백은 차단 대역이 아니다").isFalse();
         assertThat(cloudCause.deniedRange).isFalse();
     }
