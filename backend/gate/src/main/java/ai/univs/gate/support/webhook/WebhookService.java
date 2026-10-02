@@ -305,7 +305,12 @@ public class WebhookService {
     static String classify(Throwable error) {
         if (statusOf(error) != null) return WebhookTestResult.HTTP_ERROR;
         if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return WebhookTestResult.TARGET_NOT_ALLOWED;
-        if (isNxDomain(error) || hasCause(error, java.net.UnknownHostException.class)) return WebhookTestResult.HOST_NOT_FOUND;
+        // DNS 실패는 netty 가 모두 UnknownHostException 으로 감싼다(DnsResolveContext). 원인으로 나눈다 — 조회 시간 초과·
+        // SERVFAIL 을 「주소 없음」으로 보이면 고객은 URL 오타로 오해한다 (반박 리뷰 W5). isRetryable 과 같은 경계다.
+        if (isNxDomain(error)) return WebhookTestResult.HOST_NOT_FOUND;
+        if (hasCause(error, io.netty.resolver.dns.DnsNameResolverTimeoutException.class)) return WebhookTestResult.TIMEOUT;
+        if (hasCause(error, DnsErrorCauseException.class)) return WebhookTestResult.CONNECTION_FAILED;
+        if (hasCause(error, java.net.UnknownHostException.class)) return WebhookTestResult.HOST_NOT_FOUND;
         if (hasCause(error, SslHandshakeTimeoutException.class)) return WebhookTestResult.TIMEOUT;
         if (hasCause(error, javax.net.ssl.SSLException.class)) return WebhookTestResult.TLS_ERROR;
         if (hasCause(error, TimeoutException.class)

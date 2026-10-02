@@ -2138,7 +2138,7 @@
           "웹훅 설정"
         ],
         "summary": "웹훅 테스트 전송",
-        "description": "저장된 URL 로 TEST 이벤트 한 건을 서명을 붙여 보내고 결과를 돌려줍니다. 재시도하지 않으며 최대 약 9초 기다립니다. 토글과 무관하게 보냅니다. 같은 프로젝트에서 3초 안에 다시 요청하거나 동시 요청이 많으면 PJ-112(429)입니다. 수신 서버가 실패해도 이 API 는 200 이고, 결과는 result 로 구분합니다.",
+        "description": "저장된 URL 로 TEST 이벤트 한 건을 서명을 붙여 보내고 결과를 돌려줍니다. 재시도하지 않으며 최대 약 9초 기다립니다. 토글과 무관하게 보냅니다. 같은 프로젝트에서 직전 테스트가 끝나고 3초 안에 다시 요청하거나, 같은 계정의 테스트가 아직 진행 중이거나, 전체 동시 요청이 많으면 PJ-112 입니다. 수신 서버가 실패해도 이 API 는 200 이고, 결과는 result 로 구분합니다.",
         "operationId": "sendWebhookTest",
         "parameters": [
           {
@@ -2171,6 +2171,16 @@
             "content": {
               "application/json": {
                 "examples": {
+                  "WEBHOOK_TEST_TOO_FREQUENT": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-112",
+                        "type": "WEBHOOK_TEST_TOO_FREQUENT",
+                        "message": "Test webhooks were requested too often. Please try again shortly."
+                      }
+                    }
+                  },
                   "PROJECT_NOT_FOUND": {
                     "value": {
                       "success": false,
@@ -2280,24 +2290,6 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "WEBHOOK_TEST_TOO_FREQUENT": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-112",
-                        "type": "WEBHOOK_TEST_TOO_FREQUENT",
-                        "message": "Test webhooks were requested too often. Please try again shortly."
                       }
                     }
                   }

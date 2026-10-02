@@ -586,6 +586,19 @@ class WebhookServiceTest {
     void 테스트_결과_분류() {
         assertThat(WebhookService.classify(new WebhookService.RejectedByReceiverException(404))).isEqualTo(WebhookTestResult.HTTP_ERROR);
         assertThat(WebhookService.classify(new RuntimeException(new java.net.UnknownHostException("x")))).isEqualTo(WebhookTestResult.HOST_NOT_FOUND);
+        // 반박 리뷰 W5: netty 는 DNS 실패를 모두 UnknownHostException 으로 감싼다 — 원인으로 나눈다
+        java.net.UnknownHostException dnsTimeout = new java.net.UnknownHostException("dns timeout");
+        dnsTimeout.initCause(new io.netty.resolver.dns.DnsNameResolverTimeoutException(
+                new InetSocketAddress(InetAddress.getLoopbackAddress(), 53),
+                new io.netty.handler.codec.dns.DefaultDnsQuestion("hook.example.com", io.netty.handler.codec.dns.DnsRecordType.A),
+                "query timed out"));
+        assertThat(WebhookService.classify(new RuntimeException(dnsTimeout))).isEqualTo(WebhookTestResult.TIMEOUT);
+        java.net.UnknownHostException servfail = new java.net.UnknownHostException("servfail");
+        servfail.initCause(dnsError(io.netty.handler.codec.dns.DnsResponseCode.SERVFAIL));
+        assertThat(WebhookService.classify(new RuntimeException(servfail))).isEqualTo(WebhookTestResult.CONNECTION_FAILED);
+        java.net.UnknownHostException nx = new java.net.UnknownHostException("nx");
+        nx.initCause(dnsError(io.netty.handler.codec.dns.DnsResponseCode.NXDOMAIN));
+        assertThat(WebhookService.classify(new RuntimeException(nx))).isEqualTo(WebhookTestResult.HOST_NOT_FOUND);
         assertThat(WebhookService.classify(new RuntimeException(new javax.net.ssl.SSLHandshakeException("bad cert")))).isEqualTo(WebhookTestResult.TLS_ERROR);
         assertThat(WebhookService.classify(new RuntimeException(new io.netty.handler.ssl.SslHandshakeTimeoutException("slow")))).isEqualTo(WebhookTestResult.TIMEOUT);
         assertThat(WebhookService.classify(new RuntimeException(new TimeoutException()))).isEqualTo(WebhookTestResult.TIMEOUT);
@@ -594,5 +607,17 @@ class WebhookServiceTest {
         assertThat(WebhookService.classify(new RuntimeException(new java.net.ConnectException("refused")))).isEqualTo(WebhookTestResult.CONNECTION_FAILED);
         // Reactor 의 block 상한 초과 — IllegalStateException 안에 TimeoutException
         assertThat(WebhookService.classify(new IllegalStateException("Timeout on blocking read", new TimeoutException()))).isEqualTo(WebhookTestResult.TIMEOUT);
+    }
+
+    /** netty 의 DnsErrorCauseException 생성자는 패키지 밖에 열려 있지 않다 — 실제 리졸버가 만드는 원인을 그대로 흉내 낸다. */
+    private static Throwable dnsError(io.netty.handler.codec.dns.DnsResponseCode code) {
+        try {
+            var ctor = io.netty.resolver.dns.DnsErrorCauseException.class
+                    .getDeclaredConstructor(String.class, io.netty.handler.codec.dns.DnsResponseCode.class);
+            ctor.setAccessible(true);
+            return ctor.newInstance("dns " + code, code);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

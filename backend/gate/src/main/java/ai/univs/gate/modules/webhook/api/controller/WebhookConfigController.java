@@ -126,12 +126,13 @@ public class WebhookConfigController {
 
     @Operation(summary = "웹훅 테스트 전송",
             description = "저장된 URL 로 TEST 이벤트 한 건을 서명을 붙여 보내고 결과를 돌려줍니다. 재시도하지 않으며 최대 약 9초 기다립니다. "
-                    + "토글과 무관하게 보냅니다. 같은 프로젝트에서 3초 안에 다시 요청하거나 동시 요청이 많으면 PJ-112(429)입니다. "
+                    + "토글과 무관하게 보냅니다. 같은 프로젝트에서 직전 테스트가 끝나고 3초 안에 다시 요청하거나, 같은 계정의 테스트가 "
+                    + "아직 진행 중이거나, 전체 동시 요청이 많으면 PJ-112 입니다. "
                     + "수신 서버가 실패해도 이 API 는 200 이고, 결과는 result 로 구분합니다.")
     @SecurityRequirements({@SecurityRequirement(name = "Authentication")})
     @SwaggerErrorExample({
             @SwaggerError(errorType = ErrorType.WEBHOOK_CONFIG_NOT_FOUND, status = 400),
-            @SwaggerError(errorType = ErrorType.WEBHOOK_TEST_TOO_FREQUENT, status = 429),
+            @SwaggerError(errorType = ErrorType.WEBHOOK_TEST_TOO_FREQUENT, status = 400),
             @SwaggerError(errorType = ErrorType.PROJECT_NOT_FOUND, status = 400),
             @SwaggerError(errorType = ErrorType.NOT_OWNERSHIP, status = 400),
     })
