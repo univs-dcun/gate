@@ -2422,7 +2422,7 @@ function renderErrorFormat(lang) {
 var WEBHOOK_DOC = {
   ko: '<div class="sec-blk"><div class="sec-ttl">설정</div>'
     + '<p class="err-p">콘솔의 <b>개발 지원 → 웹훅 설정</b>에서 URL 을 등록하고, 어떤 호출의 결과를 받을지 고릅니다. <b>API</b> 를 켜면 API Key 로 호출한 결과가, <b>데모</b>를 켜면 콘솔 데모로 호출한 결과가 옵니다. 프로젝트마다 URL 하나입니다.</p>'
-    + '<ul class="err-ul"><li>URL 은 <b>외부에서 접근할 수 있는 <code>http</code>·<code>https</code> 주소</b>여야 합니다. 루프백·사설망·링크 로컬 주소는 저장할 때 <code>PJ-111</code> 로 거절됩니다(설치형은 설정에 따라 사설망을 허용할 수 있습니다).</li>'
+    + '<ul class="err-ul"><li>URL 은 <b>외부에서 접근할 수 있는 <code>http</code>·<code>https</code> 주소</b>여야 합니다. 루프백·사설망·링크 로컬 주소는 저장할 때 <code>PJ-111</code> 로 거절됩니다(설치형은 설정에 따라 사설망을 허용할 수 있습니다). 저장할 때 주소를 조회하므로 <b>존재하지 않는 도메인</b>도 같은 <code>PJ-111</code> 로 거절되며, 이때 <code>message</code> 는 「주소를 찾을 수 없습니다」입니다.</li>'
     + '<li><b>HTTPS 를 쓰세요.</b> 본문에 매칭·등록 결과가 실립니다.</li>'
     + '<li>요청마다 <b>서명</b>이 붙습니다. 받은 요청은 반드시 검증하세요 — 아래 <b>서명 검증</b>.</li></ul></div>'
     + '<div class="sec-blk"><div class="sec-ttl">보내는 결과</div>'
@@ -2457,7 +2457,7 @@ var WEBHOOK_DOC = {
 
   en: '<div class="sec-blk"><div class="sec-ttl">Setup</div>'
     + '<p class="err-p">Register the URL under <b>Developer Support → Webhook settings</b> in the console and choose which calls to receive. Turn on <b>API</b> for calls made with an API Key, and <b>Demo</b> for calls made from the console demo. Each project has one URL.</p>'
-    + '<ul class="err-ul"><li>The URL must be a <b>publicly reachable <code>http</code> or <code>https</code> address</b>. Loopback, private-network and link-local addresses are rejected on save with <code>PJ-111</code> (on-premises installations can be configured to allow private networks).</li>'
+    + '<ul class="err-ul"><li>The URL must be a <b>publicly reachable <code>http</code> or <code>https</code> address</b>. Loopback, private-network and link-local addresses are rejected on save with <code>PJ-111</code> (on-premises installations can be configured to allow private networks). The host is looked up on save, so <b>a domain that does not exist</b> is also rejected with <code>PJ-111</code>; its <code>message</code> then says the host could not be found.</li>'
     + '<li><b>Use HTTPS.</b> The body carries match and registration results.</li>'
     + '<li>Every request is <b>signed</b>. Always verify it — see <b>Verifying Signatures</b> below.</li></ul></div>'
     + '<div class="sec-blk"><div class="sec-ttl">Results Sent</div>'
