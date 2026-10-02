@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 class WebhookDnsTest {
 
     private static final WebhookTargetPolicy POLICY = new WebhookTargetPolicy(new WebhookProperties(
-            false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000));
+            false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000, List.of()));
 
     private DatagramSocket dns;
     private NioEventLoopGroup loops;

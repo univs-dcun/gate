@@ -189,6 +189,7 @@ gate-config 에는 비밀이 없다 — `username` 만 서비스 계정명이고
 | `GATE_FEATURES_FACE` / `GATE_FEATURES_PALM` | `gate.features.face` / `.palm` | | 기본값 `true`. 납품에 없는 방식은 `false` 로 준다 — **face 전용 납품은 `GATE_FEATURES_PALM=false`** (UG-223, 아래 설명) |
 | `GATE_RECONCILE_REGISTRATION_ENABLED` | `gate.reconcile.registration.enabled` | | 기본값 `true`. 결과를 모르는 등록을 5분마다 되돌리는 정리 잡 (UG-338, 아래 설명). 보통은 주지 않는다 |
 | `GATE_WEBHOOK_ALLOW_PRIVATE_TARGETS` | `gate.webhook.allow-private-targets` | | 기본값 `false`. **고객사 내부망의 웹훅 수신 서버를 쓰려면 `true`** (UG-111, 아래 설명) |
+| `GATE_WEBHOOK_DENIED_CIDRS` | `gate.webhook.denied-cidrs` | | 기본값 비어 있음. 웹훅·테스트 전송을 **항상 막을 대역**을 쉼표로 잇는다 (UG-348, 아래 설명). 보통은 주지 않는다 |
 
 **`GATE_FEATURES_*` (UG-223).** 끈 방식의 **동작** API(등록·삭제·인증·라이브니스)를 컨트롤러에
 닿기 전에 `CMMN-104 FEATURE_NOT_ENABLED`(HTTP 400)로 거절한다. **조회는 막지 않는다** — 그 방식의
@@ -249,6 +250,28 @@ PJ-111 의 message 는 "루프백·링크 로컬 주소는 쓸 수 없습니다.
 
 `GATE_FEATURES_*` 와 같은 이유로 **빈 값은 기동 실패**다. 공용 `gate-service.yml` 에 넣지 않는다 —
 onprem 이 통째로 복사해 클라우드까지 열린다.
+
+**`GATE_WEBHOOK_DENIED_CIDRS` (UG-348).** 여기 넣은 대역으로 풀리는 웹훅 URL 은 `GATE_WEBHOOK_ALLOW_PRIVATE_TARGETS`
+값과 상관없이 막는다. 저장할 때는 `PJ-111`, 이미 저장된 URL 은 보내지 않고, 콘솔 「테스트 전송」은 `TARGET_NOT_ALLOWED` 다.
+`true` 인 설치에서 차단 대역에 걸리면 PJ-111 의 message 는 "웹훅 URL이 이 설치에서 허용하지 않는 주소 대역으로 연결됩니다.
+다른 수신 서버 주소를 쓰거나 관리자에게 확인해 주세요." 다(루프백 안내와 구분). 기본값(`false`) 설치는 다른 거절과 같은 문구다.
+
+- 형식: `203.0.113.0/24,198.51.100.7,2001:db8::/32`. 접두 길이 없는 값은 주소 하나(/32, IPv6 /128)다. 공백과 끝 쉼표는 무시한다.
+- **잘못된 값은 기동 실패**다. 호스트 이름, 접두 길이 초과, 접두 뒤에 남은 비트(`203.0.113.7/24`), 선행 0(`203.0.113.010`),
+  scope(`fe80::%eth0`), IPv4 를 IPv6 로 감싼 표기(`::ffff:203.0.113.0/120`)를 받지 않는다 — 조용히 건너뛰거나 아무것도
+  막지 않는 값이면 막았다고 믿는 대역이 열린 채 남는다. **IPv4 는 IPv4 형식으로 적는다.** IPv6 대역은 IPv6 주소만 막는다
+  (`::/0` 은 IPv4 를 막지 않는다). 웹훅 URL 쪽에서 IPv6 로 감싼 IPv4(`[::ffff:…]`, NAT64 `64:ff9b::/96`, 6to4)는 안의
+  IPv4 로 풀어 판정한다. 단, 로컬 NAT64 `64:ff9b:1::/48` 은 풀지 않고 사설로만 본다 — 고객 망에 로컬 NAT64 가 있으면 그 대역을
+  IPv6 로 함께 넣는다.
+- 사설망을 허용(`true`)한 설치에서 웹훅 수신 서버가 아닌 사내 대역(DB·관리망 등)을 빼고 싶을 때 쓴다.
+  비워 두면 동작은 이전과 같다.
+- 클라우드에서는 gate 서버 호스트에 붙은 **모든 공인 주소**(IPv4·IPv6, `ip addr` / `ip route show table local` 기준)와,
+  **gate 의 출발 IP 를 허용 목록에 둔 사내 서버**(레지스트리 등)를 넣는다(gate-config 의 환경별 파일). 공인 주소라 기본 정책을
+  통과하므로, 테스트 전송이 돌려주는 응답 코드·시간으로 포트를 탐색할 수 있기 때문이다. 컨테이너에서 호스트 자신의 주소로 나가는
+  연결은 DOCKER-USER 가 아니라 호스트 INPUT 으로 들어가므로 호스트의 주소 하나만 넣으면 나머지가 열린다. 공용 `gate-service.yml` 에는
+  넣지 않는다.
+- 공인 주소가 PJ-111 로 거절된다는 사실 자체는 그 주소가 목록에 있다는 신호다. origin 주소를 숨기는 배포(CDN 뒤 origin)라면
+  이 목록이 origin 을 드러낼 수 있다는 점을 감안한다 — 우리 클라우드는 origin 이 DNS 로 공개돼 있어 받아들인 트레이드오프다.
 
 ### palm-service / match-server 추가
 
