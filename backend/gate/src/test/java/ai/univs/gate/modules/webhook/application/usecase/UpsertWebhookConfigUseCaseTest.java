@@ -18,6 +18,7 @@ import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.webhook.WebhookProperties;
 import ai.univs.gate.support.webhook.WebhookTargetPolicy;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +30,7 @@ class UpsertWebhookConfigUseCaseTest {
     private final ProjectService projectService = mock(ProjectService.class);
     private final WebhookConfigRepository repository = mock(WebhookConfigRepository.class);
     private final WebhookTargetPolicy policy = new WebhookTargetPolicy(new WebhookProperties(
-            false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000));
+            false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000, List.of()));
     private final UpsertWebhookConfigUseCase useCase = new UpsertWebhookConfigUseCase(projectService, repository, policy);
 
     @BeforeEach
