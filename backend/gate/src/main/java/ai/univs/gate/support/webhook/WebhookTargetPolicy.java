@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,10 @@ import org.springframework.stereotype.Component;
  * 멀티캐스트, 0/8, 240/4(예약·브로드캐스트). 사설망(10/8, 172.16/12, 192.168/16, 100.64/10,
  * 198.18/15, fc00::/7, fec0::/10, 64:ff9b:1::/48)은 {@code gate.webhook.allow-private-targets=true} 일 때만
  * 허용한다 — 온프레미스용.
+ *
+ * <p>{@code gate.webhook.denied-cidrs} 에 넣은 대역은 위 판정과 상관없이 항상 막는다 (UG-348) — 클라우드는 gate 서버
+ * 자신의 공인 주소, 온프레미스는 고객사가 지정한 대역. 거절 문구는 다른 거절과 같다. 어느 목록에 걸렸는지 알리면 그 자체로
+ * 탐색에 쓰이는 정보가 된다.
  */
 @Component
 public class WebhookTargetPolicy {
@@ -51,6 +56,7 @@ public class WebhookTargetPolicy {
     }
 
     private final boolean allowPrivateTargets;
+    private final List<CidrBlock> deniedCidrs;
     private final Lookup lookup;
 
     /**
@@ -64,6 +70,12 @@ public class WebhookTargetPolicy {
 
     WebhookTargetPolicy(WebhookProperties properties, Lookup lookup) {
         this.allowPrivateTargets = properties.allowPrivateTargets();
+        this.deniedCidrs = properties.deniedCidrs() == null ? List.of()
+                : properties.deniedCidrs().stream()
+                        .map(String::trim)
+                        .filter(value -> !value.isEmpty())   // 환경변수 끝의 쉼표·빈 값
+                        .map(CidrBlock::parse)
+                        .toList();
         this.lookup = lookup;
     }
 
@@ -108,6 +120,8 @@ public class WebhookTargetPolicy {
     }
 
     boolean isAllowed(InetAddress address) {
+        // 안의 IPv4 를 풀기 전에 먼저 본다 — IPv6 대역(예: 6to4 2002::/16)을 넣었을 때 풀고 나면 맞출 기회가 없다.
+        if (isDenied(address)) return false;
         InetAddress embedded = embeddedIpv4(address);
         if (embedded != null) return isAllowed(embedded);
         if (address.isAnyLocalAddress()
@@ -118,6 +132,13 @@ public class WebhookTargetPolicy {
             return false;
         }
         return allowPrivateTargets || !isPrivate(address);
+    }
+
+    private boolean isDenied(InetAddress address) {
+        for (CidrBlock block : deniedCidrs) {
+            if (block.contains(address)) return true;
+        }
+        return false;
     }
 
     /** JDK 와 netty 가 같은 리터럴을 다르게 읽을 수 있다. 둘 다 허용될 때만 통과시킨다. */

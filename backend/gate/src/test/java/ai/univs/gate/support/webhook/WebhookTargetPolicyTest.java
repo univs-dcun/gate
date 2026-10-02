@@ -7,6 +7,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import java.net.InetAddress;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,7 +22,7 @@ class WebhookTargetPolicyTest {
 
     private static WebhookProperties props(boolean allowPrivate) {
         return new WebhookProperties(
-                allowPrivate, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000);
+                allowPrivate, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000, List.of());
     }
 
     private static WebhookTargetPolicy policy(boolean allowPrivate) {

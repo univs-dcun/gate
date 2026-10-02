@@ -133,7 +133,7 @@ class WebhookServiceTest {
 
     private static WebhookProperties props(int maxAttempts, Duration responseTimeout) {
         return new WebhookProperties(false, Duration.ofSeconds(2), responseTimeout,
-                maxAttempts, Duration.ofMillis(20), 10, 100, 100);
+                maxAttempts, Duration.ofMillis(20), 10, 100, 100, List.of());
     }
 
     private WebhookService service(WebhookTargetPolicy policy, WebhookProperties props) {
@@ -443,7 +443,7 @@ class WebhookServiceTest {
         // 시도당 상한 = connect 200ms + response 300ms + 1초 = 1.5초.
         // 시도 2번 — 상한이 시도마다 걸리는지(전체 한 번이 아닌지) 본다 (2차 반박 리뷰 S2).
         WebhookProperties props = new WebhookProperties(false, Duration.ofMillis(200), Duration.ofMillis(300),
-                2, Duration.ofMillis(20), 10, 100, 100);
+                2, Duration.ofMillis(20), 10, 100, 100, List.of());
         WebhookService s = service(loopbackAllowed(props), props);
         URI drip = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/drip");
 
