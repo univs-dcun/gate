@@ -64,6 +64,16 @@ public class WebhookConfig extends BaseEntity {
         this.apiEnabled = apiEnabled;
     }
 
+    /** 전송 대상 토글만 바꾼다 (UG-344, 화면의 즉시 저장). null 인 쪽은 그대로 둔다. URL 은 다시 검사하지 않는다. */
+    public void updateToggles(Boolean demoEnabled, Boolean apiEnabled) {
+        if (demoEnabled != null) {
+            this.demoEnabled = demoEnabled;
+        }
+        if (apiEnabled != null) {
+            this.apiEnabled = apiEnabled;
+        }
+    }
+
     /** 키가 없을 때만 넣는다. 행을 잠근 트랜잭션에서 부른다 — 잠그지 않으면 전송 쪽이 넣은 키를 덮어쓸 수 있다. */
     public void assignSecretIfAbsent(String secret) {
         if (this.webhookSecret == null) {
@@ -76,9 +86,14 @@ public class WebhookConfig extends BaseEntity {
      *
      * <p>겹치는 동안 다시 재발급하면 그때의 지금 키가 옛 키가 되고, 그 전의 옛 키는 바로 버린다 — 동시에 서명하는
      * 키는 최대 둘이다.
+     *
+     * <p>{@code overlap} 이 0 이면 옛 키를 남기지 않는다 — 키가 유출됐을 때의 즉시 폐기다.
      */
     public void rotateSecret(String newSecret, LocalDateTime nowUtc, Duration overlap) {
-        if (this.webhookSecret != null) {
+        if (overlap.isZero() || overlap.isNegative()) {
+            this.previousWebhookSecret = null;
+            this.previousSecretExpiresAt = null;
+        } else if (this.webhookSecret != null) {
             this.previousWebhookSecret = this.webhookSecret;
             this.previousSecretExpiresAt = nowUtc.plus(overlap);
         }

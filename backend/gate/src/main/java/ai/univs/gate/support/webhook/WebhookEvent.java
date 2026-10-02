@@ -26,4 +26,6 @@ public enum WebhookEvent {
     FEATURE_REGISTERED,
     FEATURE_REGISTERED_DESCRIPTOR,
     FEATURE_DELETED,
+    /** 콘솔 「테스트 전송」 (UG-344). 수신 측이 실제 결과와 구분하도록 따로 둔다. source 도 {@code TEST} 다. */
+    TEST,
 }

@@ -103,6 +103,8 @@ public enum ErrorType {
     WEBHOOK_CONFIG_NOT_FOUND("PJ-110", HttpStatus.BAD_REQUEST),
     /** UG-111: 웹훅 URL 이 http(s) 가 아니거나, 호스트를 찾을 수 없거나, 내부 주소로 풀린다. 고객 입력 문제다. */
     WEBHOOK_URL_NOT_ALLOWED("PJ-111", HttpStatus.BAD_REQUEST),
+    /** UG-344: 같은 프로젝트의 테스트 전송을 너무 연달아 눌렀거나, 동시에 진행 중인 테스트 전송이 많다. */
+    WEBHOOK_TEST_TOO_FREQUENT("PJ-112", HttpStatus.TOO_MANY_REQUESTS),
 
     // User
     INVALID_USER("USER-101", HttpStatus.BAD_REQUEST),
