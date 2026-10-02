@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class PolicyAddressResolverGroupTest {
 
     private static final WebhookTargetPolicy POLICY = new WebhookTargetPolicy(new WebhookProperties(
-            false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000));
+            false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000, List.of()));
 
     /** 어떤 이름이든 주어진 주소들로 푸는 가짜 DNS. */
     private static AddressResolverGroup<InetSocketAddress> dns(String... ips) {
@@ -54,9 +54,27 @@ class PolicyAddressResolverGroupTest {
     }
 
     private static Future<List<InetSocketAddress>> resolveAll(AddressResolverGroup<InetSocketAddress> dns) {
-        var group = new PolicyAddressResolverGroup(dns, POLICY);
+        return resolveAll(dns, POLICY);
+    }
+
+    private static Future<List<InetSocketAddress>> resolveAll(
+            AddressResolverGroup<InetSocketAddress> dns, WebhookTargetPolicy policy) {
+        var group = new PolicyAddressResolverGroup(dns, policy);
         return group.getResolver(ImmediateEventExecutor.INSTANCE)
                 .resolveAll(InetSocketAddress.createUnresolved("receiver.example.com", 443));
+    }
+
+    @Test
+    @DisplayName("UG-348: 이름이 차단 대역의 공인 주소로 풀리면 연결 단계에서 실패시킨다 — 저장 뒤 DNS 가 바뀐 경우")
+    void 차단_대역() {
+        var denying = new WebhookTargetPolicy(new WebhookProperties(
+                false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000,
+                List.of("203.0.113.0/24")));
+
+        Future<List<InetSocketAddress>> f = resolveAll(dns("8.8.8.8", "203.0.113.7"), denying);
+
+        assertThat(f.isSuccess()).isFalse();
+        assertThat(f.cause()).isInstanceOf(WebhookTargetPolicy.TargetNotAllowedException.class);
     }
 
     @Test
