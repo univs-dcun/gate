@@ -252,7 +252,8 @@ PJ-111 의 message 는 "루프백·링크 로컬 주소는 쓸 수 없습니다.
 onprem 이 통째로 복사해 클라우드까지 열린다.
 
 **`GATE_WEBHOOK_DENIED_CIDRS` (UG-348).** 여기 넣은 대역으로 풀리는 웹훅 URL 은 `GATE_WEBHOOK_ALLOW_PRIVATE_TARGETS`
-값과 상관없이 막는다. 저장할 때는 `PJ-111`, 이미 저장된 URL 은 보내지 않고, 콘솔 「테스트 전송」은 `TARGET_NOT_ALLOWED` 다.
+값과 상관없이 막는다. 저장할 때는 `PJ-111`, 이미 저장된 URL 은 보내지 않고, 콘솔 「테스트 전송」은 `TARGET_NOT_ALLOWED` 다
+(`true` 인 설치에서는 `TARGET_DENIED_RANGE` — 화면이 「localhost 불가」 안내 대신 「허용되지 않은 주소 · 관리자에게 문의」를 보인다).
 `true` 인 설치에서 차단 대역에 걸리면 PJ-111 의 message 는 "웹훅 URL이 이 설치에서 허용하지 않는 주소 대역으로 연결됩니다.
 다른 수신 서버 주소를 쓰거나 관리자에게 확인해 주세요." 다(루프백 안내와 구분). 기본값(`false`) 설치는 다른 거절과 같은 문구다.
 

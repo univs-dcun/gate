@@ -214,7 +214,8 @@ public class WebhookService {
             // 연결 전에 막는다 — 연결 뒤에 막으면 채널이 남는다.
             targetPolicy.checkWithoutLookup(target.toString());
         } catch (CustomGateException e) {
-            return Mono.error(new WebhookTargetPolicy.TargetNotAllowedException(target.getHost()));
+            return Mono.error(new WebhookTargetPolicy.TargetNotAllowedException(
+                    target.getHost(), WebhookTargetPolicy.isDeniedRange(e)));
         }
         // 시도마다 새로 만든다 — 서명의 타임스탬프가 실제 보낸 시각이어야 수신 측의 시간 허용 범위 검사가 재시도를
         // 오래된 요청으로 오판하지 않는다 (UG-344).
@@ -256,7 +257,8 @@ public class WebhookService {
         try {
             target = targetPolicy.checkWithoutLookup(signed.getWebhookUrl());
         } catch (CustomGateException e) {
-            return WebhookTestResult.notSent(WebhookTestResult.TARGET_NOT_ALLOWED);
+            return WebhookTestResult.notSent(WebhookTargetPolicy.isDeniedRange(e)
+                    ? WebhookTestResult.TARGET_DENIED_RANGE : WebhookTestResult.TARGET_NOT_ALLOWED);
         }
         WebhookPayload payload = new WebhookPayload(
                 UUID.randomUUID().toString(),
@@ -304,7 +306,11 @@ public class WebhookService {
      */
     static String classify(Throwable error) {
         if (statusOf(error) != null) return WebhookTestResult.HTTP_ERROR;
-        if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return WebhookTestResult.TARGET_NOT_ALLOWED;
+        WebhookTargetPolicy.TargetNotAllowedException notAllowed = causeOf(error, WebhookTargetPolicy.TargetNotAllowedException.class);
+        if (notAllowed != null) {
+            // 온프레미스에서 차단 대역에 걸린 것을 「localhost 불가」 안내와 구분한다 (UG-348 기획 10/2 17:03). 클라우드는 숨긴다.
+            return notAllowed.deniedRange ? WebhookTestResult.TARGET_DENIED_RANGE : WebhookTestResult.TARGET_NOT_ALLOWED;
+        }
         // DNS 실패는 netty 가 모두 UnknownHostException 으로 감싼다(DnsResolveContext). 원인으로 나눈다 — 조회 시간 초과·
         // SERVFAIL 을 「주소 없음」으로 보이면 고객은 URL 오타로 오해한다 (반박 리뷰 W5). isRetryable 과 같은 경계다.
         if (isNxDomain(error)) return WebhookTestResult.HOST_NOT_FOUND;
@@ -352,11 +358,15 @@ public class WebhookService {
     }
 
     private static boolean hasCause(Throwable error, Class<? extends Throwable> type) {
+        return causeOf(error, type) != null;
+    }
+
+    private static <T extends Throwable> T causeOf(Throwable error, Class<T> type) {
         for (Throwable t = error; t != null; t = t.getCause()) {
-            if (type.isInstance(t)) return true;
+            if (type.isInstance(t)) return type.cast(t);
             if (t.getCause() == t) break;
         }
-        return false;
+        return null;
     }
 
     private static boolean isNxDomain(Throwable error) {
@@ -374,7 +384,8 @@ public class WebhookService {
     static String describe(Throwable error) {
         if (error instanceof RejectedByReceiverException rejected) return "HTTP " + rejected.status;
         // 온프레미스에서 allow-private-targets 를 빠뜨렸을 때 연결 거부와 구분돼야 한다 (2차 반박 리뷰 W3)
-        if (hasCause(error, WebhookTargetPolicy.TargetNotAllowedException.class)) return "TARGET_NOT_ALLOWED";
+        WebhookTargetPolicy.TargetNotAllowedException notAllowed = causeOf(error, WebhookTargetPolicy.TargetNotAllowedException.class);
+        if (notAllowed != null) return notAllowed.deniedRange ? "TARGET_DENIED_RANGE" : "TARGET_NOT_ALLOWED";
         Throwable root = error;
         while (root.getCause() != null && root.getCause() != root) root = root.getCause();
         String detail = root instanceof DnsErrorCauseException dns ? "DNS " + dns.getCode() : root.getClass().getSimpleName();
