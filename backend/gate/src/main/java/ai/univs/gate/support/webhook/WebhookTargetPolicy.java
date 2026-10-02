@@ -79,11 +79,17 @@ public class WebhookTargetPolicy {
         if (isIpLiteral(host)) return uri;   // checkWithoutLookup 이 이미 봤다
         try {
             InetAddress[] addresses = lookup.resolve(host);
-            if (addresses.length == 0 || !Arrays.stream(addresses).allMatch(this::isAllowed)) {
+            if (addresses.length == 0) {
+                throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_HOST_NOT_FOUND);
+            }
+            if (!Arrays.stream(addresses).allMatch(this::isAllowed)) {
                 throw rejected();
             }
         } catch (UnknownHostException e) {
-            throw rejected();
+            // 주소를 찾지 못한 것은 「내부 주소」와 원인이 다르다 — 같은 문구면 오타 난 도메인을 넣은 사람이 내부망 주소를
+            // 넣은 줄로 읽는다 (UG-344 dev 확인 2026-10-02). 코드는 PJ-111 그대로, 문구만 나눈다. JDK 는 조회 시간 초과·
+            // SERVFAIL 도 같은 예외로 주므로 문구에 「잠시 후 다시 시도」를 함께 둔다 (반박 리뷰 W1).
+            throw new CustomGateException(ErrorType.WEBHOOK_URL_NOT_ALLOWED, MESSAGE_KEY_HOST_NOT_FOUND);
         }
         return uri;
     }
@@ -214,6 +220,8 @@ public class WebhookTargetPolicy {
     }
 
     static final String MESSAGE_KEY_PRIVATE_ALLOWED = "WEBHOOK_URL_NOT_ALLOWED_PRIVATE_ALLOWED";
+    /** 호스트 이름을 DNS 에서 찾지 못했다 (존재하지 않는 도메인, 또는 조회 실패). 설치와 무관하게 같은 안내다. */
+    static final String MESSAGE_KEY_HOST_NOT_FOUND = "WEBHOOK_URL_HOST_NOT_FOUND";
 
     /** 0.0.0.0/8 과 240.0.0.0/4(예약, 255.255.255.255 포함). JDK 판정 메서드가 잡지 않는다. */
     private static boolean isReservedIpv4(InetAddress address) {

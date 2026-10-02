@@ -488,4 +488,136 @@ class WebhookServiceTest {
         assertThat(WebhookService.isRetryable(new RuntimeException(
                 new io.netty.handler.ssl.SslHandshakeTimeoutException("slow")))).isTrue();
     }
+
+    // ── UG-344 테스트 전송 ────────────────────────────────────────────────────────
+
+    private WebhookConfig signedConfig(String url) {
+        return WebhookConfig.builder().id(9L).webhookUrl(url).demoEnabled(false).apiEnabled(false)
+                .webhookSecret("whsec_k").build();
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송: 토글이 꺼져 있어도 TEST 이벤트를 서명해 보내고 응답 코드·시간·eventId 를 돌려준다")
+    void 테스트_전송_성공() throws Exception {
+        status = () -> 204;
+        WebhookProperties props = props(3, Duration.ofSeconds(5));
+
+        WebhookTestResult result = service(loopbackAllowed(props), props).sendTest(1L, signedConfig(url()));
+
+        assertThat(result.result()).isEqualTo(WebhookTestResult.SUCCESS);
+        assertThat(result.statusCode()).isEqualTo(204);
+        assertThat(result.elapsedMs()).isNotNull().isGreaterThanOrEqualTo(0L);
+        Received r = received.getFirst();
+        assertThat(result.eventId()).isEqualTo(r.eventId());
+        assertThat(r.body().get("event").asText()).isEqualTo("TEST");
+        assertThat(r.body().get("source").asText()).isEqualTo("TEST");
+        assertThat(r.body().get("transactionUuid").isNull()).isTrue();
+        long t = NOW.getEpochSecond();
+        assertThat(r.signature()).isEqualTo("t=" + t + ",v1=" + WebhookSignature.sign("whsec_k", t, r.raw()));
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송: 5xx 도 재시도하지 않고 HTTP_ERROR 와 응답 코드를 돌려준다")
+    void 테스트_전송_재시도_없음() {
+        status = () -> 503;
+        WebhookProperties props = props(3, Duration.ofSeconds(5));
+
+        WebhookTestResult result = service(loopbackAllowed(props), props).sendTest(1L, signedConfig(url()));
+
+        assertThat(result.result()).isEqualTo(WebhookTestResult.HTTP_ERROR);
+        assertThat(result.statusCode()).isEqualTo(503);
+        assertThat(received).as("실제 전송은 3번 시도하지만 테스트는 1번").hasSize(1);
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송: 리다이렉트는 따라가지 않고 HTTP_ERROR 다")
+    void 테스트_전송_리다이렉트() {
+        status = () -> 302;
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+
+        WebhookTestResult result = service(loopbackAllowed(props), props).sendTest(1L, signedConfig(url()));
+
+        assertThat(result.result()).isEqualTo(WebhookTestResult.HTTP_ERROR);
+        assertThat(result.statusCode()).isEqualTo(302);
+        assertThat(redirected).hasValue(0);
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송: 응답이 늦으면 TIMEOUT")
+    void 테스트_전송_타임아웃() {
+        delayMillis = 700;
+        WebhookProperties props = props(3, Duration.ofMillis(200));
+
+        WebhookTestResult result = service(loopbackAllowed(props), props).sendTest(1L, signedConfig(url()));
+
+        assertThat(result.result()).isEqualTo(WebhookTestResult.TIMEOUT);
+        assertThat(result.statusCode()).isNull();
+        assertThat(received).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송: 닫힌 포트면 CONNECTION_FAILED")
+    void 테스트_전송_연결_실패() throws Exception {
+        int closedPort;
+        try (java.net.ServerSocket socket = new java.net.ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+            closedPort = socket.getLocalPort();
+        }
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+
+        WebhookTestResult result = service(loopbackAllowed(props), props)
+                .sendTest(1L, signedConfig("http://127.0.0.1:" + closedPort + "/hook"));
+
+        assertThat(result.result()).isEqualTo(WebhookTestResult.CONNECTION_FAILED);
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송: 운영 정책에서 루프백은 보내지 않고 TARGET_NOT_ALLOWED — 테스트 전송으로 SSRF 를 열지 않는다")
+    void 테스트_전송_차단_주소() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+
+        WebhookTestResult result = service(new WebhookTargetPolicy(props), props).sendTest(1L, signedConfig(url()));
+
+        assertThat(result).isEqualTo(new WebhookTestResult(WebhookTestResult.TARGET_NOT_ALLOWED, null, null, null));
+        assertNothingSent();
+    }
+
+    @Test
+    @DisplayName("UG-344 테스트 전송 결과 분류")
+    void 테스트_결과_분류() {
+        assertThat(WebhookService.classify(new WebhookService.RejectedByReceiverException(404))).isEqualTo(WebhookTestResult.HTTP_ERROR);
+        assertThat(WebhookService.classify(new RuntimeException(new java.net.UnknownHostException("x")))).isEqualTo(WebhookTestResult.HOST_NOT_FOUND);
+        // 반박 리뷰 W5: netty 는 DNS 실패를 모두 UnknownHostException 으로 감싼다 — 원인으로 나눈다
+        java.net.UnknownHostException dnsTimeout = new java.net.UnknownHostException("dns timeout");
+        dnsTimeout.initCause(new io.netty.resolver.dns.DnsNameResolverTimeoutException(
+                new InetSocketAddress(InetAddress.getLoopbackAddress(), 53),
+                new io.netty.handler.codec.dns.DefaultDnsQuestion("hook.example.com", io.netty.handler.codec.dns.DnsRecordType.A),
+                "query timed out"));
+        assertThat(WebhookService.classify(new RuntimeException(dnsTimeout))).isEqualTo(WebhookTestResult.TIMEOUT);
+        java.net.UnknownHostException servfail = new java.net.UnknownHostException("servfail");
+        servfail.initCause(dnsError(io.netty.handler.codec.dns.DnsResponseCode.SERVFAIL));
+        assertThat(WebhookService.classify(new RuntimeException(servfail))).isEqualTo(WebhookTestResult.CONNECTION_FAILED);
+        java.net.UnknownHostException nx = new java.net.UnknownHostException("nx");
+        nx.initCause(dnsError(io.netty.handler.codec.dns.DnsResponseCode.NXDOMAIN));
+        assertThat(WebhookService.classify(new RuntimeException(nx))).isEqualTo(WebhookTestResult.HOST_NOT_FOUND);
+        assertThat(WebhookService.classify(new RuntimeException(new javax.net.ssl.SSLHandshakeException("bad cert")))).isEqualTo(WebhookTestResult.TLS_ERROR);
+        assertThat(WebhookService.classify(new RuntimeException(new io.netty.handler.ssl.SslHandshakeTimeoutException("slow")))).isEqualTo(WebhookTestResult.TIMEOUT);
+        assertThat(WebhookService.classify(new RuntimeException(new TimeoutException()))).isEqualTo(WebhookTestResult.TIMEOUT);
+        assertThat(WebhookService.classify(new RuntimeException(new io.netty.channel.ConnectTimeoutException("c")))).isEqualTo(WebhookTestResult.TIMEOUT);
+        assertThat(WebhookService.classify(new RuntimeException(new WebhookTargetPolicy.TargetNotAllowedException("h")))).isEqualTo(WebhookTestResult.TARGET_NOT_ALLOWED);
+        assertThat(WebhookService.classify(new RuntimeException(new java.net.ConnectException("refused")))).isEqualTo(WebhookTestResult.CONNECTION_FAILED);
+        // Reactor 의 block 상한 초과 — IllegalStateException 안에 TimeoutException
+        assertThat(WebhookService.classify(new IllegalStateException("Timeout on blocking read", new TimeoutException()))).isEqualTo(WebhookTestResult.TIMEOUT);
+    }
+
+    /** netty 의 DnsErrorCauseException 생성자는 패키지 밖에 열려 있지 않다 — 실제 리졸버가 만드는 원인을 그대로 흉내 낸다. */
+    private static Throwable dnsError(io.netty.handler.codec.dns.DnsResponseCode code) {
+        try {
+            var ctor = io.netty.resolver.dns.DnsErrorCauseException.class
+                    .getDeclaredConstructor(String.class, io.netty.handler.codec.dns.DnsResponseCode.class);
+            ctor.setAccessible(true);
+            return ctor.newInstance("dns " + code, code);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }
