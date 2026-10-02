@@ -79,7 +79,7 @@ class WebhookSecretUseCaseTest {
         WebhookConfig c = config(5L, "whsec_old");
         when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(c));
 
-        WebhookConfigResult result = rotate.execute(10L);
+        WebhookConfigResult result = rotate.execute(10L, false);
 
         assertThat(result.webhookSecret()).startsWith("whsec_").isNotEqualTo("whsec_old");
         assertThat(result.previousSecretExpiresAt())
@@ -94,9 +94,22 @@ class WebhookSecretUseCaseTest {
     void 재발급_설정_없음() {
         when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> rotate.execute(10L))
+        assertThatThrownBy(() -> rotate.execute(10L, false))
                 .isInstanceOf(CustomGateException.class)
                 .extracting(e -> ((CustomGateException) e).getErrorType())
                 .isEqualTo(ErrorType.WEBHOOK_CONFIG_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("즉시 폐기를 고르면 옛 키도 만료 시각도 없다")
+    void 재발급_즉시_폐기() {
+        WebhookConfig c = config(5L, "whsec_old");
+        when(repository.findForUpdateByProjectId(10L)).thenReturn(Optional.of(c));
+
+        WebhookConfigResult result = rotate.execute(10L, true);
+
+        assertThat(result.webhookSecret()).startsWith("whsec_").isNotEqualTo("whsec_old");
+        assertThat(result.previousSecretExpiresAt()).isNull();
+        assertThat(c.getPreviousWebhookSecret()).isNull();
     }
 }
