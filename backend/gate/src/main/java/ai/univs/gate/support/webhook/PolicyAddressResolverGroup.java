@@ -65,7 +65,8 @@ final class PolicyAddressResolverGroup extends AddressResolverGroup<InetSocketAd
                 if (!f.isSuccess()) {
                     promise.tryFailure(f.cause());
                 } else if (!policy.isAllowed(f.getNow().getAddress())) {
-                    promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(unresolved.getHostString()));
+                    promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(
+                            unresolved.getHostString(), policy.reportsDeniedRange(f.getNow().getAddress())));
                 } else {
                     promise.trySuccess(f.getNow());
                 }
@@ -82,7 +83,9 @@ final class PolicyAddressResolverGroup extends AddressResolverGroup<InetSocketAd
                 // 하나라도 막힌 주소가 섞이면 거절한다 — 공인·내부 주소를 함께 돌려주는 레코드 우회 차단
                 for (InetSocketAddress address : f.getNow()) {
                     if (address.getAddress() == null || !policy.isAllowed(address.getAddress())) {
-                        promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(unresolved.getHostString()));
+                        boolean deniedRange = address.getAddress() != null && policy.reportsDeniedRange(address.getAddress());
+                        promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(
+                                unresolved.getHostString(), deniedRange));
                         return;
                     }
                 }

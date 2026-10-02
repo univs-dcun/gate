@@ -78,6 +78,25 @@ class PolicyAddressResolverGroupTest {
     }
 
     @Test
+    @DisplayName("UG-348: 사설망 허용 설치에서 차단 대역으로 풀리면 사유를 싣는다 — 클라우드는 싣지 않는다")
+    void 차단_대역_사유() {
+        var onprem = new WebhookTargetPolicy(new WebhookProperties(
+                true, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000,
+                List.of("10.20.0.0/16")));
+        var cloud = new WebhookTargetPolicy(new WebhookProperties(
+                false, Duration.ofSeconds(3), Duration.ofSeconds(5), 3, Duration.ofSeconds(1), 50, 500, 1000,
+                List.of("10.20.0.0/16")));
+
+        var onpremCause = (WebhookTargetPolicy.TargetNotAllowedException) resolveAll(dns("10.20.3.4"), onprem).cause();
+        var loopbackCause = (WebhookTargetPolicy.TargetNotAllowedException) resolveAll(dns("127.0.0.1"), onprem).cause();
+        var cloudCause = (WebhookTargetPolicy.TargetNotAllowedException) resolveAll(dns("10.20.3.4"), cloud).cause();
+
+        assertThat(onpremCause.deniedRange).isTrue();
+        assertThat(loopbackCause.deniedRange).as("루프백은 차단 대역이 아니다").isFalse();
+        assertThat(cloudCause.deniedRange).isFalse();
+    }
+
+    @Test
     @DisplayName("공인 주소만 나오면 그대로 연결한다")
     void 공인() {
         Future<List<InetSocketAddress>> f = resolveAll(dns("8.8.8.8", "1.1.1.1"));

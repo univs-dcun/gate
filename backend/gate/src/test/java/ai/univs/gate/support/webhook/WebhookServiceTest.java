@@ -582,6 +582,46 @@ class WebhookServiceTest {
     }
 
     @Test
+    @DisplayName("UG-348 테스트 전송: 사설망 허용 설치에서 차단 대역이면 TARGET_DENIED_RANGE — 「localhost 불가」 안내와 구분한다")
+    void 테스트_전송_차단_대역_온프레미스() throws Exception {
+        WebhookProperties props = new WebhookProperties(true, Duration.ofSeconds(2), Duration.ofSeconds(5),
+                1, Duration.ofMillis(20), 10, 100, 100, List.of("203.0.113.0/24"));
+
+        WebhookTestResult result = service(new WebhookTargetPolicy(props), props)
+                .sendTest(1L, signedConfig("http://203.0.113.7:9/hook"));
+
+        assertThat(result).isEqualTo(new WebhookTestResult(WebhookTestResult.TARGET_DENIED_RANGE, null, null, null));
+        assertThat(service(new WebhookTargetPolicy(props), props).sendTest(1L, signedConfig("http://127.0.0.1:9/hook")).result())
+                .as("루프백은 기존대로").isEqualTo(WebhookTestResult.TARGET_NOT_ALLOWED);
+        assertNothingSent();
+    }
+
+    @Test
+    @DisplayName("UG-348 테스트 전송: 클라우드는 차단 대역도 TARGET_NOT_ALLOWED — 어느 목록에 걸렸는지 숨긴다")
+    void 테스트_전송_차단_대역_클라우드() {
+        WebhookProperties props = new WebhookProperties(false, Duration.ofSeconds(2), Duration.ofSeconds(5),
+                1, Duration.ofMillis(20), 10, 100, 100, List.of("203.0.113.0/24"));
+
+        WebhookTestResult result = service(new WebhookTargetPolicy(props), props)
+                .sendTest(1L, signedConfig("http://203.0.113.7:9/hook"));
+
+        assertThat(result.result()).isEqualTo(WebhookTestResult.TARGET_NOT_ALLOWED);
+    }
+
+    @Test
+    @DisplayName("UG-348 보내기 직전(attempt)에 걸린 차단 대역도 사유를 싣는다 — 연결 단계와 같은 분류")
+    void 시도_차단_대역_사유() {
+        WebhookProperties props = new WebhookProperties(true, Duration.ofSeconds(2), Duration.ofSeconds(5),
+                1, Duration.ofMillis(20), 10, 100, 100, List.of("203.0.113.0/24"));
+        WebhookService s = service(new WebhookTargetPolicy(props), props);
+
+        Throwable error = org.assertj.core.api.Assertions.catchThrowable(() ->
+                s.attempt(java.net.URI.create("http://203.0.113.7:9/hook"), "e", new byte[0], List.of()).block());
+
+        assertThat(WebhookService.classify(error)).isEqualTo(WebhookTestResult.TARGET_DENIED_RANGE);
+    }
+
+    @Test
     @DisplayName("UG-344 테스트 전송 결과 분류")
     void 테스트_결과_분류() {
         assertThat(WebhookService.classify(new WebhookService.RejectedByReceiverException(404))).isEqualTo(WebhookTestResult.HTTP_ERROR);
@@ -604,6 +644,7 @@ class WebhookServiceTest {
         assertThat(WebhookService.classify(new RuntimeException(new TimeoutException()))).isEqualTo(WebhookTestResult.TIMEOUT);
         assertThat(WebhookService.classify(new RuntimeException(new io.netty.channel.ConnectTimeoutException("c")))).isEqualTo(WebhookTestResult.TIMEOUT);
         assertThat(WebhookService.classify(new RuntimeException(new WebhookTargetPolicy.TargetNotAllowedException("h")))).isEqualTo(WebhookTestResult.TARGET_NOT_ALLOWED);
+        assertThat(WebhookService.classify(new RuntimeException(new WebhookTargetPolicy.TargetNotAllowedException("h", true)))).isEqualTo(WebhookTestResult.TARGET_DENIED_RANGE);
         assertThat(WebhookService.classify(new RuntimeException(new java.net.ConnectException("refused")))).isEqualTo(WebhookTestResult.CONNECTION_FAILED);
         // Reactor 의 block 상한 초과 — IllegalStateException 안에 TimeoutException
         assertThat(WebhookService.classify(new IllegalStateException("Timeout on blocking read", new TimeoutException()))).isEqualTo(WebhookTestResult.TIMEOUT);

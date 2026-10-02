@@ -9886,7 +9886,7 @@
         "properties": {
           "result": {
             "type": "string",
-            "description": "테스트 전송 결과. SUCCESS(2xx) · HTTP_ERROR(2xx 아닌 응답, 3xx 포함) · TIMEOUT · CONNECTION_FAILED · HOST_NOT_FOUND · TLS_ERROR · TARGET_NOT_ALLOWED(내부·사설망 주소라 보내지 않음)",
+            "description": "테스트 전송 결과. SUCCESS(2xx) · HTTP_ERROR(2xx 아닌 응답, 3xx 포함) · TIMEOUT · CONNECTION_FAILED · HOST_NOT_FOUND · TLS_ERROR · TARGET_NOT_ALLOWED(내부·사설망 주소라 보내지 않음) · TARGET_DENIED_RANGE(사설망을 허용한 설치에서 지정 차단 대역이라 보내지 않음)",
             "enum": [
               "SUCCESS",
               "HTTP_ERROR",
@@ -9894,7 +9894,8 @@
               "CONNECTION_FAILED",
               "HOST_NOT_FOUND",
               "TLS_ERROR",
-              "TARGET_NOT_ALLOWED"
+              "TARGET_NOT_ALLOWED",
+              "TARGET_DENIED_RANGE"
             ]
           },
           "statusCode": {
