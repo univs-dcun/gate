@@ -71,6 +71,14 @@ class StatelessLocaleTest {
             "'@@,ko', ko",                     // 형식이 깨진 태그
             "'en;;q=x', en",                   // 그 항목이 버려지고 남는 것이 없어 영어
             "'KO-kr', ko-KR",                  // 대소문자
+            // 반박 리뷰 W1·W2 — auth 08a5e00 과 같게
+            "ko-kor, en",                      // extlang 이 언어로 올라가면(kor) 지원 언어가 아니다
+            "'en-zzz,ko;q=0.5', ko",           // 엉뚱한 Locale(zzz)로 나가지 않고 다음 항목으로
+            "'ko;q=0,*', en",   // 기본 언어를 거부했으면 * 로도 고르지 않는다 → 남는 것이 없어 영어
+            "'en-u-nu-arab', en",              // 확장은 버린다
+            "'ko-Kore-KR', ko-KR",             // 스크립트는 버린다
+            "'q=2', en",                       // 태그 형식이 아니면 건너뛴다
+            "'ko;q=2;q=0.5', ko",              // q 가 여러 번이면 마지막
     })
     @DisplayName("UG-352: 항목별로 읽어 q 순서로 지원 언어(ko·en)를 고르고(지역 유지), 없으면 영어 — 세션은 만들지 않는다")
     void 해석(String header, String expected) {
