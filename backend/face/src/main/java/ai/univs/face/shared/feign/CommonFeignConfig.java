@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -38,10 +39,8 @@ public class CommonFeignConfig {
             if (attributes != null) {
                 HttpServletRequest request = attributes.getRequest();
 
-                String acceptLanguage = request.getHeader("Accept-Language");
-                if (acceptLanguage != null) {
-                    requestTemplate.header("Accept-Language", acceptLanguage);
-                }
+                // UG-352: 원본 헤더가 아니라 이 서비스가 정한 언어를 넘긴다 — 하위(match)와 언어가 어긋나지 않게 (반박 리뷰 W1).
+                requestTemplate.header("Accept-Language", LocaleContextHolder.getLocale().toLanguageTag());
 
                 String acceptTimezone = request.getHeader("Accept-TimeZone");
                 if (acceptTimezone != null) {
