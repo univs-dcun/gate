@@ -72,7 +72,10 @@ public record MatchingHistoryResponseDTO(
         LocalDateTime createdAt,
 
         @Schema(description = SwaggerDescriptions.EXTERNAL_KEY)
-        String externalKey
+        String externalKey,
+
+        @Schema(description = SwaggerDescriptions.FEATURE_IMAGE_DELETED)
+        boolean featureImageDeleted
 ) {
 
     public static MatchingHistoryResponseDTO from(MatchHistoryResult result,
@@ -100,6 +103,7 @@ public record MatchingHistoryResponseDTO(
                 result.transactionUuid(),
                 result.consentSnapshot(),
                 fromUtc(result.createdAt(), timezone),
-                result.externalKey());
+                result.externalKey(),
+                result.featureImageDeleted());
     }
 }
