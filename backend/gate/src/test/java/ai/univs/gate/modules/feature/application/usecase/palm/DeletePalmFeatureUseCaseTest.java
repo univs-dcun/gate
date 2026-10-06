@@ -33,6 +33,7 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -67,6 +68,7 @@ class DeletePalmFeatureUseCaseTest {
 
     // UG-336: 성공 쓰기가 짧은 트랜잭션 안에서 일어난다. null 이면 NPE, 목이면 콜백이 안 돈다.
     @Spy private RecordingTransactionTemplate transactionTemplate = new RecordingTransactionTemplate();
+    @Mock private DeletedFeatureImagePurgeService imagePurgeService;
 
     @InjectMocks private DeletePalmFeatureUseCase useCase;
 
@@ -282,5 +284,32 @@ class DeletePalmFeatureUseCaseTest {
                 "succeed:true");  // 소프트 삭제와 같은 트랜잭션
         assertThat(feature.isDeleted()).isTrue();
         assertThat(transactionTemplate.executions()).as("경계는 성공 블록 하나뿐이다").isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("UG-347: 삭제에 성공하면 커밋 뒤, 트랜잭션 밖에서 원본 이미지 파기를 부른다")
+    void 성공하면_이미지_파기() {
+        정상_흐름_스텁();
+        willAnswer(inv -> {
+            assertThat(transactionTemplate.isActive()).as("트랜잭션 밖이어야 한다 — 파일 삭제를 커밋 전에 하면 롤백돼도 파일은 없다").isFalse();
+            assertThat(transactionTemplate.executions()).as("성공 트랜잭션이 끝난 뒤").isEqualTo(1);
+            return null;
+        }).given(imagePurgeService).purgeQuietly(FEATURE_SEQ);
+
+        useCase.execute(input);
+
+        verify(imagePurgeService).purgeQuietly(FEATURE_SEQ);
+    }
+
+    @Test
+    @DisplayName("UG-347: 하위 삭제가 실패하면 이미지를 건드리지 않는다 — 특징점이 살아 있다")
+    void 실패하면_이미지_그대로() {
+        정상_흐름_스텁();
+        CustomFeignException e = new CustomFeignException("X-500", "INTERNAL_SERVER_ERROR", "boom");
+        willThrow(e).given(palmService).deletePalm(any());
+
+        assertThatThrownBy(() -> useCase.execute(input)).isSameAs(e);
+
+        verify(imagePurgeService, never()).purgeQuietly(any());
     }
 }

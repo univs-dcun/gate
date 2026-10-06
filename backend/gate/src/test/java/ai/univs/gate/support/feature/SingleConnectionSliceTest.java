@@ -94,7 +94,10 @@ import org.springframework.transaction.support.TransactionTemplate;
         ApiKeyRepositoryImpl.class, BiometricFeatureRepositoryImpl.class,
         BiometricFeatureDSLRepository.class, MatchHistoryRepositoryImpl.class,
         FeatureHistoryRepositoryImpl.class, ProjectSettingsRepositoryImpl.class,
-        ProjectLivenessSettingRepositoryImpl.class})
+        ProjectLivenessSettingRepositoryImpl.class,
+        // UG-347: 삭제 뒤 이미지 파기도 같은 커넥션 예산 안에서 돈다 — 실제 빈으로 잰다
+        ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService.class,
+        ai.univs.gate.support.privacy.DeletedFeatureImagePurgeRepository.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-336: 풀 크기 1 에서 등록·삭제")
 class SingleConnectionSliceTest {
@@ -229,7 +232,7 @@ class SingleConnectionSliceTest {
         Long featureSeq = tx.execute(status -> {
             BiometricFeature f = BiometricFeature.builder()
                     .project(em.find(Project.class, project.getId())).type(FeatureType.FACE)
-                    .featureId("face-to-delete").isDeleted(false).build();
+                    .featureId("face-to-delete").featureImagePath("/face/20261006/del.jpg").isDeleted(false).build();
             em.persist(f);
             return f.getId();
         });
@@ -248,11 +251,15 @@ class SingleConnectionSliceTest {
         tx.executeWithoutResult(status -> {
             assertThat(em.find(BiometricFeature.class, featureSeq).isDeleted())
                     .as("소프트 삭제가 성공 트랜잭션에서 커밋돼야 한다").isTrue();
+            // UG-347: 이미지 파기도 커넥션 하나로 끝난다 — 실패는 삼켜지므로 결과로 확인한다
+            assertThat(em.find(BiometricFeature.class, featureSeq).getFeatureImagePath())
+                    .as("커밋 뒤 이미지 파기가 경로를 비워야 한다").isNull();
             FeatureHistory history = em.createQuery(
                             "SELECT h FROM FeatureHistory h WHERE h.project.id = :p", FeatureHistory.class)
                     .setParameter("p", project.getId()).getSingleResult();
             assertThat(history.getActionType()).isEqualTo(FeatureActionType.DELETE);
             assertThat(history.isSuccess()).isTrue();
         });
+        org.mockito.Mockito.verify(fileService).deleteReporting("/face/20261006/del.jpg");
     }
 }

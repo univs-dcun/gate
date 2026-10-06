@@ -62,9 +62,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 않으므로 지워지고, 등록 사진은 특징점이 가리키므로 남는다. 앞으로 추가될 매칭 API 도 같은
  * 규칙에 자동으로 들어온다.
  *
- * <p><b>남는 틈 하나.</b> 제품 API 로 삭제된 특징점은 해당하지 않는다 —
- * {@code DeleteFaceFeatureUseCase} 는 {@code is_deleted} 만 찍고 행도 파일도 남기며, 참조
- * 검사가 {@code is_deleted} 를 보지 않으므로 그 경로는 지켜진다. 실제로 틈이 생기는 경우는
+ * <p><b>남는 틈 하나.</b> 제품 API 로 삭제된 특징점의 파일은 {@link DeletedFeatureImagePurgeService}(UG-347)가 지우고
+ * 그 뒤에 경로를 비운다. 경로가 남아 있는 동안은 참조 검사가 {@code is_deleted} 를 보지 않으므로 지켜진다. 실제로 틈이 생기는 경우는
  * {@link ProjectDataPurgeService} 가 <b>파일 삭제에 실패한 뒤 특징점 행은 지운</b> 상태
  * 하나다. 그때 그 파일을 가리키는 다른 이력 행 — <b>cutoff 보다 최신이라 아직 보존 기간 안에
  * 있는 행</b> — 의 썸네일이 깨진다. 이미 특징점이 사라진 사용자의 사진이므로 지우는 쪽이 이
