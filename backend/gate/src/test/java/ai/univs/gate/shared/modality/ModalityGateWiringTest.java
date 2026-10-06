@@ -71,7 +71,7 @@ class ModalityGateWiringTest {
 
     private static List<MappedInterceptor> 차단_등록(ModalityProperties props) {
         var registry = new 들여다보는_레지스트리();
-        new WebMvcConfig(mock(UserContextInterceptor.class), new LocaleConfig(), props).addInterceptors(registry);
+        new WebMvcConfig(mock(UserContextInterceptor.class), props).addInterceptors(registry);
 
         return registry.등록된_것().stream()
                 .filter(MappedInterceptor.class::isInstance)
@@ -134,29 +134,32 @@ class ModalityGateWiringTest {
     }
 
     /**
-     * <b>로케일 인터셉터가 먼저다</b> (반박 리뷰 지적).
+     * <b>거절 메시지는 요청 언어로 나간다</b> (반박 리뷰 지적, UG-351 에서 근거가 바뀜).
      *
-     * <p>거절 메시지는 요청 언어로 나가야 한다. 차단 인터셉터가 먼저 던지면 로케일이 정해지기 전이라
-     * 한국어 클라이언트가 영어 메시지를 받는다 — 리뷰가 실제 Tomcat 에서 순서를 뒤집어 확인했다.
+     * <p>예전에는 로케일을 인터셉터가 세션에 넣었으므로 차단 인터셉터가 그보다 먼저 던지면 한국어 클라이언트가 영어 메시지를
+     * 받았다. UG-351 부터는 LocaleResolver 가 요청 헤더로 바로 정하므로 인터셉터 순서와 무관하다 — 차단 인터셉터만 등록해도
+     * 언어가 맞는지 본다.
      */
     @Test
-    @DisplayName("로케일 인터셉터 뒤에 등록한다 — 거절 메시지가 요청 언어로 나간다")
-    void 로케일_인터셉터가_먼저다() {
-        HandlerInterceptor 로케일 = new HandlerInterceptor() { };
-        LocaleConfig localeConfig = mock(LocaleConfig.class);
-        given(localeConfig.localeChangeInterceptor()).willReturn(로케일);
+    @DisplayName("UG-351: 차단 메시지는 인터셉터 순서와 무관하게 요청 언어로 나간다")
+    void 거절_메시지는_요청_언어() throws Exception {
+        MessageService messageService = mock(MessageService.class);
+        // 핸들러가 어느 오버로드를 쓰든 그 시점의 요청 언어를 돌려준다
+        given(messageService.getMessage(any(ErrorType.class)))
+                .willAnswer(inv -> org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+        given(messageService.getMessage(org.mockito.ArgumentMatchers.anyString()))
+                .willAnswer(inv -> org.springframework.context.i18n.LocaleContextHolder.getLocale().getLanguage());
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new ProbeController())
+                .setControllerAdvice(new GlobalExceptionHandler(messageService))
+                .addInterceptors(차단_등록(new ModalityProperties(true, false)).toArray(HandlerInterceptor[]::new))
+                .setLocaleResolver(new LocaleConfig().localeResolver())
+                .build();
 
-        var registry = new 들여다보는_레지스트리();
-        new WebMvcConfig(mock(UserContextInterceptor.class), localeConfig, new ModalityProperties(true, false))
-                .addInterceptors(registry);
-        List<Object> 순서 = registry.등록된_것();
-
-        int 로케일_위치 = 순서.indexOf(로케일);
-        assertThat(로케일_위치).as("로케일 인터셉터가 등록돼야 한다").isNotNegative();
-        for (int i = 0; i < 순서.size(); i++) {
-            if (순서.get(i) instanceof MappedInterceptor m && m.getInterceptor() instanceof ModalityGateInterceptor) {
-                assertThat(i).as("차단 인터셉터는 로케일 인터셉터 뒤여야 한다").isGreaterThan(로케일_위치);
-            }
-        }
+        mvc.perform(post("/api/v1/feature/palm").header("Accept-Language", "ko-KR,ko;q=0.9"))
+                .andExpect(jsonPath("$.errors.message").value("ko"));
+        mvc.perform(post("/api/v1/feature/palm").header("Accept-Language", "en"))
+                .andExpect(jsonPath("$.errors.message").value("en"));
+        mvc.perform(post("/api/v1/feature/palm"))
+                .andExpect(jsonPath("$.errors.message").value("en"));   // 헤더 없음 → gate 기본값 ENGLISH
     }
 }
