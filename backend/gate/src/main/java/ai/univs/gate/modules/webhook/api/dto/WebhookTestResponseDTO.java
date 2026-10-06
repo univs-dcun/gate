@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record WebhookTestResponseDTO(
         @Schema(description = SwaggerDescriptions.WEBHOOK_TEST_RESULT,
                 allowableValues = {"SUCCESS", "HTTP_ERROR", "TIMEOUT", "CONNECTION_FAILED", "HOST_NOT_FOUND",
-                        "TLS_ERROR", "TARGET_NOT_ALLOWED"})
+                        "TLS_ERROR", "TARGET_NOT_ALLOWED", "TARGET_DENIED_RANGE"})
         String result,
 
         @Schema(description = SwaggerDescriptions.WEBHOOK_TEST_STATUS_CODE, nullable = true)
