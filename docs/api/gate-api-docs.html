@@ -1708,7 +1708,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>,
         <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>,
         <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-        <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
+        <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>,
+        <span class="jk">"featureImageDeleted"</span>: <span class="jb">false</span>
       }
     ],
     <span class="jk">"page"</span>: {
@@ -1767,7 +1768,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">featureSeq</span></td><td><span class="ptyp">long</span></td><td class="pdsc">특징점 식별 번호 (faceFeatureId)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
             <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">number</span></td><td class="pdsc">매칭 유사도 (source=FEATURE 이면 null)</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로. 특징점이 삭제돼 원본이 파기됐으면 빈 문자열 (featureImageDeleted 참고)</td></tr>
             <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 시도 이미지 경로 (source=FEATURE 이면 null)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 타입 (성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)</td></tr>
@@ -1775,6 +1776,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">이력 생성 일시</td></tr>
             <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td class="pdsc">외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null</td></tr>
+            <tr><td><span class="pname">featureImageDeleted</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">등록 이미지가 파기됐는지 — 이 이력이 가리키는 특징점이 삭제돼 원본 이미지가 지워졌으면 true. 이때 featureImagePath 는 빈 문자열이다. 인증 때 제출한 이미지(matchingFeatureImagePath)와는 무관하다</td></tr>
           </tbody>
         </table>
       </div>
@@ -1808,7 +1810,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-e29b-41d4-a716-446655440000"</span>,
     <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>,
     <span class="jk">"createdAt"</span>: <span class="js">"2024-01-15T09:00:00"</span>,
-    <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>
+    <span class="jk">"externalKey"</span>: <span class="js">"CUST-000042"</span>,
+    <span class="jk">"featureImageDeleted"</span>: <span class="jb">false</span>
   },
   <span class="jk">"errors"</span>: <span class="jnu">null</span>
 }</pre>
@@ -2955,14 +2958,15 @@ var PAGES = {
       { ko: '특징점 식별 번호 (faceFeatureId)', en: 'Feature sequence ID (faceFeatureId)' },
       { ko: '특징점 설명', en: 'Feature description' },
       { ko: '매칭 유사도 (source=FEATURE 이면 null)', en: 'Match similarity (null when source=FEATURE)' },
-      { ko: '등록된 특징점 이미지 경로', en: 'Registered feature image path' },
+      { ko: '등록된 특징점 이미지 경로. 특징점이 삭제돼 원본이 파기됐으면 빈 문자열 (featureImageDeleted 참고)', en: 'Registered feature image path. Empty string when the feature was deleted and its original image destroyed (see featureImageDeleted)' },
       { ko: '매칭 시도 이미지 경로 (source=FEATURE 이면 null)', en: 'Matching attempt image path (null when source=FEATURE)' },
       { ko: '매칭 실패 타입 (성공 시 null)', en: 'Failure type (null on success)' },
       { ko: '매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)', en: 'Failure reason (localized via Accept-Language; empty string on success)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
       { ko: '사건 시점의 개인정보 수집 동의 설정값 (matchType=DELETE 이면 null)', en: 'Consent setting snapshot at event time (null when matchType=DELETE)' },
       { ko: '이력 생성 일시', en: 'History creation time' },
-      { ko: '외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null', en: 'External key — your user identifier of the feature this record refers to. Authentication records take the value stored on that feature; null if none' }
+      { ko: '외부 키 — 이 이력이 가리키는 특징점의 고객사 사용자 식별자. 인증 이력은 그 특징점에 저장된 값을 가져오며, 없으면 null', en: 'External key — your user identifier of the feature this record refers to. Authentication records take the value stored on that feature; null if none' },
+      { ko: '등록 이미지가 파기됐는지 — 이 이력이 가리키는 특징점이 삭제돼 원본 이미지가 지워졌으면 true. 이때 featureImagePath 는 빈 문자열이다. 인증 때 제출한 이미지(matchingFeatureImagePath)와는 무관하다', en: 'Whether the registered image was destroyed — true when the feature this record refers to was deleted and its original image removed. featureImagePath is then an empty string. Unrelated to the submitted image (matchingFeatureImagePath)' }
     ],
     stDesc: [
       { ko: 'OK', en: 'OK' }
