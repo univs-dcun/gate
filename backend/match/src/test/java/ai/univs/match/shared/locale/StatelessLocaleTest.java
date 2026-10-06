@@ -1,0 +1,122 @@
+package ai.univs.match.shared.locale;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 언어 해석이 HttpSession 을 만들지 않는다 (UG-351). 요청마다 세션이 생겨 힙이 차던 문제의 회귀를 막는다.
+ */
+@DisplayName("UG-351: 세션 없는 언어 해석")
+class StatelessLocaleTest {
+
+    private final LocaleConfig config = new LocaleConfig();
+
+    @RestController
+    static class Probe {
+        @GetMapping("/probe")
+        String probe() {
+            return LocaleContextHolder.getLocale().toLanguageTag();
+        }
+    }
+
+    @ParameterizedTest(name = "[{0}] → {1}")
+    @CsvSource({
+            "ko, ko",
+            "en, en",
+            "en-US, en-US",
+            "'ko-KR,ko;q=0.9,en;q=0.8', ko",   // 브라우저 기본 헤더 — 예전과 같이 첫 태그까지만
+            "'en-US,en;q=0.9,ko;q=0.8', en",
+    })
+    @DisplayName("헤더를 예전과 똑같이 해석한다 (Locale.forLanguageTag)")
+    void 해석(String header, String expected) {
+        var request = new MockHttpServletRequest();
+        request.addHeader("Accept-Language", header);
+
+        assertThat(config.localeResolver().resolveLocale(request).toLanguageTag()).isEqualTo(expected);
+        assertThat(request.getSession(false)).as("해석이 세션을 만들면 안 된다").isNull();
+    }
+
+    @Test
+    @DisplayName("헤더가 없으면 서비스 기본값(KOREA)")
+    void 기본값() {
+        assertThat(config.localeResolver().resolveLocale(new MockHttpServletRequest())).isEqualTo(Locale.KOREA);
+    }
+
+    @Test
+    @DisplayName("setLocale 은 지원하지 않는다 — 상태를 둘 곳이 없다")
+    void 설정_불가() {
+        assertThatThrownBy(() -> config.localeResolver().setLocale(
+                new MockHttpServletRequest(), new MockHttpServletResponse(), Locale.KOREA))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    @DisplayName("요청을 처리해도 세션이 생기지 않고 JSESSIONID 쿠키가 나가지 않는다 — 언어는 헤더대로 적용된다")
+    void 요청_처리() throws Exception {
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new Probe())
+                .setLocaleResolver(config.localeResolver())
+                .build();
+
+        MvcResult result = mvc.perform(get("/probe").header("Accept-Language", "ko-KR,ko;q=0.9,en;q=0.8"))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist("Set-Cookie"))
+                .andReturn();
+
+        assertThat(result.getRequest().getSession(false)).isNull();
+        assertThat(result.getResponse().getContentAsString()).isEqualTo("ko");
+    }
+
+    @Test
+    @DisplayName("메인 코드에 세션을 쓰는 언어 해석이 다시 들어오지 않는다")
+    void 세션_사용_금지() throws IOException {
+        List<String> offenders;
+        try (Stream<Path> files = Files.walk(Path.of("src/main/java"))) {
+            offenders = files.filter(p -> p.toString().endsWith(".java"))
+                    .filter(p -> {
+                        try {
+                            String src = Files.readString(p);
+                            // 주석 속 설명은 허용하고 실제 사용(import·생성)만 막는다
+                            return src.contains("i18n.SessionLocaleResolver;") || src.contains("new SessionLocaleResolver(")
+                                    || src.contains("i18n.CookieLocaleResolver;") || src.contains("new CookieLocaleResolver(")
+                                    || src.contains("i18n.LocaleChangeInterceptor;") || src.contains(".setLocale(");
+                        } catch (IOException e) {
+                            throw new java.io.UncheckedIOException(e);
+                        }
+                    })
+                    .map(Path::toString)
+                    .toList();
+        }
+        assertThat(offenders).as("언어를 세션·쿠키에 저장하면 요청마다 세션이 생긴다 (UG-351)").isEmpty();
+    }
+
+    @Test
+    @DisplayName("설정 클래스로 컨텍스트를 띄우면 세션 없는 해석기만 있고, 세션을 만들던 인터셉터 빈은 없다")
+    void 컨텍스트() {
+        try (var ctx = new org.springframework.context.annotation.AnnotationConfigApplicationContext(LocaleConfig.class)) {
+            assertThat(ctx.getBean("localeResolver")).isInstanceOf(HeaderLocaleResolver.class);
+            assertThat(ctx.getBeansOfType(org.springframework.web.servlet.HandlerInterceptor.class)).isEmpty();
+        }
+    }
+}

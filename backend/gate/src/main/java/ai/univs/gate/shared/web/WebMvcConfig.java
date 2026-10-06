@@ -2,7 +2,6 @@ package ai.univs.gate.shared.web;
 
 import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.shared.auth.UserContextInterceptor;
-import ai.univs.gate.shared.locale.LocaleConfig;
 import ai.univs.gate.shared.modality.ModalityGateInterceptor;
 import ai.univs.gate.shared.modality.ModalityProperties;
 import lombok.RequiredArgsConstructor;
@@ -19,15 +18,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final UserContextInterceptor userContextInterceptor;
-    private final LocaleConfig localeConfig;
     private final ModalityProperties modalityProperties;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(localeConfig.localeChangeInterceptor());
         registry.addInterceptor(userContextInterceptor);
 
-        // UG-223: 로케일 인터셉터 뒤에 둔다 — 거절 메시지가 요청 언어로 나가야 한다.
+        // UG-223: 거절 메시지는 요청 언어로 나간다 — UG-351 부터 언어는 LocaleResolver 가 요청 헤더로 바로 정하므로
+        // (인터셉터 순서와 무관하다) 어느 인터셉터에서 메시지를 만들어도 같다.
         for (FeatureType modality : FeatureType.values()) {
             registry.addInterceptor(new ModalityGateInterceptor(modality, modalityProperties))
                     .addPathPatterns(ModalityGateInterceptor.pathsOf(modality));
