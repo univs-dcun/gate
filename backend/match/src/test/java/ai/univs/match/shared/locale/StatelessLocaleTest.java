@@ -45,24 +45,34 @@ class StatelessLocaleTest {
     @CsvSource({
             "ko, ko",
             "en, en",
-            "en-US, en",
-            "ko-KR, ko",
-            "'ko-KR,ko;q=0.9,en;q=0.8', ko",   // 브라우저 기본 헤더
-            "'en-US,en;q=0.9,ko;q=0.8', en",
-            "'ko,en;q=0.9', ko",               // UG-352: 예전에는 「언어 미정」 → JVM 기본 언어
+            "en-US, en-US",                    // 지역은 유지한다
+            "ko-KR, ko-KR",
+            "'ko-KR,ko;q=0.9,en;q=0.8', ko-KR", // 브라우저 기본 헤더
+            "'en-US,en;q=0.9,ko;q=0.8', en-US",
+            "'ko,en;q=0.9', ko",               // 예전에는 「언어 미정」 → JVM 기본 언어
             "'en;q=0.1,ko;q=0.9', ko",         // q 순서대로
             "'ko;q=0.9', ko",
             "' en', en",                       // 앞 공백
             "'ja,ko;q=0.5', ko",               // 지원하지 않는 언어는 건너뛴다
+            "'en,ko', en",                     // 같은 q 는 헤더 순서
             "'ko;q=0,en', en",                 // q=0 은 제외
+            "'ko;q=0', en",
             "ja, en",                          // 지원 언어가 없으면 영어
-            "'bad;;q=x', en",                  // 형식 오류는 영어
-            "'en;q=1.5', en",
+            "'fr,de', en",
             "',', en",                         // 항목이 없으면 영어
-            "'*', ko-KR",                     // * 는 서비스 기본값
+            "'*', ko-KR",                       // * 는 서비스 기본값
             "'ja,*;q=0.5', ko-KR",
+            // UG-352 항목별 해석 (auth UMS-36 과 같은 사례) — 한 항목이 깨져도 그 항목만 건너뛴다
+            "'ko,,en', ko",                    // 빈 항목
+            "ko_KR, ko-KR",                    // Java Locale.toString() 표기
+            "'ko;q=0.9;foo=bar', ko",          // q 외 파라미터는 무시
+            "'en;q=abc,ko;q=0.5', ko",         // q 가 숫자가 아니면 그 항목만 버린다
+            "'en;q=1.5,ko;q=0.5', ko",         // q 범위 밖
+            "'@@,ko', ko",                     // 형식이 깨진 태그
+            "'en;;q=x', en",                   // 그 항목이 버려지고 남는 것이 없어 영어
+            "'KO-kr', ko-KR",                  // 대소문자
     })
-    @DisplayName("UG-352: q 순서로 지원 언어(ko·en)를 고르고, 없거나 형식이 틀리면 영어 — 세션은 만들지 않는다")
+    @DisplayName("UG-352: 항목별로 읽어 q 순서로 지원 언어(ko·en)를 고르고(지역 유지), 없으면 영어 — 세션은 만들지 않는다")
     void 해석(String header, String expected) {
         var request = new MockHttpServletRequest();
         request.addHeader("Accept-Language", header);
@@ -107,7 +117,7 @@ class StatelessLocaleTest {
                 .andReturn();
 
         assertThat(result.getRequest().getSession(false)).isNull();
-        assertThat(result.getResponse().getContentAsString()).isEqualTo("ko");
+        assertThat(result.getResponse().getContentAsString()).isEqualTo("ko-KR");
     }
 
     @Test
