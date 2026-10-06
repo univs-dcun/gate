@@ -74,7 +74,15 @@ import org.hibernate.annotations.Synchronize;
                (SELECT MAX(bf.external_key) FROM biometric_feature bf
                  WHERE bf.project_id = mh.project_id
                    AND bf.type       = mh.feature_type
-                   AND bf.feature_id = mh.feature_id) AS external_key
+                   AND bf.feature_id = mh.feature_id) AS external_key,
+               CASE WHEN LENGTH(mh.feature_image_path) > 0
+                     AND EXISTS (SELECT 1 FROM biometric_feature bf
+                                  WHERE bf.project_id = mh.project_id
+                                    AND bf.type       = mh.feature_type
+                                    AND bf.feature_id = mh.feature_id
+                                    AND CAST(bf.is_deleted AS INTEGER) = 1
+                                    AND bf.feature_image_path IS NULL)
+                    THEN 1 ELSE 0 END           AS feature_image_deleted
           FROM match_history mh
          WHERE mh.match_type <> 'REGISTER'
         UNION ALL
@@ -98,7 +106,15 @@ import org.hibernate.annotations.Synchronize;
                fh.transaction_uuid,
                fh.consent_snapshot,
                fh.created_at,
-               fh.external_key
+               fh.external_key,
+               CASE WHEN LENGTH(fh.feature_image_path) > 0
+                     AND EXISTS (SELECT 1 FROM biometric_feature bf
+                                  WHERE bf.project_id = fh.project_id
+                                    AND bf.type       = fh.feature_type
+                                    AND bf.feature_id = fh.feature_id
+                                    AND CAST(bf.is_deleted AS INTEGER) = 1
+                                    AND bf.feature_image_path IS NULL)
+                    THEN 1 ELSE 0 END
           FROM feature_history fh
         """)
 @Synchronize({"match_history", "feature_history", "biometric_feature"})
@@ -176,4 +192,29 @@ public class ActivityLog {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    /**
+     * 이 행의 {@code feature_image_path}(등록 이미지) 파일이 파기됐다 — 1 이면 참 (UG-353).
+     *
+     * <p>UG-347 은 삭제된 특징점의 원본 파일을 지운 뒤 {@code biometric_feature.feature_image_path} 를 비운다.
+     * 이력 행은 그 경로의 사본을 그대로 들고 있으므로, 파일이 사라졌다는 사실은 특징점 쪽을 봐야 안다:
+     * 이 행이 가리키는 특징점이 삭제됐고 경로가 비었으면 파기된 것이다. 파기에 실패해 경로가 남은 특징점
+     * (저장소를 볼 수 없음)은 여기서 참이 아니다 — 파일이 남아 있을 수 있다.
+     *
+     * <p><b>특징점은 {@code feature_seq} 가 아니라 {@code (project_id, type, feature_id)} 로 찾는다.</b>
+     * V21 이 face_feature·palm_feature 를 biometric_feature 로 합치며 id 를 새로 매겼고 옛 이력의
+     * {@code feature_seq} 는 다시 매핑하지 않았다 — 옛 값이 무관한 특징점을 가리킬 수 있다. {@code external_key}
+     * 와 같은 조인이다. 실패한 등록 행의 {@code feature_id} 는 발급만 된 id 라 특징점이 없어 거짓이다
+     * (그 파일은 이력이 보존 기간 동안 들고 있다).
+     *
+     * <p>{@code LENGTH(x) > 0} 은 빈 경로(업로드 꺼짐) 제외다. Oracle 은 {@code ''} 를 NULL 로 다뤄
+     * {@code x <> ''} 가 항상 거짓이 되므로 쓰지 않는다. 불리언은 DB 마다 달라 정수로 낸다
+     * ({@code success} 판정과 같은 이유).
+     */
+    @Column(name = "feature_image_deleted")
+    private Integer featureImageDeleted;
+
+    public boolean isFeatureImageDeleted() {
+        return featureImageDeleted != null && featureImageDeleted == 1;
+    }
 }

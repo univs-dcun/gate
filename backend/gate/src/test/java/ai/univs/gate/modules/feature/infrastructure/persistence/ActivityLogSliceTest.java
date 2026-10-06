@@ -361,4 +361,120 @@ class ActivityLogSliceTest {
                     assertThat(l.getFeatureId()).isEqualTo("legacy-fid");
                 });
     }
+    // ── UG-353: 원본 이미지 파기 표시 ───────────────────────────────────────────────
+
+    /** 이미지가 있는 특징점과 그 성공 등록 이력. 등록 이력은 특징점의 경로를 복사한다. */
+    private BiometricFeature 이미지_특징점(Project p, String fid, String path) {
+        return 이미지_특징점(p, FeatureType.FACE, fid, path);
+    }
+
+    private BiometricFeature 이미지_특징점(Project p, FeatureType ft, String fid, String path) {
+        BiometricFeature f = BiometricFeature.builder().project(p).type(ft).featureId(fid)
+                .featureImagePath(path).isDeleted(false).transactionUuid(UUID.randomUUID().toString()).build();
+        em.persist(f);
+        FeatureHistory h = FeatureHistory.register(p, ft, false, path, UUID.randomUUID().toString(), true, fid);
+        h.successRegister(f); em.persist(h);
+        em.flush();
+        return f;
+    }
+
+    /** 1:1(id) 인증 행 — feature_image_path 는 등록 이미지 사본, matched 는 제출 이미지. */
+    private MatchHistory 아이디_인증(Project p, BiometricFeature f, Long featureSeq) {
+        MatchHistory m = MatchHistory.builder()
+                .project(p).featureType(f.getType()).matchType(MatchType.VERIFY_ID)
+                .matchTime(T0).checkLiveness(false).success(true).featureId(f.getFeatureId())
+                .featureSeq(featureSeq).featureImagePath(f.getFeatureImagePath())
+                .matchedFeatureImagePath("/face/probe.jpg").transactionUuid(UUID.randomUUID().toString()).build();
+        em.persist(m); em.flush();
+        return m;
+    }
+
+    /** UG-347 파기 결과를 흉내 낸다 — 삭제 표시 후 경로를 비운다(purgeOnce 의 마지막 UPDATE). */
+    private void 파기(BiometricFeature f, boolean pathCleared) {
+        em.createQuery("UPDATE BiometricFeature f SET f.isDeleted = true"
+                        + (pathCleared ? ", f.featureImagePath = NULL" : "") + " WHERE f.id = :id")
+                .setParameter("id", f.getId()).executeUpdate();
+        em.clear();
+    }
+
+    private java.util.Map<String, Boolean> 파기표시(Project p) {
+        return repo.findAllByQuery(조회("ALL", true), p.getId()).getContent().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        l -> l.getActivityType() + ":" + l.getTransactionUuid(), ActivityLog::isFeatureImageDeleted));
+    }
+
+    @Test
+    @DisplayName("UG-353: 삭제돼 원본이 파기된 특징점을 가리키는 등록·삭제·인증 행은 파기 표시가 참이다")
+    void 파기된_특징점의_이력은_표시가_참() {
+        BiometricFeature f = 이미지_특징점(project, "fid-gone", "/face/20261006/a.jpg");
+        MatchHistory 인증행 = 아이디_인증(project, f, f.getId());
+        FeatureHistory 삭제행 = FeatureHistory.delete(project, f, UUID.randomUUID().toString());
+        삭제행.successDelete(); em.persist(삭제행); em.flush();
+        파기(f, true);
+
+        List<ActivityLog> rows = repo.findAllByQuery(조회("ALL", true), project.getId()).getContent();
+        assertThat(rows).hasSize(3).allSatisfy(l -> assertThat(l.isFeatureImageDeleted())
+                .as(l.getActivityType() + " 행").isTrue());
+        assertThat(rows).extracting(ActivityLog::getMatchedFeatureImagePath)
+                .as("제출 이미지 경로는 그대로다 — 표시는 등록 이미지에 대한 것").contains("/face/probe.jpg");
+        assertThat(repo.findLatestByProjectIdAndTransactionUuid(project.getId(), 인증행.getTransactionUuid()))
+                .as("단건 조회도 같다").isPresent().get().extracting(ActivityLog::isFeatureImageDeleted).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("UG-353: 살아 있는 특징점, 파기에 실패해 경로가 남은 삭제 특징점은 표시가 거짓이다")
+    void 살아있거나_파기실패면_거짓() {
+        BiometricFeature 살아있는 = 이미지_특징점(project, "fid-live", "/face/20261006/b.jpg");
+        아이디_인증(project, 살아있는, 살아있는.getId());
+        BiometricFeature 실패 = 이미지_특징점(project, "fid-stuck", "/face/20261006/c.jpg");
+        파기(실패, false);
+
+        assertThat(파기표시(project).values()).hasSize(3).containsOnly(false);
+    }
+
+    @Test
+    @DisplayName("UG-353: 실패한 등록(발급 id, 특징점 없음)과 빈 경로 행은 거짓이다")
+    void 실패등록과_빈경로는_거짓() {
+        FeatureHistory 거절 = FeatureHistory.register(project, FeatureType.FACE, false, "/face/20261006/d.jpg",
+                UUID.randomUUID().toString(), true, "fid-issued");
+        거절.fail("ALREADY_REGISTERED_DESCRIPTOR"); em.persist(거절);
+        BiometricFeature 업로드꺼짐 = 이미지_특징점(project, "fid-empty", "");
+        파기(업로드꺼짐, true);
+
+        assertThat(파기표시(project).values()).hasSize(2).containsOnly(false);
+    }
+
+    /**
+     * V21 이 biometric_feature 의 id 를 새로 매겼고 옛 이력의 feature_seq 는 다시 매핑하지 않았다 — 같은 프로젝트 안에서도
+     * 옛 값이 무관한 특징점과 같은 숫자일 수 있다(V26 주석: palm 의 옛 id 가 face 행 id 와 충돌). feature_seq 로 조인하면
+     * 그 특징점이 파기됐을 때 엉뚱한 행이 「삭제됨」이 된다. 반박 리뷰: 처음 판은 충돌을 다른 프로젝트에 만들어 project_id
+     * 조건만으로 거짓이 됐다 — feature_seq 조인 변이가 살아남았다.
+     */
+    @Test
+    @DisplayName("UG-353: feature_seq 가 아니라 feature_id 로 판정한다 — 같은 프로젝트에서 옛 feature_seq 가 파기된 다른 특징점과 겹쳐도 거짓")
+    void feature_seq_가_아니라_feature_id() {
+        BiometricFeature 파기된 = 이미지_특징점(project, "fid-other", "/face/20261006/e.jpg");
+        BiometricFeature 살아있는 = 이미지_특징점(project, "fid-mine", "/face/20261006/f.jpg");
+        MatchHistory 겹친 = 아이디_인증(project, 살아있는, 파기된.getId());
+        파기(파기된, true);
+
+        assertThat(파기표시(project)).containsEntry("VERIFY_ID:" + 겹친.getTransactionUuid(), false);
+    }
+
+    @Test
+    @DisplayName("UG-353: 같은 feature_id 라도 타입·프로젝트가 다른 특징점의 파기는 이 행에 번지지 않는다")
+    void 타입과_프로젝트로_가른다() {
+        BiometricFeature 얼굴_파기 = 이미지_특징점(project, FeatureType.FACE, "fid-same", "/face/20261006/g.jpg");
+        BiometricFeature 손바닥 = 이미지_특징점(project, FeatureType.PALM, "fid-same", "/face/20261006/h.jpg");
+        MatchHistory 손바닥_인증 = 아이디_인증(project, 손바닥, 손바닥.getId());
+        BiometricFeature 다른_프로젝트_파기 = 이미지_특징점(other, "fid-shared", "/face/20261006/i.jpg");
+        BiometricFeature 내_것 = 이미지_특징점(project, "fid-shared", "/face/20261006/j.jpg");
+        MatchHistory 내_인증 = 아이디_인증(project, 내_것, 내_것.getId());
+        파기(얼굴_파기, true);
+        파기(다른_프로젝트_파기, true);
+
+        var 표시 = 파기표시(project);
+        assertThat(표시).as("타입이 다르면 거짓").containsEntry("VERIFY_ID:" + 손바닥_인증.getTransactionUuid(), false);
+        assertThat(표시).as("프로젝트가 다르면 거짓").containsEntry("VERIFY_ID:" + 내_인증.getTransactionUuid(), false);
+    }
 }

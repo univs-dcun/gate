@@ -154,6 +154,7 @@ public class SwaggerDescriptions {
     public static final String FEATURE_DESCRIPTION = "특징점 설명";
     public static final String FEATURE_IMAGE_PATH = "특징점 이미지 경로";
     public static final String MATCHED_FEATURE_IMAGE_PATH = "매칭 이미지 경로";
+    public static final String FEATURE_IMAGE_DELETED = "featureImagePath 의 원본 이미지가 파기됐는지 (UG-353). 이 이력이 가리키는 특징점이 삭제돼 등록 이미지가 지워졌으면 true 이고, 그때 featureImagePath 는 빈 문자열이다. matchingFeatureImagePath(인증 때 제출한 이미지)와는 무관하다";
     public static final String TARGET_FEATURE_IMAGE_PATH = "대상 이미지 경로";
     public static final String EXTERNAL_KEY = "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다";
     public static final String THRESHOLD = "판정 임계값";

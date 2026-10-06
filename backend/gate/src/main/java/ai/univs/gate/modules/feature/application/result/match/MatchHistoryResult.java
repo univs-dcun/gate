@@ -30,7 +30,8 @@ public record MatchHistoryResult(
         String transactionUuid,
         Boolean consentSnapshot,
         LocalDateTime createdAt,
-        String externalKey
+        String externalKey,
+        boolean featureImageDeleted
 ) {
 
     /**
@@ -52,12 +53,14 @@ public record MatchHistoryResult(
                 log.getFeatureSeq(),
                 log.getUserDescription(),
                 log.getSimilarity(),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, log.getFeatureImagePath()),
+                // UG-353: 파기된 파일의 주소는 내지 않는다 — 받아 봐야 실패하고, 화면은 그 실패를 「비공개」로 오인했다.
+                log.isFeatureImageDeleted() ? "" : ImagePathUtil.get(consentEnabled, prefixImagePath, log.getFeatureImagePath()),
                 ImagePathUtil.get(consentEnabled, prefixImagePath, log.getMatchedFeatureImagePath()),
                 log.getFailureType(),
                 log.getTransactionUuid(),
                 log.getConsentSnapshot(),
                 log.getCreatedAt(),
-                log.getExternalKey());
+                log.getExternalKey(),
+                log.isFeatureImageDeleted());
     }
 }
