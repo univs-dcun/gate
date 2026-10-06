@@ -12,9 +12,12 @@ import org.springframework.web.servlet.LocaleResolver;
  * 클라이언트와 Feign 은 JSESSIONID 를 돌려보내지 않으므로 요청마다 새 세션이 생겨 30분씩 힙에 남았다 — 온프레미스 부하 측정에서
  * gate 에 약 168만 개, Old 영역 100%, Full GC 로 처리량이 1/4 로 떨어졌다.
  *
- * <p>해석은 예전과 <b>똑같이</b> 둔다 — 헤더가 있으면 {@link Locale#forLanguageTag}(첫 태그까지만 읽는다:
+ * <p>해석 규칙은 예전과 같다 — 헤더가 있으면 {@link Locale#forLanguageTag}(첫 태그까지만 읽는다:
  * {@code ko-KR,ko;q=0.9} → {@code ko}), 없으면 기본값. 오류 문구 언어가 이 변경으로 바뀌지 않게 하려는 것이다. q 값으로
  * 고르는 {@code AcceptHeaderLocaleResolver} 는 결과가 달라질 수 있는 헤더가 있어 쓰지 않았다.
+ *
+ * <p><b>달라지는 곳 하나(개선).</b> 예전에는 인터셉터가 돌기 전에 던져지는 오류 — 핸들러 매핑 단계의 405·415 — 가 세션에
+ * 언어가 없어 서비스 기본 언어로 나갔다. 이제 그런 오류도 요청 언어로 나간다 (UG-351 반박 리뷰 실측).
  */
 public class HeaderLocaleResolver implements LocaleResolver {
 
