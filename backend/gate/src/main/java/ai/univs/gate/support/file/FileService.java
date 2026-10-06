@@ -49,6 +49,12 @@ public class FileService {
         fileUtil.delete(filePath);
     }
 
+    /** {@link FileUtil#deleteReporting} — 파일이 없을 때 「이미 없음」과 「저장소를 볼 수 없음」을 나눈다 (UG-347). */
+    public FileUtil.DeleteOutcome deleteReporting(String filePath) {
+        validationFilePath(filePath);
+        return fileUtil.deleteReporting(filePath);
+    }
+
     private void validationFilePath(String filePath) {
         if (filePath == null || filePath.isEmpty()) {
             throw new CustomGateException(ErrorType.INVALID_FILE_PATH);

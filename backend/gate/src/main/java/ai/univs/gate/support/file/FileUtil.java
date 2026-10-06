@@ -57,6 +57,36 @@ public class FileUtil {
         }
     }
 
+    /** 파기 결과 (UG-347). */
+    public enum DeleteOutcome {
+        /** 지웠다. */
+        DELETED,
+        /** 파일은 없지만 그 파일이 있던 폴더는 있다 — 이미 지워진 것으로 본다. */
+        ALREADY_GONE,
+        /**
+         * 파일이 있던 폴더조차 없다 — 저장소 볼륨이 빠졌거나 {@code file.root-path} 가 어긋났을 수 있다. 「지웠다」로 표시하면
+         * 실제 볼륨의 원본을 가리키는 행이 사라져 영영 남는다 (UG-347 반박 리뷰 W1).
+         */
+        STORAGE_UNAVAILABLE
+    }
+
+    /**
+     * 지우고 결과를 돌려준다. 접근 오류는 예외로 올리고 로그는 남기지 않는다 — 정리 잡이 건별로 요약해 남긴다(같은 원인으로
+     * 실행마다 수백 개의 스택이 쌓이지 않게).
+     */
+    public DeleteOutcome deleteReporting(String filePath) {
+        Path path = Path.of(fileRootPath + filePath);
+        try {
+            if (Files.deleteIfExists(path)) {
+                return DeleteOutcome.DELETED;
+            }
+        } catch (java.io.IOException | SecurityException ex) {
+            throw new CustomGateException(ErrorType.INVALID_FILE_PATH);
+        }
+        Path parent = path.getParent();
+        return parent != null && Files.isDirectory(parent) ? DeleteOutcome.ALREADY_GONE : DeleteOutcome.STORAGE_UNAVAILABLE;
+    }
+
     public void delete(String filePath) {
         try {
             Files.deleteIfExists(Path.of(fileRootPath + filePath));
