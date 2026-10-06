@@ -151,14 +151,17 @@ class WebhookDeniedCidrsTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"ko", "en"})
-    @DisplayName("별도 문구는 두 번들에 있다")
-    void 문구_번역(String bundle) throws Exception {
+    @org.junit.jupiter.params.provider.CsvSource(delimiter = '|', value = {
+            "ko|허용되지 않은 주소입니다. 다른 주소를 쓰거나 관리자에게 문의해 주세요.",
+            "en|This address isn't allowed. Use a different address or contact your administrator.",
+    })
+    @DisplayName("별도 문구는 두 번들에 있고, 테스트 전송 문구와 같은 결이다 (기획 10/2 17:52)")
+    void 문구_번역(String bundle, String expected) throws Exception {
         var props = new java.util.Properties();
         try (var in = getClass().getResourceAsStream("/messages_" + bundle + ".properties")) {
             props.load(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
         }
-        assertThat(props.getProperty(WebhookTargetPolicy.MESSAGE_KEY_DENIED_RANGE)).isNotBlank();
+        assertThat(props.getProperty(WebhookTargetPolicy.MESSAGE_KEY_DENIED_RANGE)).isEqualTo(expected);
     }
 
     @ParameterizedTest(name = "{0}")
