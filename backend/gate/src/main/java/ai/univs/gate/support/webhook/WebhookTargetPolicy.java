@@ -136,6 +136,19 @@ public class WebhookTargetPolicy {
         return allowPrivateTargets || !isPrivate(address);
     }
 
+    /**
+     * 거절 사유를 「차단 대역」으로 알려도 되는가 (UG-348) — 사설망을 허용한 설치(온프레미스)에서 차단 대역에 걸렸을 때만 참.
+     * 클라우드는 어느 목록에 걸렸는지 숨기므로 항상 거짓이다. 저장 문구({@link #MESSAGE_KEY_DENIED_RANGE})와 같은 경계.
+     */
+    boolean reportsDeniedRange(InetAddress address) {
+        return allowPrivateTargets && hitsDenied(address);
+    }
+
+    /** {@link #checkWithoutLookup}·{@link #validate} 가 던진 거절이 차단 대역 사유인가. */
+    static boolean isDeniedRange(CustomGateException e) {
+        return MESSAGE_KEY_DENIED_RANGE.equals(e.getMessageKey());
+    }
+
     /** 차단 대역에 걸렸는가 — 안의 IPv4 까지 본다. 거절 문구를 고를 때만 쓴다. */
     private boolean hitsDenied(InetAddress address) {
         if (isDenied(address)) return true;
@@ -294,8 +307,16 @@ public class WebhookTargetPolicy {
 
     /** 허용하지 않는 주소로 풀렸다. 연결 실패로 올라간다. */
     static final class TargetNotAllowedException extends UnknownHostException {
+        /** 사설망을 허용한 설치에서 차단 대역에 걸렸다 — 테스트 전송 결과를 나눌 때만 쓴다 (UG-348). */
+        final boolean deniedRange;
+
         TargetNotAllowedException(String host) {
+            this(host, false);
+        }
+
+        TargetNotAllowedException(String host, boolean deniedRange) {
             super("webhook target not allowed: " + host);
+            this.deniedRange = deniedRange;
         }
     }
 }

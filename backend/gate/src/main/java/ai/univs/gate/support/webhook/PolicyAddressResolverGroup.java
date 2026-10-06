@@ -65,7 +65,8 @@ final class PolicyAddressResolverGroup extends AddressResolverGroup<InetSocketAd
                 if (!f.isSuccess()) {
                     promise.tryFailure(f.cause());
                 } else if (!policy.isAllowed(f.getNow().getAddress())) {
-                    promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(unresolved.getHostString()));
+                    promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(
+                            unresolved.getHostString(), policy.reportsDeniedRange(f.getNow().getAddress())));
                 } else {
                     promise.trySuccess(f.getNow());
                 }
@@ -79,12 +80,20 @@ final class PolicyAddressResolverGroup extends AddressResolverGroup<InetSocketAd
                     promise.tryFailure(f.cause());
                     return;
                 }
-                // 하나라도 막힌 주소가 섞이면 거절한다 — 공인·내부 주소를 함께 돌려주는 레코드 우회 차단
+                // 하나라도 막힌 주소가 섞이면 거절한다 — 공인·내부 주소를 함께 돌려주는 레코드 우회 차단.
+                // 사유는 막힌 주소 전체로 정한다 — 첫 주소만 보면 레코드 순서에 따라 결과가 달라진다 (UG-348 반박 리뷰 NIT-1,
+                // 저장 시 validate 의 anyMatch 와 같은 기준).
+                boolean blocked = false;
+                boolean deniedRange = false;
                 for (InetSocketAddress address : f.getNow()) {
                     if (address.getAddress() == null || !policy.isAllowed(address.getAddress())) {
-                        promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(unresolved.getHostString()));
-                        return;
+                        blocked = true;
+                        deniedRange |= address.getAddress() != null && policy.reportsDeniedRange(address.getAddress());
                     }
+                }
+                if (blocked) {
+                    promise.tryFailure(new WebhookTargetPolicy.TargetNotAllowedException(unresolved.getHostString(), deniedRange));
+                    return;
                 }
                 promise.trySuccess(f.getNow());
             });
