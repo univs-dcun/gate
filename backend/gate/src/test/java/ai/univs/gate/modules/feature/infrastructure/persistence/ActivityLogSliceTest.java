@@ -365,10 +365,14 @@ class ActivityLogSliceTest {
 
     /** 이미지가 있는 특징점과 그 성공 등록 이력. 등록 이력은 특징점의 경로를 복사한다. */
     private BiometricFeature 이미지_특징점(Project p, String fid, String path) {
-        BiometricFeature f = BiometricFeature.builder().project(p).type(FeatureType.FACE).featureId(fid)
+        return 이미지_특징점(p, FeatureType.FACE, fid, path);
+    }
+
+    private BiometricFeature 이미지_특징점(Project p, FeatureType ft, String fid, String path) {
+        BiometricFeature f = BiometricFeature.builder().project(p).type(ft).featureId(fid)
                 .featureImagePath(path).isDeleted(false).transactionUuid(UUID.randomUUID().toString()).build();
         em.persist(f);
-        FeatureHistory h = FeatureHistory.register(p, FeatureType.FACE, false, path, UUID.randomUUID().toString(), true, fid);
+        FeatureHistory h = FeatureHistory.register(p, ft, false, path, UUID.randomUUID().toString(), true, fid);
         h.successRegister(f); em.persist(h);
         em.flush();
         return f;
@@ -377,7 +381,7 @@ class ActivityLogSliceTest {
     /** 1:1(id) 인증 행 — feature_image_path 는 등록 이미지 사본, matched 는 제출 이미지. */
     private MatchHistory 아이디_인증(Project p, BiometricFeature f, Long featureSeq) {
         MatchHistory m = MatchHistory.builder()
-                .project(p).featureType(FeatureType.FACE).matchType(MatchType.VERIFY_ID)
+                .project(p).featureType(f.getType()).matchType(MatchType.VERIFY_ID)
                 .matchTime(T0).checkLiveness(false).success(true).featureId(f.getFeatureId())
                 .featureSeq(featureSeq).featureImagePath(f.getFeatureImagePath())
                 .matchedFeatureImagePath("/face/probe.jpg").transactionUuid(UUID.randomUUID().toString()).build();
@@ -441,17 +445,36 @@ class ActivityLogSliceTest {
     }
 
     /**
-     * V21 이 biometric_feature 의 id 를 새로 매겼고 옛 이력의 feature_seq 는 다시 매핑하지 않았다 — 옛 값이 무관한
-     * 특징점과 같은 숫자일 수 있다. feature_seq 로 조인하면 그 특징점이 파기됐을 때 엉뚱한 행이 「삭제됨」이 된다.
+     * V21 이 biometric_feature 의 id 를 새로 매겼고 옛 이력의 feature_seq 는 다시 매핑하지 않았다 — 같은 프로젝트 안에서도
+     * 옛 값이 무관한 특징점과 같은 숫자일 수 있다(V26 주석: palm 의 옛 id 가 face 행 id 와 충돌). feature_seq 로 조인하면
+     * 그 특징점이 파기됐을 때 엉뚱한 행이 「삭제됨」이 된다. 반박 리뷰: 처음 판은 충돌을 다른 프로젝트에 만들어 project_id
+     * 조건만으로 거짓이 됐다 — feature_seq 조인 변이가 살아남았다.
      */
     @Test
-    @DisplayName("UG-353: feature_seq 가 아니라 feature_id 로 판정한다 — 옛 feature_seq 가 파기된 다른 특징점과 겹쳐도 거짓")
+    @DisplayName("UG-353: feature_seq 가 아니라 feature_id 로 판정한다 — 같은 프로젝트에서 옛 feature_seq 가 파기된 다른 특징점과 겹쳐도 거짓")
     void feature_seq_가_아니라_feature_id() {
         BiometricFeature 파기된 = 이미지_특징점(project, "fid-other", "/face/20261006/e.jpg");
-        BiometricFeature 살아있는 = 이미지_특징점(other, "fid-mine", "/face/20261006/f.jpg");
-        아이디_인증(other, 살아있는, 파기된.getId());
+        BiometricFeature 살아있는 = 이미지_특징점(project, "fid-mine", "/face/20261006/f.jpg");
+        MatchHistory 겹친 = 아이디_인증(project, 살아있는, 파기된.getId());
         파기(파기된, true);
 
-        assertThat(파기표시(other).values()).hasSize(2).containsOnly(false);
+        assertThat(파기표시(project)).containsEntry("VERIFY_ID:" + 겹친.getTransactionUuid(), false);
+    }
+
+    @Test
+    @DisplayName("UG-353: 같은 feature_id 라도 타입·프로젝트가 다른 특징점의 파기는 이 행에 번지지 않는다")
+    void 타입과_프로젝트로_가른다() {
+        BiometricFeature 얼굴_파기 = 이미지_특징점(project, FeatureType.FACE, "fid-same", "/face/20261006/g.jpg");
+        BiometricFeature 손바닥 = 이미지_특징점(project, FeatureType.PALM, "fid-same", "/face/20261006/h.jpg");
+        MatchHistory 손바닥_인증 = 아이디_인증(project, 손바닥, 손바닥.getId());
+        BiometricFeature 다른_프로젝트_파기 = 이미지_특징점(other, "fid-shared", "/face/20261006/i.jpg");
+        BiometricFeature 내_것 = 이미지_특징점(project, "fid-shared", "/face/20261006/j.jpg");
+        MatchHistory 내_인증 = 아이디_인증(project, 내_것, 내_것.getId());
+        파기(얼굴_파기, true);
+        파기(다른_프로젝트_파기, true);
+
+        var 표시 = 파기표시(project);
+        assertThat(표시).as("타입이 다르면 거짓").containsEntry("VERIFY_ID:" + 손바닥_인증.getTransactionUuid(), false);
+        assertThat(표시).as("프로젝트가 다르면 거짓").containsEntry("VERIFY_ID:" + 내_인증.getTransactionUuid(), false);
     }
 }
