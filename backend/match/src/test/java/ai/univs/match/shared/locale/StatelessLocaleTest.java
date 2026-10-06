@@ -78,7 +78,21 @@ class StatelessLocaleTest {
             "'en-u-nu-arab', en",              // 확장은 버린다
             "'ko-Kore-KR', ko-KR",             // 스크립트는 버린다
             "'q=2', en",                       // 태그 형식이 아니면 건너뛴다
-            "'ko;q=2;q=0.5', ko",              // q 가 여러 번이면 마지막
+            "'ko;q=2;q=0.5', en",              // q 가 두 번이면 잘못된 항목 (auth L3)
+            // auth 반박 리뷰 H1 — 500 이 나던 헤더. 던지지 않는다
+            "';', en",
+            "';;', en",
+            "',;', en",
+            "'ko,;', ko",
+            "';,en', en",
+            // L1·L2·L3
+            "'en;q=0.8,ko ; q = 0.1', en",    // 공백이 있어도 q 다
+            "'en;q=0.4,ko;q=0x1p-1', en",     // qvalue 문법만 받는다
+            "'ko;q', en",                      // '=' 없는 q 는 잘못된 항목
+            "'ko;q=0.5;q=1,en;q=0.1', en",     // q 두 번
+            "'ko;Q=0.5,en;q=0.4', ko",
+            "'ko;q=1.000,en;q=0.999', ko",
+            "'ko;q=1.0001,en', en",
     })
     @DisplayName("UG-352: 항목별로 읽어 q 순서로 지원 언어(ko·en)를 고르고(지역 유지), 없으면 영어 — 세션은 만들지 않는다")
     void 해석(String header, String expected) {
@@ -157,6 +171,20 @@ class StatelessLocaleTest {
         try (var ctx = new org.springframework.context.annotation.AnnotationConfigApplicationContext(LocaleConfig.class)) {
             assertThat(ctx.getBean("localeResolver")).isInstanceOf(HeaderLocaleResolver.class);
             assertThat(ctx.getBeansOfType(org.springframework.web.servlet.HandlerInterceptor.class)).isEmpty();
+        }
+    }
+
+    @Test
+    @DisplayName("auth 반박 리뷰 H1: ';' 같은 헤더에도 요청이 500 으로 끝나지 않는다")
+    void 깨진_헤더도_정상_응답() throws Exception {
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new Probe())
+                .setLocaleResolver(config.localeResolver())
+                .build();
+
+        for (String header : List.of(";", ";;", ",;", ";,en")) {
+            mvc.perform(get("/probe").header("Accept-Language", header))
+                    .andExpect(status().isOk())
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().string("en"));
         }
     }
 }
