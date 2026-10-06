@@ -88,6 +88,7 @@ class StatelessLocaleTest {
             // L1·L2·L3
             "'en;q=0.8,ko ; q = 0.1', en",    // 공백이 있어도 q 다
             "'en;q=0.4,ko;q=0x1p-1', en",     // qvalue 문법만 받는다
+            "'en;q=0.4,ko;q=1e0', en",
             "'ko;q', en",                      // '=' 없는 q 는 잘못된 항목
             "'ko;q=0.5;q=1,en;q=0.1', en",     // q 두 번
             "'ko;Q=0.5,en;q=0.4', ko",

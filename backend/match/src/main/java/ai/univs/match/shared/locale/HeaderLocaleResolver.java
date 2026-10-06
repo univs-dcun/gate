@@ -18,7 +18,7 @@ import org.springframework.web.servlet.LocaleResolver;
  * <p>예전에는 {@code SessionLocaleResolver} 에 인터셉터가 요청마다 {@code setLocale} 을 불러 HttpSession 을 만들었다. API
  * 클라이언트와 Feign 은 JSESSIONID 를 돌려보내지 않으므로 요청마다 새 세션이 생겨 30분씩 힙에 남았다.
  *
- * <p><b>해석 규칙</b> (UG-352 — auth UMS-36 의 {@code HeaderLocaleResolver}(msa-scaffold 08a5e00 + H1·L1~L3 수정)와 같은 로직이다. 사용자 결정
+ * <p><b>해석 규칙</b> (UG-352 — auth UMS-36 의 {@code HeaderLocaleResolver}(msa-scaffold 663dbad)와 같은 로직이다. 사용자 결정
  * 2026-10-06. 어긋나면 한 요청이 gateway·auth·gate 를 지나며 언어가 바뀐다):
  * <ul>
  *   <li>헤더가 없거나 비어 있으면 서비스 기본 언어.
