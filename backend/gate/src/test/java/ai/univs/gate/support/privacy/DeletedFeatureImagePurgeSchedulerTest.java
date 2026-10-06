@@ -37,10 +37,42 @@ class DeletedFeatureImagePurgeSchedulerTest {
         given(service.purge(1L)).willReturn(Outcome.PURGED);
         given(service.purge(3L)).willReturn(Outcome.ALREADY_GONE);
 
-        scheduler(true).purgeRemaining();
+        var summary = scheduler(true).runOnce();
 
         verify(service).purge(1L);
         verify(service).purge(3L);
+        assertThat(summary.ran()).isTrue();
+        assertThat(summary.targets()).isEqualTo(3);
+        assertThat(summary.failed()).isEqualTo(1);
+        assertThat(summary.outcomes()).containsEntry(Outcome.PURGED, 1).containsEntry(Outcome.ALREADY_GONE, 1);
+        assertThat(summary.firstFailure()).contains("featureSeq=2").contains("IllegalStateException").contains("disk");
+        assertThat(summary.allFailed()).isFalse();
+    }
+
+    @Test
+    @DisplayName("대상이 모두 실패하면 allFailed — 저장소 문제 경보 조건. 첫 실패는 처음 것만 남긴다")
+    void 모두_실패() {
+        given(service.findTargets(0L, DeletedFeatureImagePurgeScheduler.MAX_PER_RUN)).willReturn(List.of(1L, 2L));
+        willThrow(new IllegalStateException("first")).given(service).purge(1L);
+        willThrow(new IllegalStateException("second")).given(service).purge(2L);
+
+        var summary = scheduler(true).runOnce();
+
+        assertThat(summary.allFailed()).isTrue();
+        assertThat(summary.firstFailure()).contains("featureSeq=1").contains("first").doesNotContain("second");
+    }
+
+    @Test
+    @DisplayName("대상이 없으면 아무것도 지우지 않고, 실패도 없다")
+    void 대상_없음() {
+        given(service.findTargets(0L, DeletedFeatureImagePurgeScheduler.MAX_PER_RUN)).willReturn(List.of());
+
+        var summary = scheduler(true).runOnce();
+
+        assertThat(summary.ran()).isTrue();
+        assertThat(summary.targets()).isZero();
+        assertThat(summary.allFailed()).isFalse();
+        verify(service, never()).purge(org.mockito.ArgumentMatchers.anyLong());
     }
 
     @Test
@@ -51,9 +83,9 @@ class DeletedFeatureImagePurgeSchedulerTest {
         given(service.findTargets((long) max, max)).willReturn(List.of(9_000L));
         DeletedFeatureImagePurgeScheduler s = scheduler(true);
 
-        s.purgeRemaining();
+        s.runOnce();
         assertThat(s.cursor).isEqualTo(max);
-        s.purgeRemaining();
+        s.runOnce();
         assertThat(s.cursor).as("끝까지 왔으니 처음부터").isZero();
         verify(service).purge(9_000L);
     }
@@ -61,7 +93,11 @@ class DeletedFeatureImagePurgeSchedulerTest {
     @Test
     @DisplayName("꺼져 있으면 조회도 하지 않는다")
     void 꺼짐() {
-        scheduler(false).purgeRemaining();
+        var s = scheduler(false);
+
+        assertThat(s.runOnce()).isEqualTo(DeletedFeatureImagePurgeScheduler.RunSummary.SKIPPED);
+        assertThat(s.disabledLogged).as("꺼짐 안내는 한 번 남기고 표시한다").isTrue();
+        s.purgeRemaining();
 
         verify(service, never()).findTargets(anyLong(), anyInt());
     }

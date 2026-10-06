@@ -216,6 +216,9 @@ class DeletedFeatureImagePurgeSliceTest {
 
         disabled.purgeQuietly(id);
 
+        assertThat(disabled.isEnabled()).isFalse();
+        assertThat(service.isEnabled()).as("설정이 없으면 켜져 있다").isTrue();
+
         verify(fileService, never()).deleteReporting(anyString());
         assertThat(경로(id)).isEqualTo("/face/k.jpg");
     }
@@ -229,5 +232,21 @@ class DeletedFeatureImagePurgeSliceTest {
         service.purgeQuietly(id);
 
         assertThat(경로(id)).isNull();
+    }
+
+    @Test
+    @DisplayName("바깥 트랜잭션이 롤백돼도 파기는 커밋된다 — 자기 트랜잭션(REQUIRES_NEW)이라 파일과 경로가 어긋나지 않는다")
+    void 바깥_롤백과_무관() {
+        Long id = 특징점("/face/m.jpg", true);
+        given(fileService.deleteReporting("/face/m.jpg")).willReturn(DeleteOutcome.DELETED);
+
+        // 이 테스트 안에서 만든다 — 생성자의 전파 설정이 이 테스트에 걸리도록(컨텍스트가 만든 빈은 다른 테스트 때 생성된다)
+        var fresh = new DeletedFeatureImagePurgeService(repository, fileService, transactionManager, true);
+        tx.executeWithoutResult(status -> {
+            fresh.purge(id);
+            status.setRollbackOnly();
+        });
+
+        assertThat(경로(id)).as("파일은 이미 지웠다 — 경로 비우기가 바깥과 함께 롤백되면 없는 파일을 가리킨다").isNull();
     }
 }
