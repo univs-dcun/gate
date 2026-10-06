@@ -45,17 +45,39 @@ class StatelessLocaleTest {
     @CsvSource({
             "ko, ko",
             "en, en",
-            "en-US, en-US",
-            "'ko-KR,ko;q=0.9,en;q=0.8', ko",   // 브라우저 기본 헤더 — 예전과 같이 첫 태그까지만
+            "en-US, en",
+            "ko-KR, ko",
+            "'ko-KR,ko;q=0.9,en;q=0.8', ko",   // 브라우저 기본 헤더
             "'en-US,en;q=0.9,ko;q=0.8', en",
+            "'ko,en;q=0.9', ko",               // UG-352: 예전에는 「언어 미정」 → JVM 기본 언어
+            "'en;q=0.1,ko;q=0.9', ko",         // q 순서대로
+            "'ko;q=0.9', ko",
+            "' en', en",                       // 앞 공백
+            "'ja,ko;q=0.5', ko",               // 지원하지 않는 언어는 건너뛴다
+            "'ko;q=0,en', en",                 // q=0 은 제외
+            "ja, en",                          // 지원 언어가 없으면 영어
+            "'bad;;q=x', en",                  // 형식 오류는 영어
+            "'en;q=1.5', en",
+            "',', en",                         // 항목이 없으면 영어
+            "'*', en",                     // * 는 서비스 기본값
+            "'ja,*;q=0.5', en",
     })
-    @DisplayName("헤더를 예전과 똑같이 해석한다 (Locale.forLanguageTag)")
+    @DisplayName("UG-352: q 순서로 지원 언어(ko·en)를 고르고, 없거나 형식이 틀리면 영어 — 세션은 만들지 않는다")
     void 해석(String header, String expected) {
         var request = new MockHttpServletRequest();
         request.addHeader("Accept-Language", header);
 
         assertThat(config.localeResolver().resolveLocale(request).toLanguageTag()).isEqualTo(expected);
         assertThat(request.getSession(false)).as("해석이 세션을 만들면 안 된다").isNull();
+    }
+
+    @Test
+    @DisplayName("빈 헤더는 없는 것과 같다 — 서비스 기본값")
+    void 빈_헤더() {
+        var request = new MockHttpServletRequest();
+        request.addHeader("Accept-Language", "  ");
+
+        assertThat(config.localeResolver().resolveLocale(request)).isEqualTo(Locale.ENGLISH);
     }
 
     @Test
