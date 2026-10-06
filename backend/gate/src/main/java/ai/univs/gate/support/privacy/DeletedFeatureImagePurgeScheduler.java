@@ -39,23 +39,45 @@ public class DeletedFeatureImagePurgeScheduler {
     long cursor;
 
     /** 꺼져 있다는 안내는 기동 뒤 한 번만 — 매시 한 줄씩 쌓이지 않게. */
-    private boolean disabledLogged;
+    boolean disabledLogged;
+
+    /**
+     * 한 번 실행한 결과.
+     *
+     * @param ran          꺼져 있어 돌지 않았으면 false
+     * @param targets      이번 실행의 대상 수
+     * @param outcomes     결과별 건수
+     * @param failed       실패 수
+     * @param firstFailure 첫 실패의 요약 (없으면 null)
+     */
+    record RunSummary(boolean ran, int targets, Map<Outcome, Integer> outcomes, int failed, String firstFailure) {
+
+        static final RunSummary SKIPPED = new RunSummary(false, 0, Map.of(), 0, null);
+
+        boolean allFailed() {
+            return failed > 0 && failed == targets;
+        }
+    }
 
     // 매시 15분. 새벽 정리 잡들(정각)과 겹치지 않게 비켜 둔다.
     @Scheduled(cron = "0 15 * * * *", zone = "UTC")
     public void purgeRemaining() {
+        runOnce();
+    }
+
+    RunSummary runOnce() {
         if (!purgeService.isEnabled()) {
             if (!disabledLogged) {
                 log.info("삭제한 특징점의 이미지 파기는 꺼져 있다 (gate.privacy.deleted-feature-image-purge.enabled=false)");
                 disabledLogged = true;
             }
-            return;
+            return RunSummary.SKIPPED;
         }
         List<Long> targets = purgeService.findTargets(cursor, MAX_PER_RUN);
         // 상한만큼 나왔으면 뒤에 더 있을 수 있다 — 거기서 잇는다. 아니면 끝까지 왔으니 다음은 처음부터.
         cursor = targets.size() == MAX_PER_RUN ? targets.get(targets.size() - 1) : 0L;
         if (targets.isEmpty()) {
-            return;
+            return new RunSummary(true, 0, Map.of(), 0, null);
         }
         Map<Outcome, Integer> counts = new EnumMap<>(Outcome.class);
         int failed = 0;
@@ -70,12 +92,14 @@ public class DeletedFeatureImagePurgeScheduler {
                 }
             }
         }
+        RunSummary summary = new RunSummary(true, targets.size(), counts, failed, firstFailure);
         log.info("삭제한 특징점의 이미지 정리. 대상={}, 결과={}, 실패={}", targets.size(), counts, failed);
         if (failed > 0) {
             log.warn("삭제한 특징점의 이미지 파기 실패 {}건 — 다음 실행에서 다시 시도한다. 첫 실패: {}", failed, firstFailure);
         }
-        if (failed > 0 && failed == targets.size()) {
+        if (summary.allFailed()) {
             log.error("이번 실행의 대상이 모두 실패했다 — 저장소 경로·권한·볼륨(file.root-path)을 확인할 것");
         }
+        return summary;
     }
 }
