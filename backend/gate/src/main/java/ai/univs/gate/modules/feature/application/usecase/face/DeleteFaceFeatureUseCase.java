@@ -23,6 +23,7 @@ import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.feature.face.FaceService;
 import java.util.concurrent.atomic.AtomicReference;
+import ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,7 @@ public class DeleteFaceFeatureUseCase {
     private final ApiKeyService apiKeyService;
     private final FaceService faceService;
     private final TransactionTemplate transactionTemplate;
+    private final DeletedFeatureImagePurgeService imagePurgeService;
     private final UseCaseNotifyService useCaseNotifyService;
 
     /**
@@ -142,5 +144,9 @@ public class DeleteFaceFeatureUseCase {
             useCaseNotifyService.notifyWebhook(CallerType.API, WebhookEvent.FEATURE_DELETED, project.getId(),
                     transactionUuid, deletedHere.get());
         }
+
+        // UG-347: 원본 이미지를 파기한다 — 커밋 뒤, 트랜잭션 밖에서. 실패해도 삭제는 성공이고 정기 정리가 다시 시도한다.
+        // 다른 요청이 먼저 지운 경우에도 부른다(대상이 아니면 아무것도 하지 않는다).
+        imagePurgeService.purgeQuietly(biometricFeature.getId());
     }
 }

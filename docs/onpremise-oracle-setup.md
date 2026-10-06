@@ -358,6 +358,31 @@ e-KYC 이력의 법적 보관 의무가 납품처마다 다를 수 있으므로 
 SELECT count(*) FROM projects WHERE is_deleted = true AND deleted_at IS NULL;
 ```
 
+### 삭제한 특징점의 원본 이미지 파기 (UG-347)
+
+특징점 삭제 API 는 지금까지 face·palm 서비스의 특징점만 지우고 gate 의 행에 `is_deleted` 를 찍었다. **원본 이미지 파일은
+그대로 남았다.** 이 버전부터는 삭제한 특징점의 원본 이미지를 파기한다. **기본으로 켜져 있다** — 위 두 정리와 달리 보존 기간을
+정할 필요가 없다. 고객이 API 로 직접 삭제를 요청한 데이터이기 때문이다.
+
+- **즉시**: 삭제 요청이 성공하면 바로 파일을 지운다. 실패해도 삭제 API 는 성공으로 끝난다.
+- **정기 정리**: 매시 15분(UTC)에 남은 것을 지운다(실행당 500건). 즉시 파기가 실패한 것과 **이 버전 이전에 쌓인 삭제분**이
+  대상이다 — 업그레이드 후 첫 몇 시간 동안 기존 삭제분이 차례로 파기된다.
+- 행은 남기고 `feature_image_path` 만 비운다(마이그레이션 없음). 비워진 경로가 「파기됨」 표시다.
+
+| 지우는 것 | 남기는 것 |
+|---|---|
+| 삭제한 특징점의 원본 이미지 파일 | `biometric_feature` 행(경로만 비움), `match_history`·`feature_history` 의 감사 행 |
+
+등록 이력과 인증 이력의 매칭 이미지가 같은 파일을 가리키므로, 그 이력에서도 이미지를 볼 수 없게 된다(UG-303 과 같은 판단).
+업그레이드 전에 기존 삭제분 규모를 보려면:
+
+```sql
+SELECT type, count(*) FROM biometric_feature WHERE is_deleted = true AND feature_image_path IS NOT NULL GROUP BY type;
+```
+
+정기 정리만 끄려면 `GATE_PRIVACY_DELETEDFEATUREIMAGEPURGE_ENABLED=false`(`gate.privacy.deleted-feature-image-purge.enabled`).
+즉시 파기는 끄지 않는다. 꺼 두면 매시 실행 로그에 「꺼져 있다」 한 줄이 남는다.
+
 ### 이력 보존 기간 (UG-282)
 
 `match_history`·`feature_history` 는 지금까지 지워지지 않았다. 인증마다 행이 쌓이고, 동의를

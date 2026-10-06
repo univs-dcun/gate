@@ -17,6 +17,7 @@ import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.palm.PalmService;
+import ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ public class DeletePalmFeatureUseCase {
     private final ApiKeyService apiKeyService;
     private final PalmService palmService;
     private final TransactionTemplate transactionTemplate;
+    private final DeletedFeatureImagePurgeService imagePurgeService;
 
     /** UG-325: 삭제 이력. 순서와 {@code noRollbackFor} 의 이유는 {@code DeleteFaceFeatureUseCase} 참고.  *
      * <p><b>UG-293: 이력 커밋이 호출자와 분리됐다.</b> 예전에는 {@code noRollbackFor} 로
@@ -99,5 +101,8 @@ public class DeletePalmFeatureUseCase {
             featureHistory.successDelete();
             historyRecorder.succeed(featureHistory);
         });
+
+        // UG-347: 원본 이미지 파기. 이유와 순서는 DeleteFaceFeatureUseCase 참고.
+        imagePurgeService.purgeQuietly(biometricFeature.getId());
     }
 }

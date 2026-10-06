@@ -676,7 +676,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <div class="ep-hdr">
     <div class="ep-crumb"><span>Face Feature</span> › 얼굴 삭제</div>
     <div class="ep-title">얼굴 삭제</div>
-    <div class="ep-desc">등록된 얼굴 특징점을 소프트 삭제합니다. 삭제된 특징점은 매칭에서 제외됩니다.</div>
+    <div class="ep-desc">등록된 얼굴 특징점을 삭제합니다. 삭제된 특징점은 매칭에서 제외되고, 등록에 쓴 원본 얼굴 이미지는 저장소에서 파기됩니다. 등록·삭제 이력은 남지만, 이 특징점의 이미지를 가리키는 이력(등록 이력, 인증 이력의 매칭 이미지)에서는 더 이상 이미지를 받을 수 없습니다.</div>
     <div class="ep-url"><span class="mb mb-del">DELETE</span><span class="ep-path">/api/v1/feature/face/{faceFeatureId}</span></div>
   </div>
   <div class="ep-body">
@@ -2628,8 +2628,8 @@ var PAGES = {
     crumb: { ko: '<span>Face Feature</span> › 얼굴 삭제', en: '<span>Face Feature</span> › Delete Face' },
     title: { ko: '얼굴 삭제', en: 'Delete Face' },
     desc: {
-      ko: '등록된 얼굴 특징점을 소프트 삭제합니다. 삭제된 특징점은 매칭에서 제외됩니다.',
-      en: 'Soft-delete a registered face feature. Deleted features are excluded from matching.'
+      ko: '등록된 얼굴 특징점을 삭제합니다. 삭제된 특징점은 매칭에서 제외되고, 등록에 쓴 원본 얼굴 이미지는 저장소에서 파기됩니다. 등록·삭제 이력은 남지만, 이 특징점의 이미지를 가리키는 이력(등록 이력, 인증 이력의 매칭 이미지)에서는 더 이상 이미지를 받을 수 없습니다.',
+      en: 'Delete a registered face feature. Deleted features are excluded from matching, and the original face image used for registration is destroyed from storage. Registration and deletion history is kept, but history entries that point to the image of this feature (registration history, the matched image in verification history) can no longer return it.'
     },
     pdsc: [
       { ko: '삭제할 얼굴 특징점 ID', en: 'ID of the face feature to delete' }
