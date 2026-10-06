@@ -2,7 +2,7 @@ package ai.univs.gate.support.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -43,7 +43,8 @@ class FileServiceDeleteTest {
     void 빈_경로(String path) {
         assertThatThrownBy(() -> fileService.deleteReporting(path)).isInstanceOf(CustomGateException.class);
         assertThatThrownBy(() -> fileService.delete(path)).isInstanceOf(CustomGateException.class);
-        verify(fileUtil, never()).deleteReporting(anyString());
-        verify(fileUtil, never()).delete(anyString());
+        // any() — anyString() 은 null 과 맞지 않아 null 케이스에서 아무것도 검증하지 못한다
+        verify(fileUtil, never()).deleteReporting(any());
+        verify(fileUtil, never()).delete(any());
     }
 }
