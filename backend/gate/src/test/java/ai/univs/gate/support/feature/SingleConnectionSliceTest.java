@@ -260,6 +260,6 @@ class SingleConnectionSliceTest {
             assertThat(history.getActionType()).isEqualTo(FeatureActionType.DELETE);
             assertThat(history.isSuccess()).isTrue();
         });
-        org.mockito.Mockito.verify(fileService).delete("/face/20261006/del.jpg");
+        org.mockito.Mockito.verify(fileService).deleteReporting("/face/20261006/del.jpg");
     }
 }

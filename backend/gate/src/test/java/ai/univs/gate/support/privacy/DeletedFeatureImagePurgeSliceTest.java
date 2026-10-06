@@ -3,6 +3,7 @@ package ai.univs.gate.support.privacy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -14,6 +15,8 @@ import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.FileUtil.DeleteOutcome;
+import ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService.Outcome;
 import ai.univs.gate.support.jpa.JpaSliceTest;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -47,6 +51,7 @@ class DeletedFeatureImagePurgeSliceTest {
     @Autowired private DeletedFeatureImagePurgeRepository repository;
     @Autowired private EntityManager em;
     @Autowired private TransactionTemplate tx;
+    @Autowired private PlatformTransactionManager transactionManager;
 
     private Project project;
     private final List<Long> created = new ArrayList<>();
@@ -104,20 +109,21 @@ class DeletedFeatureImagePurgeSliceTest {
     @DisplayName("파일을 지우고 경로를 비운다 — 다음 조회에서 빠진다")
     void 파기() {
         Long id = 특징점("/face/d.jpg", true);
+        given(fileService.deleteReporting("/face/d.jpg")).willReturn(DeleteOutcome.DELETED);
 
-        assertThat(service.purge(id)).isTrue();
+        assertThat(service.purge(id)).isEqualTo(Outcome.PURGED);
 
-        verify(fileService).delete("/face/d.jpg");
+        verify(fileService).deleteReporting("/face/d.jpg");
         assertThat(경로(id)).isNull();
         assertThat(service.findTargets(0L, 10_000)).doesNotContain(id);
-        assertThat(service.purge(id)).as("두 번째는 대상이 아니다").isFalse();
+        assertThat(service.purge(id)).as("두 번째는 대상이 아니다").isEqualTo(Outcome.NOT_TARGET);
     }
 
     @Test
     @DisplayName("파일 삭제가 실패하면 경로를 남긴다 — 다음 실행이 다시 집는다")
     void 파일_삭제_실패() {
         Long id = 특징점("/face/e.jpg", true);
-        willThrow(new CustomGateException(ErrorType.INVALID_FILE_PATH)).given(fileService).delete("/face/e.jpg");
+        willThrow(new CustomGateException(ErrorType.INVALID_FILE_PATH)).given(fileService).deleteReporting("/face/e.jpg");
 
         assertThatThrownBy(() -> service.purge(id)).isInstanceOf(CustomGateException.class);
 
@@ -129,7 +135,7 @@ class DeletedFeatureImagePurgeSliceTest {
     @DisplayName("purgeQuietly 는 실패를 삼킨다 — 삭제 API 응답을 바꾸지 않는다")
     void 조용히() {
         Long id = 특징점("/face/f.jpg", true);
-        willThrow(new CustomGateException(ErrorType.INVALID_FILE_PATH)).given(fileService).delete(anyString());
+        willThrow(new CustomGateException(ErrorType.INVALID_FILE_PATH)).given(fileService).deleteReporting(anyString());
 
         service.purgeQuietly(id);
 
@@ -142,9 +148,9 @@ class DeletedFeatureImagePurgeSliceTest {
         Long 삭제됨 = 특징점("/face/shared.jpg", true);
         Long 살아있음 = 특징점("/face/shared.jpg", false);
 
-        assertThat(service.purge(삭제됨)).isTrue();
+        assertThat(service.purge(삭제됨)).isEqualTo(Outcome.SHARED_KEPT);
 
-        verify(fileService, never()).delete(anyString());
+        verify(fileService, never()).deleteReporting(anyString());
         assertThat(경로(삭제됨)).isNull();
         assertThat(경로(살아있음)).isEqualTo("/face/shared.jpg");
     }
@@ -154,9 +160,9 @@ class DeletedFeatureImagePurgeSliceTest {
     void 살아있음() {
         Long id = 특징점("/face/g.jpg", false);
 
-        assertThat(service.purge(id)).isFalse();
+        assertThat(service.purge(id)).isEqualTo(Outcome.NOT_TARGET);
 
-        verify(fileService, never()).delete(anyString());
+        verify(fileService, never()).deleteReporting(anyString());
         assertThat(경로(id)).isEqualTo("/face/g.jpg");
     }
 
@@ -165,9 +171,9 @@ class DeletedFeatureImagePurgeSliceTest {
     void 빈_경로() {
         Long id = 특징점("", true);
 
-        assertThat(service.purge(id)).isTrue();
+        assertThat(service.purge(id)).isEqualTo(Outcome.ALREADY_GONE);
 
-        verify(fileService, never()).delete(anyString());
+        verify(fileService, never()).deleteReporting(anyString());
         assertThat(경로(id)).isNull();
     }
 
@@ -180,5 +186,48 @@ class DeletedFeatureImagePurgeSliceTest {
         Integer 같은_경로 = tx.execute(status -> repository.clearImagePath(id, "/face/h.jpg"));
         assertThat(다른_경로).isZero();
         assertThat(같은_경로).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("파일이 이미 없으면(폴더는 있음) 경로만 비운다")
+    void 이미_없음() {
+        Long id = 특징점("/face/i.jpg", true);
+        given(fileService.deleteReporting("/face/i.jpg")).willReturn(DeleteOutcome.ALREADY_GONE);
+
+        assertThat(service.purge(id)).isEqualTo(Outcome.ALREADY_GONE);
+        assertThat(경로(id)).isNull();
+    }
+
+    @Test
+    @DisplayName("반박 리뷰 W1: 저장소를 볼 수 없으면(폴더조차 없음) 경로를 비우지 않는다 — 실제 볼륨의 원본을 놓치지 않게")
+    void 저장소_없음() {
+        Long id = 특징점("/face/j.jpg", true);
+        given(fileService.deleteReporting("/face/j.jpg")).willReturn(DeleteOutcome.STORAGE_UNAVAILABLE);
+
+        assertThatThrownBy(() -> service.purge(id)).isInstanceOf(IllegalStateException.class);
+        assertThat(경로(id)).isEqualTo("/face/j.jpg");
+    }
+
+    @Test
+    @DisplayName("반박 리뷰 W4: 꺼져 있으면 즉시 파기도 하지 않는다 — 재배포 없이 멈출 수 있어야 한다")
+    void 꺼짐() {
+        Long id = 특징점("/face/k.jpg", true);
+        var disabled = new DeletedFeatureImagePurgeService(repository, fileService, transactionManager, false);
+
+        disabled.purgeQuietly(id);
+
+        verify(fileService, never()).deleteReporting(anyString());
+        assertThat(경로(id)).isEqualTo("/face/k.jpg");
+    }
+
+    @Test
+    @DisplayName("purgeQuietly 성공 경로 — 프록시가 아니라 같은 객체에서 불러도 트랜잭션이 걸려 경로가 비워진다 (자기 호출 회귀)")
+    void 조용히_성공() {
+        Long id = 특징점("/face/l.jpg", true);
+        given(fileService.deleteReporting("/face/l.jpg")).willReturn(DeleteOutcome.DELETED);
+
+        service.purgeQuietly(id);
+
+        assertThat(경로(id)).isNull();
     }
 }
