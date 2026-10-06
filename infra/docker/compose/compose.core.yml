@@ -65,6 +65,12 @@ services:
       SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # UMS-24: 액세스 토큰 로컬 검증 (스캐폴드 계약 1.9.0 §1.1.1). true 면 auth /token/validate 를 부르지 않고
+      # 게이트웨이가 직접 서명을 검증한다 — auth 와 같은 JWT_SECRET 이 필요하다(다르면 모든 인증 요청이 401).
+      # 플래그는 반드시 :-false — true/false 가 아닌 값이면 게이트웨이가 기동하지 않는다. true 인데 JWT_SECRET 이
+      # 없거나 쓸 수 없어도 기동하지 않는다(의도된 동작).
+      JWT_SECRET: ${JWT_SECRET}
+      GATEWAY_AUTH_LOCAL_VALIDATION_ENABLED: ${GATEWAY_AUTH_LOCAL_VALIDATION_ENABLED:-false}
     depends_on:
       discovery-server:
         condition: service_healthy
