@@ -45,17 +45,72 @@ class StatelessLocaleTest {
     @CsvSource({
             "ko, ko",
             "en, en",
-            "en-US, en-US",
-            "'ko-KR,ko;q=0.9,en;q=0.8', ko",   // 브라우저 기본 헤더 — 예전과 같이 첫 태그까지만
-            "'en-US,en;q=0.9,ko;q=0.8', en",
+            "en-US, en-US",                    // 지역은 유지한다
+            "ko-KR, ko-KR",
+            "'ko-KR,ko;q=0.9,en;q=0.8', ko-KR", // 브라우저 기본 헤더
+            "'en-US,en;q=0.9,ko;q=0.8', en-US",
+            "'ko,en;q=0.9', ko",               // 예전에는 「언어 미정」 → JVM 기본 언어
+            "'en;q=0.1,ko;q=0.9', ko",         // q 순서대로
+            "'ko;q=0.9', ko",
+            "' en', en",                       // 앞 공백
+            "'ja,ko;q=0.5', ko",               // 지원하지 않는 언어는 건너뛴다
+            "'en,ko', en",                     // 같은 q 는 헤더 순서
+            "'ko;q=0,en', en",                 // q=0 은 제외
+            "'ko;q=0', en",
+            "ja, en",                          // 지원 언어가 없으면 영어
+            "'fr,de', en",
+            "',', en",                         // 항목이 없으면 영어
+            "'*', ko-KR",                       // * 는 서비스 기본값
+            "'ja,*;q=0.5', ko-KR",
+            // UG-352 항목별 해석 (auth UMS-36 과 같은 사례) — 한 항목이 깨져도 그 항목만 건너뛴다
+            "'ko,,en', ko",                    // 빈 항목
+            "ko_KR, ko-KR",                    // Java Locale.toString() 표기
+            "'ko;q=0.9;foo=bar', ko",          // q 외 파라미터는 무시
+            "'en;q=abc,ko;q=0.5', ko",         // q 가 숫자가 아니면 그 항목만 버린다
+            "'en;q=1.5,ko;q=0.5', ko",         // q 범위 밖
+            "'@@,ko', ko",                     // 형식이 깨진 태그
+            "'en;;q=x', en",                   // 그 항목이 버려지고 남는 것이 없어 영어
+            "'KO-kr', ko-KR",                  // 대소문자
+            // 반박 리뷰 W1·W2 — auth 08a5e00 과 같게
+            "ko-kor, en",                      // extlang 이 언어로 올라가면(kor) 지원 언어가 아니다
+            "'en-zzz,ko;q=0.5', ko",           // 엉뚱한 Locale(zzz)로 나가지 않고 다음 항목으로
+            "'ko;q=0,*', en",   // 기본 언어를 거부했으면 * 로도 고르지 않는다 → 남는 것이 없어 영어
+            "'en-u-nu-arab', en",              // 확장은 버린다
+            "'ko-Kore-KR', ko-KR",             // 스크립트는 버린다
+            "'q=2', en",                       // 태그 형식이 아니면 건너뛴다
+            "'ko;q=2;q=0.5', en",              // q 가 두 번이면 잘못된 항목 (auth L3)
+            // auth 반박 리뷰 H1 — 500 이 나던 헤더. 던지지 않는다
+            "';', en",
+            "';;', en",
+            "',;', en",
+            "'ko,;', ko",
+            "';,en', en",
+            // L1·L2·L3
+            "'en;q=0.8,ko ; q = 0.1', en",    // 공백이 있어도 q 다
+            "'en;q=0.4,ko;q=0x1p-1', en",     // qvalue 문법만 받는다
+            "'en;q=0.4,ko;q=1e0', en",
+            "'ko;q', en",                      // '=' 없는 q 는 잘못된 항목
+            "'ko;q=0.5;q=1,en;q=0.1', en",     // q 두 번
+            "'ko;Q=0.5,en;q=0.4', ko",
+            "'ko;q=1.000,en;q=0.999', ko",
+            "'ko;q=1.0001,en', en",
     })
-    @DisplayName("헤더를 예전과 똑같이 해석한다 (Locale.forLanguageTag)")
+    @DisplayName("UG-352: 항목별로 읽어 q 순서로 지원 언어(ko·en)를 고르고(지역 유지), 없으면 영어 — 세션은 만들지 않는다")
     void 해석(String header, String expected) {
         var request = new MockHttpServletRequest();
         request.addHeader("Accept-Language", header);
 
         assertThat(config.localeResolver().resolveLocale(request).toLanguageTag()).isEqualTo(expected);
         assertThat(request.getSession(false)).as("해석이 세션을 만들면 안 된다").isNull();
+    }
+
+    @Test
+    @DisplayName("빈 헤더는 없는 것과 같다 — 서비스 기본값")
+    void 빈_헤더() {
+        var request = new MockHttpServletRequest();
+        request.addHeader("Accept-Language", "  ");
+
+        assertThat(config.localeResolver().resolveLocale(request)).isEqualTo(Locale.KOREA);
     }
 
     @Test
@@ -85,7 +140,7 @@ class StatelessLocaleTest {
                 .andReturn();
 
         assertThat(result.getRequest().getSession(false)).isNull();
-        assertThat(result.getResponse().getContentAsString()).isEqualTo("ko");
+        assertThat(result.getResponse().getContentAsString()).isEqualTo("ko-KR");
     }
 
     @Test
@@ -117,6 +172,20 @@ class StatelessLocaleTest {
         try (var ctx = new org.springframework.context.annotation.AnnotationConfigApplicationContext(LocaleConfig.class)) {
             assertThat(ctx.getBean("localeResolver")).isInstanceOf(HeaderLocaleResolver.class);
             assertThat(ctx.getBeansOfType(org.springframework.web.servlet.HandlerInterceptor.class)).isEmpty();
+        }
+    }
+
+    @Test
+    @DisplayName("auth 반박 리뷰 H1: ';' 같은 헤더에도 요청이 500 으로 끝나지 않는다")
+    void 깨진_헤더도_정상_응답() throws Exception {
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new Probe())
+                .setLocaleResolver(config.localeResolver())
+                .build();
+
+        for (String header : List.of(";", ";;", ",;", ";,en")) {
+            mvc.perform(get("/probe").header("Accept-Language", header))
+                    .andExpect(status().isOk())
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().string("en"));
         }
     }
 }
