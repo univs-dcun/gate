@@ -42,8 +42,8 @@ public class RegisterService {
                 throw new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
             }
 
-            // 브렌치에 등록된 사용자가 한 명이라도 있는지 확인합니다.
-            if (descriptorRepository.countByBranch(branch) > 0) {
+            // 브렌치에 등록된 사용자가 한 명이라도 있는지 확인합니다. 세지 않고 있는지만 본다 (UG-357)
+            if (descriptorRepository.existsByBranch(branch)) {
                 // 이미 등록된 사용자들 중 동일한 사용자가 있는지 확인합니다.
                 duplicateService.checkDuplicateDescriptor(branch, descriptorDetail, null, false);
             }

@@ -24,11 +24,8 @@ public class IdentifyService {
     private final DescriptorCustomRepository descriptorCustomRepository;
 
     public IdentifyResult identify(Branch branch, DescriptorDetail descriptorDetail) {
-        // 매칭할 대상이 1명 이상있는지 확인
-        int descriptorCount = descriptorRepository.countByBranchAndDescriptorVersion(
-                branch, descriptorDetail.descriptorSpec().getVersion());
-
-        if (descriptorCount <= 0) throw new CustomFaceMatcherException(ErrorType.EMPTY_GALLERY);
+        // 매칭할 대상이 1명 이상있는지 확인 — 세지 않고 있는지만 본다 (UG-357)
+        requireNonEmptyGallery(branch, descriptorDetail);
 
         // version = 특징점 비교 개수
         MatchResultProjection matchResult = descriptorCustomRepository.oneToManyMatch(
@@ -54,10 +51,7 @@ public class IdentifyService {
      */
     public IdentifyCandidatesResult identifyCandidates(
             Branch branch, DescriptorDetail descriptorDetail, int maxCandidates) {
-        int descriptorCount = descriptorRepository.countByBranchAndDescriptorVersion(
-                branch, descriptorDetail.descriptorSpec().getVersion());
-
-        if (descriptorCount <= 0) throw new CustomFaceMatcherException(ErrorType.EMPTY_GALLERY);
+        requireNonEmptyGallery(branch, descriptorDetail);
 
         List<MatchResultProjection> matches = descriptorCustomRepository.oneToManyMatchTopK(
                 branch.getId(),
@@ -72,5 +66,13 @@ public class IdentifyService {
                 .toList();
 
         return new IdentifyCandidatesResult(candidates);
+    }
+
+    /** 요청과 같은 버전의 특징점이 브랜치에 없으면 EMPTY_GALLERY — 판정은 예전 건수 확인과 같다 (UG-357). */
+    private void requireNonEmptyGallery(Branch branch, DescriptorDetail descriptorDetail) {
+        boolean exists = descriptorRepository.existsByBranchAndDescriptorVersion(
+                branch, descriptorDetail.descriptorSpec().getVersion());
+
+        if (!exists) throw new CustomFaceMatcherException(ErrorType.EMPTY_GALLERY);
     }
 }
