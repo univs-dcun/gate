@@ -1,6 +1,6 @@
 package ai.univs.face.application.usecase;
 
-import ai.univs.face.application.service.FaceHistoryRecorder;
+import ai.univs.face.support.TestRecorders;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.atLeastOnce;
 
@@ -72,7 +72,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
         // UG-358: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다.
         lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         useCase = new IdentifyCandidatesByDescriptorUseCase(
-                matchFeign, new FaceHistoryRecorder(faceHistoryRepository, faceMatchRepository), new SimilarityParser());
+                matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), new SimilarityParser());
     }
 
     private static IdentifyCandidatesByDescriptorInput 입력(double threshold, int maxCandidates) {

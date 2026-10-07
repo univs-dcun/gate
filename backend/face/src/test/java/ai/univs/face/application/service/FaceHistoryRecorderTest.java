@@ -6,6 +6,7 @@ import ai.univs.face.domain.FaceMatch;
 import ai.univs.face.domain.MatchType;
 import ai.univs.face.domain.repository.FaceHistoryRepository;
 import ai.univs.face.domain.repository.FaceMatchRepository;
+import ai.univs.face.support.TestRecorders;
 import ai.univs.face.shared.exception.InvalidFaceImageException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
 import ai.univs.face.shared.exception.UpstreamCallException;
@@ -20,9 +21,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
@@ -46,7 +53,7 @@ class FaceHistoryRecorderTest {
 
     @BeforeEach
     void setUp() {
-        recorder = new FaceHistoryRecorder(faceHistoryRepository, faceMatchRepository);
+        recorder = TestRecorders.of(faceHistoryRepository, faceMatchRepository);
         history = FaceHistory.create(ActionType.MATCH, "", "txn-358", CLIENT, false, false);
     }
 
@@ -93,14 +100,50 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
-    @DisplayName("성공 결과 커밋이 실패한 경우는 「성공 + 실패 사유」로 섞어 남기지 않는다 — 시작 상태로 둔다")
-    void 성공_커밋_실패는_건드리지_않는다() {
+    @DisplayName("성공 결과 커밋이 실패하면 「결과 미기록 + INTERNAL_SERVER_ERROR」로 바꿔 던지고, recordFailure 가 그대로 남긴다")
+    void 성공_커밋_실패는_결과_미기록으로() {
+        history.successMatch(true, CLIENT);
+        FaceMatch match = FaceMatch.create(history, "face-1", 0.93, 0.85, MatchType.IDENTIFY, CLIENT);
+        DataAccessResourceFailureException dbDown = new DataAccessResourceFailureException("db down");
+        given(faceHistoryRepository.save(any())).willThrow(dbDown).willAnswer(i -> i.getArgument(0));
+
+        assertThatThrownBy(() -> recorder.finish(history, match)).isSameAs(dbDown);
+        assertThat(history.isResult()).isFalse();
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+
+        recorder.recordFailure(history, dbDown, CLIENT);
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        verify(faceHistoryRepository, times(2)).save(history);
+    }
+
+    @Test
+    @DisplayName("미달(NOT_MATCH) 결과 커밋이 실패해도 「NOT_MATCH 인데 결과 행 없음」으로 남지 않는다")
+    void 미달_커밋_실패도_결과_미기록으로() {
+        history.fail("NOT_MATCH", CLIENT);
+        FaceMatch match = FaceMatch.create(history, "", 0.3, 0.85, MatchType.IDENTIFY, CLIENT);
+        given(faceMatchRepository.save(any())).willThrow(new DataAccessResourceFailureException("db down"));
+
+        assertThatThrownBy(() -> recorder.finish(history, match)).isInstanceOf(DataAccessResourceFailureException.class);
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    @Test
+    @DisplayName("커밋 자체의 실패도 finish 안에서 받는다 — 선언형 @Transactional 이면 프록시 밖이라 못 받는다")
+    void 커밋_실패도_받는다() {
+        PlatformTransactionManager failingCommit = new TestRecorders.NoOpTransactionManager() {
+            @Override
+            public void commit(TransactionStatus status) {
+                throw new TransactionSystemException("commit failed");
+            }
+        };
+        FaceHistoryRecorder recorderWithFailingCommit = new FaceHistoryRecorder(
+                faceHistoryRepository, faceMatchRepository, new TransactionTemplate(failingCommit));
         history.successMatch(true, CLIENT);
 
-        recorder.recordFailure(history, new DataAccessResourceFailureException("db down"), CLIENT);
-
-        verify(faceHistoryRepository, never()).save(any());
-        assertThat(history.getFailureMessage()).isNull();
+        assertThatThrownBy(() -> recorderWithFailingCommit.finish(history, null))
+                .isInstanceOf(TransactionSystemException.class);
+        assertThat(history.isResult()).isFalse();
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
     }
 
     @Test
@@ -128,15 +171,20 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
-    @DisplayName("커밋 메서드는 REQUIRED 트랜잭션이다 — REQUIRES_NEW 면 바깥 트랜잭션과 겹칠 때 커넥션 둘을 쥔다(gate UG-336)")
-    void 커밋_메서드는_REQUIRED() throws NoSuchMethodException {
-        for (Method method : new Method[] {
-                FaceHistoryRecorder.class.getMethod("start", FaceHistory.class),
-                FaceHistoryRecorder.class.getMethod("finish", FaceHistory.class, FaceMatch.class),
-                FaceHistoryRecorder.class.getMethod("fail", FaceHistory.class)}) {
-            Transactional tx = method.getAnnotation(Transactional.class);
-            assertThat(tx).as(method.getName()).isNotNull();
-            assertThat(tx.propagation()).as(method.getName()).isEqualTo(Propagation.REQUIRED);
-        }
+    @DisplayName("start 는 REQUIRED 트랜잭션이다 — REQUIRES_NEW 면 바깥 트랜잭션과 겹칠 때 커넥션 둘을 쥔다(gate UG-336)")
+    void start는_REQUIRED() throws NoSuchMethodException {
+        Transactional tx = FaceHistoryRecorder.class.getMethod("start", FaceHistory.class).getAnnotation(Transactional.class);
+        assertThat(tx).isNotNull();
+        assertThat(tx.propagation()).isEqualTo(Propagation.REQUIRED);
+    }
+
+    @Test
+    @DisplayName("finish·recordFailure 는 선언형 트랜잭션이 아니다 — 커밋 실패를 직접 받아야 하므로 템플릿·저장소 트랜잭션을 쓴다")
+    void finish와_recordFailure는_선언형이_아니다() throws NoSuchMethodException {
+        Method finish = FaceHistoryRecorder.class.getMethod("finish", FaceHistory.class, FaceMatch.class);
+        Method recordFailure = FaceHistoryRecorder.class.getMethod(
+                "recordFailure", FaceHistory.class, RuntimeException.class, String.class);
+        assertThat(finish.getAnnotation(Transactional.class)).isNull();
+        assertThat(recordFailure.getAnnotation(Transactional.class)).isNull();
     }
 }

@@ -1,6 +1,6 @@
 package ai.univs.face.application.usecase;
 
-import ai.univs.face.application.service.FaceHistoryRecorder;
+import ai.univs.face.support.TestRecorders;
 import static org.mockito.Mockito.atLeastOnce;
 
 import ai.univs.face.application.input.VerifyByImageInput;
@@ -54,7 +54,7 @@ class VerifyByImageUseCaseTest {
     @BeforeEach
     void UG358_이력기록기_조립() {
         lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        verifyByImageUseCase = new VerifyByImageUseCase(matchFeign, new FaceHistoryRecorder(faceHistoryRepository, faceMatchRepository), extractService, similarityParser);
+        verifyByImageUseCase = new VerifyByImageUseCase(matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), extractService, similarityParser);
     }
 
     private static final String TXN    = "txn-001";

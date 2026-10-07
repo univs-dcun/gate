@@ -1,6 +1,6 @@
 package ai.univs.face.application.usecase;
 
-import ai.univs.face.application.service.FaceHistoryRecorder;
+import ai.univs.face.support.TestRecorders;
 import static org.mockito.Mockito.atLeastOnce;
 
 import ai.univs.face.application.input.IdentifyByDescriptorInput;
@@ -181,7 +181,7 @@ class DescriptorUseCaseTest {
         @BeforeEach
         void UG358_이력기록기_조립() {
             lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-            useCase = new IdentifyByDescriptorUseCase(matchFeign, new FaceHistoryRecorder(faceHistoryRepository, faceMatchRepository), similarityParser);
+            useCase = new IdentifyByDescriptorUseCase(matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), similarityParser);
         }
 
         private final IdentifyByDescriptorInput input =

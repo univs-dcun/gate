@@ -1,6 +1,6 @@
 package ai.univs.face.application.usecase;
 
-import ai.univs.face.application.service.FaceHistoryRecorder;
+import ai.univs.face.support.TestRecorders;
 import static org.mockito.Mockito.atLeastOnce;
 
 import ai.univs.face.application.input.VerifyByIdInput;
@@ -53,7 +53,7 @@ class VerifyByIdUseCaseTest {
     @BeforeEach
     void UG358_이력기록기_조립() {
         lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        verifyByIdUseCase = new VerifyByIdUseCase(matchFeign, new FaceHistoryRecorder(faceHistoryRepository, faceMatchRepository), extractService, similarityParser);
+        verifyByIdUseCase = new VerifyByIdUseCase(matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), extractService, similarityParser);
     }
 
     private static final String BRANCH  = "branch-A";
