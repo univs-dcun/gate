@@ -1,5 +1,8 @@
 package ai.univs.face.application.usecase;
 
+import ai.univs.face.application.service.FaceHistoryRecorder;
+import static org.mockito.Mockito.atLeastOnce;
+
 import ai.univs.face.application.input.IdentifyInput;
 import ai.univs.face.application.result.ExtractResult;
 import ai.univs.face.application.result.IdentifyResult;
@@ -44,8 +47,14 @@ class IdentifyUseCaseTest {
     @Mock private SimilarityParser similarityParser;
     @Mock private MultipartFile faceImage;
 
-    @InjectMocks
     private IdentifyUseCase identifyUseCase;
+
+    /** UG-358: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다. */
+    @BeforeEach
+    void UG358_이력기록기_조립() {
+        lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        identifyUseCase = new IdentifyUseCase(matchFeign, new FaceHistoryRecorder(faceHistoryRepository, faceMatchRepository), extractService, similarityParser);
+    }
 
     private static final String BRANCH  = "branch-A";
     private static final String FACE_ID = "face-001";
@@ -103,7 +112,7 @@ class IdentifyUseCaseTest {
 
             assertThat(result.result()).isFalse();
             assertThat(result.faceId()).isEmpty();
-            verify(faceHistoryRepository).save(captor.capture());
+            verify(faceHistoryRepository, atLeastOnce()).save(captor.capture());
             assertThat(captor.getValue().getFailureMessage()).isEqualTo("NOT_MATCH");
         }
     }
@@ -125,7 +134,7 @@ class IdentifyUseCaseTest {
                     .extracting(e -> ((InvalidFaceModuleException) e).getType())
                     .isEqualTo("SERVER_ERROR");
 
-            verify(faceHistoryRepository).save(captor.capture());
+            verify(faceHistoryRepository, atLeastOnce()).save(captor.capture());
             assertThat(captor.getValue().getFailureMessage()).isEqualTo("SERVER_ERROR");
         }
 
