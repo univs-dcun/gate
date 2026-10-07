@@ -22,11 +22,9 @@ public class FaceHistory {
     @Column(name = "face_history_id")
     private Long id;
 
-    @OneToOne(mappedBy = "faceHistory")
-    private FaceLiveness faceLiveness;
-
-    @OneToOne(mappedBy = "faceHistory")
-    private FaceMatch faceMatch;
+    // UG-358: 역방향 @OneToOne(mappedBy) faceLiveness·faceMatch 를 지웠다. 아무도 읽지 않았고, 기본이 EAGER 라
+    // 이력을 읽을 때마다(준영속 이력의 merge 포함) face_liveness·face_match 를 face_history_id 로 조인했다 — 그 컬럼에는
+    // 인덱스가 없어(V1) 두 테이블을 풀스캔한다(50만 행 기준 19.5ms, 반박 리뷰 실측). 연관은 두 엔티티 쪽 FK 가 갖는다.
 
     private String transactionUuid;
     @Enumerated(EnumType.STRING)
@@ -103,6 +101,15 @@ public class FaceHistory {
         this.faceId = faceId;
         this.modifiedBy = managerUuid;
         this.modifiedAt = LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
+     * 결과를 커밋하지 못했다 (UG-358). 성공·미달로 정해 둔 상태를 되돌려 「결과 미기록 + 사유」로 남긴다 —
+     * 「성공인데 실패 사유」나 「미달인데 결과 행 없음」처럼 섞인 상태가 남지 않게.
+     */
+    public void failUnrecorded(String failureMessage, String managerUuid) {
+        this.result = false;
+        fail(failureMessage, managerUuid);
     }
 
     public void fail(String failureMessage, String managerUuid) {

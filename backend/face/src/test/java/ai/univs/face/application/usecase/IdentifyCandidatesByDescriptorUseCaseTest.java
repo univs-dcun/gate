@@ -1,5 +1,9 @@
 package ai.univs.face.application.usecase;
 
+import ai.univs.face.support.TestRecorders;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.atLeastOnce;
+
 import ai.univs.face.application.input.IdentifyCandidatesByDescriptorInput;
 import ai.univs.face.application.result.IdentifyCandidatesResult;
 import ai.univs.face.application.service.SimilarityParser;
@@ -65,8 +69,10 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
     void 픽스처() {
         // SimilarityParser 는 실물이다. 임계치 필드(FACE_MATCH_THRESHOLD)를 쓰지 않는
         // 오버로드만 타므로 주입 없이 그대로 쓸 수 있다.
+        // UG-358: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다.
+        lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         useCase = new IdentifyCandidatesByDescriptorUseCase(
-                matchFeign, faceHistoryRepository, faceMatchRepository, new SimilarityParser());
+                matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), new SimilarityParser());
     }
 
     private static IdentifyCandidatesByDescriptorInput 입력(double threshold, int maxCandidates) {
@@ -95,7 +101,7 @@ class IdentifyCandidatesByDescriptorUseCaseTest {
 
     private FaceHistory 저장된_이력() {
         ArgumentCaptor<FaceHistory> captor = ArgumentCaptor.forClass(FaceHistory.class);
-        verify(faceHistoryRepository).save(captor.capture());
+        verify(faceHistoryRepository, atLeastOnce()).save(captor.capture());
         return captor.getValue();
     }
 
