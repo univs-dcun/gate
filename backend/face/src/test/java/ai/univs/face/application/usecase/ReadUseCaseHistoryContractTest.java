@@ -29,7 +29,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -38,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -64,6 +62,11 @@ class ReadUseCaseHistoryContractTest {
     private ExtractService extractService;
     private SimilarityParser similarityParser;
     private FaceHistoryRecorder recorder;
+    private final List<Saved> saved = new java.util.ArrayList<>();
+
+    /** save 가 불린 순간의 이력 상태. */
+    private record Saved(boolean result, String failureMessage) {
+    }
 
     @BeforeEach
     void setUp() {
@@ -75,7 +78,14 @@ class ReadUseCaseHistoryContractTest {
         ReflectionTestUtils.setField(similarityParser, "FACE_MATCH_THRESHOLD", 0.85);
         recorder = TestRecorders.of(histories, matches);
 
-        given(histories.save(any())).willAnswer(i -> i.getArgument(0));
+        // 저장하는 <b>순간</b>의 상태를 적어 둔다. 같은 인스턴스를 캡처하면 테스트 끝의 메모리 값을 보게 되어, 상태를 바꾸기 전에
+        // 커밋하는 순서 실수(finish 를 fail·successMatch 보다 먼저)가 초록으로 남는다(2차 반박 리뷰 L).
+        saved.clear();
+        given(histories.save(any())).willAnswer(i -> {
+            FaceHistory h = i.getArgument(0);
+            saved.add(new Saved(h.isResult(), h.getFailureMessage()));
+            return h;
+        });
         given(matches.save(any())).willAnswer(i -> i.getArgument(0));
         given(extractService.extract(any(), any(), any(), anyBoolean(), anyBoolean()))
                 .willReturn(new ExtractResult("descriptor-358"));
@@ -143,10 +153,9 @@ class ReadUseCaseHistoryContractTest {
         return cases().stream().filter(c -> c.name().equals(name)).findFirst().orElseThrow();
     }
 
-    private FaceHistory lastSavedHistory() {
-        ArgumentCaptor<FaceHistory> captor = ArgumentCaptor.forClass(FaceHistory.class);
-        verify(histories, atLeastOnce()).save(captor.capture());
-        return captor.getValue();
+    private Saved lastSavedHistory() {
+        assertThat(saved).as("이력 저장이 한 번도 없었다").isNotEmpty();
+        return saved.getLast();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -158,9 +167,9 @@ class ReadUseCaseHistoryContractTest {
 
         assertThatThrownBy(c.execute()::run).isSameAs(MATCH_503);
 
-        FaceHistory history = lastSavedHistory();
-        assertThat(history.isResult()).isFalse();
-        assertThat(history.getFailureMessage()).isEqualTo("INTERNAL_SERVER_ERROR");
+        Saved history = lastSavedHistory();
+        assertThat(history.result()).isFalse();
+        assertThat(history.failureMessage()).isEqualTo("INTERNAL_SERVER_ERROR");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -173,9 +182,9 @@ class ReadUseCaseHistoryContractTest {
         c.execute().run();
 
         verify(matches).save(any(FaceMatch.class));
-        FaceHistory history = lastSavedHistory();
-        assertThat(history.isResult()).isFalse();
-        assertThat(history.getFailureMessage()).isEqualTo("NOT_MATCH");
+        Saved history = lastSavedHistory();
+        assertThat(history.result()).isFalse();
+        assertThat(history.failureMessage()).isEqualTo("NOT_MATCH");
     }
 
     @ParameterizedTest(name = "{0}")
@@ -188,8 +197,8 @@ class ReadUseCaseHistoryContractTest {
         c.execute().run();
 
         verify(matches).save(any(FaceMatch.class));
-        FaceHistory history = lastSavedHistory();
-        assertThat(history.isResult()).isTrue();
-        assertThat(history.getFailureMessage()).isNull();
+        Saved history = lastSavedHistory();
+        assertThat(history.result()).isTrue();
+        assertThat(history.failureMessage()).isNull();
     }
 }
