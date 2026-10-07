@@ -5,6 +5,11 @@ spring:
     name: face-service
   config:
     import: optional:configserver:http://config-server:8888
+  jpa:
+    # UG-358: 요청 처리 동안 EntityManager(와 커넥션)를 붙들지 않는다. 유스케이스가 이력만 짧게 나눠 커밋하므로,
+    # 트랜잭션 사이(fxp·match 호출 중)에 커넥션이 남아 있으면 분리한 의미가 없다. gate 는 UG-335 에서 껐다.
+    # 끄면 트랜잭션 밖 지연 로딩은 LazyInitializationException 으로 그 자리에서 드러난다.
+    open-in-view: false
 
 ---
 

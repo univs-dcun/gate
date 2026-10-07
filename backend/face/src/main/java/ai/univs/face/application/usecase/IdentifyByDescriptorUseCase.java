@@ -2,22 +2,19 @@ package ai.univs.face.application.usecase;
 
 import ai.univs.face.application.input.IdentifyByDescriptorInput;
 import ai.univs.face.application.result.IdentifyResult;
+import ai.univs.face.application.service.FaceHistoryRecorder;
 import ai.univs.face.application.service.SimilarityParser;
 import ai.univs.face.domain.ActionType;
 import ai.univs.face.domain.FaceHistory;
 import ai.univs.face.domain.FaceMatch;
 import ai.univs.face.domain.MatchType;
-import ai.univs.face.domain.repository.FaceHistoryRepository;
-import ai.univs.face.domain.repository.FaceMatchRepository;
 import ai.univs.face.infrastructure.feign.match.MatchFeign;
 import ai.univs.face.infrastructure.feign.match.dto.IdentifyFeignRequestDTO;
 import ai.univs.face.shared.exception.CustomFeignException;
-import ai.univs.face.shared.exception.InvalidFaceImageException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import static ai.univs.face.shared.web.enums.ErrorType.NOT_MATCH;
 
@@ -36,24 +33,33 @@ import static ai.univs.face.shared.web.enums.ErrorType.NOT_MATCH;
 public class IdentifyByDescriptorUseCase {
 
     private final MatchFeign matchFeign;
-    private final FaceHistoryRepository faceHistoryRepository;
-    private final FaceMatchRepository faceMatchRepository;
+    private final FaceHistoryRecorder faceHistoryRecorder;
     private final SimilarityParser similarityParser;
 
-    @Transactional(noRollbackFor = {
-            InvalidFaceImageException.class,
-            InvalidFaceModuleException.class
-    })
+    /**
+     * 트랜잭션이 없다 (UG-358). 이력 시작·결과만 {@link FaceHistoryRecorder} 가 짧게 커밋하고, 원격 호출 동안에는
+     * DB 커넥션을 쥐지 않는다.
+     */
     public IdentifyResult execute(IdentifyByDescriptorInput input) {
         // 1:N 매칭 요청 이력 저장 — 검사 대상 이미지가 없으므로 두 플래그는 false 고정
-        FaceHistory faceHistory = FaceHistory.create(
+        FaceHistory faceHistory = faceHistoryRecorder.start(FaceHistory.create(
                 ActionType.MATCH,
                 "",
                 input.transactionUuid(),
                 input.clientId(),
                 false,
-                false);
-        faceHistoryRepository.save(faceHistory);
+                false));
+
+        try {
+            return identify(input, faceHistory);
+        } catch (RuntimeException e) {
+            // 어떤 실패든 이력 행을 남긴다 — 예전에는 noRollbackFor 밖의 예외(5xx·타임아웃 등)에 행이 롤백됐다
+            faceHistoryRecorder.recordFailure(faceHistory, e, input.clientId());
+            throw e;
+        }
+    }
+
+    private IdentifyResult identify(IdentifyByDescriptorInput input, FaceHistory faceHistory) {
 
         try {
             // 1:N 매칭 요청
@@ -73,11 +79,11 @@ public class IdentifyByDescriptorUseCase {
                     similarityParser.getThreshold(),
                     MatchType.IDENTIFY,
                     input.clientId());
-            faceMatchRepository.save(faceMatch);
 
             // 유사도가 임계치 보다 낮은 경우
             if (!successIdentify) {
                 faceHistory.fail(NOT_MATCH.name(), input.clientId());
+                faceHistoryRecorder.finish(faceHistory, faceMatch);
 
                 return new IdentifyResult(
                         input.transactionUuid(),
@@ -92,6 +98,7 @@ public class IdentifyByDescriptorUseCase {
 
             // 성공 이력 저장
             faceHistory.successMatch(true, input.clientId());
+            faceHistoryRecorder.finish(faceHistory, faceMatch);
 
             return new IdentifyResult(
                     input.transactionUuid(),

@@ -27,6 +27,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // UG-358: 커넥션 풀 하나로 「원격 호출 중 커넥션을 쥐지 않는다」를 실측하는 슬라이스(SingleConnectionReadPathSliceTest) 전용.
+    // 테스트 클래스패스에만 오르고 bootJar 에는 실리지 않는다. 운영 DB 는 PostgreSQL·Oracle 그대로다.
+    testRuntimeOnly 'com.h2database:h2'
 
     /* MSA */
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
