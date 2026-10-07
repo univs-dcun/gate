@@ -66,7 +66,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("브랜치에 매칭 대상이 없으면 EMPTY_GALLERY 예외를 던진다")
         void whenNoDescriptorsInBranch_thenThrowEmptyGallery() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(0);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(false);
 
             assertThatThrownBy(() -> identifyService.identify(branch, descriptorDetail))
                     .isInstanceOf(CustomFaceMatcherException.class)
@@ -77,7 +77,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("매칭 대상이 없으면 oneToManyMatch를 호출하지 않는다")
         void whenNoDescriptorsInBranch_thenNeverCallsOneToManyMatch() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(0);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(false);
 
             assertThatThrownBy(() -> identifyService.identify(branch, descriptorDetail));
 
@@ -87,7 +87,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("매칭 대상이 있으면 branchId와 버전 512로 oneToManyMatch를 호출한다")
         void whenDescriptorsExist_thenCallsOneToManyMatchWithBranchIdAndVersion512() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(3);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatch(eq(1L), any(byte[].class), eq(512)))
                     .thenReturn(new MatchResultProjection("face-001", 1.0));
 
@@ -99,7 +99,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("oneToManyMatch 결과의 faceId를 IdentifyResult에 담아 반환한다")
         void whenMatchFound_thenReturnsFaceIdFromProjection() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatch(eq(1L), any(byte[].class), eq(512)))
                     .thenReturn(new MatchResultProjection("face-001", 1.0));
 
@@ -111,7 +111,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("distance가 0 이하이면 유사도 1.00000을 반환한다")
         void whenDistanceIsZero_thenReturnMaxSimilarity() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatch(eq(1L), any(byte[].class), eq(512)))
                     .thenReturn(new MatchResultProjection("face-001", 0.0));
 
@@ -124,7 +124,7 @@ class IdentifyServiceTest {
         @DisplayName("distance를 DescriptorSpec의 Platt scaling으로 변환한 유사도를 반환한다")
         void whenMatchFound_thenSimilarityIsConvertedFromDistance() {
             double distance = 1.0;
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatch(eq(1L), any(byte[].class), eq(512)))
                     .thenReturn(new MatchResultProjection("face-001", distance));
 
@@ -135,18 +135,18 @@ class IdentifyServiceTest {
         }
 
         @Test
-        @DisplayName("descriptorSpec 버전에 맞는 카운트 쿼리를 실행한다")
-        void whenCalled_thenCountsWithCorrectVersion() {
+        @DisplayName("descriptorSpec 버전으로 갤러리 존재를 확인한다 (UG-357: 세지 않는다)")
+        void whenCalled_thenChecksExistenceWithCorrectVersion() {
             DescriptorDetail detail60 = DescriptorDetail.from(createBase64Descriptor(60));
             Branch branch2 = Branch.builder().id(2L).branchName("branch2").build();
 
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch2, 60)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch2, 60)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatch(eq(2L), any(byte[].class), eq(512)))
                     .thenReturn(new MatchResultProjection("face-002", 0.5));
 
             identifyService.identify(branch2, detail60);
 
-            verify(descriptorRepository).countByBranchAndDescriptorVersion(branch2, 60);
+            verify(descriptorRepository).existsByBranchAndDescriptorVersion(branch2, 60);
         }
     }
 
@@ -164,7 +164,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("브랜치에 매칭 대상이 없으면 EMPTY_GALLERY 예외를 던진다")
         void 빈_갤러리() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(0);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(false);
 
             assertThatThrownBy(() -> identifyService.identifyCandidates(branch, descriptorDetail, 5))
                     .isInstanceOf(CustomFaceMatcherException.class)
@@ -178,7 +178,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("요청받은 maxCandidates 를 그대로 쿼리에 넘긴다")
         void 건수를_그대로_넘긴다() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(30);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(1L), any(byte[].class), eq(512), eq(7)))
                     .thenReturn(List.of());
 
@@ -191,7 +191,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("쿼리가 준 순서를 그대로 유지한다 — 정렬은 DB 가 이미 했다")
         void 순서를_유지한다() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(3);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(1L), any(byte[].class), eq(512), anyInt()))
                     .thenReturn(List.of(
                             new MatchResultProjection("face-a", 0.8),
@@ -208,7 +208,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("거리가 가까울수록 유사도가 높다 — 목록은 유사도 내림차순이 된다")
         void 유사도_내림차순() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(3);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(1L), any(byte[].class), eq(512), anyInt()))
                     .thenReturn(List.of(
                             new MatchResultProjection("face-a", 0.8),
@@ -228,7 +228,7 @@ class IdentifyServiceTest {
         @DisplayName("유사도는 identify 와 같은 계산 경로를 쓴다")
         void identify와_같은_유사도() {
             double distance = 1.0;
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(1L), any(byte[].class), eq(512), anyInt()))
                     .thenReturn(List.of(new MatchResultProjection("face-001", distance)));
 
@@ -243,7 +243,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("한 건도 없으면 빈 목록이다 — 예외가 아니다")
         void 후보_0명() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(5);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(1L), any(byte[].class), eq(512), anyInt()))
                     .thenReturn(List.of());
 
@@ -255,7 +255,7 @@ class IdentifyServiceTest {
         @Test
         @DisplayName("distance 가 0 이하이면 유사도 1.00000 이다 — identify 와 같다")
         void 거리_0() {
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch, 59)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch, 59)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(1L), any(byte[].class), eq(512), anyInt()))
                     .thenReturn(List.of(new MatchResultProjection("face-001", 0.0)));
 
@@ -265,18 +265,18 @@ class IdentifyServiceTest {
         }
 
         @Test
-        @DisplayName("descriptorSpec 버전에 맞는 카운트 쿼리를 실행한다")
-        void 버전별_카운트() {
+        @DisplayName("descriptorSpec 버전으로 갤러리 존재를 확인한다 (UG-357: 세지 않는다)")
+        void 버전별_존재_확인() {
             DescriptorDetail detail60 = DescriptorDetail.from(createBase64Descriptor(60));
             Branch branch2 = Branch.builder().id(2L).branchName("branch2").build();
 
-            when(descriptorRepository.countByBranchAndDescriptorVersion(branch2, 60)).thenReturn(1);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(branch2, 60)).thenReturn(true);
             when(descriptorCustomRepository.oneToManyMatchTopK(eq(2L), any(byte[].class), eq(512), anyInt()))
                     .thenReturn(List.of(new MatchResultProjection("face-002", 0.5)));
 
             identifyService.identifyCandidates(branch2, detail60, 3);
 
-            verify(descriptorRepository).countByBranchAndDescriptorVersion(branch2, 60);
+            verify(descriptorRepository).existsByBranchAndDescriptorVersion(branch2, 60);
         }
     }
 
