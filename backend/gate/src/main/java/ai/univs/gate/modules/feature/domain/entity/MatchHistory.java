@@ -155,6 +155,11 @@ public class MatchHistory extends BaseEntity {
      * <p>{@code failureType} 은 기존과 같은 값을 그대로 쓰고({@code INTERNAL_SERVER_ERROR}),
      * 원인 구분은 {@link #upstreamStatus} 에 남긴다. 응답 계약은 건드리지 않는다.
      *
+     * <p>UG-359 에서 값이 하나 늘었다 — 하위가 "잠시 뒤 다시" 를 알려 온 경우
+     * ({@link RemoteCallException#temporarilyUnavailable}) 는 {@code TEMPORARILY_UNAVAILABLE} 로 남는다.
+     * 응답 오류 코드(PJ-006)와 같은 이름이고 i18n 메시지도 함께 추가했다 — 클라이언트가 이력에서 "다시
+     * 보내면 되는 실패" 를 가를 수 있게 일부러 드러낸다.
+     *
      * <p><b>예외 객체를 통째로 받는다</b> (반박 리뷰 지적). 초판은
      * {@code (String failureType, int upstreamStatus)} 였는데, 호출처가 전부
      * {@code e.getErrorType().name()} 과 {@code e.getUpstreamStatus()} 를 짝지어 넘기고

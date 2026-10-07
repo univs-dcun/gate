@@ -36,7 +36,11 @@ class ErrorTypeClassificationTest {
      */
     private static final Set<ErrorType> 우리_쪽_문제 = Set.of(
             ErrorType.INTERNAL_SERVER_ERROR,
-            ErrorType.SETTINGS_NOT_FOUND);
+            ErrorType.SETTINGS_NOT_FOUND,
+            // UG-359: 클라이언트 잘못이 아니다 — 우리 풀이 모자랐거나 하위가 그랬다. 다만 logByStatus 를
+            // 거치지 않는다. GlobalExceptionHandler 가 원인 유무로 WARN(혼잡)·ERROR(DB 불통)를 직접 가르고,
+            // 이 상수는 BusinessException 으로 던지지 않는다. 그래서 5xx 로 둬도 혼잡이 ERROR 로 올라가지 않는다.
+            ErrorType.TEMPORARILY_UNAVAILABLE);
 
     /**
      * <b>전수 목록.</b> 새 상수를 추가하면 여기서 걸린다.
@@ -54,6 +58,8 @@ class ErrorTypeClassificationTest {
             // Swagger 공통 — 프레임워크 예외 핸들러가 쓴다
             "UNAUTHORIZED", "NEED_SERVICE_ROLE", "NOT_FOUND", "METHOD_NOT_ALLOWED",
             "INTERNAL_SERVER_ERROR",
+            // UG-359: 503 — 풀 고갈·하위의 "잠시 뒤 다시". 응답 상태가 실제로 503 인 유일한 상수다
+            "TEMPORARILY_UNAVAILABLE",
             // Common — FEATURE_NOT_ENABLED(UG-223)는 4xx: 배포가 제공하지 않는 기능을 부른 것이지 우리 쪽 장애가 아니다
             "INVALID_PAGE_COUNT", "INVALID_TRANSACTION_UUID_LENGTH", "REQUIRED_TRANSACTION_UUID",
             "FEATURE_NOT_ENABLED",

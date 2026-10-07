@@ -60,12 +60,40 @@ public class RemoteCallException extends BusinessException {
     }
 
     public RemoteCallException(int upstreamStatus, String operation, Throwable cause) {
-        super(ErrorType.INTERNAL_SERVER_ERROR);
+        this(ErrorType.INTERNAL_SERVER_ERROR, upstreamStatus, operation, cause);
+    }
+
+    private RemoteCallException(ErrorType errorType, int upstreamStatus, String operation, Throwable cause) {
+        super(errorType);
         this.upstreamStatus = upstreamStatus;
         this.operation = operation;
         if (cause != null) {
             initCause(cause);
         }
+    }
+
+    /**
+     * 하위 서비스가 "지금은 처리할 여력이 없다" 고 알려 왔다 (UG-359).
+     *
+     * <p>face 가 자기 풀 고갈(또는 그 아래 match 의 풀 고갈)을 503 + {@code TEMPORARILY_UNAVAILABLE} 로
+     * 돌려준 경우다. {@code ErrorType} 만 다르고 나머지는 다른 하위 실패와 같은 길을 간다 — 그래서 새 예외
+     * 타입이 아니라 이 타입의 변형으로 둔다.
+     * <ul>
+     *   <li>유스케이스의 {@code catch (RemoteCallException e)} 가 그대로 잡아 {@code failUpstream(e)} 로 이력을
+     *       남긴다. 이력의 {@code failure_type} 은 {@code TEMPORARILY_UNAVAILABLE}, {@code upstream_status} 는 503.
+     *   <li>등록 흐름은 여전히 "결과를 모른다" 로 다룬다 — 발급 id 를 남겨 정리 잡(UG-338)이 확인한다. 하위가
+     *       트랜잭션을 열지 못해 실제로는 아무것도 안 했을 가능성이 높지만, 그 판단을 여기서 하지 않는다.
+     * </ul>
+     * 응답만 달라진다 — {@code GlobalExceptionHandler} 가 이 유형이면 503 + {@code PJ-006} + {@code Retry-After}
+     * 로 내보낸다.
+     */
+    public static RemoteCallException temporarilyUnavailable(int upstreamStatus, String operation) {
+        return new RemoteCallException(ErrorType.TEMPORARILY_UNAVAILABLE, upstreamStatus, operation, null);
+    }
+
+    /** 하위가 "잠시 뒤 다시" 를 알려 온 실패인지 (UG-359). */
+    public boolean isTemporarilyUnavailable() {
+        return getErrorType() == ErrorType.TEMPORARILY_UNAVAILABLE;
     }
 
     /** 응답을 받지 못한 실패인지. 로그에서 "죽었다" 와 "오류를 응답했다" 를 가르는 값이다. */

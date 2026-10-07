@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.univs.face.shared.exception.CustomFeignException;
+import ai.univs.face.shared.exception.TemporarilyUnavailableException;
 import ai.univs.face.shared.exception.UpstreamCallException;
+import ai.univs.face.shared.web.enums.ErrorType;
 import feign.Request;
 import feign.Response;
 import java.nio.charset.StandardCharsets;
@@ -62,6 +64,49 @@ class CommonErrorDecoderTest {
         assertThat(ex.getCause())
                 .as("하위가 오류를 응답한 경우는 우리 호출 스택에 정보가 없다 — 스택트레이스를 남기지 않는다")
                 .isNull();
+    }
+
+    private static final String MATCH_BUSY_BODY = """
+            {"success":false,"data":null,"errors":{"code":"SWAGGER-006","type":"TEMPORARILY_UNAVAILABLE","message":"busy"}}
+            """;
+
+    @Test
+    @DisplayName("UG-359: match 의 503 + TEMPORARILY_UNAVAILABLE 은 TemporarilyUnavailableException 이 된다")
+    void match_일시_불가는_전용_예외() {
+        Exception result = decoder.decode("MatchFeign#verifyById(VerifyByIdFeignRequestDTO)",
+                response(503, MATCH_BUSY_BODY));
+
+        // UpstreamCallException 이면 400 SWAGGER-005 로 뭉개져 gate 가 "다시 보내면 되는 실패" 를 알 수 없다
+        assertThat(result).isInstanceOf(TemporarilyUnavailableException.class);
+        TemporarilyUnavailableException ex = (TemporarilyUnavailableException) result;
+        assertThat(ex.getErrorType())
+                .as("이력의 실패 유형이 여기서 나온다 (FaceHistoryRecorder.recordFailure)")
+                .isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE);
+        assertThat(ex.getOperation()).isEqualTo("MatchFeign#verifyById(VerifyByIdFeignRequestDTO)");
+    }
+
+    @ParameterizedTest(name = "body={0}")
+    @ValueSource(strings = {
+            "<html>503 Service Temporarily Unavailable</html>",
+            "",
+            "null",
+            "{\"success\":false,\"data\":null}",
+            "{\"success\":false,\"data\":null,\"errors\":{\"code\":\"SWAGGER-005\",\"type\":\"INTERNAL_SERVER_ERROR\",\"message\":\"x\"}}"
+    })
+    @DisplayName("UG-359: 다른 503(fxp·프록시·다른 유형)은 예전 그대로 UpstreamCallException — 던지지 않는다")
+    void 다른_503은_예전_그대로(String body) {
+        Exception result = decoder.decode("ExtractFeign#extract()", response(503, body));
+
+        assertThat(result).isInstanceOf(UpstreamCallException.class);
+        assertThat(((UpstreamCallException) result).getUpstreamStatus()).isEqualTo(503);
+    }
+
+    @ParameterizedTest(name = "status={0}")
+    @ValueSource(ints = {500, 502, 504})
+    @DisplayName("UG-359: 503 이 아니면 같은 본문이어도 UpstreamCallException 이다")
+    void 상태가_503이_아니면_일반_실패(int status) {
+        assertThat(decoder.decode("x", response(status, MATCH_BUSY_BODY)))
+                .isInstanceOf(UpstreamCallException.class);
     }
 
     @Test

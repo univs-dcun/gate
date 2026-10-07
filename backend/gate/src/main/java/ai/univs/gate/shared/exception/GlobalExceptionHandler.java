@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -22,13 +24,18 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.sql.SQLTransientConnectionException;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    /** 503 에 싣는 {@code Retry-After} 초 (UG-359). 문서(gate-api-docs.html PJ-006)와 같은 값이다. */
+    public static final String RETRY_AFTER_SECONDS = "1";
 
     private final MessageService messageService;
 
@@ -108,10 +115,23 @@ public class GlobalExceptionHandler {
      *
      * <p>{@code ErrorType} 이 {@code INTERNAL_SERVER_ERROR}(5xx) 이므로 UG-290 의 분류상 ERROR 로
      * 남는다. 원인이 우리 쪽 인프라·하위 서비스이므로 그게 맞다 — 클라이언트 입력 문제가 아니다.
+     *
+     * <p><b>예외 하나 (UG-359).</b> 하위가 503 + {@code TEMPORARILY_UNAVAILABLE} 로 "잠시 뒤 다시" 를 알려 온
+     * 경우({@link RemoteCallException#isTemporarilyUnavailable()})는 400 이 아니라 503 + {@code PJ-006} +
+     * {@code Retry-After} 다. 상태 코드가 갈리므로 {@code @ResponseStatus} 대신 {@link ResponseEntity} 로
+     * 돌려준다. 나머지 하위 실패(다른 5xx·응답 없음)는 예전 그대로 400 {@code PJ-005} 다.
      */
     @ExceptionHandler(RemoteCallException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseApi<?> handleRemoteCallException(RemoteCallException ex) {
+    public ResponseEntity<ResponseApi<?>> handleRemoteCallException(RemoteCallException ex) {
+        // UG-359: 하위(face)가 "잠시 뒤 다시" 를 알려 왔다. 그쪽 풀이 붐볐을 뿐이므로 WARN 이고 스택트레이스는
+        // 없다 — DB 에 닿지 못하는 것이었다면 그 서비스가 자기 로그에 ERROR 로 남겼다. 여기서도 ERROR 를 남기면
+        // 버스트 한 번에 하위·gate 양쪽 대시보드가 같은 사건으로 가득 찬다.
+        if (ex.isTemporarilyUnavailable()) {
+            log.warn("[{}] 하위 서비스가 일시적으로 처리할 수 없다고 알렸다 {} — operation={}, upstreamStatus={}",
+                    ex.getErrorType().getCode(), requestInfo(), ex.getOperation(), ex.getUpstreamStatus());
+            return temporarilyUnavailable();
+        }
+
         log.error("[{}] 하위 서비스 호출 실패 {} — operation={}, upstreamStatus={}{}",
                 ex.getErrorType().getCode(),
                 requestInfo(),
@@ -119,7 +139,7 @@ public class GlobalExceptionHandler {
                 ex.getUpstreamStatus(),
                 ex.isNoResponse() ? " (응답 없음 — 연결 거부·타임아웃)" : "");
 
-        return getExceptionResponse(ex.getErrorType());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getExceptionResponse(ex.getErrorType()));
     }
 
     /**
@@ -250,12 +270,60 @@ public class GlobalExceptionHandler {
         return getExceptionResponse(ErrorType.METHOD_NOT_ALLOWED);
     }
 
+    /**
+     * 나머지 전부 — 그리고 DB 커넥션 풀 고갈 (UG-359).
+     *
+     * <p>풀 고갈은 전용 예외 타입이 없다. Spring 이 트랜잭션을 열다 났으면
+     * {@code CannotCreateTransactionException}, JDBC 접근 중이면 {@code DataAccessException} 계열로 감싸므로
+     * 타입별 핸들러를 걸면 경로 하나를 빠뜨리기 쉽다. 그래서 catch-all 의 맨 앞에서 원인 사슬을 본다
+     * ({@link PoolExhaustion}). 아니면 예전과 똑같이 500 + ERROR 스택트레이스다.
+     *
+     * <p>{@code BusinessException}·{@code RemoteCallException} 은 자기 핸들러가 먼저 잡으므로 여기 오지
+     * 않는다 — 그 흐름은 바뀌지 않는다.
+     */
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseApi<?> handleGlobalException(Exception ex) {
+    public ResponseEntity<ResponseApi<?>> handleGlobalException(Exception ex) {
+        Optional<SQLTransientConnectionException> poolTimeout = PoolExhaustion.find(ex);
+        if (poolTimeout.isPresent()) {
+            logPoolExhaustion(poolTimeout.get(), ex);
+            return temporarilyUnavailable();
+        }
+
         logByStatus(ErrorType.INTERNAL_SERVER_ERROR, ex, ex.getMessage());
 
-        return getExceptionResponse(ErrorType.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(getExceptionResponse(ErrorType.INTERNAL_SERVER_ERROR));
+    }
+
+    /**
+     * 풀 고갈의 로그 수준을 원인 유무로 가른다 (UG-359). 기준은 {@link PoolExhaustion#isCongestion} 설명 참고.
+     *
+     * <p>혼잡이면 스택트레이스를 남기지 않는다. 버스트에서는 이 줄이 요청 수만큼 나오고, 호출 스택은 매번 같은
+     * 트랜잭션 진입 경로라 정보가 없다. 대신 Hikari 의 메시지(풀 이름·active·idle·waiting)를 그대로 싣는다 —
+     * 풀 크기를 조정할 때 필요한 숫자가 거기 있다.
+     */
+    private void logPoolExhaustion(SQLTransientConnectionException poolTimeout, Exception ex) {
+        ErrorType errorType = ErrorType.TEMPORARILY_UNAVAILABLE;
+        if (PoolExhaustion.isCongestion(poolTimeout)) {
+            log.warn("[{}] DB 커넥션 풀 혼잡 {} — {}",
+                    errorType.getCode(), requestInfo(), poolTimeout.getMessage());
+            return;
+        }
+        log.error("[{}] DB 커넥션을 새로 만들지 못한다 {} — {}",
+                errorType.getCode(), requestInfo(), poolTimeout.getMessage(), ex);
+    }
+
+    /**
+     * 503 + {@code PJ-006} + {@code Retry-After} (UG-359).
+     *
+     * <p>{@code Retry-After} 는 초 단위다. 풀 대기({@code connection-timeout})가 이미 지나간 뒤라 곧바로 다시
+     * 보내면 같은 혼잡에 부딪히기 쉽다 — 1초 쉬고 오라는 신호다. 값은 고정이다. 실제 대기열 길이로 계산하려면
+     * 풀 상태를 읽어야 하는데, 그 정확도가 클라이언트 재시도 품질을 바꾸지는 않는다.
+     */
+    private ResponseEntity<ResponseApi<?>> temporarilyUnavailable() {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS)
+                .body(getExceptionResponse(ErrorType.TEMPORARILY_UNAVAILABLE));
     }
 
     private ResponseApi<?> getExceptionResponse(ErrorType errorType) {

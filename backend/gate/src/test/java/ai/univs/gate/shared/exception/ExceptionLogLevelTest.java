@@ -8,6 +8,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import ai.univs.gate.support.message.MessageService;
+import java.sql.SQLTransientConnectionException;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -105,6 +107,57 @@ class ExceptionLogLevelTest {
         assertThat(event.getLevel()).isEqualTo(Level.ERROR);
         assertThat(event.getFormattedMessage())
                 .contains("face.identify")
+                .contains("503");
+    }
+
+    @Test
+    @DisplayName("UG-359: 풀 혼잡(원인 없는 타임아웃)은 WARN 이고 스택트레이스가 없다")
+    void 풀_혼잡은_WARN() {
+        handler.handleGlobalException(new CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction",
+                new SQLTransientConnectionException(
+                        "HikariPool-1 - Connection is not available, request timed out after 1000ms "
+                                + "(total=10, active=10, idle=0, waiting=37)")));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.WARN);
+        assertThat(event.getThrowableProxy())
+                .as("버스트에서는 이 줄이 요청 수만큼 나온다. 트랜잭션 진입 스택은 매번 같다")
+                .isNull();
+        assertThat(event.getFormattedMessage())
+                .contains("PJ-006")
+                .as("풀 크기를 조정할 때 필요한 숫자가 Hikari 메시지에 있다")
+                .contains("waiting=37");
+    }
+
+    @Test
+    @DisplayName("UG-359: DB 에 닿지 못하는 타임아웃(원인 있음)은 ERROR + 스택트레이스")
+    void DB_불통_타임아웃은_ERROR() {
+        SQLTransientConnectionException timeout = new SQLTransientConnectionException(
+                "HikariPool-1 - Connection is not available", "08001",
+                new java.net.ConnectException("Connection refused"));
+
+        handler.handleGlobalException(new CannotCreateTransactionException("x", timeout));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getThrowableProxy())
+                .as("DB 다운·연결 거부는 사람이 봐야 한다 — 원인이 스택트레이스에 있다")
+                .isNotNull();
+        assertThat(event.getFormattedMessage()).contains("PJ-006");
+    }
+
+    @Test
+    @DisplayName("UG-359: 하위가 '잠시 뒤 다시' 를 알려 오면 WARN 이고 스택트레이스가 없다")
+    void 하위_일시_불가는_WARN() {
+        handler.handleRemoteCallException(RemoteCallException.temporarilyUnavailable(503, "FaceClient#identify()"));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.WARN);
+        assertThat(event.getThrowableProxy()).isNull();
+        assertThat(event.getFormattedMessage())
+                .contains("PJ-006")
+                .contains("FaceClient#identify()")
                 .contains("503");
     }
 

@@ -7,6 +7,7 @@ import ai.univs.face.domain.repository.FaceMatchRepository;
 import ai.univs.face.shared.exception.CustomFaceException;
 import ai.univs.face.shared.exception.InvalidFaceImageException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
+import ai.univs.face.shared.exception.PoolExhaustion;
 import ai.univs.face.shared.web.enums.ErrorType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +81,13 @@ public class FaceHistoryRecorder {
      * <p>이 기록이 실패해도(DB 장애) 원래 예외를 가리지 않는다 — 억제된 예외로 붙이고 돌아간다.
      */
     public void recordFailure(FaceHistory faceHistory, RuntimeException cause, String clientId) {
+        if (PoolExhaustion.find(cause).isPresent()) {
+            // UG-359 반박 리뷰 L1: 우리 풀이 고갈돼 실패했다. 같은 풀로 저장을 또 시도하면 connection-timeout 을 한 번 더
+            // 기다려 503 이 그만큼 늦게 나간다 — 대기 시간을 2~3초로 줄여도 4~6초가 되어 gate 의 Feign readTimeout(5초)에
+            // 걸린다(그러면 클라이언트는 PJ-006 이 아니라 400 PJ-005 를 받는다). 행은 시작 상태(사유 없음)로 남는다.
+            log.warn("풀 고갈로 실패 이력을 남기지 않는다 — transactionUuid={}", faceHistory.getTransactionUuid());
+            return;
+        }
         if (faceHistory.getFailureMessage() == null) {
             String type = cause instanceof InvalidFaceModuleException module ? module.getType()
                     : cause instanceof InvalidFaceImageException image ? image.getErrorType().name()

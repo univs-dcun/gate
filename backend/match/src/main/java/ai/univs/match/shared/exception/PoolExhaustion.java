@@ -1,0 +1,68 @@
+package ai.univs.match.shared.exception;
+
+import java.sql.SQLTransientConnectionException;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * DB 커넥션 풀에서 커넥션을 제때 얻지 못한 실패인지 가린다 (UG-359).
+ *
+ * <p>HikariCP 는 {@code connection-timeout} 안에 커넥션을 내주지 못하면
+ * {@link SQLTransientConnectionException} 을 던진다. 그 위를 Spring 이 감싼다 — 트랜잭션을 열다 났으면
+ * {@code CannotCreateTransactionException}, JDBC 접근 중이면 {@code DataAccessException} 계열. 감싸는 층은
+ * 경로마다 다르므로 타입이 아니라 <b>원인 사슬</b>에서 찾는다.
+ *
+ * <p>예전에는 이것이 catch-all 로 떨어져 500 + ERROR 스택트레이스였다. 버스트에서 풀이 잠깐 모자란 것은
+ * "다시 보내면 되는 실패" 인데 클라이언트도 운영자도 그것을 알 수 없었다. 이제는 503 + {@code Retry-After}
+ * 로 내보내고({@code SWAGGER-006}), 로그 수준은 아래 {@link #isCongestion} 으로 가른다. gate 는 이 신호를 받아
+ * 자기 클라이언트에게 {@code PJ-006} 으로 전한다.
+ *
+ * <p>gate 의 같은 이름 클래스를 그대로 옮겼다 — 서비스마다 gradle 프로젝트가 따로라 공유 모듈이 없다.
+ * 판정이 갈리면 한 서비스만 503 을 내고 다른 서비스는 500 을 내게 되므로, 고칠 때는 네 벌을 함께 고친다.
+ */
+public final class PoolExhaustion {
+
+    /** 원인 사슬을 따라가는 상한. 정상적인 사슬은 열 단계를 넘지 않는다 — 상한은 순환 방어의 이중 장치다. */
+    private static final int MAX_DEPTH = 32;
+
+    private PoolExhaustion() {
+    }
+
+    /**
+     * 원인 사슬에서 풀 타임아웃을 찾는다. 없으면 비어 있다.
+     *
+     * <p>순환하는 원인 사슬({@code a.cause = b, b.cause = a})이 있어도 끝난다 — 이미 본 예외는 다시 보지
+     * 않는다. 예외 처리 중에 무한 루프에 빠지면 원래 오류가 통째로 가려지고 요청 스레드가 묶인다.
+     */
+    public static Optional<SQLTransientConnectionException> find(Throwable ex) {
+        Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        Throwable current = ex;
+        int depth = 0;
+        while (current != null && depth++ < MAX_DEPTH && seen.add(current)) {
+            if (current instanceof SQLTransientConnectionException timeout) {
+                return Optional.of(timeout);
+            }
+            current = current.getCause();
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * 풀이 붐볐을 뿐인가 — 원인이 없는 타임아웃.
+     *
+     * <p>Hikari 는 타임아웃 예외의 원인에 <b>최근의 커넥션 생성 실패</b>를 싣는다
+     * ({@code HikariPool.createTimeoutException} 의 {@code getLastConnectionFailure()}). 생성이 성공하면 그
+     * 값은 지워진다. 그러므로
+     * <ul>
+     *   <li>원인 없음 — 커넥션은 다 살아 있는데 모두 빌려 나가 있었다. 버스트에서 예상되는 일이다. WARN.
+     *   <li>원인 있음 — 새 커넥션을 만들지 못하고 있다(DB 다운·연결 거부·인증 실패). 사람이 봐야 한다.
+     *       ERROR + 스택트레이스.
+     * </ul>
+     * 응답은 둘 다 503 이다 — 클라이언트에게는 "잠시 뒤 다시" 가 맞는 안내다.
+     */
+    public static boolean isCongestion(SQLTransientConnectionException timeout) {
+        return timeout.getCause() == null;
+    }
+}

@@ -86,6 +86,19 @@ class HistoryUpstreamStatusTest {
         }
 
         @Test
+        @DisplayName("UG-359: 하위가 '잠시 뒤 다시' 를 알려 온 실패는 TEMPORARILY_UNAVAILABLE + 503 으로 남는다")
+        void 일시_불가는_전용_유형() {
+            // 의도한 예외다 — 이 유형은 응답 코드 PJ-006 과 같은 이름이고 i18n 메시지가 함께 들어갔다.
+            // 클라이언트가 이력에서 "다시 보내면 되는 실패" 를 가를 수 있어야 한다.
+            MatchHistory history = MatchHistory.builder().build();
+
+            history.failUpstream(RemoteCallException.temporarilyUnavailable(503, "FaceClient#identify()"));
+
+            assertThat(history.getFailureType()).isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE.name());
+            assertThat(history.getUpstreamStatus()).isEqualTo(503);
+        }
+
+        @Test
         @DisplayName("하위 서비스 실패가 아닌 실패는 상태 코드를 남기지 않는다")
         void 우리쪽_실패는_null이다() {
             MatchHistory history = MatchHistory.builder().build();

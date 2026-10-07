@@ -95,7 +95,9 @@ class SwaggerConfigCommonExampleTest {
                 401, Map.of(ErrorType.UNAUTHORIZED.name(), "PJ-001"),
                 404, Map.of(ErrorType.NOT_FOUND.name(), "PJ-003"),
                 405, Map.of(ErrorType.METHOD_NOT_ALLOWED.name(), "PJ-004"),
-                500, Map.of(ErrorType.INTERNAL_SERVER_ERROR.name(), "PJ-005")));
+                500, Map.of(ErrorType.INTERNAL_SERVER_ERROR.name(), "PJ-005"),
+                // UG-359: 풀 고갈·하위의 "잠시 뒤 다시" — GlobalExceptionHandler 가 실제로 503 을 낸다
+                503, Map.of(ErrorType.TEMPORARILY_UNAVAILABLE.name(), "PJ-006")));
     }
 
     /**

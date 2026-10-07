@@ -9,6 +9,7 @@ import ai.univs.face.domain.repository.FaceMatchRepository;
 import ai.univs.face.support.TestRecorders;
 import ai.univs.face.shared.exception.InvalidFaceImageException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
+import ai.univs.face.shared.exception.TemporarilyUnavailableException;
 import ai.univs.face.shared.exception.UpstreamCallException;
 import ai.univs.face.shared.web.enums.ErrorType;
 import java.lang.reflect.Method;
@@ -66,6 +67,17 @@ class FaceHistoryRecorderTest {
 
         verify(faceHistoryRepository).save(history);
         assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    @Test
+    @DisplayName("UG-359: match 의 '잠시 뒤 다시'(TemporarilyUnavailableException) 는 TEMPORARILY_UNAVAILABLE 로 남는다")
+    void 일시_불가는_전용_사유() {
+        // 디코더가 match 의 503 + TEMPORARILY_UNAVAILABLE 을 이 예외로 바꾼다. CustomFaceException 하위라
+        // recordFailure 가 getErrorType() 에서 사유를 읽는다 — UpstreamCallException 이었다면 INTERNAL_SERVER_ERROR 다.
+        recorder.recordFailure(history, new TemporarilyUnavailableException("MatchFeign#identify"), CLIENT);
+
+        verify(faceHistoryRepository).save(history);
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE.name());
     }
 
     @Test
@@ -144,6 +156,18 @@ class FaceHistoryRecorderTest {
                 .isInstanceOf(TransactionSystemException.class);
         assertThat(history.isResult()).isFalse();
         assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    @Test
+    @DisplayName("UG-359: 우리 풀 고갈로 실패하면 같은 풀로 또 저장하지 않는다 — 대기가 두 번 걸려 503 이 gate 타임아웃보다 늦어진다")
+    void 풀_고갈이면_저장을_시도하지_않는다() {
+        RuntimeException poolTimeout = new org.springframework.transaction.CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction",
+                new java.sql.SQLTransientConnectionException("HikariPool-1 - Connection is not available, request timed out after 2000ms"));
+
+        recorder.recordFailure(history, poolTimeout, CLIENT);
+
+        verify(faceHistoryRepository, never()).save(any());
     }
 
     @Test
