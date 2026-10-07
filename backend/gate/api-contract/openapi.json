@@ -179,6 +179,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -368,6 +377,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -540,6 +558,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -711,6 +738,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -910,6 +946,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -1072,6 +1117,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -1271,6 +1325,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -1472,6 +1535,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -1673,6 +1745,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -1824,6 +1905,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -1983,6 +2073,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -2172,6 +2271,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -2341,6 +2449,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -2532,6 +2649,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -2722,6 +2848,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -2960,6 +3095,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -3140,6 +3284,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -3322,6 +3475,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -3504,6 +3666,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -3745,6 +3916,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -3925,6 +4105,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -4107,6 +4296,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -4289,6 +4487,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -4462,6 +4669,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -4644,6 +4860,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -4826,6 +5051,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -5010,6 +5244,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -5194,6 +5437,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -5366,6 +5618,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -5550,6 +5811,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -5732,6 +6002,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -5907,6 +6186,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -6082,6 +6370,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -6257,6 +6554,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -6432,6 +6738,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -6607,6 +6922,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -6782,6 +7106,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -6957,6 +7290,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -7144,6 +7486,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -7325,6 +7676,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -7516,6 +7876,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -7791,6 +8160,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -7983,6 +8361,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -8230,6 +8617,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -8413,6 +8809,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -8577,6 +8982,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -8760,6 +9174,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -8934,6 +9357,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -9116,6 +9548,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -9368,6 +9809,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -9545,6 +9995,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -9738,6 +10197,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -9934,6 +10402,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -10130,6 +10607,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {
@@ -10337,6 +10823,15 @@
             }
           },
           "503": {
+            "headers": {
+              "Retry-After": {
+                "description": "다시 시도하기까지 기다릴 초",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "examples": {

@@ -6,6 +6,7 @@ import ai.univs.face.shared.exception.UpstreamCallException;
 import ai.univs.face.shared.feign.dto.FeignErrors;
 import ai.univs.face.shared.feign.dto.FeignResponseApi;
 import ai.univs.face.shared.web.enums.ErrorType;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Response;
 import feign.codec.ErrorDecoder;
@@ -14,7 +15,10 @@ public class CommonErrorDecoder implements ErrorDecoder {
 
     private static final int SERVICE_UNAVAILABLE = 503;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    // UG-359 반박 리뷰 L6: 하위 envelope 에 필드가 하나 늘어도(FAIL_ON_UNKNOWN_PROPERTIES 기본 true) 파싱이 실패하지 않게 한다.
+    // 실패하면 4xx 의 code 전달과 503 「일시 불가」 신호가 조용히 400 PJ-005 로 떨어진다.
+    private final ObjectMapper mapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     /**
      * <b>여기서는 로그를 남기지 않는다</b> (UG-299 반박 리뷰).

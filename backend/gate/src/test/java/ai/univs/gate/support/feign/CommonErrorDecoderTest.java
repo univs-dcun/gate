@@ -124,6 +124,18 @@ class CommonErrorDecoderTest {
             assertThat(e.getOperation()).isEqualTo("FaceClient#identify()");
         }
 
+        @Test
+        @DisplayName("반박 리뷰 L6: 하위 envelope 에 필드가 늘어도 신호를 잃지 않는다")
+        void 필드가_늘어도_일시_불가() {
+            String withExtra = """
+                    {"success":false,"data":null,"traceId":"t-1","errors":{"code":"SWAGGER-006","type":"TEMPORARILY_UNAVAILABLE","message":"busy","detail":"x"}}
+                    """;
+
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", response(503, withExtra));
+
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE);
+        }
+
         @ParameterizedTest(name = "body={0}")
         @ValueSource(strings = {
                 "<html>503 Service Temporarily Unavailable</html>",

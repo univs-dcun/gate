@@ -159,6 +159,18 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
+    @DisplayName("UG-359: 우리 풀 고갈로 실패하면 같은 풀로 또 저장하지 않는다 — 대기가 두 번 걸려 503 이 gate 타임아웃보다 늦어진다")
+    void 풀_고갈이면_저장을_시도하지_않는다() {
+        RuntimeException poolTimeout = new org.springframework.transaction.CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction",
+                new java.sql.SQLTransientConnectionException("HikariPool-1 - Connection is not available, request timed out after 2000ms"));
+
+        recorder.recordFailure(history, poolTimeout, CLIENT);
+
+        verify(faceHistoryRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("실패 기록이 실패해도(DB 장애) 원래 예외를 가리지 않는다 — 억제된 예외로 붙는다")
     void 기록_실패는_원래_예외를_가리지_않는다() {
         DataAccessResourceFailureException dbDown = new DataAccessResourceFailureException("db down");

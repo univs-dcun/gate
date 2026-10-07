@@ -154,6 +154,12 @@ public class SwaggerConfig {
 
                     ApiResponse apiResponse = new ApiResponse();
                     apiResponse.setContent(content);
+                    if (status == HttpStatus.SERVICE_UNAVAILABLE.value()) {
+                        // UG-359 반박 리뷰 L4: 503(PJ-006)에는 Retry-After 가 붙는다 — 주석이 아니라 스펙에 선언한다.
+                        apiResponse.addHeaderObject("Retry-After", new io.swagger.v3.oas.models.headers.Header()
+                                .description("다시 시도하기까지 기다릴 초")
+                                .schema(new io.swagger.v3.oas.models.media.IntegerSchema()));
+                    }
 
                     responses.addApiResponse(status.toString(), apiResponse);
                 });
