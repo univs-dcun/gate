@@ -1,14 +1,18 @@
 package ai.univs.face.shared.feign;
 
 import ai.univs.face.shared.exception.CustomFeignException;
+import ai.univs.face.shared.exception.TemporarilyUnavailableException;
 import ai.univs.face.shared.exception.UpstreamCallException;
 import ai.univs.face.shared.feign.dto.FeignErrors;
 import ai.univs.face.shared.feign.dto.FeignResponseApi;
+import ai.univs.face.shared.web.enums.ErrorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 
 public class CommonErrorDecoder implements ErrorDecoder {
+
+    private static final int SERVICE_UNAVAILABLE = 503;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -40,10 +44,37 @@ public class CommonErrorDecoder implements ErrorDecoder {
             return new CustomFeignException(feignErrors.getCode(), feignErrors.getType(), feignErrors.getMessage());
         }
 
+        // UG-359: match 가 503 + TEMPORARILY_UNAVAILABLE 로 "잠시 뒤 다시" 를 알려 온 경우만 따로 가른다.
+        // 전용 핸들러가 503 + SWAGGER-006 으로 내보내 gate 까지 신호가 그대로 올라간다.
+        if (status == SERVICE_UNAVAILABLE && isTemporarilyUnavailable(response)) {
+            return new TemporarilyUnavailableException(s);
+        }
+
         // 3xx or 5xx. 3xx 도 여기로 온다 — Feign 은 리다이렉트를 따라가지 않으므로 호출은
         // 실패한 것이지만 "죽었다" 와는 성격이 다르다. 그래서 메시지에 상태 코드를 그대로
         // 싣고 단정적인 표현을 쓰지 않는다.
         return new UpstreamCallException(status, s, response.reason());
+    }
+
+    /**
+     * 503 본문이 우리 envelope 이고 {@code errors.type} 이 {@code TEMPORARILY_UNAVAILABLE} 인가 (UG-359).
+     *
+     * <p><b>여기서는 절대 던지지 않는다.</b> 503 은 ML 모듈(fxp)·프록시도 낸다 — 본문이 HTML 이거나 비어 있는 것이
+     * 정상이다. 해석에 실패하면 예전과 같은 {@link UpstreamCallException} 으로 떨어져야 한다. 그래서 던지는
+     * {@link #parseFeignResponse} 를 재사용하지 않는다. 유형 이름만 본다 — 그것이 match 와의 계약이다.
+     */
+    private boolean isTemporarilyUnavailable(Response response) {
+        if (response.body() == null) {
+            return false;
+        }
+        try {
+            FeignResponseApi<?> feignResponse =
+                    mapper.readValue(response.body().asInputStream(), FeignResponseApi.class);
+            FeignErrors errors = feignResponse == null ? null : feignResponse.getErrors();
+            return errors != null && ErrorType.TEMPORARILY_UNAVAILABLE.name().equals(errors.getType());
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private FeignResponseApi<?> parseFeignResponse(String methodKey, Response response) {
