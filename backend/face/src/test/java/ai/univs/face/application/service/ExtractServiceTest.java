@@ -10,7 +10,6 @@ import ai.univs.face.infrastructure.feign.extract.dto.ExtractBodyFeignResponseDT
 import ai.univs.face.infrastructure.feign.extract.dto.ExtractFeignResponseApi;
 import ai.univs.face.infrastructure.feign.extract.dto.ExtractFeignResponseDTO;
 import ai.univs.face.infrastructure.feign.extract.dto.LivenessBodyFeignResponseDTO;
-import ai.univs.face.infrastructure.repository.FaceLivenessJpaRepository;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
 import ai.univs.face.shared.locale.MessageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,9 +36,6 @@ class ExtractServiceTest {
 
     @Mock
     private ExtractFeign extractFeign;
-
-    @Mock
-    private FaceLivenessJpaRepository faceLivenessRepository;
 
     @Mock
     private MessageService messageService;
@@ -164,7 +160,7 @@ class ExtractServiceTest {
             ExtractResult result = extractService.extract(faceHistory, faceImage, CLIENT_ID, true, false);
 
             assertThat(result.descriptor()).isEqualTo("desc");
-            verify(faceLivenessRepository).save(any(FaceLiveness.class));
+            assertThat(faceHistory.getPendingLiveness()).isNotNull();   // UG-358 반박 리뷰 M1: 저장은 결과 커밋이 한다
         }
 
         @Test
@@ -181,7 +177,7 @@ class ExtractServiceTest {
                     .extracting(e -> ((InvalidFaceModuleException) e).getType())
                     .isEqualTo("FAKE");
 
-            verify(faceLivenessRepository).save(any(FaceLiveness.class));
+            assertThat(faceHistory.getPendingLiveness()).isNotNull();   // UG-358 반박 리뷰 M1: 저장은 결과 커밋이 한다
             assertThat(faceHistory.getFailureMessage()).isEqualTo("FAKE");
         }
 
@@ -196,9 +192,7 @@ class ExtractServiceTest {
 
             extractService.extract(faceHistory, faceImage, CLIENT_ID, true, false);
 
-            ArgumentCaptor<FaceLiveness> captor = ArgumentCaptor.forClass(FaceLiveness.class);
-            verify(faceLivenessRepository).save(captor.capture());
-            assertThat(captor.getValue().getThreshold()).isEqualTo("");
+            assertThat(faceHistory.getPendingLiveness().getThreshold()).isEqualTo("");
         }
 
         @Test
@@ -210,7 +204,7 @@ class ExtractServiceTest {
 
             extractService.extract(faceHistory, faceImage, CLIENT_ID, false, false);
 
-            verifyNoInteractions(faceLivenessRepository);
+            assertThat(faceHistory.getPendingLiveness()).isNull();
         }
     }
 
@@ -232,7 +226,7 @@ class ExtractServiceTest {
             assertThat(result.success()).isTrue();
             assertThat(result.prdioction()).isEqualTo(0);
             assertThat(result.prdioctionDesc()).isEqualTo("REAL");
-            verify(faceLivenessRepository).save(any(FaceLiveness.class));
+            assertThat(faceHistory.getPendingLiveness()).isNotNull();   // UG-358 반박 리뷰 M1: 저장은 결과 커밋이 한다
         }
 
         @Test
@@ -276,7 +270,7 @@ class ExtractServiceTest {
             assertThat(faceHistory.getFailureMessage()).isEqualTo("FAKE");
             assertThat(result.success()).isFalse();
             assertThat(result.prdioction()).isEqualTo(1);
-            verify(faceLivenessRepository).save(any(FaceLiveness.class));
+            assertThat(faceHistory.getPendingLiveness()).isNotNull();   // UG-358 반박 리뷰 M1: 저장은 결과 커밋이 한다
         }
 
         @Test
@@ -288,7 +282,7 @@ class ExtractServiceTest {
 
             extractService.extractForLiveness(faceHistory, faceImage, CLIENT_ID, false, false);
 
-            verifyNoInteractions(faceLivenessRepository);
+            assertThat(faceHistory.getPendingLiveness()).isNull();
         }
 
         @Test
@@ -302,9 +296,7 @@ class ExtractServiceTest {
 
             extractService.extractForLiveness(faceHistory, faceImage, CLIENT_ID, true, false);
 
-            ArgumentCaptor<FaceLiveness> captor = ArgumentCaptor.forClass(FaceLiveness.class);
-            verify(faceLivenessRepository).save(captor.capture());
-            assertThat(captor.getValue().getThreshold()).isEqualTo("");
+            assertThat(faceHistory.getPendingLiveness().getThreshold()).isEqualTo("");
         }
     }
 }

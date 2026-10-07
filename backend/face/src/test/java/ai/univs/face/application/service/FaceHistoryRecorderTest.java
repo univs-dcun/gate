@@ -3,6 +3,8 @@ package ai.univs.face.application.service;
 import ai.univs.face.domain.ActionType;
 import ai.univs.face.domain.FaceHistory;
 import ai.univs.face.domain.FaceMatch;
+import ai.univs.face.infrastructure.repository.FaceLivenessJpaRepository;
+import ai.univs.face.domain.FaceLiveness;
 import ai.univs.face.domain.MatchType;
 import ai.univs.face.domain.repository.FaceHistoryRepository;
 import ai.univs.face.domain.repository.FaceMatchRepository;
@@ -149,7 +151,9 @@ class FaceHistoryRecorderTest {
             }
         };
         FaceHistoryRecorder recorderWithFailingCommit = new FaceHistoryRecorder(
-                faceHistoryRepository, faceMatchRepository, new TransactionTemplate(failingCommit));
+                faceHistoryRepository, faceMatchRepository,
+                org.mockito.Mockito.mock(ai.univs.face.infrastructure.repository.FaceLivenessJpaRepository.class),
+                new TransactionTemplate(failingCommit));
         history.successMatch(true, CLIENT);
 
         assertThatThrownBy(() -> recorderWithFailingCommit.finish(history, null))
@@ -171,6 +175,92 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
+    @DisplayName("UG-358 2단계 반박 리뷰 M1: 붙여 둔 라이브니스는 결과 커밋 때 이력과 함께 저장되고, 두 번 저장되지 않는다")
+    void 라이브니스는_결과_커밋에서_한_번만() {
+        FaceLivenessJpaRepository livenesses = org.mockito.Mockito.mock(FaceLivenessJpaRepository.class);
+        FaceHistoryRecorder withLiveness = TestRecorders.of(faceHistoryRepository, faceMatchRepository, livenesses);
+        FaceLiveness liveness = FaceLiveness.builder().faceHistory(history).prdioction(0).build();
+        history.attachLiveness(liveness);
+        history.successMatch(true, CLIENT);
+
+        withLiveness.finish(history, null);
+        // finish 뒤에 예외가 나 recordFailure 가 불려도 같은 행을 다시 넣지 않는다
+        withLiveness.recordFailure(history, new IllegalStateException("after finish"), CLIENT);
+
+        verify(livenesses, times(1)).save(liveness);
+        assertThat(history.getPendingLiveness()).isNull();
+    }
+
+    @Test
+    @DisplayName("UG-358 2단계 반박 리뷰 M1: 예외로 끝나도(라이브니스 실패 -777 등) 붙여 둔 라이브니스 행이 이력과 함께 남는다")
+    void 실패_기록도_라이브니스를_남긴다() {
+        FaceLivenessJpaRepository livenesses = org.mockito.Mockito.mock(FaceLivenessJpaRepository.class);
+        FaceHistoryRecorder withLiveness = TestRecorders.of(faceHistoryRepository, faceMatchRepository, livenesses);
+        FaceLiveness liveness = FaceLiveness.builder().faceHistory(history).prdioction(-1).build();
+        history.attachLiveness(liveness);
+        history.fail("FAKE", CLIENT);
+
+        withLiveness.recordFailure(history, new InvalidFaceModuleException("-777", "FAKE", "x"), CLIENT);
+
+        verify(livenesses).save(liveness);
+        verify(faceHistoryRepository).save(history);
+    }
+
+    @Test
+    @DisplayName("UG-358 2단계 반박 리뷰 L3: 등록 결과 커밋 실패는 faceId·transactionUuid 를 ERROR 로 남긴다 — 매처 발급 고아의 유일한 단서")
+    void 쓰기_결과_커밋_실패는_ERROR_로그() {
+        ch.qos.logback.classic.Logger logger =
+                (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(FaceHistoryRecorder.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            FaceHistory register = FaceHistory.create(ActionType.ADD, "", "txn-orphan", CLIENT, false, false);
+            register.successRegister(true, "face-orphan", CLIENT);
+            given(faceHistoryRepository.save(any())).willThrow(new DataAccessResourceFailureException("db down"));
+
+            assertThatThrownBy(() -> recorder.finish(register, null)).isInstanceOf(DataAccessResourceFailureException.class);
+
+            assertThat(appender.list).anySatisfy(event -> {
+                assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.ERROR);
+                assertThat(event.getFormattedMessage()).contains("face-orphan").contains("txn-orphan");
+            });
+            assertThat(register.getFaceId()).isEqualTo("face-orphan");
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
+    @Test
+    @DisplayName("2단계 반박 리뷰 L2: fxp 가 4xx 로 거절(CustomFeignException)하면 그 유형이 사유가 된다 — 유형이 없으면 INTERNAL_SERVER_ERROR")
+    void fxp_4xx_유형이_사유() {
+        recorder.recordFailure(history, new ai.univs.face.shared.exception.CustomFeignException("ML-101", "FACE_NOT_FOUND", "x"), CLIENT);
+        assertThat(history.getFailureMessage()).isEqualTo("FACE_NOT_FOUND");
+
+        FaceHistory other = FaceHistory.create(ActionType.ADD, "", "txn-null-type", CLIENT, false, false);
+        recorder.recordFailure(other, new ai.univs.face.shared.exception.CustomFeignException("X", null, "x"), CLIENT);
+        assertThat(other.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    @Test
+    @DisplayName("2단계 델타 리뷰 L-1: 라이브니스 행 저장이 실패해도 사유는 잃지 않는다 — 이력만 한 번 더 남긴다")
+    void 라이브니스_저장_실패여도_사유는_남긴다() {
+        FaceLivenessJpaRepository livenesses = org.mockito.Mockito.mock(FaceLivenessJpaRepository.class);
+        given(livenesses.save(any())).willThrow(new org.springframework.dao.DataIntegrityViolationException("probability is null"));
+        FaceHistoryRecorder withLiveness = TestRecorders.of(faceHistoryRepository, faceMatchRepository, livenesses);
+        history.attachLiveness(FaceLiveness.builder().faceHistory(history).build());
+        UpstreamCallException cause = new UpstreamCallException(503, "MatchFeign#register", "x");
+
+        withLiveness.recordFailure(history, cause, CLIENT);
+
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        verify(faceHistoryRepository).save(history);   // 한 트랜잭션 묶음은 라이브니스에서 실패, 이력만 다시 저장
+        assertThat(history.getPendingLiveness()).isNull();
+        assertThat(cause.getSuppressed()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("실패 기록이 실패해도(DB 장애) 원래 예외를 가리지 않는다 — 억제된 예외로 붙는다")
     void 기록_실패는_원래_예외를_가리지_않는다() {
         DataAccessResourceFailureException dbDown = new DataAccessResourceFailureException("db down");
@@ -179,7 +269,8 @@ class FaceHistoryRecorderTest {
 
         recorder.recordFailure(history, cause, CLIENT);
 
-        assertThat(cause.getSuppressed()).containsExactly(dbDown);
+        // 묶음 저장 실패 + 이력만 다시 저장(L-1 대체 저장) 실패 — 둘 다 억제된 예외로 붙는다
+        assertThat(cause.getSuppressed()).containsExactly(dbDown, dbDown);
     }
 
     @Test
