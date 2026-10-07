@@ -5,6 +5,8 @@ import ai.univs.face.application.result.LivenessResult;
 import ai.univs.face.application.service.ExtractService;
 import ai.univs.face.domain.FaceHistory;
 import ai.univs.face.domain.repository.FaceHistoryRepository;
+import ai.univs.face.domain.repository.FaceMatchRepository;
+import ai.univs.face.support.TestRecorders;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
 import ai.univs.face.shared.web.enums.ErrorType;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +15,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,8 +35,16 @@ class LivenessUseCaseTest {
     @Mock private ExtractService extractService;
     @Mock private MultipartFile faceImage;
 
-    @InjectMocks
+    @Mock private FaceMatchRepository faceMatchRepository;
+
     private LivenessUseCase livenessUseCase;
+
+    /** UG-358: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다. */
+    @BeforeEach
+    void UG358_이력기록기_조립() {
+        lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        livenessUseCase = new LivenessUseCase(TestRecorders.of(faceHistoryRepository, faceMatchRepository), extractService);
+    }
 
     private static final String TXN    = "txn-001";
     private static final String CLIENT = "client-A";
@@ -75,7 +86,7 @@ class LivenessUseCaseTest {
             livenessUseCase.execute(input);
 
             ArgumentCaptor<FaceHistory> captor = ArgumentCaptor.forClass(FaceHistory.class);
-            verify(faceHistoryRepository).save(captor.capture());
+            verify(faceHistoryRepository, atLeastOnce()).save(captor.capture());
             // successLiveness 호출 결과로 result=true
             assertThat(captor.getValue().isResult()).isTrue();
         }
