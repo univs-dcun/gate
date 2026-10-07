@@ -233,6 +233,34 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
+    @DisplayName("2단계 반박 리뷰 L2: fxp 가 4xx 로 거절(CustomFeignException)하면 그 유형이 사유가 된다 — 유형이 없으면 INTERNAL_SERVER_ERROR")
+    void fxp_4xx_유형이_사유() {
+        recorder.recordFailure(history, new ai.univs.face.shared.exception.CustomFeignException("ML-101", "FACE_NOT_FOUND", "x"), CLIENT);
+        assertThat(history.getFailureMessage()).isEqualTo("FACE_NOT_FOUND");
+
+        FaceHistory other = FaceHistory.create(ActionType.ADD, "", "txn-null-type", CLIENT, false, false);
+        recorder.recordFailure(other, new ai.univs.face.shared.exception.CustomFeignException("X", null, "x"), CLIENT);
+        assertThat(other.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    @Test
+    @DisplayName("2단계 델타 리뷰 L-1: 라이브니스 행 저장이 실패해도 사유는 잃지 않는다 — 이력만 한 번 더 남긴다")
+    void 라이브니스_저장_실패여도_사유는_남긴다() {
+        FaceLivenessJpaRepository livenesses = org.mockito.Mockito.mock(FaceLivenessJpaRepository.class);
+        given(livenesses.save(any())).willThrow(new org.springframework.dao.DataIntegrityViolationException("probability is null"));
+        FaceHistoryRecorder withLiveness = TestRecorders.of(faceHistoryRepository, faceMatchRepository, livenesses);
+        history.attachLiveness(FaceLiveness.builder().faceHistory(history).build());
+        UpstreamCallException cause = new UpstreamCallException(503, "MatchFeign#register", "x");
+
+        withLiveness.recordFailure(history, cause, CLIENT);
+
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+        verify(faceHistoryRepository).save(history);   // 한 트랜잭션 묶음은 라이브니스에서 실패, 이력만 다시 저장
+        assertThat(history.getPendingLiveness()).isNull();
+        assertThat(cause.getSuppressed()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("실패 기록이 실패해도(DB 장애) 원래 예외를 가리지 않는다 — 억제된 예외로 붙는다")
     void 기록_실패는_원래_예외를_가리지_않는다() {
         DataAccessResourceFailureException dbDown = new DataAccessResourceFailureException("db down");
@@ -241,7 +269,8 @@ class FaceHistoryRecorderTest {
 
         recorder.recordFailure(history, cause, CLIENT);
 
-        assertThat(cause.getSuppressed()).containsExactly(dbDown);
+        // 묶음 저장 실패 + 이력만 다시 저장(L-1 대체 저장) 실패 — 둘 다 억제된 예외로 붙는다
+        assertThat(cause.getSuppressed()).containsExactly(dbDown, dbDown);
     }
 
     @Test

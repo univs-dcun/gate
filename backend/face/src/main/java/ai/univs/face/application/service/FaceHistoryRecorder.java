@@ -112,7 +112,7 @@ public class FaceHistoryRecorder {
         if (faceHistory.getFailureMessage() == null) {
             // CustomFeignException: fxp 가 4xx 로 거절한 경우 — 클라이언트가 받는 유형과 이력 사유를 맞춘다(2단계 반박 리뷰 L2)
             String type = cause instanceof InvalidFaceModuleException module ? module.getType()
-                    : cause instanceof CustomFeignException feign ? feign.getType()
+                    : cause instanceof CustomFeignException feign && feign.getType() != null ? feign.getType()
                     : cause instanceof InvalidFaceImageException image ? image.getErrorType().name()
                     : cause instanceof CustomFaceException custom ? custom.getErrorType().name()
                     : ErrorType.INTERNAL_SERVER_ERROR.name();
@@ -126,8 +126,18 @@ public class FaceHistoryRecorder {
             });
             faceHistory.clearPendingLiveness();
         } catch (RuntimeException recordError) {
-            log.warn("실패 이력을 남기지 못했다 — transactionUuid={}", faceHistory.getTransactionUuid(), recordError);
             cause.addSuppressed(recordError);
+            // 2단계 델타 리뷰 L-1·L-2: 라이브니스 행 자체가 실패의 원인일 수 있다(fxp 가 NOT NULL 필드를 빠뜨림 — 이제 그
+            // insert 는 match 등록 뒤 결과 커밋에서 난다). 또 결과 커밋 롤백 뒤 남은 IDENTITY id 때문에 merge 가 실패할 수도
+            // 있다(Hibernate 6.6+). 어느 쪽이든 사유를 잃지 않게 이력만 한 번 더 남긴다 — 라이브니스 행은 포기한다.
+            faceHistory.clearPendingLiveness();
+            try {
+                faceHistoryRepository.save(faceHistory);
+                log.warn("라이브니스 행 없이 실패 이력만 남겼다 — transactionUuid={}", faceHistory.getTransactionUuid(), recordError);
+            } catch (RuntimeException historyOnlyError) {
+                log.warn("실패 이력을 남기지 못했다 — transactionUuid={}", faceHistory.getTransactionUuid(), historyOnlyError);
+                cause.addSuppressed(historyOnlyError);
+            }
         }
     }
 
