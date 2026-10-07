@@ -42,6 +42,17 @@ public class FaceHistory {
     private String modifiedBy;
     private LocalDateTime modifiedAt;
 
+    /**
+     * 추출 중 받은 라이브니스 결과 — 아직 저장하지 않았다 (UG-358 2단계 반박 리뷰 M1).
+     *
+     * <p>예전에는 추출 직후 따로 저장해, 쓰기 요청 하나가 커넥션을 세 번(시작·라이브니스·결과) 기다렸다. 혼잡하면 각각
+     * connection-timeout 까지 기다려 face 의 503 이 gate readTimeout(5초)을 넘겼다. 이제 결과 커밋({@code finish}·
+     * {@code recordFailure})이 이력과 한 트랜잭션으로 저장한다 — 대기 지점이 하나 줄고, 라이브니스 행과 이력 결과가
+     * 함께 커밋된다. 컬럼이 아니다.
+     */
+    @Transient
+    private FaceLiveness pendingLiveness;
+
     public static FaceHistory create(
             ActionType actionType,
             String faceId,
@@ -110,6 +121,16 @@ public class FaceHistory {
     public void failUnrecorded(String failureMessage, String managerUuid) {
         this.result = false;
         fail(failureMessage, managerUuid);
+    }
+
+    /** 라이브니스 결과를 결과 커밋 때 함께 저장하도록 붙여 둔다. */
+    public void attachLiveness(FaceLiveness faceLiveness) {
+        this.pendingLiveness = faceLiveness;
+    }
+
+    /** 저장했으면 비운다 — 같은 행을 두 번 넣지 않게. */
+    public void clearPendingLiveness() {
+        this.pendingLiveness = null;
     }
 
     public void fail(String failureMessage, String managerUuid) {

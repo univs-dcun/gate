@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -70,8 +69,16 @@ class DescriptorUseCaseTest {
 
         @Mock private MatchFeign matchFeign;
         @Mock private FaceHistoryRepository faceHistoryRepository;
+        @Mock private FaceMatchRepository faceMatchRepository;
 
-        @InjectMocks private RegisterByDescriptorUseCase useCase;
+        private RegisterByDescriptorUseCase useCase;
+
+        /** UG-358 2단계: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다. */
+        @BeforeEach
+        void UG358_이력기록기_조립() {
+            lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            useCase = new RegisterByDescriptorUseCase(matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository));
+        }
 
         private final RegisterByDescriptorInput input =
                 new RegisterByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT, null);
