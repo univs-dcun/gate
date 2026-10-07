@@ -77,6 +77,19 @@ class FeatureHistoryIssuedIdTest {
     }
 
     @Test
+    @DisplayName("UG-359: 하위의 '잠시 뒤 다시'(503) 도 결과를 모르는 쪽이다 — id 를 남긴다")
+    void 일시_불가도_id_를_남긴다() {
+        // face 는 자기 트랜잭션을 열지 못해 아무것도 안 했을 가능성이 높다. 그래도 여기서 단정하지 않는다 —
+        // face 가 match 등록을 마친 뒤 결과 커밋에서 풀이 모자랐을 수도 있다. 정리 잡이 확인하게 둔다.
+        FeatureHistory h = 시작_행();
+        h.failUpstream(RemoteCallException.temporarilyUnavailable(503, "FaceClient#createFace()"));
+
+        assertThat(h.getFeatureId()).isEqualTo(발급);
+        assertThat(h.getFailureType()).isEqualTo("TEMPORARILY_UNAVAILABLE");
+        assertThat(h.getUpstreamStatus()).isEqualTo(503);
+    }
+
+    @Test
     @DisplayName("정리 잡이 닫으면 id 를 지우고, 시작 상태였으면 INTERNAL_SERVER_ERROR 로 닫는다")
     void 정리_잡이_닫는다() {
         FeatureHistory h = 시작_행();

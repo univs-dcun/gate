@@ -101,6 +101,69 @@ class CommonErrorDecoderTest {
     }
 
     @Nested
+    @DisplayName("UG-359: 503 + TEMPORARILY_UNAVAILABLE — 하위가 '잠시 뒤 다시' 를 알려 온 경우")
+    class TemporarilyUnavailable {
+
+        private static final String BUSY_BODY = """
+                {"success":false,"data":null,"errors":{"code":"SWAGGER-006","type":"TEMPORARILY_UNAVAILABLE","message":"busy"}}
+                """;
+
+        @Test
+        @DisplayName("RemoteCallException 이되 ErrorType 이 TEMPORARILY_UNAVAILABLE 이다 — 이력·등록 흐름은 그대로 탄다")
+        void 일시_불가는_전용_유형() {
+            Exception result = decoder.decode("FaceClient#identify()", response(503, BUSY_BODY));
+
+            // 타입이 RemoteCallException 이어야 유스케이스의 catch 가 failUpstream 으로 이력을 남기고,
+            // 등록은 "결과 모름"(UG-338)으로 발급 id 를 남긴다. 새 예외 타입이면 그 catch 를 전부 빠져나간다.
+            assertThat(result).isInstanceOf(RemoteCallException.class);
+            RemoteCallException e = (RemoteCallException) result;
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE);
+            assertThat(e.getErrorType().getCode()).isEqualTo("PJ-006");
+            assertThat(e.isTemporarilyUnavailable()).isTrue();
+            assertThat(e.getUpstreamStatus()).isEqualTo(503);
+            assertThat(e.getOperation()).isEqualTo("FaceClient#identify()");
+        }
+
+        @ParameterizedTest(name = "body={0}")
+        @ValueSource(strings = {
+                "<html>503 Service Temporarily Unavailable</html>",
+                "",
+                "null",
+                "{\"success\":false,\"data\":null}",
+                "{\"success\":false,\"data\":null,\"errors\":{\"code\":\"SWAGGER-005\",\"type\":\"INTERNAL_SERVER_ERROR\",\"message\":\"x\"}}",
+                "{\"unexpected\":1}"
+        })
+        @DisplayName("다른 503(프록시 HTML·빈 본문·다른 유형·모르는 모양)은 예전 그대로 — 던지지 않는다")
+        void 다른_503은_예전_그대로(String body) {
+            Exception result = decoder.decode("x", response(503, body));
+
+            assertThat(result).isInstanceOf(RemoteCallException.class);
+            RemoteCallException e = (RemoteCallException) result;
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+            assertThat(e.getUpstreamStatus()).isEqualTo(503);
+        }
+
+        @Test
+        @DisplayName("본문이 없는 503 도 예전 그대로다")
+        void 본문_없는_503() {
+            Response noBody = response(503, "").toBuilder().body((Response.Body) null).build();
+
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", noBody);
+
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+        }
+
+        @ParameterizedTest(name = "status={0}")
+        @ValueSource(ints = {500, 502, 504})
+        @DisplayName("503 이 아니면 같은 본문이어도 일반 하위 실패다 — 계약은 503 + 유형 둘 다다")
+        void 상태가_503이_아니면_일반_실패(int status) {
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", response(status, BUSY_BODY));
+
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Nested
     @DisplayName("4xx 인데 본문이 우리 포맷이 아닌 경우")
     class UnparsableClientError {
 

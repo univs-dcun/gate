@@ -96,24 +96,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -160,6 +142,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -171,6 +171,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -267,24 +285,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -331,6 +331,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -342,6 +360,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -428,24 +464,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK"
           },
@@ -485,6 +503,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -496,6 +532,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -574,24 +628,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -638,6 +674,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -649,6 +703,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -755,24 +827,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -819,6 +873,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -830,6 +902,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -906,24 +996,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK"
           },
@@ -963,6 +1035,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -974,6 +1064,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -1080,24 +1188,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1144,6 +1234,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -1155,6 +1263,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -1263,24 +1389,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1327,6 +1435,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -1338,6 +1464,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -1446,24 +1590,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1510,6 +1636,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -1521,6 +1665,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -1579,24 +1741,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1643,6 +1787,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -1654,6 +1816,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -1720,24 +1900,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1784,6 +1946,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -1795,6 +1975,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -1891,24 +2089,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1955,6 +2135,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -1966,6 +2164,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -2042,24 +2258,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -2106,6 +2304,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -2117,6 +2333,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -2215,24 +2449,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -2279,6 +2495,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -2290,6 +2524,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -2387,24 +2639,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -2451,6 +2685,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -2462,6 +2714,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -2607,24 +2877,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -2671,6 +2923,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -2682,6 +2952,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -2769,24 +3057,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -2833,6 +3103,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -2844,6 +3132,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -2933,24 +3239,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -2997,6 +3285,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -3008,6 +3314,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -3097,24 +3421,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -3161,6 +3467,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -3172,6 +3496,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -3320,24 +3662,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -3384,6 +3708,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -3395,6 +3737,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -3482,24 +3842,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -3546,6 +3888,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -3557,6 +3917,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -3646,24 +4024,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -3710,6 +4070,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -3721,6 +4099,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -3810,24 +4206,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -3874,6 +4252,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -3885,6 +4281,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -3965,24 +4379,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -4029,6 +4425,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -4040,6 +4454,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -4129,24 +4561,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -4193,6 +4607,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -4204,6 +4636,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -4293,24 +4743,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -4357,6 +4789,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -4368,6 +4818,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -4459,24 +4927,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -4523,6 +4973,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -4534,6 +5002,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -4625,24 +5111,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -4689,6 +5157,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -4700,6 +5186,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -4779,24 +5283,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -4843,6 +5329,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -4854,6 +5358,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -4945,24 +5467,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5009,6 +5513,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5020,6 +5542,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -5109,24 +5649,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5173,6 +5695,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5184,6 +5724,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -5266,24 +5824,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5330,6 +5870,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5341,6 +5899,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -5423,24 +5999,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5487,6 +6045,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5498,6 +6074,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -5580,24 +6174,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5644,6 +6220,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5655,6 +6249,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -5737,24 +6349,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5801,6 +6395,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5812,6 +6424,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -5894,24 +6524,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -5958,6 +6570,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -5969,6 +6599,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -6051,24 +6699,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -6115,6 +6745,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -6126,6 +6774,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -6208,24 +6874,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -6272,6 +6920,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -6283,6 +6949,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -6377,24 +7061,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -6441,6 +7107,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -6452,6 +7136,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -6540,24 +7242,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -6604,6 +7288,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -6615,6 +7317,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -6713,24 +7433,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -6777,6 +7479,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -6788,6 +7508,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -6970,24 +7708,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -7034,6 +7754,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -7045,6 +7783,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -7144,24 +7900,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -7208,6 +7946,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -7219,6 +7975,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -7373,24 +8147,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -7437,6 +8193,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -7448,6 +8222,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -7538,24 +8330,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -7602,6 +8376,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -7613,6 +8405,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -7691,24 +8501,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK"
           },
@@ -7748,6 +8540,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -7759,6 +8569,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -7849,24 +8677,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -7913,6 +8723,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -7924,6 +8752,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -8012,24 +8858,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK"
           },
@@ -8069,6 +8897,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -8080,6 +8926,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -8169,24 +9033,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -8233,6 +9079,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -8244,6 +9108,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -8403,24 +9285,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -8467,6 +9331,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -8478,6 +9360,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -8562,24 +9462,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -8626,6 +9508,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -8637,6 +9537,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -8737,24 +9655,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -8801,6 +9701,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -8812,6 +9730,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -8915,24 +9851,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -8979,6 +9897,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -8990,6 +9926,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -9093,24 +10047,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -9157,6 +10093,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -9168,6 +10122,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }
@@ -9282,24 +10254,6 @@
               }
             }
           },
-          "500": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "INTERNAL_SERVER_ERROR": {
-                    "value": {
-                      "success": false,
-                      "errors": {
-                        "code": "PJ-005",
-                        "type": "INTERNAL_SERVER_ERROR",
-                        "message": "There has been an error with the Universe platform."
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -9346,6 +10300,24 @@
               }
             }
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "INTERNAL_SERVER_ERROR": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-005",
+                        "type": "INTERNAL_SERVER_ERROR",
+                        "message": "There has been an error with the Universe platform."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "405": {
             "content": {
               "application/json": {
@@ -9357,6 +10329,24 @@
                         "code": "PJ-004",
                         "type": "METHOD_NOT_ALLOWED",
                         "message": "This is not a supported request. Please double-check the request information."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "TEMPORARILY_UNAVAILABLE": {
+                    "value": {
+                      "success": false,
+                      "errors": {
+                        "code": "PJ-006",
+                        "type": "TEMPORARILY_UNAVAILABLE",
+                        "message": "The service is temporarily unable to handle the request. Please try again shortly."
                       }
                     }
                   }

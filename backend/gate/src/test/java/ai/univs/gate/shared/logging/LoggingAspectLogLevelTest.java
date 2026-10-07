@@ -12,6 +12,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import java.sql.SQLTransientConnectionException;
 import java.util.List;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -26,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.transaction.CannotCreateTransactionException;
 
 /**
  * {@code LoggingAspect} 의 예외 로그 수준 (UG-290).
@@ -126,6 +128,33 @@ class LoggingAspectLogLevelTest {
     @DisplayName("분류를 모르는 예외는 ERROR — 조용한 쪽으로 보내면 진짜 장애를 놓친다")
     void 미분류는_ERROR() throws Throwable {
         assertThat(levelOfExceptionLine(new IllegalStateException("boom"))).isEqualTo(Level.ERROR);
+    }
+
+    @Test
+    @DisplayName("UG-359: 풀 혼잡(원인 없는 타임아웃)은 WARN — 버스트에서 요청 수만큼 나온다")
+    void 풀_혼잡은_WARN() throws Throwable {
+        assertThat(levelOfExceptionLine(new CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction",
+                new SQLTransientConnectionException("HikariPool-1 - Connection is not available"))))
+                .isEqualTo(Level.WARN);
+    }
+
+    @Test
+    @DisplayName("UG-359: DB 에 닿지 못하는 타임아웃(원인 있음)은 ERROR 그대로다")
+    void DB_불통_타임아웃은_ERROR() throws Throwable {
+        SQLTransientConnectionException timeout = new SQLTransientConnectionException(
+                "HikariPool-1 - Connection is not available", "08001",
+                new java.net.ConnectException("Connection refused"));
+
+        assertThat(levelOfExceptionLine(new CannotCreateTransactionException("x", timeout)))
+                .isEqualTo(Level.ERROR);
+    }
+
+    @Test
+    @DisplayName("UG-359: 하위가 '잠시 뒤 다시' 를 알려 온 실패는 WARN, 다른 하위 503 은 ERROR 그대로")
+    void 하위_일시_불가는_WARN() throws Throwable {
+        assertThat(levelOfExceptionLine(RemoteCallException.temporarilyUnavailable(503, "FaceClient#identify()")))
+                .isEqualTo(Level.WARN);
     }
 
     @Test

@@ -84,7 +84,8 @@ class SwaggerErrorContractTest {
             ErrorType.UNAUTHORIZED.name(), 401,
             ErrorType.NOT_FOUND.name(), 404,
             ErrorType.METHOD_NOT_ALLOWED.name(), 405,
-            ErrorType.INTERNAL_SERVER_ERROR.name(), 500);
+            ErrorType.INTERNAL_SERVER_ERROR.name(), 500,
+            ErrorType.TEMPORARILY_UNAVAILABLE.name(), 503);
 
     private static JsonNode spec;
 
