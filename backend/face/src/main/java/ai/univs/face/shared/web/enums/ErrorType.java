@@ -14,6 +14,14 @@ public enum ErrorType {
     NOT_FOUND("SWAGGER-003", HttpStatus.NOT_FOUND),
     METHOD_NOT_ALLOWED("SWAGGER-004", HttpStatus.METHOD_NOT_ALLOWED),
     INTERNAL_SERVER_ERROR("SWAGGER-005", HttpStatus.INTERNAL_SERVER_ERROR),
+    /**
+     * 지금은 처리할 여력이 없다 — 잠시 뒤 다시 보내면 된다 (UG-359).
+     *
+     * <p>이 서비스의 DB 커넥션 풀에서 커넥션을 제때 얻지 못했을 때 {@code GlobalExceptionHandler} 가 503 +
+     * {@code Retry-After} 로 내보낸다. gate 는 503 + 이 유형 이름을 보고 자기 {@code PJ-006} 으로 바꿔 전한다 —
+     * <b>이름이 계약이다</b>(코드 접두어는 서비스마다 다르다). 이름을 바꾸면 gate 가 일반 하위 실패(400)로 본다.
+     */
+    TEMPORARILY_UNAVAILABLE("SWAGGER-006", HttpStatus.SERVICE_UNAVAILABLE),
 
     // Common
     INVALID_INPUT("COMMON-001", HttpStatus.BAD_REQUEST),

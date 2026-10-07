@@ -7,7 +7,9 @@ import ai.univs.match.shared.web.enums.ErrorType;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -19,12 +21,17 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.sql.SQLTransientConnectionException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    /** 503 에 싣는 {@code Retry-After} 초 (UG-359). gate 와 같은 값이다. */
+    public static final String RETRY_AFTER_SECONDS = "1";
 
     private final MessageService messageService;
 
@@ -129,12 +136,56 @@ public class GlobalExceptionHandler {
         return getExceptionResponse(ErrorType.METHOD_NOT_ALLOWED);
     }
 
+    /**
+     * 나머지 전부 — 그리고 DB 커넥션 풀 고갈 (UG-359).
+     *
+     * <p>풀 고갈은 전용 예외 타입이 없다. Spring 이 트랜잭션을 열다 났으면
+     * {@code CannotCreateTransactionException}, JDBC 접근 중이면 {@code DataAccessException} 계열로 감싸므로
+     * catch-all 의 맨 앞에서 원인 사슬을 본다({@link PoolExhaustion}). 풀 고갈이면 503 + {@code SWAGGER-006} +
+     * {@code Retry-After} 이고, gate 가 그것을 받아 자기 클라이언트에게 {@code PJ-006} 으로 전한다. 아니면 예전과
+     * 똑같이 500 + ERROR 스택트레이스다.
+     */
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseApi<?> handleGlobalException(Exception ex) {
+    public ResponseEntity<ResponseApi<?>> handleGlobalException(Exception ex) {
+        Optional<SQLTransientConnectionException> poolTimeout = PoolExhaustion.find(ex);
+        if (poolTimeout.isPresent()) {
+            logPoolExhaustion(poolTimeout.get(), ex);
+            return temporarilyUnavailable();
+        }
+
         logByStatus(ErrorType.INTERNAL_SERVER_ERROR, ex, ex.getMessage());
 
-        return getExceptionResponse(ErrorType.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(getExceptionResponse(ErrorType.INTERNAL_SERVER_ERROR));
+    }
+
+    /**
+     * 풀 고갈의 로그 수준을 원인 유무로 가른다 (UG-359). 기준은 {@link PoolExhaustion#isCongestion} 설명 참고.
+     *
+     * <p>혼잡이면 스택트레이스를 남기지 않는다. 버스트에서는 이 줄이 요청 수만큼 나오고 호출 스택은 매번 같은
+     * 트랜잭션 진입 경로다. 대신 Hikari 의 메시지(풀 이름·active·idle·waiting)를 그대로 싣는다.
+     */
+    private void logPoolExhaustion(SQLTransientConnectionException poolTimeout, Exception ex) {
+        ErrorType errorType = ErrorType.TEMPORARILY_UNAVAILABLE;
+        if (PoolExhaustion.isCongestion(poolTimeout)) {
+            log.warn("[{}] DB 커넥션 풀 혼잡 {} — {}",
+                    errorType.getCode(), requestInfo(), poolTimeout.getMessage());
+            return;
+        }
+        log.error("[{}] DB 커넥션을 새로 만들지 못한다 {} — {}",
+                errorType.getCode(), requestInfo(), poolTimeout.getMessage(), ex);
+    }
+
+    /**
+     * 503 + {@code SWAGGER-006} + {@code Retry-After} (UG-359). gate 의 같은 이름 메서드와 같은 모양이다.
+     *
+     * <p>본문의 {@code errors.type} 이 gate 와의 계약이다 — gate 의 디코더가 503 이면서 이 유형일 때만 "잠시 뒤
+     * 다시" 로 읽는다. {@code Retry-After} 는 gate 가 쓰지 않지만 HTTP 503 의 관례라 함께 싣는다.
+     */
+    private ResponseEntity<ResponseApi<?>> temporarilyUnavailable() {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, RETRY_AFTER_SECONDS)
+                .body(getExceptionResponse(ErrorType.TEMPORARILY_UNAVAILABLE));
     }
 
     private ResponseApi<?> getExceptionResponse(ErrorType errorType) {

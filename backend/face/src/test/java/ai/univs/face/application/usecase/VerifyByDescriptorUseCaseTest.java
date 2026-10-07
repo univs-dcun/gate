@@ -1,5 +1,8 @@
 package ai.univs.face.application.usecase;
 
+import ai.univs.face.support.TestRecorders;
+import static org.mockito.Mockito.atLeastOnce;
+
 import ai.univs.face.application.input.VerifyByDescriptorInput;
 import ai.univs.face.application.result.VerifyByDescriptorResult;
 import ai.univs.face.application.service.SimilarityParser;
@@ -37,8 +40,14 @@ class VerifyByDescriptorUseCaseTest {
     @Mock private FaceMatchRepository faceMatchRepository;
     @Mock private SimilarityParser similarityParser;
 
-    @InjectMocks
     private VerifyByDescriptorUseCase verifyByDescriptorUseCase;
+
+    /** UG-358: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다. */
+    @BeforeEach
+    void UG358_이력기록기_조립() {
+        lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        verifyByDescriptorUseCase = new VerifyByDescriptorUseCase(matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), similarityParser);
+    }
 
     private static final String TXN    = "txn-001";
     private static final String CLIENT = "client-A";
@@ -87,7 +96,7 @@ class VerifyByDescriptorUseCaseTest {
             VerifyByDescriptorResult result = verifyByDescriptorUseCase.execute(input);
 
             assertThat(result.result()).isFalse();
-            verify(faceHistoryRepository).save(captor.capture());
+            verify(faceHistoryRepository, atLeastOnce()).save(captor.capture());
             assertThat(captor.getValue().getFailureMessage()).isEqualTo("NOT_MATCH");
         }
     }
@@ -109,7 +118,7 @@ class VerifyByDescriptorUseCaseTest {
                     .extracting(e -> ((InvalidFaceModuleException) e).getType())
                     .isEqualTo("SERVER_ERROR");
 
-            verify(faceHistoryRepository).save(captor.capture());
+            verify(faceHistoryRepository, atLeastOnce()).save(captor.capture());
             assertThat(captor.getValue().getFailureMessage()).isEqualTo("SERVER_ERROR");
         }
     }

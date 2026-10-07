@@ -8,6 +8,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import java.sql.SQLTransientConnectionException;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -20,6 +21,7 @@ import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -208,14 +210,48 @@ class ExceptionLogLevelTest {
     }
 
     @Test
-    @DisplayName("5xx 로 분류되는 ErrorType 은 INTERNAL_SERVER_ERROR 하나뿐이다")
-    void 서버_오류_분류는_하나뿐이다() {
+    @DisplayName("5xx 로 분류되는 ErrorType 은 INTERNAL_SERVER_ERROR 와 TEMPORARILY_UNAVAILABLE 뿐이다")
+    void 서버_오류_분류는_둘뿐이다() {
         // 새 ErrorType 에 5xx 를 달면 그 오류가 ERROR + 스택트레이스로 승격된다. 의도한 것이라면
         // 이 테스트를 함께 고치면 되고, 실수라면 여기서 걸린다.
+        //
+        // UG-359 에서 TEMPORARILY_UNAVAILABLE(503) 을 의도적으로 넣었다. 클라이언트 잘못이 아니므로 5xx 가 맞다.
+        // 다만 logByStatus 를 거치지 않는다 — 핸들러가 원인 유무로 WARN(풀 혼잡)·ERROR(DB 불통)를 직접 가르므로
+        // 5xx 로 둬도 혼잡이 ERROR 로 올라가지 않는다. 아래 풀 고갈 테스트가 그것을 지킨다.
         assertThat(Arrays.stream(ErrorType.values())
                 .filter(e -> e.getStatus().is5xxServerError())
                 .toList())
-                .containsExactly(ErrorType.INTERNAL_SERVER_ERROR);
+                .containsExactlyInAnyOrder(ErrorType.INTERNAL_SERVER_ERROR, ErrorType.TEMPORARILY_UNAVAILABLE);
+    }
+
+    @Test
+    @DisplayName("UG-359: 풀 혼잡(원인 없는 타임아웃)은 WARN 이고 스택트레이스가 없다")
+    void 풀_혼잡은_WARN() {
+        handler.handleGlobalException(new CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction",
+                new SQLTransientConnectionException(
+                        "HikariPool-1 - Connection is not available, request timed out after 1000ms "
+                                + "(total=10, active=10, idle=0, waiting=37)")));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.WARN);
+        assertThat(event.getThrowableProxy())
+                .as("버스트에서는 이 줄이 요청 수만큼 나온다. 트랜잭션 진입 스택은 매번 같다")
+                .isNull();
+        assertThat(event.getFormattedMessage()).contains("SWAGGER-006").contains("waiting=37");
+    }
+
+    @Test
+    @DisplayName("UG-359: DB 에 닿지 못하는 타임아웃(원인 있음)은 ERROR + 스택트레이스")
+    void DB_불통_타임아웃은_ERROR() {
+        handler.handleGlobalException(new CannotCreateTransactionException("x",
+                new SQLTransientConnectionException("HikariPool-1 - Connection is not available", "08001",
+                        new java.net.ConnectException("Connection refused"))));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getThrowableProxy()).isNotNull();
+        assertThat(event.getFormattedMessage()).contains("SWAGGER-006");
     }
 
     @Test

@@ -1,5 +1,8 @@
 package ai.univs.face.application.usecase;
 
+import ai.univs.face.support.TestRecorders;
+import static org.mockito.Mockito.atLeastOnce;
+
 import ai.univs.face.application.input.IdentifyByDescriptorInput;
 import ai.univs.face.application.input.RegisterByDescriptorInput;
 import ai.univs.face.application.result.IdentifyResult;
@@ -172,7 +175,14 @@ class DescriptorUseCaseTest {
         @Mock private FaceMatchRepository faceMatchRepository;
         @Mock private SimilarityParser similarityParser;
 
-        @InjectMocks private IdentifyByDescriptorUseCase useCase;
+        private IdentifyByDescriptorUseCase useCase;
+
+        /** UG-358: 이력 기록기는 실제 객체로 끼운다 — 저장소 목에 시작·결과 두 번의 save 가 그대로 보인다. */
+        @BeforeEach
+        void UG358_이력기록기_조립() {
+            lenient().when(faceHistoryRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            useCase = new IdentifyByDescriptorUseCase(matchFeign, TestRecorders.of(faceHistoryRepository, faceMatchRepository), similarityParser);
+        }
 
         private final IdentifyByDescriptorInput input =
                 new IdentifyByDescriptorInput(BRANCH, DESCRIPTOR, TXN, CLIENT);
@@ -273,7 +283,7 @@ class DescriptorUseCaseTest {
 
     private static FaceHistory capturedHistory(FaceHistoryRepository repository) {
         ArgumentCaptor<FaceHistory> captor = ArgumentCaptor.forClass(FaceHistory.class);
-        verify(repository).save(captor.capture());
+        verify(repository, atLeastOnce()).save(captor.capture());   // UG-358: 1:N 은 시작·결과 두 번 저장한다
         return captor.getValue();
     }
 

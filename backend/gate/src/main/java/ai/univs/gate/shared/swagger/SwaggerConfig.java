@@ -88,7 +88,7 @@ public class SwaggerConfig {
         //   2판: NEED_SERVICE_ROLE(PJ-002)로 교정.
         //   3판(지금): 자리 자체를 제거. 반박 리뷰가 짚었다 — 이 서비스는 403 을 낼 수 없다.
         //        gate 에는 Spring Security 의존성이 없어 AccessDeniedException 경로가 없고,
-        //        GlobalExceptionHandler 의 @ResponseStatus 는 400·404·405·500 뿐이며,
+        //        GlobalExceptionHandler 가 내는 상태는 400·404·405·500 (UG-359 이후 503 추가) 뿐이며,
         //        NEED_SERVICE_ROLE 을 던지는 프로덕션 코드가 0곳이다. 던지더라도
         //        handleBusinessException 이 BAD_REQUEST 고정이라 400 으로 나간다.
         //        즉 2판은 아무도 볼 수 없는 예시를 다른 거짓으로 바꾼 것이었다.
@@ -102,6 +102,10 @@ public class SwaggerConfig {
         allErrors.put(ErrorType.NOT_FOUND.name(), HttpStatus.NOT_FOUND.value());
         allErrors.put(ErrorType.METHOD_NOT_ALLOWED.name(), HttpStatus.METHOD_NOT_ALLOWED.value());
         allErrors.put(ErrorType.INTERNAL_SERVER_ERROR.name(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+        // UG-359: 풀 고갈은 DB 를 타는 어느 엔드포인트에서나 날 수 있다 — 사실상 전부가 API 키·프로젝트
+        // 확인으로 DB 를 탄다. 그래서 엔드포인트별 선언이 아니라 공통 슬롯이다. 실제 응답에는
+        // Retry-After 헤더가 붙는다(예시는 본문만 보여 준다).
+        allErrors.put(ErrorType.TEMPORARILY_UNAVAILABLE.name(), HttpStatus.SERVICE_UNAVAILABLE.value());
 
         // 컨트롤러에 annotation 으로 설정된 발생 가능한 예외 문서화
         for (SwaggerError error : customErrors) {
@@ -150,6 +154,12 @@ public class SwaggerConfig {
 
                     ApiResponse apiResponse = new ApiResponse();
                     apiResponse.setContent(content);
+                    if (status == HttpStatus.SERVICE_UNAVAILABLE.value()) {
+                        // UG-359 반박 리뷰 L4: 503(PJ-006)에는 Retry-After 가 붙는다 — 주석이 아니라 스펙에 선언한다.
+                        apiResponse.addHeaderObject("Retry-After", new io.swagger.v3.oas.models.headers.Header()
+                                .description("다시 시도하기까지 기다릴 초")
+                                .schema(new io.swagger.v3.oas.models.media.IntegerSchema()));
+                    }
 
                     responses.addApiResponse(status.toString(), apiResponse);
                 });

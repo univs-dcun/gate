@@ -3,6 +3,8 @@ package ai.univs.gate.shared.logging;
 import ai.univs.gate.shared.exception.BusinessException;
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.GlobalExceptionHandler;
+import ai.univs.gate.shared.exception.PoolExhaustion;
+import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +82,7 @@ public class LoggingAspect {
             String line = "[EXCEPTION] {} {} | {}.{} | duration={}ms | exception={}";
             Object[] args = {httpMethod, uri, controller, methodName,
                     System.currentTimeMillis() - start, ex.getMessage()};
-            if (isClientError(ex)) {
+            if (isClientError(ex) || isTemporarilyBusy(ex)) {
                 log.warn(line, args);
             } else {
                 log.error(line, args);
@@ -111,6 +113,20 @@ public class LoggingAspect {
             return !GlobalExceptionHandler.isUpstreamServerError(feignException.getType());
         }
         return false;
+    }
+
+    /**
+     * 풀이 붐볐을 뿐인 실패인지 (UG-359) — {@code GlobalExceptionHandler} 가 WARN 으로 남기는 것과 같은 기준이다.
+     *
+     * <p>둘이다. 우리 풀의 혼잡(원인 없는 타임아웃)과, 하위가 "잠시 뒤 다시" 를 알려 온 경우. 버스트에서는 이
+     * 종결선이 요청 수만큼 나오므로 ERROR 로 두면 핸들러를 WARN 으로 내린 의미가 없어진다. DB 에 닿지 못하는
+     * 타임아웃(원인 있음)은 여기 해당하지 않아 ERROR 그대로다.
+     */
+    private boolean isTemporarilyBusy(Throwable ex) {
+        if (ex instanceof RemoteCallException remoteCallException) {
+            return remoteCallException.isTemporarilyUnavailable();
+        }
+        return PoolExhaustion.find(ex).map(PoolExhaustion::isCongestion).orElse(false);
     }
 
     private Map<String, Object> extractRequestData(ProceedingJoinPoint joinPoint) {
