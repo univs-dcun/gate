@@ -109,10 +109,10 @@ class WriteUseCaseHistoryContractTest {
         livenesses = mock(FaceLivenessJpaRepository.class);
         histories = mock(FaceHistoryRepository.class);
         FaceMatchRepository matches = mock(FaceMatchRepository.class);
-        extractService = new ExtractService(extractFeign, livenesses, mock(MessageService.class));
+        extractService = new ExtractService(extractFeign, mock(MessageService.class));
         similarityParser = new SimilarityParser();
         ReflectionTestUtils.setField(similarityParser, "FACE_MATCH_THRESHOLD", 0.85);
-        recorder = TestRecorders.of(histories, matches);
+        recorder = TestRecorders.of(histories, matches, livenesses);
 
         saved.clear();
         historySaves.set(0);

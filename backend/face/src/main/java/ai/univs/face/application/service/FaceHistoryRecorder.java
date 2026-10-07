@@ -5,6 +5,8 @@ import ai.univs.face.domain.FaceHistory;
 import ai.univs.face.domain.FaceMatch;
 import ai.univs.face.domain.repository.FaceHistoryRepository;
 import ai.univs.face.domain.repository.FaceMatchRepository;
+import ai.univs.face.infrastructure.repository.FaceLivenessJpaRepository;
+import ai.univs.face.shared.exception.CustomFeignException;
 import ai.univs.face.shared.exception.CustomFaceException;
 import ai.univs.face.shared.exception.InvalidFaceImageException;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
@@ -43,6 +45,7 @@ public class FaceHistoryRecorder {
 
     private final FaceHistoryRepository faceHistoryRepository;
     private final FaceMatchRepository faceMatchRepository;
+    private final FaceLivenessJpaRepository faceLivenessRepository;
     private final TransactionTemplate transactionTemplate;
 
     /** 요청 이력을 커밋하고 저장된 것을 돌려준다 — 이후 단계는 돌려받은 것을 쓴다. */
@@ -63,14 +66,17 @@ public class FaceHistoryRecorder {
      *
      * <p><b>쓰기(등록·수정·삭제)의 결과 커밋 실패</b>는 match 에 이미 반영된 뒤다 (UG-358 2단계, UG-338). 상태를 되돌릴 때
      * faceId 는 지우지 않는다 — 등록이면 match 가 준 id 가 실패 이력에 남아 운영자가 고아를 찾을 수 있다. 풀 고갈이면
-     * {@link #recordFailure} 가 저장을 건너뛰므로 행에는 그 id 가 남지 않는다 — 그래서 여기서 로그로도 남긴다.
+     * {@link #recordFailure} 가 저장을 건너뛰므로, 매처가 발급한 id(v1)는 행에 남지 않는다(호출자가 발급한 v2 id 는 시작
+     * 행에 이미 있다) — 그래서 여기서 로그로도 남긴다.
      */
     public void finish(FaceHistory faceHistory, FaceMatch faceMatch) {
         try {
             transactionTemplate.executeWithoutResult(status -> {
+                savePendingLiveness(faceHistory);
                 if (faceMatch != null) faceMatchRepository.save(faceMatch);
                 faceHistoryRepository.save(faceHistory);
             });
+            faceHistory.clearPendingLiveness();
         } catch (RuntimeException e) {
             faceHistory.failUnrecorded(ErrorType.INTERNAL_SERVER_ERROR.name(), faceHistory.getModifiedBy());
             if (isRemoteWrite(faceHistory.getType())) {
@@ -104,18 +110,28 @@ public class FaceHistoryRecorder {
             return;
         }
         if (faceHistory.getFailureMessage() == null) {
+            // CustomFeignException: fxp 가 4xx 로 거절한 경우 — 클라이언트가 받는 유형과 이력 사유를 맞춘다(2단계 반박 리뷰 L2)
             String type = cause instanceof InvalidFaceModuleException module ? module.getType()
+                    : cause instanceof CustomFeignException feign ? feign.getType()
                     : cause instanceof InvalidFaceImageException image ? image.getErrorType().name()
                     : cause instanceof CustomFaceException custom ? custom.getErrorType().name()
                     : ErrorType.INTERNAL_SERVER_ERROR.name();
             faceHistory.fail(type, clientId);
         }
         try {
-            // 저장소의 save 가 그 자체로 짧은 트랜잭션이다(Spring Data). 이 메서드는 트랜잭션을 열지 않는다.
-            faceHistoryRepository.save(faceHistory);
+            // 붙여 둔 라이브니스 결과(라이브니스 실패 -777 등)도 이력과 한 트랜잭션으로 남긴다 — 예전에도 이 경우 행이 남았다.
+            transactionTemplate.executeWithoutResult(status -> {
+                savePendingLiveness(faceHistory);
+                faceHistoryRepository.save(faceHistory);
+            });
+            faceHistory.clearPendingLiveness();
         } catch (RuntimeException recordError) {
             log.warn("실패 이력을 남기지 못했다 — transactionUuid={}", faceHistory.getTransactionUuid(), recordError);
             cause.addSuppressed(recordError);
         }
+    }
+
+    private void savePendingLiveness(FaceHistory faceHistory) {
+        if (faceHistory.getPendingLiveness() != null) faceLivenessRepository.save(faceHistory.getPendingLiveness());
     }
 }

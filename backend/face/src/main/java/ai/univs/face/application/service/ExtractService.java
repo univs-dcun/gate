@@ -8,7 +8,6 @@ import ai.univs.face.infrastructure.feign.extract.ExtractFeign;
 import ai.univs.face.infrastructure.feign.extract.dto.ExtractFeignResponseApi;
 import ai.univs.face.infrastructure.feign.extract.dto.ExtractFeignResponseDTO;
 import ai.univs.face.infrastructure.feign.extract.dto.LivenessBodyFeignResponseDTO;
-import ai.univs.face.infrastructure.repository.FaceLivenessJpaRepository;
 import ai.univs.face.shared.exception.InvalidFaceModuleException;
 import ai.univs.face.shared.locale.MessageService;
 import ai.univs.face.shared.web.enums.ErrorType;
@@ -31,8 +30,6 @@ public class ExtractService {
     // External Modules
     private final ExtractFeign extractFeign;
 
-    // Database
-    private final FaceLivenessJpaRepository faceLivenessRepository;
 
     // Common Message
     private final MessageService messageService;
@@ -148,7 +145,8 @@ public class ExtractService {
                 .modifiedBy(clientId)
                 .modifiedAt(LocalDateTime.now(ZoneOffset.UTC))
                 .build();
-        faceLivenessRepository.save(faceLiveness);
+        // UG-358 2단계 반박 리뷰 M1: 여기서 저장하지 않는다. 결과 커밋(FaceHistoryRecorder)이 이력과 함께 저장한다.
+        history.attachLiveness(faceLiveness);
     }
 
     private void fail(FaceHistory history, String code, String type, String clientId) {

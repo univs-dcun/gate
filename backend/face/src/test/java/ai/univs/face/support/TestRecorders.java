@@ -3,6 +3,7 @@ package ai.univs.face.support;
 import ai.univs.face.application.service.FaceHistoryRecorder;
 import ai.univs.face.domain.repository.FaceHistoryRepository;
 import ai.univs.face.domain.repository.FaceMatchRepository;
+import ai.univs.face.infrastructure.repository.FaceLivenessJpaRepository;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
@@ -18,7 +19,14 @@ public final class TestRecorders {
     }
 
     public static FaceHistoryRecorder of(FaceHistoryRepository histories, FaceMatchRepository matches) {
-        return new FaceHistoryRecorder(histories, matches, new TransactionTemplate(new NoOpTransactionManager()));
+        return of(histories, matches, org.mockito.Mockito.mock(FaceLivenessJpaRepository.class));
+    }
+
+    /** 라이브니스 행 저장을 검증할 때 — 라이브니스는 결과 커밋 때 이력과 함께 저장된다(UG-358 2단계 반박 리뷰 M1). */
+    public static FaceHistoryRecorder of(FaceHistoryRepository histories, FaceMatchRepository matches,
+                                         FaceLivenessJpaRepository livenesses) {
+        return new FaceHistoryRecorder(histories, matches, livenesses,
+                new TransactionTemplate(new NoOpTransactionManager()));
     }
 
     /** 트랜잭션을 실제로 열지 않는 관리자 — 커밋·롤백은 아무것도 하지 않는다. */
