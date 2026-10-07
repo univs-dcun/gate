@@ -159,7 +159,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("브랜치에 등록된 descriptor가 없으면 중복 검사를 수행하지 않는다")
             void whenBranchIsEmpty_thenSkipsDuplicateCheck() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(0);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -169,7 +169,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("브랜치에 등록된 descriptor가 없어도 descriptor는 저장한다")
             void whenBranchIsEmpty_thenSavesDescriptor() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(0);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -179,7 +179,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("브랜치에 기존 descriptor가 있으면 올바른 인자로 중복 검사를 수행한다")
             void whenBranchHasDescriptors_thenChecksDuplicate() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(3);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -196,7 +196,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("중복 검사를 통과하면 descriptor를 저장한다")
             void whenDuplicateCheckPasses_thenSavesDescriptor() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(3);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -209,7 +209,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("저장되는 descriptor의 버전이 descriptorDetail의 spec 버전과 일치한다")
             void whenSaving_thenDescriptorVersionMatchesSpec() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(0);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -222,7 +222,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("중복 검사에서 ALREADY_REGISTERED_DESCRIPTOR가 발생하면 그대로 전파된다")
             void whenDuplicateCheckFails_thenPropagatesException() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(3);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
                 doThrow(new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR))
                         .when(duplicateService)
                         .checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
@@ -237,7 +237,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("중복 검사 실패 시 descriptor를 저장하지 않는다")
             void whenDuplicateCheckFails_thenNeverSavesDescriptor() {
-                when(descriptorRepository.countByBranch(existingBranch)).thenReturn(3);
+                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
                 doThrow(new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR))
                         .when(duplicateService)
                         .checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
@@ -263,7 +263,7 @@ class RegisterServiceTest {
             when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.of(existingBranch));
             when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch))
                     .thenReturn(Optional.empty());
-            when(descriptorRepository.countByBranch(existingBranch)).thenReturn(0);
+            when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
 
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -289,7 +289,7 @@ class RegisterServiceTest {
         void setUp() {
             when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.of(existingBranch));
             when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
-            when(descriptorRepository.countByBranch(existingBranch)).thenReturn(0);
+            when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
         }
 
         @Test
