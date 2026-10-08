@@ -31,6 +31,8 @@ public class JobConnectionTimeout {
 
     /** 정리 잡이 DB 응답을 기다리는 상한. 멈춘 DB 를 영원히 기다리지는 않는다. */
     public static final Duration JOB = Duration.ofMinutes(5);
+    /** 서버 쪽 취소는 소켓 상한보다 조금 먼저 — 서버가 취소하면 커넥션을 버리지 않아도 된다 (델타 리뷰 L1). */
+    static final Duration JOB_STATEMENT = JOB.minusSeconds(10);
 
     private final DataSource dataSource;
 
@@ -50,16 +52,31 @@ public class JobConnectionTimeout {
         }
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try {
-            connection.setNetworkTimeout(Runnable::run, (int) JOB.toMillis());
-            if (isPostgreSql(connection)) {
-                try (Statement statement = connection.createStatement()) {
-                    statement.execute("SET LOCAL statement_timeout = " + JOB.toMillis());
-                }
+            try {
+                connection.setNetworkTimeout(Runnable::run, (int) JOB.toMillis());
+            } catch (SQLException | RuntimeException e) {
+                log.warn("정리 잡의 DB 응답 상한을 늘리지 못했다 — 기본 상한으로 진행한다. 원인={}", e.toString());
             }
-        } catch (SQLException | RuntimeException e) {
-            log.warn("정리 잡의 DB 응답 상한을 늘리지 못했다 — 기본 상한으로 진행한다. 원인={}", e.toString());
+            extendStatementTimeout(connection);
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
+        }
+    }
+
+    /**
+     * PostgreSQL 이면 이 트랜잭션의 {@code statement_timeout} 을 늘린다. 실패하면 던진다 — PostgreSQL 은 실패한 문장 뒤의
+     * 트랜잭션을 버린 상태(aborted)로 두므로, 삼키고 진행하면 이후 문장이 모두 엉뚱한 원인(25P02)으로 실패한다 (델타 리뷰 L2).
+     */
+    private static void extendStatementTimeout(Connection connection) {
+        try {
+            if (!isPostgreSql(connection)) {
+                return;
+            }
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("SET LOCAL statement_timeout = " + JOB_STATEMENT.toMillis());
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("정리 잡의 statement_timeout 을 늘리지 못했다", e);
         }
     }
 

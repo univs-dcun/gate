@@ -61,7 +61,7 @@ class JobConnectionTimeoutTest {
     }
 
     @Test
-    @DisplayName("PostgreSQL 이면 이 트랜잭션의 statement_timeout 도 5분으로 늘린다 — SET LOCAL 이라 트랜잭션이 끝나면 돌아온다")
+    @DisplayName("PostgreSQL 이면 이 트랜잭션의 statement_timeout 도 늘린다(소켓 상한보다 조금 짧게) — SET LOCAL 이라 트랜잭션이 끝나면 돌아온다")
     void PostgreSQL_서버_상한() throws SQLException {
         DataSource dataSource = mock(DataSource.class);
         Connection connection = mock(Connection.class);
@@ -74,8 +74,26 @@ class JobConnectionTimeoutTest {
 
         new JobConnectionTimeout(dataSource).extendForCurrentTransaction();
 
-        verify(statement).execute("SET LOCAL statement_timeout = " + JobConnectionTimeout.JOB.toMillis());
+        verify(statement).execute("SET LOCAL statement_timeout = " + JobConnectionTimeout.JOB_STATEMENT.toMillis());
         verify(statement).close();
+    }
+
+    @Test
+    @DisplayName("PostgreSQL 에서 statement_timeout 을 못 늘리면 던진다 — 실패한 문장 뒤 트랜잭션은 이미 버려진 상태라 진행할 수 없다")
+    void PostgreSQL_서버_상한_실패() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        java.sql.DatabaseMetaData metaData = mock(java.sql.DatabaseMetaData.class);
+        java.sql.Statement statement = mock(java.sql.Statement.class);
+        when(connection.getMetaData()).thenReturn(metaData);
+        when(metaData.getDatabaseProductName()).thenReturn("PostgreSQL");
+        when(connection.createStatement()).thenReturn(statement);
+        when(statement.execute(org.mockito.ArgumentMatchers.anyString())).thenThrow(new SQLException("boom"));
+        트랜잭션_시작(dataSource, connection);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> new JobConnectionTimeout(dataSource).extendForCurrentTransaction())
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -112,6 +130,9 @@ class JobConnectionTimeoutTest {
         when(physical.getAutoCommit()).thenReturn(true);
         when(physical.getNetworkTimeout()).thenReturn(10_000);   // gate-config 의 socketTimeout 10초
         when(physical.getTransactionIsolation()).thenReturn(Connection.TRANSACTION_READ_COMMITTED);
+        java.sql.DatabaseMetaData physicalMeta = mock(java.sql.DatabaseMetaData.class);
+        when(physicalMeta.getDatabaseProductName()).thenReturn("H2");   // PostgreSQL 이 아니면 SET LOCAL 은 하지 않는다
+        when(physical.getMetaData()).thenReturn(physicalMeta);
         DataSource driver = mock(DataSource.class);
         when(driver.getConnection()).thenReturn(physical);
 
