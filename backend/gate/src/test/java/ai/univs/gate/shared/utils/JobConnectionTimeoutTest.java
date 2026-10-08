@@ -61,6 +61,24 @@ class JobConnectionTimeoutTest {
     }
 
     @Test
+    @DisplayName("PostgreSQL 이면 이 트랜잭션의 statement_timeout 도 5분으로 늘린다 — SET LOCAL 이라 트랜잭션이 끝나면 돌아온다")
+    void PostgreSQL_서버_상한() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        Connection connection = mock(Connection.class);
+        java.sql.DatabaseMetaData metaData = mock(java.sql.DatabaseMetaData.class);
+        java.sql.Statement statement = mock(java.sql.Statement.class);
+        when(connection.getMetaData()).thenReturn(metaData);
+        when(metaData.getDatabaseProductName()).thenReturn("PostgreSQL");
+        when(connection.createStatement()).thenReturn(statement);
+        트랜잭션_시작(dataSource, connection);
+
+        new JobConnectionTimeout(dataSource).extendForCurrentTransaction();
+
+        verify(statement).execute("SET LOCAL statement_timeout = " + JobConnectionTimeout.JOB.toMillis());
+        verify(statement).close();
+    }
+
+    @Test
     @DisplayName("트랜잭션 밖이면 커넥션을 빌리지 않는다 — 걸어 봐야 곧바로 반납된다")
     void 트랜잭션_밖() {
         DataSource dataSource = mock(DataSource.class);

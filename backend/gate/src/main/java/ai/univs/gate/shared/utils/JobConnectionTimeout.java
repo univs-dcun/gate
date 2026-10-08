@@ -1,7 +1,9 @@
 package ai.univs.gate.shared.utils;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *
  * <p>HikariCP 는 커넥션을 풀에 돌려받을 때 바꾼 네트워크 타임아웃을 원래 값으로 되돌린다 — 다른 요청이 늘어난 값을 물려받지
  * 않는다.
+ *
+ * <p>PostgreSQL 은 서버 쪽 {@code statement_timeout}(gate-config, 소켓 상한보다 조금 짧게)도 걸려 있어 함께 늘린다.
+ * {@code SET LOCAL} 이라 이 트랜잭션이 끝나면 원래 값으로 돌아간다.
  */
 @Slf4j
 @Component
@@ -46,10 +51,20 @@ public class JobConnectionTimeout {
         Connection connection = DataSourceUtils.getConnection(dataSource);
         try {
             connection.setNetworkTimeout(Runnable::run, (int) JOB.toMillis());
-        } catch (SQLException | UnsupportedOperationException e) {
+            if (isPostgreSql(connection)) {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("SET LOCAL statement_timeout = " + JOB.toMillis());
+                }
+            }
+        } catch (SQLException | RuntimeException e) {
             log.warn("정리 잡의 DB 응답 상한을 늘리지 못했다 — 기본 상한으로 진행한다. 원인={}", e.toString());
         } finally {
             DataSourceUtils.releaseConnection(connection, dataSource);
         }
+    }
+
+    private static boolean isPostgreSql(Connection connection) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        return metaData != null && "PostgreSQL".equalsIgnoreCase(metaData.getDatabaseProductName());
     }
 }

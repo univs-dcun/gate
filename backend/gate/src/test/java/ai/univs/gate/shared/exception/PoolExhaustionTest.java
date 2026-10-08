@@ -108,6 +108,13 @@ class PoolExhaustionTest {
     }
 
     @Test
+    @DisplayName("UG-367: 서버의 statement_timeout 이 취소한 쿼리(57014)도 DB 응답 시간 초과다")
+    void 서버_취소() {
+        SQLException canceled = new SQLException("ERROR: canceling statement due to statement timeout", "57014");
+        assertThat(PoolExhaustion.findReadTimeout(new RuntimeException("wrapped", canceled))).containsSame(canceled);
+    }
+
+    @Test
     @DisplayName("UG-367 대조군: DB 와 무관한 타임아웃(하위 호출)이나 타임아웃 없는 SQL 오류는 아니다")
     void 읽기_타임아웃_대조군() {
         assertThat(PoolExhaustion.findReadTimeout(new RuntimeException(new java.net.SocketTimeoutException("feign")))).isEmpty();

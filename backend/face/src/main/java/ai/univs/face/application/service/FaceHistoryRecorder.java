@@ -109,6 +109,12 @@ public class FaceHistoryRecorder {
             log.warn("풀 고갈로 실패 이력을 남기지 않는다 — transactionUuid={}", faceHistory.getTransactionUuid());
             return;
         }
+        if (PoolExhaustion.findReadTimeout(cause).isPresent()) {
+            // UG-367 반박 리뷰 M4: DB 가 응답 상한 안에 답하지 않아 실패했다. 멈춘 DB 에 저장을 또 시도하면 상한을 한 번 더
+            // 기다려 503 이 그만큼 늦게 나가고 gate 의 Feign readTimeout 에 걸린다 — 풀 고갈과 같은 이유로 건너뛴다.
+            log.warn("DB 응답 시간 초과로 실패 이력을 남기지 않는다 — transactionUuid={}", faceHistory.getTransactionUuid());
+            return;
+        }
         if (faceHistory.getFailureMessage() == null) {
             // CustomFeignException: fxp 가 4xx 로 거절한 경우 — 클라이언트가 받는 유형과 이력 사유를 맞춘다(2단계 반박 리뷰 L2)
             String type = cause instanceof InvalidFaceModuleException module ? module.getType()
