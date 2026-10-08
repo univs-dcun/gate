@@ -19,6 +19,7 @@ import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.webhook.WebhookService;
 import ai.univs.gate.support.webhook.WebhookTestResult;
+import ai.univs.gate.support.webhook.WebhookToggleCache;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,7 @@ class WebhookTogglesAndTestUseCaseTest {
     private final ProjectService projectService = mock(ProjectService.class);
     private final WebhookConfigRepository repository = mock(WebhookConfigRepository.class);
     private final WebhookService webhookService = mock(WebhookService.class);
-    private final UpdateWebhookTogglesUseCase toggles = new UpdateWebhookTogglesUseCase(projectService, repository);
+    private final UpdateWebhookTogglesUseCase toggles = new UpdateWebhookTogglesUseCase(projectService, repository, new WebhookToggleCache());
 
     /** 테스트가 단조 시계를 움직인다 (나노초). */
     private final AtomicLong nanos = new AtomicLong(1_000_000_000L);
