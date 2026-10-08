@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -142,29 +143,41 @@ public class WebhookService {
      */
     public void send(Long projectId, CallerType source, WebhookEvent event, String transactionUuid, Object data) {
         // 웹훅이 없거나 이 경로가 꺼진 프로젝트는 대기열을 쓰지 않는다 (UG-361). 모르면 넣고 전송 스레드가 확인한다.
-        if (toggles.knownDisabled(projectId, source)) return;
+        WebhookToggleCache.Decision decision = toggles.decide(projectId, source);
+        if (decision == WebhookToggleCache.Decision.SKIP) return;
         Instant occurredAt = Instant.now(clock);
         try {
             dispatcher.execute(() -> dispatch(projectId, source, event, transactionUuid, occurredAt, data));
         } catch (RejectedExecutionException e) {
+            if (decision == WebhookToggleCache.Decision.PROBE) toggles.probeDropped(projectId);
             recordDrop(projectId, event);
         }
     }
 
     /**
      * 버린 건수를 모아 {@link #DROP_LOG_INTERVAL} 에 한 줄만 남긴다 (UG-361). 조용하다가 처음 버리면 바로 남긴다.
-     * 마지막 줄 뒤에 버린 건수는 다음에 버릴 때나 종료할 때 함께 남는다.
+     * 간격 안에 더 버린 건수는 {@link #flushDrops} 가 다음 간격에 남긴다.
      */
     private void recordDrop(Long projectId, WebhookEvent event) {
         droppedSinceLog.incrementAndGet();
+        reportDrops(", latest projectId=" + projectId + ", event=" + event);
+    }
+
+    /** 폭주가 끝난 뒤 남은 건수가 다음 드롭까지 묻히지 않게 간격마다 비운다 (반박 리뷰 L-1). */
+    @Scheduled(fixedDelay = 10_000L, initialDelay = 10_000L)
+    void flushDrops() {
+        reportDrops("");
+    }
+
+    private void reportDrops(String latest) {
+        if (droppedSinceLog.get() == 0) return;
         long now = nanoTime.getAsLong();
         long last = lastDropLogNanos.get();
         if (last != NEVER_LOGGED && now - last < DROP_LOG_INTERVAL.toNanos()) return;
         if (!lastDropLogNanos.compareAndSet(last, now)) return;
         long dropped = droppedSinceLog.getAndSet(0);
         if (dropped > 0) {
-            log.warn("Webhook dropped (dispatch queue full): count={} since last report, latest projectId={}, event={}",
-                    dropped, projectId, event);
+            log.warn("Webhook dropped (dispatch queue full): count={} since last report{}", dropped, latest);
         }
     }
 

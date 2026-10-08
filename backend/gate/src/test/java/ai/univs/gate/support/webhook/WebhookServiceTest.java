@@ -305,8 +305,10 @@ class WebhookServiceTest {
     /** 전송 스레드가 설정을 읽고 캐시에 남길 때까지 기다린다 (UG-361). */
     private void awaitKnownDisabled(CallerType source) throws InterruptedException {
         long deadline = System.currentTimeMillis() + 5_000;
-        while (!toggles.knownDisabled(1L, source) && System.currentTimeMillis() < deadline) Thread.sleep(10);
-        assertThat(toggles.knownDisabled(1L, source)).isTrue();
+        while (toggles.decide(1L, source) != WebhookToggleCache.Decision.SKIP && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
+        assertThat(toggles.decide(1L, source)).isEqualTo(WebhookToggleCache.Decision.SKIP);
     }
 
     @Test
@@ -361,6 +363,25 @@ class WebhookServiceTest {
     }
 
     @Test
+    @DisplayName("반박 리뷰 M-1: 기억이 오래돼도 확인은 한 건만 대기열로 보내고 나머지는 계속 건너뛴다")
+    void 오래된_꺼짐_확인은_한_건() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        when(repository.findByProjectId(1L)).thenReturn(Optional.empty());
+        AtomicLong nanos = new AtomicLong(1_000_000_000L);
+        toggles.nanoTime = nanos::get;
+        WebhookService s = service(loopbackAllowed(props), props);
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-0", Map.of());
+        awaitKnownDisabled(CallerType.API);
+
+        nanos.addAndGet(WebhookToggleCache.FRESH.toNanos());
+        for (int i = 1; i <= 100; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-" + i, Map.of());
+        awaitKnownDisabled(CallerType.API);   // 확인이 돌아와 새로 기억했다
+        Thread.sleep(200);
+
+        verify(repository, times(2)).findByProjectId(1L);   // 처음 1 + 확인 1
+    }
+
+    @Test
     @DisplayName("UG-361: 대기열이 넘쳐 버린 건수는 간격마다 한 줄로 모아 남긴다 — 건마다 WARN 을 남기지 않는다")
     void 드롭_로그_모음() throws Exception {
         WebhookProperties props = new WebhookProperties(false, Duration.ofSeconds(2), Duration.ofSeconds(5),
@@ -388,6 +409,16 @@ class WebhookServiceTest {
             nanos.addAndGet(WebhookService.DROP_LOG_INTERVAL.toNanos());
             s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "drop-last", Map.of());
             assertThat(drops(appender)).containsExactly("count=1", "count=50");
+
+            // 반박 리뷰 L-1: 폭주가 끝나 더 버리지 않아도 남은 건수는 다음 간격에 주기 작업이 남긴다
+            for (int i = 0; i < 7; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tail-" + i, Map.of());
+            s.flushDrops();
+            assertThat(drops(appender)).as("간격 안에는 남기지 않는다").containsExactly("count=1", "count=50");
+            nanos.addAndGet(WebhookService.DROP_LOG_INTERVAL.toNanos());
+            s.flushDrops();
+            assertThat(drops(appender)).containsExactly("count=1", "count=50", "count=7");
+            s.flushDrops();
+            assertThat(drops(appender)).as("남은 건이 없으면 남기지 않는다").hasSize(3);
         } finally {
             release.countDown();
             logger.detachAppender(appender);
