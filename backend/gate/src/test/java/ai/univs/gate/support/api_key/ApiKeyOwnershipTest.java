@@ -44,6 +44,13 @@ class ApiKeyOwnershipTest {
     @Mock
     private ApiKeyRepository apiKeyRepository;
 
+    /** UG-364: 실제 캐시 — 조회 규칙이 캐시를 거쳐도 같은지 본다. 테스트마다 새로 만든다. */
+
+    @org.mockito.Spy
+
+    private ApiKeyLookupCache lookupCache = new ApiKeyLookupCache();
+
+
     @InjectMocks
     private ApiKeyService apiKeyService;
 
@@ -55,6 +62,13 @@ class ApiKeyOwnershipTest {
         ReflectionTestUtils.setField(project, "id", 42L);
 
         apiKey = ApiKey.builder().project(project).apiKey(KEY).isActive(true).build();
+    }
+
+    /** UG-364: 서비스는 캐시용 사본을 주므로 같은 객체가 아니라 같은 키인지 본다. */
+    private void 같은_키(ApiKey found) {
+        assertThat(found.getApiKey()).isEqualTo(apiKey.getApiKey());
+        assertThat(found.getProject().getId()).isEqualTo(apiKey.getProject().getId());
+        assertThat(found.getProject().getAccountId()).isEqualTo(apiKey.getProject().getAccountId());
     }
 
     private void keyExists() {
@@ -70,7 +84,7 @@ class ApiKeyOwnershipTest {
         void 소유자_통과() {
             keyExists();
 
-            assertThat(apiKeyService.findOwnedByApiKey(KEY, OWNER)).isSameAs(apiKey);
+            assertThat(apiKeyService.findOwnedByApiKey(KEY, OWNER)).satisfies(ApiKeyOwnershipTest.this::같은_키);
         }
 
         @Test
@@ -120,7 +134,7 @@ class ApiKeyOwnershipTest {
             // 데모(/api/v1/demo/**)는 4개 환경 게이트웨이 전부에서 AuthenticationFilter 가 없다.
             // QR 로 접근한 사용자에게는 계정이 없어 대조할 accountId 자체가 존재하지 않는다.
             // 데모가 넘기는 0L 은 '계정 없음' 을 뜻하는 자리표지, 실제 계정이 아니다.
-            assertThat(apiKeyService.findByApiKey(CallerType.DEMO, KEY, 0L)).isSameAs(apiKey);
+            assertThat(apiKeyService.findByApiKey(CallerType.DEMO, KEY, 0L)).satisfies(ApiKeyOwnershipTest.this::같은_키);
         }
 
         @Test
@@ -137,7 +151,7 @@ class ApiKeyOwnershipTest {
         void 인증경로_소유자_통과() {
             keyExists();
 
-            assertThat(apiKeyService.findByApiKey(CallerType.API, KEY, OWNER)).isSameAs(apiKey);
+            assertThat(apiKeyService.findByApiKey(CallerType.API, KEY, OWNER)).satisfies(ApiKeyOwnershipTest.this::같은_키);
         }
     }
 
@@ -214,7 +228,7 @@ class ApiKeyOwnershipTest {
         void 데모는_막지_않는다() {
             keyExists();
 
-            assertThat(apiKeyService.findByApiKey(CallerType.DEMO, KEY, null)).isSameAs(apiKey);
+            assertThat(apiKeyService.findByApiKey(CallerType.DEMO, KEY, null)).satisfies(ApiKeyOwnershipTest.this::같은_키);
         }
     }
 }

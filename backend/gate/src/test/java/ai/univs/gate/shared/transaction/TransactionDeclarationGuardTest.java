@@ -103,39 +103,39 @@ class TransactionDeclarationGuardTest {
     }
 
     /**
-     * {@code ApiKeyService} 는 자기 지연 로딩의 경계를 자기가 연다 (UG-335).
+     * {@code ApiKeyService} 의 키 조회는 트랜잭션을 열지 않는다 (UG-364). 예전 규칙(UG-335)은 반대였다 — 클래스에 읽기
+     * 트랜잭션을 붙여 지연 프록시를 그 안에서 초기화했다.
      *
-     * <p>{@code validateOwnership} 이 {@code apiKey.getProject().getAccountId()} 로 프록시를
-     * 초기화한다. 예전에는 그 책임이 호출자에게 있었고, 트랜잭션 없는 유스케이스
-     * ({@code ExtractUseCase}, {@code GetFeatureListUseCase})는 OSIV 기본값에만 기대고 있었다.
-     *
-     * <p>호출자마다 선언을 붙이지 않은 이유는 {@code ExtractUseCase} 다. 그쪽은 조회 직후
-     * face 서비스를 Feign 으로 부르므로, 트랜잭션으로 감싸면 원격 호출 내내 영속성 컨텍스트를
-     * 붙든 채 네트워크를 기다린다.
-     *
-     * <p>반박 리뷰가 세 번째 사례({@code CreatePalmFeatureUseCase})를 더 찾았다. 그쪽은
-     * 원격 호출이 끝난 뒤 결과를 조립하며 지연 연관을 읽으므로 자기 {@code @Transactional} 로
-     * 해결했다 — 쌍둥이인 {@code CreateFaceFeatureUseCase} 와 대칭이 맞다.
+     * <p>UG-364 에서 키 조회 결과를 캐시에 두면서 바꿨다. 클래스에 트랜잭션이 남아 있으면 캐시가 적중해도 트랜잭션을 열며
+     * 커넥션을 빌린다 — 처리량 상한이 그 풀이라(UG-359) 캐시의 효과가 절반이 된다. 대신 지연 로딩이 일어나지 않게 했다.
+     * <ul>
+     *   <li>키 문자열 조회가 프로젝트를 함께 가져온다({@code @EntityGraph}, {@code ApiKeyJpaRepositorySliceTest}).
+     *   <li>호출자에게는 값만 담은 사본을 준다(프로젝트에는 연관이 없다). 트랜잭션 밖에서 읽히는지는
+     *       {@code ApiKeyLazyBoundarySliceTest} 가 실제 H2 로 본다.
+     * </ul>
+     * 프로젝트로 키를 찾는 {@code findByProject} 는 여전히 지연 프록시를 돌려주므로 자기 읽기 트랜잭션을 연다.
      */
     @Test
-    @DisplayName("ApiKeyService 는 읽기 트랜잭션을 연다 — 지연 로딩 경계의 소유자다")
-    void ApiKeyService_는_읽기_트랜잭션이다() {
-        Transactional transactional =
-                AnnotatedElementUtils.findMergedAnnotation(ApiKeyService.class, Transactional.class);
+    @DisplayName("UG-364: ApiKeyService 의 키 조회는 트랜잭션을 열지 않는다 — 캐시가 적중하면 커넥션을 빌리지 않는다")
+    void ApiKeyService_키_조회는_트랜잭션을_열지_않는다() throws NoSuchMethodException {
+        assertThat(AnnotatedElementUtils.findMergedAnnotation(ApiKeyService.class, Transactional.class))
+                .as("클래스에 트랜잭션이 붙으면 캐시 적중에도 커넥션을 빌린다 (UG-364)")
+                .isNull();
+        for (String name : new String[] {"findByApiKeyUnverified", "findOwnedByApiKey"}) {
+            java.lang.reflect.Method method = name.equals("findByApiKeyUnverified")
+                    ? ApiKeyService.class.getMethod(name, String.class)
+                    : ApiKeyService.class.getMethod(name, String.class, Long.class);
+            assertThat(AnnotatedElementUtils.findMergedAnnotation(method, Transactional.class))
+                    .as("%s 에 트랜잭션이 붙으면 캐시 적중에도 커넥션을 빌린다", name)
+                    .isNull();
+        }
 
-        assertThat(transactional)
-                .as("이 선언이 사라지면 트랜잭션 없는 호출자에서 소유 검증이 "
-                        + "LazyInitializationException 으로 터진다. open-in-view 가 꺼져 있어 "
-                        + "요청 범위 컨텍스트가 받아 주지 않는다 (UG-335)")
-                .isNotNull();
-
-        assertThat(transactional.readOnly())
-                .as("이 클래스는 조회만 한다. 쓰기 가능 트랜잭션이면 더티 체킹 flush 여지가 남는다")
-                .isTrue();
-
-        assertThat(transactional.propagation())
-                .as("바깥 트랜잭션이 있으면 합류하고 없으면 열어야 한다")
-                .isIn((Object[]) 트랜잭션이_열리는_전파);
+        Transactional byProject = AnnotatedElementUtils.findMergedAnnotation(
+                ApiKeyService.class.getMethod("findByProject", ai.univs.gate.modules.project.domain.entity.Project.class),
+                Transactional.class);
+        assertThat(byProject).as("findByProject 는 지연 프록시를 돌려주므로 읽기 트랜잭션을 연다").isNotNull();
+        assertThat(byProject.readOnly()).isTrue();
+        assertThat(byProject.propagation()).isIn((Object[]) 트랜잭션이_열리는_전파);
     }
 
     /**

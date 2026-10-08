@@ -1,6 +1,7 @@
 package ai.univs.gate.modules.api_key.infrastructure.persistence;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -23,6 +24,8 @@ public interface ApiKeyJpaRepository extends JpaRepository<ApiKey, Long> {
 
     List<ApiKey> findAllByProjectIdAndIsActive(Long projectId, boolean isActive);
 
+    // UG-364: 진단 로그가 트랜잭션 밖에서 프로젝트의 삭제 여부를 읽는다.
+    @EntityGraph(attributePaths = "project")
     Optional<ApiKey> findByApiKeyAndIsActive(String apiKey, boolean isActive);
 
     /**
@@ -35,6 +38,8 @@ public interface ApiKeyJpaRepository extends JpaRepository<ApiKey, Long> {
      * <p>원래 UG-288 은 이 자리를 골랐다가 되돌렸다. 검증할 슬라이스 테스트가 없어서였다
      * ({@code JpaSliceTest} 참고). UG-300 이 그 인프라를 만들었으므로 제자리로 옮긴다.
      */
+    // UG-364: 프로젝트를 함께 가져온다 — ApiKeyService 가 트랜잭션 없이 결과를 사본으로 옮기므로 지연 프록시면 안 된다.
+    @EntityGraph(attributePaths = "project")
     Optional<ApiKey> findByApiKeyAndIsActiveAndProject_IsDeletedFalse(
             String apiKey, boolean isActive);
 

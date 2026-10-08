@@ -51,6 +51,13 @@ class ApiKeyDeletedProjectTest {
     @Mock
     private ApiKeyRepository apiKeyRepository;
 
+    /** UG-364: 실제 캐시 — 조회 규칙이 캐시를 거쳐도 같은지 본다. 테스트마다 새로 만든다. */
+
+    @org.mockito.Spy
+
+    private ApiKeyLookupCache lookupCache = new ApiKeyLookupCache();
+
+
     @InjectMocks
     private ApiKeyService apiKeyService;
 

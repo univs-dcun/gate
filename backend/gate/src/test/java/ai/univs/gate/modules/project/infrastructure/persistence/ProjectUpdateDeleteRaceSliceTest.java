@@ -53,7 +53,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @JpaSliceTest
 @Import({ProjectRepositoryImpl.class, ProjectDSLRepository.class, ProjectService.class,
-        UpdateProjectUseCase.class, DeleteProjectUseCase.class, ApiKeyRepositoryImpl.class})
+        UpdateProjectUseCase.class, DeleteProjectUseCase.class, ApiKeyRepositoryImpl.class,
+        ai.univs.gate.support.api_key.ApiKeyLookupCache.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-311 프로젝트 수정 vs 삭제 경쟁 (H2 슬라이스)")
 class ProjectUpdateDeleteRaceSliceTest {
@@ -68,8 +69,14 @@ class ProjectUpdateDeleteRaceSliceTest {
     private TransactionTemplate tx;
     private Long projectId;
 
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private ai.univs.gate.support.api_key.ApiKeyLookupCache apiKeyLookupCache;
+
+
     @BeforeEach
     void setUp() {
+        apiKeyLookupCache.invalidateAll();   // UG-364: 같은 키 문자열로 행을 다시 만든다
         tx = new TransactionTemplate(txManager);
         projectId = tx.execute(status -> {
             Project p = Project.builder().accountId(OWNER).projectName("before").branchName("br-311")

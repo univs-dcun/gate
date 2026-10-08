@@ -90,7 +90,7 @@ import org.springframework.transaction.support.TransactionTemplate;
         "spring.datasource.hikari.connection-timeout=1000"
 })
 @Import({FaceFeatureService.class, DeleteFaceFeatureUseCase.class, HistoryRecorder.class,
-        ApiKeyService.class, ProjectSettingsService.class,
+        ApiKeyService.class, ai.univs.gate.support.api_key.ApiKeyLookupCache.class, ProjectSettingsService.class,
         ApiKeyRepositoryImpl.class, BiometricFeatureRepositoryImpl.class,
         BiometricFeatureDSLRepository.class, MatchHistoryRepositoryImpl.class,
         FeatureHistoryRepositoryImpl.class, ProjectSettingsRepositoryImpl.class,
@@ -124,8 +124,14 @@ class SingleConnectionSliceTest {
     private final AtomicReference<Throwable> 원격중_커넥션_실패 = new AtomicReference<>();
     private boolean 원격_호출됨;
 
+    @org.springframework.beans.factory.annotation.Autowired
+
+    private ai.univs.gate.support.api_key.ApiKeyLookupCache apiKeyLookupCache;
+
+
     @BeforeEach
     void setUp() {
+        apiKeyLookupCache.invalidateAll();   // UG-364: 같은 키 문자열로 행을 다시 만든다
         tx.executeWithoutResult(status -> {
             project = Project.builder()
                     .accountId(OWNER).projectName("ug336").branchName(BRANCH)

@@ -28,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import ai.univs.gate.support.api_key.ApiKeyLookupCache;
 
 /**
  * UG-288: 프로젝트 소프트 삭제.
@@ -55,6 +56,11 @@ class DeleteProjectUseCaseTest {
 
     @Mock
     private ApiKeyRepository apiKeyRepository;
+
+    @Mock
+
+    private ApiKeyLookupCache apiKeyLookupCache;
+
 
     @InjectMocks
     private DeleteProjectUseCase deleteProjectUseCase;
@@ -100,6 +106,17 @@ class DeleteProjectUseCaseTest {
         assertThat(project.isDeleted())
                 .as("이 플래그가 켜지지 않으면 목록 조회·findByIdAndIsDeletedFalse 가 삭제를 못 본다")
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("UG-364: 키 조회 캐시에서 이 프로젝트의 키를 지운다 — 지우지 않으면 삭제한 프로젝트의 키가 캐시 수명 동안 통과한다")
+    void 키_조회_캐시를_지운다() {
+        givenOwnedProject();
+        givenActiveKeys(apiKey);
+
+        deleteProjectUseCase.execute(ACCOUNT, PROJECT);
+
+        org.mockito.Mockito.verify(apiKeyLookupCache).evictProjectAfterCommit(PROJECT);
     }
 
     @Test
