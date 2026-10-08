@@ -2,6 +2,7 @@ package ai.univs.gate.support.reconcile;
 
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrphanRegistrationRepository {
 
     private final EntityManager em;
+    private final JobConnectionTimeout jobConnectionTimeout;
 
     /**
      * 결과를 모르는 등록 행.
@@ -45,6 +47,8 @@ public class OrphanRegistrationRepository {
     @Transactional(readOnly = true)
     public List<FeatureHistory> findStaleRegistrations(LocalDateTime staleBefore, LocalDateTime oldest,
                                                        long afterId, int limit) {
+        // 맞는 행이 드물면 id 순으로 넓게 훑는다 — 정리 잡이라 기다려도 된다 (UG-367)
+        jobConnectionTimeout.extendForCurrentTransaction();
         return em.createQuery("""
                         SELECT h FROM FeatureHistory h JOIN FETCH h.project
                          WHERE h.actionType = :register

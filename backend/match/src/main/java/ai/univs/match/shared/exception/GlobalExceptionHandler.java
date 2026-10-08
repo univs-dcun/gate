@@ -21,6 +21,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -150,6 +151,13 @@ public class GlobalExceptionHandler {
         Optional<SQLTransientConnectionException> poolTimeout = PoolExhaustion.find(ex);
         if (poolTimeout.isPresent()) {
             logPoolExhaustion(poolTimeout.get(), ex);
+            return temporarilyUnavailable();
+        }
+        // DB 가 상한 안에 응답하지 않았다 (UG-367) — 멈췄거나 극도로 느리다. 다시 보내면 될 수 있는 실패라 503 으로 같게 알린다.
+        Optional<SQLException> dbReadTimeout = PoolExhaustion.findReadTimeout(ex);
+        if (dbReadTimeout.isPresent()) {
+            log.error("[{}] DB 응답 시간 초과 {} — {}",
+                    ErrorType.TEMPORARILY_UNAVAILABLE.getCode(), requestInfo(), dbReadTimeout.get().getMessage(), ex);
             return temporarilyUnavailable();
         }
 

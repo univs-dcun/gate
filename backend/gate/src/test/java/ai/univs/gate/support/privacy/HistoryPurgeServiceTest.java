@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -45,6 +46,9 @@ class HistoryPurgeServiceTest {
 
     @Mock
     private FileService fileService;
+
+    @Mock
+    private JobConnectionTimeout jobConnectionTimeout;
 
     @InjectMocks
     private HistoryPurgeService service;

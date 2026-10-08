@@ -93,4 +93,61 @@ class PoolExhaustionTest {
             });
         }
     }
+
+    @Test
+    @DisplayName("UG-367: SQL 오류 아래의 읽기 타임아웃은 DB 응답 시간 초과다 — PostgreSQL·Oracle 모양 모두")
+    void 읽기_타임아웃() {
+        SQLException postgres = new SQLException("I/O error", "08006", new java.net.SocketTimeoutException("Read timed out"));
+        assertThat(PoolExhaustion.findReadTimeout(new RuntimeException("wrapped", new RuntimeException("hibernate", postgres))))
+                .containsSame(postgres);
+
+        // Oracle 의 IOReadTimeoutException 도 InterruptedIOException 이다
+        SQLException oracle = new java.sql.SQLRecoverableException("IO Error: Socket read timed out", "08006",
+                new java.io.InterruptedIOException("Socket read timed out"));
+        assertThat(PoolExhaustion.findReadTimeout(oracle)).containsSame(oracle);
+    }
+
+    @Test
+    @DisplayName("UG-367 대조군: DB 와 무관한 타임아웃(하위 호출)이나 타임아웃 없는 SQL 오류는 아니다")
+    void 읽기_타임아웃_대조군() {
+        assertThat(PoolExhaustion.findReadTimeout(new RuntimeException(new java.net.SocketTimeoutException("feign")))).isEmpty();
+        assertThat(PoolExhaustion.findReadTimeout(new java.io.InterruptedIOException("outer")
+                .initCause(new SQLException("inner")))).as("SQL 오류 위의 타임아웃은 아니다").isEmpty();
+        assertThat(PoolExhaustion.findReadTimeout(new SQLException("syntax error", "42601"))).isEmpty();
+        assertThat(PoolExhaustion.findReadTimeout(null)).isEmpty();
+    }
+
+    /**
+     * 실제 드라이버(테스트 실행 클래스패스의 pgjdbc, DriverManager 로 찾는다) — 연결은 받지만 아무것도 돌려주지 않는 서버(멈춘 DB 와 같다)에 {@code socketTimeout} 을 걸면 드라이버가
+     * 내는 예외를 판정이 알아본다. 판정이 기대는 모양(SQLException 아래 SocketTimeoutException)은 드라이버 내부 동작이라
+     * 손으로 만든 예외만으로는 증명되지 않는다.
+     */
+    @Test
+    @Timeout(10)
+    @DisplayName("UG-367 실제 PostgreSQL 드라이버: 응답 없는 서버에 socketTimeout 이 걸리면 DB 응답 시간 초과로 본다")
+    void 실제_드라이버_읽기_타임아웃() throws Exception {
+        try (java.net.ServerSocket silent = new java.net.ServerSocket(0, 1, java.net.InetAddress.getLoopbackAddress())) {
+            Thread acceptor = new Thread(() -> {
+                try (java.net.Socket ignored = silent.accept()) {
+                    Thread.sleep(8_000);   // 받기만 하고 답하지 않는다
+                } catch (Exception e) {
+                    // 테스트가 끝나 닫혔다
+                }
+            });
+            acceptor.setDaemon(true);
+            acceptor.start();
+
+            java.util.Properties props = new java.util.Properties();
+            props.setProperty("user", "none");
+            props.setProperty("password", "none");
+            props.setProperty("socketTimeout", "1");
+            props.setProperty("connectTimeout", "2");
+            String url = "jdbc:postgresql://127.0.0.1:" + silent.getLocalPort() + "/ug367";
+
+            assertThatThrownBy(() -> java.sql.DriverManager.getConnection(url, props).close())
+                    .satisfies(thrown -> assertThat(PoolExhaustion.findReadTimeout(thrown))
+                            .as("드라이버 예외: %s / 원인: %s", thrown, thrown.getCause())
+                            .isPresent());
+        }
+    }
 }

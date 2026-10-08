@@ -97,7 +97,8 @@ import org.springframework.transaction.support.TransactionTemplate;
         ProjectLivenessSettingRepositoryImpl.class,
         // UG-347: 삭제 뒤 이미지 파기도 같은 커넥션 예산 안에서 돈다 — 실제 빈으로 잰다
         ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService.class,
-        ai.univs.gate.support.privacy.DeletedFeatureImagePurgeRepository.class})
+        ai.univs.gate.support.privacy.DeletedFeatureImagePurgeRepository.class,
+        ai.univs.gate.shared.utils.JobConnectionTimeout.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-336: 풀 크기 1 에서 등록·삭제")
 class SingleConnectionSliceTest {
