@@ -2,12 +2,20 @@ package ai.univs.gate.support.webhook;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ai.univs.gate.modules.webhook.domain.entity.WebhookConfig;
 import ai.univs.gate.modules.webhook.domain.repository.WebhookConfigRepository;
 import ai.univs.gate.shared.web.enums.CallerType;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -27,13 +35,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 /**
  * 웹훅 전송 (UG-111). 실제 HTTP 서버(JDK 내장)에 보낸다.
@@ -51,6 +63,7 @@ class WebhookServiceTest {
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .build();
     private final WebhookConfigRepository repository = mock(WebhookConfigRepository.class);
+    private final WebhookToggleCache toggles = new WebhookToggleCache();
 
     private HttpServer server;
     private final List<Received> received = new CopyOnWriteArrayList<>();
@@ -137,7 +150,7 @@ class WebhookServiceTest {
     }
 
     private WebhookService service(WebhookTargetPolicy policy, WebhookProperties props) {
-        service = new WebhookService(repository, objectMapper, policy, props);
+        service = new WebhookService(repository, objectMapper, policy, props, toggles);
         service.clock = Clock.fixed(NOW, ZoneOffset.UTC);
         return service;
     }
@@ -289,6 +302,134 @@ class WebhookServiceTest {
         service(loopbackAllowed(props), props).send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx", Map.of());
 
         assertNothingSent();
+    }
+
+    /** 전송 스레드가 설정을 읽고 캐시에 남길 때까지 기다린다 (UG-361). */
+    private void awaitKnownDisabled(CallerType source) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (toggles.decide(1L, source) != WebhookToggleCache.Decision.SKIP && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
+        assertThat(toggles.decide(1L, source)).isEqualTo(WebhookToggleCache.Decision.SKIP);
+    }
+
+    @Test
+    @DisplayName("UG-361: 웹훅이 없는 프로젝트는 한 번 확인한 뒤로 대기열을 쓰지 않는다 — 설정 조회도 한 번")
+    void 설정_없음_대기열_안_씀() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        when(repository.findByProjectId(1L)).thenReturn(Optional.empty());
+        WebhookService s = service(loopbackAllowed(props), props);
+
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-0", Map.of());
+        awaitKnownDisabled(CallerType.API);
+        for (int i = 1; i <= 200; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-" + i, Map.of());
+        Thread.sleep(200);
+
+        verify(repository, times(1)).findByProjectId(1L);
+        assertThat(received).isEmpty();
+    }
+
+    @Test
+    @DisplayName("UG-361: 꺼진 경로만 건너뛴다 — API 가 켜진 프로젝트의 데모 이벤트는 넣지 않고, API 이벤트는 매번 보낸다")
+    void 꺼진_경로만_건너뜀() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        configureSigned(url(), "secret-a", null, null);
+        WebhookService s = service(loopbackAllowed(props), props);
+
+        s.send(1L, CallerType.DEMO, WebhookEvent.LIVENESS, "tx-d0", Map.of());
+        awaitKnownDisabled(CallerType.DEMO);
+        for (int i = 0; i < 3; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-a" + i, Map.of());
+        for (int i = 1; i <= 50; i++) s.send(1L, CallerType.DEMO, WebhookEvent.LIVENESS, "tx-d" + i, Map.of());
+
+        awaitReceived(3);
+        Thread.sleep(200);
+        assertThat(received).hasSize(3).allSatisfy(r -> assertThat(r.body().get("source").asText()).isEqualTo("API"));
+        verify(repository, times(4)).findByProjectId(1L);   // 데모 첫 확인 1 + API 3
+    }
+
+    @Test
+    @DisplayName("UG-361: 설정을 저장해 캐시를 지우면 다음 이벤트부터 보낸다 — 낡은 「꺼짐」으로 버리지 않는다")
+    void 켠_뒤_바로_보냄() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        when(repository.findByProjectId(1L)).thenReturn(Optional.empty());
+        WebhookService s = service(loopbackAllowed(props), props);
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-0", Map.of());
+        awaitKnownDisabled(CallerType.API);
+
+        configureSigned(url(), "secret-a", null, null);
+        toggles.evictAfterCommit(1L);   // 저장 use case 가 커밋 뒤에 하는 일
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-1", Map.of());
+
+        awaitReceived(1);
+        assertThat(received.getFirst().body().get("transactionUuid").asText()).isEqualTo("tx-1");
+    }
+
+    @Test
+    @DisplayName("반박 리뷰 M-1: 기억이 오래돼도 확인은 한 건만 대기열로 보내고 나머지는 계속 건너뛴다")
+    void 오래된_꺼짐_확인은_한_건() throws Exception {
+        WebhookProperties props = props(1, Duration.ofSeconds(5));
+        when(repository.findByProjectId(1L)).thenReturn(Optional.empty());
+        AtomicLong nanos = new AtomicLong(1_000_000_000L);
+        toggles.nanoTime = nanos::get;
+        WebhookService s = service(loopbackAllowed(props), props);
+        s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-0", Map.of());
+        awaitKnownDisabled(CallerType.API);
+
+        nanos.addAndGet(WebhookToggleCache.FRESH.toNanos());
+        for (int i = 1; i <= 100; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-" + i, Map.of());
+        verify(repository, timeout(5_000).times(2)).findByProjectId(1L);   // 처음 1 + 확인 1
+        verify(repository, after(200).times(2)).findByProjectId(1L);       // 더 늘지 않는다
+    }
+
+    @Test
+    @DisplayName("UG-361: 대기열이 넘쳐 버린 건수는 간격마다 한 줄로 모아 남긴다 — 건마다 WARN 을 남기지 않는다")
+    void 드롭_로그_모음() throws Exception {
+        WebhookProperties props = new WebhookProperties(false, Duration.ofSeconds(2), Duration.ofSeconds(5),
+                1, Duration.ofMillis(20), 10, 100, 1, List.of());
+        CountDownLatch release = new CountDownLatch(1);
+        // 전송 스레드 둘을 설정 조회에서 붙잡아, 셋째는 대기열(1칸)에 들어가고 그 뒤는 버려지게 한다
+        when(repository.findByProjectId(1L)).thenAnswer(invocation -> {
+            release.await(5, TimeUnit.SECONDS);
+            return Optional.empty();
+        });
+        Logger logger = (Logger) LoggerFactory.getLogger(WebhookService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            WebhookService s = service(loopbackAllowed(props), props);
+            AtomicLong nanos = new AtomicLong(5_000_000_000L);
+            s.nanoTime = nanos::get;
+
+            for (int i = 0; i < 3; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-" + i, Map.of());
+            for (int i = 0; i < 50; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "drop-" + i, Map.of());
+            assertThat(drops(appender)).as("처음 버린 건은 바로 남기고, 간격 안의 나머지는 모은다")
+                    .containsExactly("count=1");
+
+            nanos.addAndGet(WebhookService.DROP_LOG_INTERVAL.toNanos());
+            s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "drop-last", Map.of());
+            assertThat(drops(appender)).containsExactly("count=1", "count=50");
+
+            // 반박 리뷰 L-1: 폭주가 끝나 더 버리지 않아도 남은 건수는 다음 간격에 주기 작업이 남긴다
+            for (int i = 0; i < 7; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tail-" + i, Map.of());
+            s.flushDrops();
+            assertThat(drops(appender)).as("간격 안에는 남기지 않는다").containsExactly("count=1", "count=50");
+            nanos.addAndGet(WebhookService.DROP_LOG_INTERVAL.toNanos());
+            s.flushDrops();
+            assertThat(drops(appender)).containsExactly("count=1", "count=50", "count=7");
+            s.flushDrops();
+            assertThat(drops(appender)).as("남은 건이 없으면 남기지 않는다").hasSize(3);
+        } finally {
+            release.countDown();
+            logger.detachAppender(appender);
+        }
+    }
+
+    private static List<String> drops(ListAppender<ILoggingEvent> appender) {
+        return appender.list.stream()
+                .filter(e -> e.getLevel() == Level.WARN && e.getFormattedMessage().startsWith("Webhook dropped"))
+                .map(e -> e.getFormattedMessage().replaceAll(".*(count=\\d+).*", "$1"))
+                .toList();
     }
 
     @Test

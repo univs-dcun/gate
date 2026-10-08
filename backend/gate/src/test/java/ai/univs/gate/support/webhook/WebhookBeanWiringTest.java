@@ -24,7 +24,7 @@ class WebhookBeanWiringTest {
 
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(WebhookConfiguration.class, WebhookTargetPolicy.class,
-                    WebhookService.class, UseCaseNotifyService.class)
+                    WebhookService.class, WebhookToggleCache.class, UseCaseNotifyService.class)
             .withBean(WebhookConfigRepository.class, () -> mock(WebhookConfigRepository.class))
             .withBean(DemoRedisPublisher.class, () -> mock(DemoRedisPublisher.class))
             .withBean(ObjectMapper.class, ObjectMapper::new);
