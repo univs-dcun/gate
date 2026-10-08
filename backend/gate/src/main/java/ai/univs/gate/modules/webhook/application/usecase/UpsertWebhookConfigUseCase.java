@@ -8,6 +8,7 @@ import ai.univs.gate.modules.webhook.application.result.WebhookConfigResult;
 import ai.univs.gate.modules.webhook.domain.entity.WebhookConfig;
 import ai.univs.gate.modules.webhook.domain.repository.WebhookConfigRepository;
 import ai.univs.gate.support.project.ProjectService;
+import ai.univs.gate.support.webhook.WebhookToggleCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ public class UpsertWebhookConfigUseCase {
     private final ProjectService projectService;
     private final WebhookConfigRepository webhookConfigRepository;
     private final WebhookTargetPolicy webhookTargetPolicy;
+    private final WebhookToggleCache webhookToggleCache;
 
     @Transactional
     public WebhookConfigResult execute(UpsertWebhookConfigInput input) {
@@ -65,6 +67,8 @@ public class UpsertWebhookConfigUseCase {
             config.assignSecretIfAbsent(WebhookSecrets.generate());
             log.info("Webhook config updated: projectId={}", input.projectId());
         }
+        // 토글이 바뀌었을 수 있다 — 전송 쪽이 기억한 「꺼짐」을 커밋 뒤에 지운다 (UG-361)
+        webhookToggleCache.evictAfterCommit(input.projectId());
 
         return WebhookConfigResult.from(config, LocalDateTime.now(ZoneOffset.UTC));
     }

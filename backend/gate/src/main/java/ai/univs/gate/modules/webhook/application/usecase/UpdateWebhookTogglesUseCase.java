@@ -8,6 +8,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.project.ProjectService;
 import ai.univs.gate.support.webhook.WebhookSecrets;
+import ai.univs.gate.support.webhook.WebhookToggleCache;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class UpdateWebhookTogglesUseCase {
 
     private final ProjectService projectService;
     private final WebhookConfigRepository webhookConfigRepository;
+    private final WebhookToggleCache webhookToggleCache;
 
     @Transactional
     public WebhookConfigResult execute(Long projectId, Boolean demoEnabled, Boolean apiEnabled) {
@@ -42,6 +44,8 @@ public class UpdateWebhookTogglesUseCase {
                 .orElseThrow(() -> new CustomGateException(ErrorType.WEBHOOK_CONFIG_NOT_FOUND));
         config.updateToggles(demoEnabled, apiEnabled);
         config.assignSecretIfAbsent(WebhookSecrets.generate());
+        // 켠 즉시 전송되게 전송 쪽이 기억한 「꺼짐」을 커밋 뒤에 지운다 (UG-361). 다른 gate 인스턴스는 최대 10초 늦다.
+        webhookToggleCache.evictAfterCommit(projectId);
         log.info("Webhook toggles updated: projectId={}, demoEnabled={}, apiEnabled={}", projectId, demoEnabled, apiEnabled);
         return WebhookConfigResult.from(config, LocalDateTime.now(ZoneOffset.UTC));
     }

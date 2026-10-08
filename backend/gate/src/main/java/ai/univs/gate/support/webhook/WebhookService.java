@@ -22,6 +22,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -53,6 +55,9 @@ import reactor.util.retry.Retry;
  *
  * <p>UG-111 이전에는 타임아웃이 없어 응답하지 않는 수신 서버 하나가 {@code @Async} 기본
  * 스레드를 붙잡았고, 대기열도 무제한이었다. URL 검사도 없어 내부 주소로 요청을 보낼 수 있었다.
+ *
+ * <p><b>꺼져 있는 줄 아는 경로는 대기열에 넣지 않는다</b> (UG-361, {@link WebhookToggleCache}). 대기열이 넘쳐 버린
+ * 건수는 {@link #DROP_LOG_INTERVAL} 마다 한 줄로 모아 남긴다 — 건마다 남기면 부하 때 요청 수만큼 WARN 이 쌓인다.
  */
 @Slf4j
 @Component
@@ -64,6 +69,9 @@ public class WebhookService {
     static final String TEST_SOURCE = "TEST";
     /** NIO 로 고정한다. 연결과 DNS 가 같은 값을 써야 한다 — 한 상수로 묶는다. */
     private static final boolean PREFER_NATIVE = false;
+    /** 대기열이 넘쳐 버린 건수를 모아 남기는 간격 (UG-361). */
+    static final Duration DROP_LOG_INTERVAL = Duration.ofSeconds(10);
+    private static final long NEVER_LOGGED = Long.MIN_VALUE;
 
     private final WebhookConfigRepository webhookConfigRepository;
     private final ObjectMapper objectMapper;
@@ -75,15 +83,22 @@ public class WebhookService {
     private final WebClient webClient;
     private final Duration attemptTimeout;
     private final PolicyAddressResolverGroup resolvers;
+    private final WebhookToggleCache toggles;
+    private final AtomicLong droppedSinceLog = new AtomicLong();
+    private final AtomicLong lastDropLogNanos = new AtomicLong(NEVER_LOGGED);
 
     /** 테스트가 시각을 고정하려고 바꾼다. */
     Clock clock = Clock.systemUTC();
+    /** 테스트가 드롭 로그 간격을 앞당기려고 바꾼다. */
+    LongSupplier nanoTime = System::nanoTime;
 
     public WebhookService(WebhookConfigRepository webhookConfigRepository,
                           ObjectMapper objectMapper,
                           WebhookTargetPolicy targetPolicy,
-                          WebhookProperties properties) {
+                          WebhookProperties properties,
+                          WebhookToggleCache toggles) {
         this.webhookConfigRepository = webhookConfigRepository;
+        this.toggles = toggles;
         this.objectMapper = objectMapper;
         this.targetPolicy = targetPolicy;
         this.properties = properties;
@@ -126,19 +141,40 @@ public class WebhookService {
      * @param data 그 API 의 응답 {@code data} 와 같은 객체
      */
     public void send(Long projectId, CallerType source, WebhookEvent event, String transactionUuid, Object data) {
+        // 웹훅이 없거나 이 경로가 꺼진 프로젝트는 대기열을 쓰지 않는다 (UG-361). 모르면 넣고 전송 스레드가 확인한다.
+        if (toggles.knownDisabled(projectId, source)) return;
         Instant occurredAt = Instant.now(clock);
         try {
             dispatcher.execute(() -> dispatch(projectId, source, event, transactionUuid, occurredAt, data));
         } catch (RejectedExecutionException e) {
-            log.warn("Webhook dropped (dispatch queue full): projectId={}, event={}", projectId, event);
+            recordDrop(projectId, event);
+        }
+    }
+
+    /**
+     * 버린 건수를 모아 {@link #DROP_LOG_INTERVAL} 에 한 줄만 남긴다 (UG-361). 조용하다가 처음 버리면 바로 남긴다.
+     * 마지막 줄 뒤에 버린 건수는 다음에 버릴 때나 종료할 때 함께 남는다.
+     */
+    private void recordDrop(Long projectId, WebhookEvent event) {
+        droppedSinceLog.incrementAndGet();
+        long now = nanoTime.getAsLong();
+        long last = lastDropLogNanos.get();
+        if (last != NEVER_LOGGED && now - last < DROP_LOG_INTERVAL.toNanos()) return;
+        if (!lastDropLogNanos.compareAndSet(last, now)) return;
+        long dropped = droppedSinceLog.getAndSet(0);
+        if (dropped > 0) {
+            log.warn("Webhook dropped (dispatch queue full): count={} since last report, latest projectId={}, event={}",
+                    dropped, projectId, event);
         }
     }
 
     void dispatch(Long projectId, CallerType source, WebhookEvent event,
                   String transactionUuid, Instant occurredAt, Object data) {
         try {
+            long generation = toggles.generation();
             WebhookConfig config = webhookConfigRepository.findByProjectId(projectId).orElse(null);
-            if (config == null || !isEnabled(config, source)) return;
+            toggles.remember(projectId, config, generation);
+            if (config == null || !WebhookToggleCache.isEnabled(config, source)) return;
             config = withSecret(projectId, config);
 
             URI target;
@@ -327,13 +363,6 @@ public class WebhookService {
         return WebhookTestResult.CONNECTION_FAILED;
     }
 
-    private static boolean isEnabled(WebhookConfig config, CallerType source) {
-        return switch (source) {
-            case API  -> Boolean.TRUE.equals(config.getApiEnabled());
-            case DEMO -> Boolean.TRUE.equals(config.getDemoEnabled());
-        };
-    }
-
     /**
      * 다시 보내면 나아질 수 있는 실패인가.
      *
@@ -403,6 +432,8 @@ public class WebhookService {
 
     @PreDestroy
     void shutdown() {
+        long dropped = droppedSinceLog.getAndSet(0);
+        if (dropped > 0) log.warn("Webhook dropped (dispatch queue full): count={} since last report", dropped);
         dispatcher.shutdown();
         try {
             // 대기열에 남은 전송을 잠깐 흘려보낸다. 넘치면 버린다 — 재기동이 웹훅을 기다리지 않는다.
