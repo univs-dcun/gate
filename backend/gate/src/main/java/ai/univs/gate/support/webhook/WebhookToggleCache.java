@@ -115,7 +115,11 @@ public class WebhookToggleCache {
 
     void evict(Long projectId) {
         long next = generation.incrementAndGet();
-        cache.put(projectId, Entry.unknown(next, nanoTime.getAsLong()));
+        Entry unknown = Entry.unknown(next, nanoTime.getAsLong());
+        // 같은 프로젝트의 지우기 둘이 겹치면 먼저 세대를 올린 쪽이 늦게 넣어 더 새 자리표를 덮을 수 있다 — 세대로 비교한다
+        // (델타 리뷰 L-a)
+        cache.asMap().compute(projectId, (id, current) ->
+                current != null && current.generation > next ? current : unknown);
     }
 
     static boolean isEnabled(WebhookConfig config, CallerType source) {

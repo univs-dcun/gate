@@ -133,6 +133,18 @@ class WebhookToggleCacheTest {
     }
 
     @Test
+    @DisplayName("지운 자리표보다 앞서 읽은 값은 들어오지 못하고, 그 뒤에 읽은 값은 남는다")
+    void 지우기_겹침() {
+        cache.evict(1L);
+        long newer = cache.generation();
+        cache.remember(1L, null, newer - 1);      // 그보다 앞서 읽은 낡은 값은 들어오지 못한다
+        assertThat(cache.decide(1L, CallerType.API)).isEqualTo(Decision.ENQUEUE);
+
+        cache.remember(1L, null, newer);
+        assertThat(cache.decide(1L, CallerType.API)).isEqualTo(Decision.SKIP);
+    }
+
+    @Test
     @DisplayName("롤백되면 지우지 않는다 — 설정이 그대로이므로")
     void 롤백() {
         cache.remember(1L, null, cache.generation());

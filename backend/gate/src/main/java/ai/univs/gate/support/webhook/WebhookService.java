@@ -149,7 +149,11 @@ public class WebhookService {
         try {
             dispatcher.execute(() -> dispatch(projectId, source, event, transactionUuid, occurredAt, data));
         } catch (RejectedExecutionException e) {
-            if (decision == WebhookToggleCache.Decision.PROBE) toggles.probeDropped(projectId);
+            if (decision == WebhookToggleCache.Decision.PROBE) {
+                // 꺼진 줄 아는 프로젝트의 확인 건이다 — 원래 보내지 않을 이벤트라 드롭 건수에 넣지 않는다 (델타 리뷰 L-d)
+                toggles.probeDropped(projectId);
+                return;
+            }
             recordDrop(projectId, event);
         }
     }
@@ -160,24 +164,29 @@ public class WebhookService {
      */
     private void recordDrop(Long projectId, WebhookEvent event) {
         droppedSinceLog.incrementAndGet();
-        reportDrops(", latest projectId=" + projectId + ", event=" + event);
+        reportDrops(projectId, event);
     }
 
     /** 폭주가 끝난 뒤 남은 건수가 다음 드롭까지 묻히지 않게 간격마다 비운다 (반박 리뷰 L-1). */
     @Scheduled(fixedDelay = 10_000L, initialDelay = 10_000L)
     void flushDrops() {
-        reportDrops("");
+        reportDrops(null, null);
     }
 
-    private void reportDrops(String latest) {
+    /** 문구는 실제로 남길 때만 만든다 — 드롭은 과부하 때 건수가 많은 경로다 (델타 리뷰 L-c). */
+    private void reportDrops(Long projectId, WebhookEvent event) {
         if (droppedSinceLog.get() == 0) return;
         long now = nanoTime.getAsLong();
         long last = lastDropLogNanos.get();
         if (last != NEVER_LOGGED && now - last < DROP_LOG_INTERVAL.toNanos()) return;
         if (!lastDropLogNanos.compareAndSet(last, now)) return;
         long dropped = droppedSinceLog.getAndSet(0);
-        if (dropped > 0) {
-            log.warn("Webhook dropped (dispatch queue full): count={} since last report{}", dropped, latest);
+        if (dropped == 0) return;
+        if (event == null) {
+            log.warn("Webhook dropped (dispatch queue full): count={} since last report", dropped);
+        } else {
+            log.warn("Webhook dropped (dispatch queue full): count={} since last report, latest projectId={}, event={}",
+                    dropped, projectId, event);
         }
     }
 

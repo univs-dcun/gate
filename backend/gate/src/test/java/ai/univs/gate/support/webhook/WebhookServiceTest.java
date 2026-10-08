@@ -2,7 +2,9 @@ package ai.univs.gate.support.webhook;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -375,10 +377,8 @@ class WebhookServiceTest {
 
         nanos.addAndGet(WebhookToggleCache.FRESH.toNanos());
         for (int i = 1; i <= 100; i++) s.send(1L, CallerType.API, WebhookEvent.IDENTIFY, "tx-" + i, Map.of());
-        awaitKnownDisabled(CallerType.API);   // 확인이 돌아와 새로 기억했다
-        Thread.sleep(200);
-
-        verify(repository, times(2)).findByProjectId(1L);   // 처음 1 + 확인 1
+        verify(repository, timeout(5_000).times(2)).findByProjectId(1L);   // 처음 1 + 확인 1
+        verify(repository, after(200).times(2)).findByProjectId(1L);       // 더 늘지 않는다
     }
 
     @Test
