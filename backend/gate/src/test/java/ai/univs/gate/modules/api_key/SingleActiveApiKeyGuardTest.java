@@ -57,6 +57,12 @@ class SingleActiveApiKeyGuardTest {
             "ai/univs/gate/modules/project/application/usecase/CreateProjectUseCase.java";
 
     /**
+     * UG-364: 키 조회 캐시의 사본. DB 에서 읽은 활성 키를 요청마다 새 객체로 옮길 뿐 <b>행을 만들지 않는다</b> — 저장 경로가
+     * 없다는 것을 {@link #캐시_사본은_저장하지_않는다} 가 따로 지킨다.
+     */
+    private static final String 사본 = "ai/univs/gate/support/api_key/ApiKeySnapshot.java";
+
+    /**
      * {@code ApiKey} 행을 만들거나 활성 상태로 바꾸는 표현들.
      *
      * <p>인자를 <b>보지 않는다.</b> {@code .isActive(true)} 만 잡으면
@@ -87,7 +93,7 @@ class SingleActiveApiKeyGuardTest {
         List<String> 위반 = 프로덕션_소스().stream()
                 .filter(SingleActiveApiKeyGuardTest::생성한다)
                 .map(SingleActiveApiKeyGuardTest::상대경로)
-                .filter(path -> !허용.equals(path))
+                .filter(path -> !허용.equals(path) && !사본.equals(path))
                 .sorted()
                 .toList();
 
@@ -102,6 +108,22 @@ class SingleActiveApiKeyGuardTest {
                         정말 필요한 경로라면 이 테스트의 허용 목록을 고치면서 V24 와의 상호작용을
                         함께 검토할 것.""")
                 .isEmpty();
+    }
+
+    /**
+     * 캐시 사본은 영속 계층에 닿지 않는다 (UG-364). 그래야 위 허용이 「행을 만드는 경로」가 되지 않는다.
+     */
+    @Test
+    @DisplayName("UG-364: 키 조회 캐시의 사본은 저장·병합하지 않는다")
+    void 캐시_사본은_저장하지_않는다() {
+        String body = 본문만(읽는다(SOURCE_ROOT.resolve(사본)));
+        assertThat(body)
+                .as("사본 클래스가 저장소·엔티티 매니저를 쓰면 사본이 행이 될 수 있다")
+                .doesNotContain("Repository")
+                .doesNotContain("EntityManager")
+                .doesNotContain(".save(")
+                .doesNotContain(".persist(")
+                .doesNotContain(".merge(");
     }
 
     /**

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ai.univs.gate.support.api_key.ApiKeyLookupCache;
 
 /**
  * UG-311: 수정은 삭제와 같은 <b>쓰기 잠금</b> 경로로 프로젝트를 읽어야 한다. 잠금 없는 {@code validateOwnership}
@@ -29,6 +30,9 @@ class UpdateProjectUseCaseTest {
 
     @Mock
     private ProjectService projectService;
+
+    @Mock
+    private ApiKeyLookupCache apiKeyLookupCache;
 
     @InjectMocks
     private UpdateProjectUseCase useCase;
@@ -46,5 +50,6 @@ class UpdateProjectUseCaseTest {
         verify(projectService, never()).validateOwnership(anyLong(), anyLong());
         assertThat(project.getProjectName()).isEqualTo("new");
         assertThat(result.projectName()).isEqualTo("new");
+        verify(apiKeyLookupCache).evictProjectAfterCommit(7L);   // UG-364: 캐시의 프로젝트 사본이 낡지 않게
     }
 }

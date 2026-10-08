@@ -13,6 +13,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.jpa.JpaSliceTest;
 import ai.univs.gate.support.project.ProjectService;
+import ai.univs.gate.support.api_key.ApiKeyLookupCache;
 import jakarta.persistence.EntityManager;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -20,6 +21,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
+import ai.univs.gate.support.api_key.ApiKeyService;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +58,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @JpaSliceTest
 @Import({ProjectRepositoryImpl.class, ProjectDSLRepository.class, ProjectService.class,
-        UpdateProjectUseCase.class, DeleteProjectUseCase.class, ApiKeyRepositoryImpl.class})
+        UpdateProjectUseCase.class, DeleteProjectUseCase.class, ApiKeyRepositoryImpl.class,
+        ApiKeyLookupCache.class, ApiKeyService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-311 프로젝트 수정 vs 삭제 경쟁 (H2 슬라이스)")
 class ProjectUpdateDeleteRaceSliceTest {
@@ -64,12 +70,16 @@ class ProjectUpdateDeleteRaceSliceTest {
     @Autowired private PlatformTransactionManager txManager;
     @Autowired private UpdateProjectUseCase updateProjectUseCase;
     @Autowired private DeleteProjectUseCase deleteProjectUseCase;
-
+    @Autowired private ApiKeyService apiKeyService;
     private TransactionTemplate tx;
     private Long projectId;
 
+    @Autowired
+    private ApiKeyLookupCache apiKeyLookupCache;
+
     @BeforeEach
     void setUp() {
+        apiKeyLookupCache.invalidateAll();   // UG-364: 같은 키 문자열로 행을 다시 만든다
         tx = new TransactionTemplate(txManager);
         projectId = tx.execute(status -> {
             Project p = Project.builder().accountId(OWNER).projectName("before").branchName("br-311")
@@ -89,6 +99,36 @@ class ProjectUpdateDeleteRaceSliceTest {
         return tx.execute(status -> em.createQuery(
                         "SELECT p FROM Project p WHERE p.id = :id", Project.class)
                 .setParameter("id", projectId).getSingleResult());
+    }
+
+    /**
+     * UG-364: 실제 트랜잭션으로 「캐시를 채운 키 → 프로젝트 삭제 커밋 → 바로 거부」를 본다. 단위 테스트는 동기화를 흉내 내므로,
+     * 삭제 use case 가 실제로 캐시를 지우는 콜백을 등록하고 그것이 커밋 뒤에 도는지는 여기서만 확인된다.
+     */
+    @Test
+    @DisplayName("UG-364: 캐시에 든 키도 프로젝트 삭제가 커밋되면 바로 거부된다 — 인증·데모 경로 모두")
+    void 삭제하면_캐시의_키도_바로_거부() {
+        String key = "gate_ug364e2eaaaaaaaaaaaaaaaaaaaaaaaa";
+        tx.executeWithoutResult(status -> em.persist(ApiKey.builder()
+                .project(em.getReference(Project.class, projectId)).apiKey(key).secretKey("s").isActive(true)
+                .issuedAt(LocalDateTime.now(ZoneOffset.UTC)).build()));
+        try {
+            assertThat(apiKeyService.findOwnedByApiKey(key, OWNER).getProject().getId()).isEqualTo(projectId);   // 캐시에 든다
+
+            deleteProjectUseCase.execute(OWNER, projectId);
+
+            assertThatThrownBy(() -> apiKeyService.findOwnedByApiKey(key, OWNER))
+                    .isInstanceOf(CustomGateException.class)
+                    .extracting(e -> ((CustomGateException) e).getErrorType())
+                    .isEqualTo(ErrorType.API_KEY_NOT_FOUND);
+            assertThatThrownBy(() -> apiKeyService.findByApiKeyUnverified(key))
+                    .isInstanceOf(CustomGateException.class)
+                    .extracting(e -> ((CustomGateException) e).getErrorType())
+                    .isEqualTo(ErrorType.API_KEY_NOT_FOUND);
+        } finally {
+            tx.executeWithoutResult(status -> em.createQuery("DELETE FROM ApiKey k WHERE k.apiKey = :key")
+                    .setParameter("key", key).executeUpdate());
+        }
     }
 
     @Test
@@ -156,7 +196,6 @@ class ProjectUpdateDeleteRaceSliceTest {
     }
 
     @Autowired private ProjectRepositoryImpl projectRepositoryImpl;
-
     private static void sleep(long ms) {
         try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }

@@ -36,7 +36,8 @@ public class GetFaceFeatureUseCase {
 
         ApiKey apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());
         Project project = apiKey.getProject();
-        if (!biometricFeature.getProject().equals(project)) {
+        // UG-364: id 로 비교한다 — 키 조회는 요청마다 프로젝트 사본을 주므로 객체 동일성은 늘 다르다.
+        if (!biometricFeature.getProject().getId().equals(project.getId())) {
             log.error("Not faceFeature who created based on this apikey. accountId: {}, apiKey: {}, faceFeatureId: {}",
                     input.accountId(), ApiKeyMasker.mask(input.apiKey()), input.faceFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
