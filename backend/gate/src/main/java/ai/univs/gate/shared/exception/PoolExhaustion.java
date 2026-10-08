@@ -1,5 +1,7 @@
 package ai.univs.gate.shared.exception;
 
+import java.io.InterruptedIOException;
+import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -22,6 +24,9 @@ import java.util.Set;
  */
 public final class PoolExhaustion {
 
+    /** PostgreSQL query_canceled — {@code statement_timeout} 에 걸려 서버가 취소했다 (UG-367). */
+    private static final String QUERY_CANCELED = "57014";
+
     /** 원인 사슬을 따라가는 상한. 정상적인 사슬은 열 단계를 넘지 않는다 — 상한은 순환 방어의 이중 장치다. */
     private static final int MAX_DEPTH = 32;
 
@@ -41,6 +46,41 @@ public final class PoolExhaustion {
         while (current != null && depth++ < MAX_DEPTH && seen.add(current)) {
             if (current instanceof SQLTransientConnectionException timeout) {
                 return Optional.of(timeout);
+            }
+            current = current.getCause();
+        }
+        return Optional.empty();
+    }
+
+
+    /**
+     * DB 가 정해진 시간 안에 응답하지 않은 실패인지 가린다 (UG-367). 원인 사슬에서 {@link SQLException} 을 찾고, 그
+     * 아래에 읽기 타임아웃({@link InterruptedIOException})이 있으면 그 SQLException 을 돌려준다.
+     *
+     * <p>JDBC 드라이버의 소켓 읽기 상한(PostgreSQL {@code socketTimeout}, Oracle {@code oracle.jdbc.ReadTimeout}) 에
+     * 걸리면 PostgreSQL 은 {@code SocketTimeoutException}, Oracle 은 {@code IOReadTimeoutException} 을 원인으로 싣는다
+     * — 둘 다 {@code InterruptedIOException} 이다. 이 상한이 없으면 DB 가 멈췄을 때 이미 커넥션을 쥔 쿼리가 끝없이
+     * 기다렸다(scaling 측정 C, 온프레미스 3.0.17 에서 목록 조회 40초 무응답).
+     *
+     * <p>PostgreSQL 은 서버의 {@code statement_timeout} 이 쿼리를 취소해도 같은 실패로 본다(SQLState {@code 57014}) — 소켓 상한보다
+     * 조금 짧게 걸어, 느리지만 살아 있는 DB 에서는 서버가 쿼리를 멈추게 한다(소켓만 끊으면 서버에서는 계속 돈다, 반박 리뷰 M1).
+     *
+     * <p>SQLException 아래에 있어야 한다 — 하위 서비스 호출(Feign)의 읽기 타임아웃처럼 DB 와 무관한 타임아웃을 잡지 않는다.
+     * 풀 타임아웃({@link #find})이 먼저다: 그 원인에도 연결 시도의 타임아웃이 실릴 수 있다.
+     */
+    public static Optional<SQLException> findReadTimeout(Throwable ex) {
+        Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        Throwable current = ex;
+        SQLException sql = null;
+        int depth = 0;
+        while (current != null && depth++ < MAX_DEPTH && seen.add(current)) {
+            if (current instanceof SQLException found && QUERY_CANCELED.equals(found.getSQLState())) {
+                return Optional.of(found);   // 서버의 statement_timeout 이 취소했다
+            }
+            if (sql == null && current instanceof SQLException found) {
+                sql = found;
+            } else if (sql != null && current instanceof InterruptedIOException) {
+                return Optional.of(sql);
             }
             current = current.getCause();
         }

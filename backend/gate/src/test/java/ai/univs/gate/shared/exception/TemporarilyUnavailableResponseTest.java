@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,6 +55,15 @@ class TemporarilyUnavailableResponseTest {
             // DataSourceUtils 가 감싸는 모양 — 트랜잭션 없이 JDBC 접근 중 커넥션을 못 얻었다
             throw new CannotGetJdbcConnectionException("Failed to obtain JDBC Connection",
                     new SQLTransientConnectionException(POOL_TIMEOUT_MESSAGE));
+        }
+
+        @GetMapping("/db/read-timeout")
+        void dbReadTimeout() {
+            // UG-367: 드라이버 소켓 읽기 상한에 걸린 모양 — Hibernate JDBCConnectionException 을 Spring 이 감싼다
+            throw new DataAccessResourceFailureException("could not execute statement",
+                    new RuntimeException("JDBCConnectionException", new SQLException(
+                            "An I/O error occurred while sending to the backend.", "08006",
+                            new java.net.SocketTimeoutException("Read timed out"))));
         }
 
         @GetMapping("/sql/other")
@@ -117,6 +127,16 @@ class TemporarilyUnavailableResponseTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(header().string("Retry-After", "1"))
                 .andExpect(jsonPath("$.errors.code").value("PJ-006"));
+    }
+
+    @Test
+    @DisplayName("UG-367: DB 가 상한 안에 응답하지 않으면 503 + PJ-006 + Retry-After — 멈춘 DB 를 끝없이 기다리지 않는다")
+    void DB_응답_시간_초과는_503() throws Exception {
+        mvc.perform(get("/db/read-timeout").locale(Locale.KOREAN))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.errors.code").value("PJ-006"))
+                .andExpect(jsonPath("$.errors.type").value("TEMPORARILY_UNAVAILABLE"));
     }
 
     @Test

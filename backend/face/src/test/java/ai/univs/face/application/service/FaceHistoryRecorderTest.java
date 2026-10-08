@@ -175,6 +175,18 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
+    @DisplayName("UG-367: DB 응답 시간 초과로 실패하면 멈춘 DB 에 또 저장하지 않는다 — 상한을 두 번 기다려 503 이 늦어진다")
+    void DB_응답_시간_초과면_저장을_시도하지_않는다() {
+        RuntimeException readTimeout = new org.springframework.dao.DataAccessResourceFailureException("could not execute statement",
+                new java.sql.SQLException("An I/O error occurred while sending to the backend.", "08006",
+                        new java.net.SocketTimeoutException("Read timed out")));
+
+        recorder.recordFailure(history, readTimeout, CLIENT);
+
+        verify(faceHistoryRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("UG-358 2단계 반박 리뷰 M1: 붙여 둔 라이브니스는 결과 커밋 때 이력과 함께 저장되고, 두 번 저장되지 않는다")
     void 라이브니스는_결과_커밋에서_한_번만() {
         FaceLivenessJpaRepository livenesses = org.mockito.Mockito.mock(FaceLivenessJpaRepository.class);

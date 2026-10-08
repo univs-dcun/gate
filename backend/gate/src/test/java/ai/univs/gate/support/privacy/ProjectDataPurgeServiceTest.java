@@ -17,6 +17,7 @@ import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +46,7 @@ class ProjectDataPurgeServiceTest {
     @Mock private FaceService faceService;
     @Mock private PalmService palmService;
     @Mock private FileService fileService;
+    @Mock private JobConnectionTimeout jobConnectionTimeout;
 
     @InjectMocks private ProjectDataPurgeService purgeService;
 
