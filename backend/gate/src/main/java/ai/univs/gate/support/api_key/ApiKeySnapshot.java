@@ -3,6 +3,7 @@ package ai.univs.gate.support.api_key;
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
+import ai.univs.gate.shared.utils.ApiKeyMasker;
 import java.time.LocalDateTime;
 
 /**
@@ -20,11 +21,13 @@ import java.time.LocalDateTime;
  * </ul>
  *
  * <p>조회 조건이 「활성 키 + 삭제되지 않은 프로젝트」라 {@code isActive=true}·{@code isDeleted=false} 인 것만 담긴다.
+ *
+ * <p>비밀값은 줄인다(반박 리뷰 L3). {@code secretKey} 는 담지 않는다 — 조회 경로의 호출자가 쓰지 않으니 키 1만 개의 비밀값을
+ * 힙에 둘 이유가 없다(사본의 {@code secretKey} 는 비어 있다). {@code toString} 은 API 키를 가린다 — 레코드 기본값은 원문을 찍는다.
  */
 public record ApiKeySnapshot(
         Long apiKeyId,
         String apiKey,
-        String secretKey,
         LocalDateTime issuedAt,
         LocalDateTime expiresAt,
         Long projectId,
@@ -38,9 +41,14 @@ public record ApiKeySnapshot(
     /** 조회한 엔티티에서 값을 옮긴다. 프로젝트가 이미 읽혀 있어야 한다(조회가 함께 가져온다). */
     static ApiKeySnapshot of(ApiKey key) {
         Project project = key.getProject();
-        return new ApiKeySnapshot(key.getId(), key.getApiKey(), key.getSecretKey(), key.getIssuedAt(), key.getExpiresAt(),
+        return new ApiKeySnapshot(key.getId(), key.getApiKey(), key.getIssuedAt(), key.getExpiresAt(),
                 project.getId(), project.getAccountId(), project.getProjectName(), project.getProjectDescription(),
                 project.getBranchName(), project.getStatus(), project.getColorTag());
+    }
+
+    @Override
+    public String toString() {
+        return "ApiKeySnapshot[apiKeyId=" + apiKeyId + ", apiKey=" + ApiKeyMasker.mask(apiKey) + ", projectId=" + projectId + "]";
     }
 
     /** 요청마다 새 사본. */
@@ -59,7 +67,6 @@ public record ApiKeySnapshot(
                 .id(apiKeyId)
                 .project(project)
                 .apiKey(apiKey)
-                .secretKey(secretKey)
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt)
                 .isActive(true)

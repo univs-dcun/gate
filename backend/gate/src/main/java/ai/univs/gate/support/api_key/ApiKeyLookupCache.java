@@ -30,6 +30,10 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * 키가 {@link #TTL} 동안 통과한다. 그래서 지울 때 프로젝트별 「지운 세대」를 남기고, 넣을 때 읽기 전에 받아 둔 세대와 비교해
  * 그보다 앞서 읽은 값은 넣지 않는다. 꺼낼 때도 같은 비교를 한다 — 넣기와 지우기가 겹쳐 지우기가 놓친 값이 남아 있어도
  * 쓰이지 않는다.
+ *
+ * <p><b>전제: DB 읽기는 「지운 세대」가 남는 시간(TTL 의 두 배, 60초)보다 짧다.</b> gate-config 의 statement_timeout(8초)·
+ * socketTimeout(10초)이 이를 보장한다(UG-367). 그보다 오래 걸린 읽기는 세대 기록이 사라진 뒤에 넣어 낡은 값이 남을 수 있으니
+ * 상한을 늘릴 때 함께 본다.
  */
 @Component
 public class ApiKeyLookupCache {
@@ -78,16 +82,22 @@ public class ApiKeyLookupCache {
         entries.asMap().compute(apiKey, (key, current) -> isStale(read) ? current : read);
     }
 
-    /** 프로젝트를 바꾼(삭제·수정) 트랜잭션이 커밋된 뒤에 그 프로젝트의 키를 지운다. 트랜잭션 밖이면 바로 지운다. */
+    /**
+     * 프로젝트를 바꾼(삭제·수정) 트랜잭션이 끝난 뒤에 그 프로젝트의 키를 지운다. 트랜잭션 밖이면 바로 지운다.
+     *
+     * <p>커밋만이 아니라 <b>끝나기만 하면 결과와 상관없이</b> 지운다(반박 리뷰 M1). DB 가 멈춘 사이 COMMIT 이 서버에서는 성공했는데
+     * 드라이버가 타임아웃을 받으면 Spring 은 실패로 보고 {@code afterCommit} 을 부르지 않는다({@code STATUS_UNKNOWN}) — 그러면
+     * 삭제된 프로젝트의 키가 캐시 수명 동안 통과한다. 롤백 때 지워도 해는 없다(캐시 적중이 한 번 줄 뿐).
+     */
     public void evictProjectAfterCommit(Long projectId) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             evictProject(projectId);
             return;
         }
-        // 커밋 전에 지우면 다른 요청이 아직 커밋 안 된 옛 행을 읽어 다시 채운다.
+        // 끝나기 전에 지우면 다른 요청이 아직 커밋 안 된 옛 행을 읽어 다시 채운다.
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
-            public void afterCommit() {
+            public void afterCompletion(int status) {
                 evictProject(projectId);
             }
         });
@@ -105,13 +115,18 @@ public class ApiKeyLookupCache {
         return evicted != null && evicted > stamped.readGeneration();
     }
 
-    /** @param readGeneration 이 값을 DB 에서 읽기 전의 세대 */
-    /** 전부 비운다. 같은 키 문자열로 행을 지웠다 다시 만드는 테스트가 테스트 사이에 부른다. */
+    /**
+     * 전부 비운다. 같은 키 문자열로 행을 지웠다 다시 만드는 테스트가 테스트 사이에 부른다.
+     *
+     * <p><b>운영 코드에서 쓰지 않는다.</b> 프로젝트별 「지운 세대」를 남기지 않으므로, 동시에 진행 중인 읽기가 낡은 값을 다시 넣을 수
+     * 있다 — 무효화가 필요하면 {@link #evictProjectAfterCommit} 을 쓴다.
+     */
     public void invalidateAll() {
         generation.incrementAndGet();
         entries.invalidateAll();
     }
 
+    /** @param readGeneration 이 값을 DB 에서 읽기 전의 세대 */
     private record Stamped(ApiKeySnapshot snapshot, long readGeneration) {
     }
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -46,10 +47,8 @@ class ApiKeyOwnershipTest {
 
     /** UG-364: 실제 캐시 — 조회 규칙이 캐시를 거쳐도 같은지 본다. 테스트마다 새로 만든다. */
 
-    @org.mockito.Spy
-
+    @Spy
     private ApiKeyLookupCache lookupCache = new ApiKeyLookupCache();
-
 
     @InjectMocks
     private ApiKeyService apiKeyService;

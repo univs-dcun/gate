@@ -1,7 +1,8 @@
 package ai.univs.gate.modules.api_key.infrastructure.persistence;
 
 import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
-import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -24,9 +25,12 @@ public interface ApiKeyJpaRepository extends JpaRepository<ApiKey, Long> {
 
     List<ApiKey> findAllByProjectIdAndIsActive(Long projectId, boolean isActive);
 
-    // UG-364: 진단 로그가 트랜잭션 밖에서 프로젝트의 삭제 여부를 읽는다.
-    @EntityGraph(attributePaths = "project")
-    Optional<ApiKey> findByApiKeyAndIsActive(String apiKey, boolean isActive);
+    /**
+     * 진단용(UG-300)이라 프로젝트 행이 없는 고아 키도 찾는다 — 그래서 바깥 조인으로 함께 가져온다(UG-364: 트랜잭션 밖에서
+     * 삭제 여부를 읽는다). {@code @EntityGraph} 는 연관이 NOT NULL 이라 안쪽 조인이 돼 고아 키를 놓쳤다(반박 리뷰 L2).
+     */
+    @Query("select k from ApiKey k left join fetch k.project where k.apiKey = :apiKey and k.isActive = :isActive")
+    Optional<ApiKey> findByApiKeyAndIsActive(@Param("apiKey") String apiKey, @Param("isActive") boolean isActive);
 
     /**
      * 활성 키 중 <b>살아 있는 프로젝트</b>의 것만 (UG-300, UG-288 후속).
@@ -38,10 +42,12 @@ public interface ApiKeyJpaRepository extends JpaRepository<ApiKey, Long> {
      * <p>원래 UG-288 은 이 자리를 골랐다가 되돌렸다. 검증할 슬라이스 테스트가 없어서였다
      * ({@code JpaSliceTest} 참고). UG-300 이 그 인프라를 만들었으므로 제자리로 옮긴다.
      */
-    // UG-364: 프로젝트를 함께 가져온다 — ApiKeyService 가 트랜잭션 없이 결과를 사본으로 옮기므로 지연 프록시면 안 된다.
-    @EntityGraph(attributePaths = "project")
+    // UG-364: 프로젝트를 함께 가져온다 — ApiKeyService 가 트랜잭션 없이 결과를 사본으로 옮기므로 지연 프록시면 안 된다. 파생 쿼리에
+    // @EntityGraph 를 얹으면 프로젝트를 두 번 조인해(조건용·가져오기용) 한 번으로 줄였다(반박 리뷰 L1).
+    @Query("select k from ApiKey k join fetch k.project p"
+            + " where k.apiKey = :apiKey and k.isActive = :isActive and p.isDeleted = false")
     Optional<ApiKey> findByApiKeyAndIsActiveAndProject_IsDeletedFalse(
-            String apiKey, boolean isActive);
+            @Param("apiKey") String apiKey, @Param("isActive") boolean isActive);
 
     boolean existsByApiKey(String apiKey);
 }

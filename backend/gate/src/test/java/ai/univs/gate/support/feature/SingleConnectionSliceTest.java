@@ -53,6 +53,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
+import ai.univs.gate.support.api_key.ApiKeyLookupCache;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,7 +91,7 @@ import org.springframework.transaction.support.TransactionTemplate;
         "spring.datasource.hikari.connection-timeout=1000"
 })
 @Import({FaceFeatureService.class, DeleteFaceFeatureUseCase.class, HistoryRecorder.class,
-        ApiKeyService.class, ai.univs.gate.support.api_key.ApiKeyLookupCache.class, ProjectSettingsService.class,
+        ApiKeyService.class, ApiKeyLookupCache.class, ProjectSettingsService.class,
         ApiKeyRepositoryImpl.class, BiometricFeatureRepositoryImpl.class,
         BiometricFeatureDSLRepository.class, MatchHistoryRepositoryImpl.class,
         FeatureHistoryRepositoryImpl.class, ProjectSettingsRepositoryImpl.class,
@@ -117,17 +118,14 @@ class SingleConnectionSliceTest {
     @Autowired private DataSource dataSource;
     @Autowired private EntityManager em;
     @Autowired private TransactionTemplate tx;
-
     private Project project;
 
     /** 원격 호출 안에서 커넥션을 빌려 본 결과. 빌렸으면 null, 못 빌렸으면 그 예외. */
     private final AtomicReference<Throwable> 원격중_커넥션_실패 = new AtomicReference<>();
     private boolean 원격_호출됨;
 
-    @org.springframework.beans.factory.annotation.Autowired
-
-    private ai.univs.gate.support.api_key.ApiKeyLookupCache apiKeyLookupCache;
-
+    @Autowired
+    private ApiKeyLookupCache apiKeyLookupCache;
 
     @BeforeEach
     void setUp() {

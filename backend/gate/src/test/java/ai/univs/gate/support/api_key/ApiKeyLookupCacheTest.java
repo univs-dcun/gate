@@ -131,17 +131,32 @@ class ApiKeyLookupCacheTest {
     }
 
     @Test
-    @DisplayName("트랜잭션 안에서 지우면 커밋 뒤에 지운다 — 롤백되면 그대로")
-    void 커밋_뒤에_지운다() {
+    @DisplayName("트랜잭션 안에서 지우면 끝난 뒤에 지운다 — 끝나기 전에는 그대로")
+    void 끝난_뒤에_지운다() {
         있다(KEY, PROJECT);
         service.findOwnedByApiKey(KEY, OWNER);
         TransactionSynchronizationManager.initSynchronization();
 
         cache.evictProjectAfterCommit(PROJECT);
-        assertThat(cache.get(KEY)).as("커밋 전").isNotNull();
+        assertThat(cache.get(KEY)).as("끝나기 전").isNotNull();
 
-        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(s -> s.afterCompletion(TransactionSynchronization.STATUS_COMMITTED));
         assertThat(cache.get(KEY)).as("커밋 뒤").isNull();
+    }
+
+    @Test
+    @DisplayName("반박 리뷰 M1: 커밋 결과를 모를 때(STATUS_UNKNOWN)도 지운다 — 서버에서는 삭제가 커밋됐을 수 있다")
+    void 결과를_몰라도_지운다() {
+        있다(KEY, PROJECT);
+        service.findOwnedByApiKey(KEY, OWNER);
+        TransactionSynchronizationManager.initSynchronization();
+
+        cache.evictProjectAfterCommit(PROJECT);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(s -> s.afterCompletion(TransactionSynchronization.STATUS_UNKNOWN));
+
+        assertThat(cache.get(KEY)).isNull();
     }
 
     @Test

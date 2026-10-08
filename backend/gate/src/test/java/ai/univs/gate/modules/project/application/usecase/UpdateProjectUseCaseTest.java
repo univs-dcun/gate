@@ -32,9 +32,7 @@ class UpdateProjectUseCaseTest {
     private ProjectService projectService;
 
     @Mock
-
     private ApiKeyLookupCache apiKeyLookupCache;
-
 
     @InjectMocks
     private UpdateProjectUseCase useCase;

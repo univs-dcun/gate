@@ -58,9 +58,7 @@ class DeleteProjectUseCaseTest {
     private ApiKeyRepository apiKeyRepository;
 
     @Mock
-
     private ApiKeyLookupCache apiKeyLookupCache;
-
 
     @InjectMocks
     private DeleteProjectUseCase deleteProjectUseCase;
