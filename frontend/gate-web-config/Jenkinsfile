@@ -176,10 +176,17 @@ pipeline {
             steps {
                 sshagent(credentials: ['ssh-credentials']) {
                     script {
+                        // UG-375: .env 백업·수정은 서버 쪽 flock(.env.lock)으로 한 번에 하나만 한다 — gate-jenkins-library
+                        // univsServicePipeline 과 같은 .env·같은 잠금 파일을 쓴다. 동시 배포가 sed -i 로 서로의 줄을 지우던
+                        // 경합(2026-10-12 운영·stage 에서 실제 발생)을 막는다. 쓴 뒤 다시 읽어 확인하고, 아니면 배포를 멈춘다.
                         def remoteScript = """
                             cd ${WORKING_DIR} && \
-                            if [ '${env.RUN_TARGET_ENV}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S) 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true; fi && \
-                            sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}/' .env && \
+                            { command -v flock >/dev/null || { echo "❌ flock 이 없어 .env 를 안전하게 고칠 수 없습니다 (UG-375)"; exit 1; }; } && \
+                            ( flock -w 120 9 || { echo "❌ .env 잠금을 120초 안에 얻지 못했습니다 (UG-375)"; exit 1; }; \
+                              if [ '${env.RUN_TARGET_ENV}' != 'dev' ]; then cp .env .env.bak.\$(date +%Y%m%d%H%M%S).${SERVICE_NAME} 2>/dev/null || true; ls -t .env.bak.* 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true; fi; \
+                              sed -i 's/^${SERVICE_ENV_VAR_NAME}=.*/${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}/' .env || exit 1; \
+                              grep -qx '${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}' .env || { echo "❌ .env 에 ${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG} 가 남지 않았습니다 (UG-375)"; exit 1; } \
+                            ) 9>>.env.lock && \
                             echo "✅ .env 업데이트: ${SERVICE_ENV_VAR_NAME}=${DEPLOY_TAG}" && \
                             docker compose -p gate stop ${SERVICE_NAME} || true && \
                             docker compose -p gate rm -f ${SERVICE_NAME} || true && \
