@@ -123,6 +123,14 @@ public class FaceHistory {
         fail(failureMessage, managerUuid);
     }
 
+    /**
+     * 롤백된 트랜잭션이 써 둔 IDENTITY id 를 지운다 (UG-363). 행은 없는데 id 만 남으면 다음 저장이 INSERT 대신 merge 로
+     * 간다. {@code FaceHistoryRecorder} 가 「이 트랜잭션 전에는 행이 없었던」 이력에만 부른다.
+     */
+    public void discardRolledBackId() {
+        this.id = null;
+    }
+
     /** 라이브니스 결과를 결과 커밋 때 함께 저장하도록 붙여 둔다. */
     public void attachLiveness(FaceLiveness faceLiveness) {
         this.pendingLiveness = faceLiveness;
