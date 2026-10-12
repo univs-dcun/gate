@@ -98,7 +98,10 @@ class WriteUseCaseHistoryContractTest {
 
     private final List<Saved> saved = new ArrayList<>();
     private final AtomicInteger historySaves = new AtomicInteger();
-    /** n 번째 이력 저장을 실패시킨다 (0 이면 실패 없음). 1 = 시작, 2 = 결과 커밋(finish), 3 = 실패 기록. */
+    /**
+     * n 번째 이력 저장을 실패시킨다 (0 이면 실패 없음). 1 = 시작, 2 = 결과 커밋(finish), 3 = 실패 기록. 라이브니스는 시작
+     * 행을 먼저 커밋하지 않으므로(UG-363) 1 = 결과 커밋, 2 = 실패 기록이다 — {@link #결과_커밋_순번}.
+     */
     private int failHistorySaveAt;
     private RuntimeException historySaveFailure;
 
@@ -396,6 +399,11 @@ class WriteUseCaseHistoryContractTest {
                 new Saved(false, ErrorType.INTERNAL_SERVER_ERROR.name(), c.faceIdOnSuccess()));
     }
 
+    /** 결과 커밋(finish)이 몇 번째 이력 저장인가. 라이브니스는 시작 행이 없다(UG-363, 읽기 경로). */
+    private static int 결과_커밋_순번(String name) {
+        return name.equals("Liveness") ? 1 : 2;
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("전부")
     @DisplayName("결과 커밋 실패 — 「결과 미기록 + INTERNAL_SERVER_ERROR」로 남는다 (예전에는 행이 롤백됐다)")
@@ -403,14 +411,32 @@ class WriteUseCaseHistoryContractTest {
         Case c = caseNamed(name);
         c.answerSuccess().run();
         DataAccessResourceFailureException dbDown = new DataAccessResourceFailureException("db down");
-        failHistorySaveAt = 2;
+        failHistorySaveAt = 결과_커밋_순번(name);
         historySaveFailure = dbDown;
 
         assertThatThrownBy(c.execute()::run).isSameAs(dbDown);
 
+        assertThat(historySaves.get()).as("결과 커밋(실패)과 실패 기록 — 그 앞의 시작이 있으면 하나 더")
+                .isEqualTo(결과_커밋_순번(name) + 1);
         Saved history = lastSavedHistory();
         assertThat(history.result()).isFalse();
         assertThat(history.failureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    /**
+     * UG-363: 라이브니스는 시작 행을 먼저 커밋하지 않는다 — 성공이면 이력 저장이 결과 커밋 한 번이고(라이브니스 행과 한
+     * 트랜잭션), 쓰기·추출은 예전처럼 시작·결과 두 번이다.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("전부")
+    @DisplayName("UG-363 성공 시 이력 저장 횟수 — 라이브니스 1번(결과만), 쓰기·추출 2번(시작·결과)")
+    void 성공_이력_저장_횟수(String name) {
+        Case c = caseNamed(name);
+        c.answerSuccess().run();
+
+        c.execute().run();
+
+        assertThat(historySaves.get()).isEqualTo(결과_커밋_순번(name));
     }
 
     /**

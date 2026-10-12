@@ -35,4 +35,9 @@ public class FaceLiveness {
     private LocalDateTime createdAt;
     private String modifiedBy;
     private LocalDateTime modifiedAt;
+
+    /** 롤백된 트랜잭션이 써 둔 IDENTITY id 를 지운다 (UG-363) — {@link FaceHistory#discardRolledBackId} 와 같은 이유. */
+    public void discardRolledBackId() {
+        this.id = null;
+    }
 }

@@ -2,9 +2,12 @@ package ai.univs.palm.shared.feign;
 
 import ai.univs.palm.shared.exception.UpstreamCallException;
 import feign.FeignException;
+import feign.Request;
 import feign.RetryableException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import java.util.Arrays;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -23,7 +26,8 @@ import org.springframework.stereotype.Component;
  * ERROR 에 스택트레이스가 통째로 붙고, <b>어느 호출이 왜 실패했는지 알 수 없었다.</b>
  *
  * <p><b>고치는 것은 진단 정보이지 응답이 아니다.</b> 이 경로는 예전에도 500 이었고 지금도 500
- * 이다 — 델타 리뷰가 상태·본문·헤더를 바이트 단위로 대조해 확인했다. 초판은 티켓 항목 4를
+ * 이다 — 델타 리뷰가 상태·본문·헤더를 바이트 단위로 대조해 확인했다(UG-362 에서 연결 거부·경로 없음만
+ * 503 이 됐다 — 아래 참고). 초판은 티켓 항목 4를
  * 따라 400 으로 통일하려 했는데, 그러면 gate 의 {@code IdentifyPalmUseCase} 가 4xx 를 정상
  * 결과로 흡수해 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 나간다. 상세는
  * {@code GlobalExceptionHandler.handleUpstreamCallException} 의 분기 주석에 있다.
@@ -40,6 +44,33 @@ import org.springframework.stereotype.Component;
  *       (프록시가 본문을 잘라 보내는 경우 등). {@code RetryableException} 은 이것의 하위 타입이다.
  *   <li>인코딩 실패 — {@code EncodeException} 도 {@link FeignException} 하위다.
  * </ul>
+ *
+ * <p><b>연결 자체를 못 한 경우는 따로 표시한다 (UG-362).</b> {@link RetryableException} 의 원인 사슬에
+ * {@code ConnectException}(연결 거부) 또는 {@code NoRouteToHostException}(경로 없음)이 있고 <b>요청에 본문이
+ * 있으면</b> 요청이 하위에 닿지 않은 것이 확실하므로 {@link UpstreamCallException#notDelivered} 로 던진다 — 핸들러가
+ * 500 대신 503
+ * {@code SWAGGER-006} 으로 내보내고, gate 가 그것을 {@code PJ-006} 으로 바꾼다. 5xx 이므로 위의 안전 성질
+ * ({@code IdentifyPalmUseCase} 의 4xx 흡수)은 그대로다. 타임아웃·연결 리셋·{@code UnknownHostException} 은 예전
+ * 그대로 500 이다. 이유는 {@link UpstreamCallException#notDelivered} 설명에 있다.
+ *
+ * <p><b>본문 없는 요청(GET·DELETE)은 연결 거부여도 예전 그대로 500 이다 (UG-362 반박 리뷰).</b> Feign 기본
+ * 클라이언트({@code Client.Default}, JDK {@code HttpURLConnection})는 응답을 읽다 실패하면 <b>본문 없는 요청을 새
+ * 연결로 한 번 몰래 다시 보낸다</b> ({@code sun.net.www.http.HttpClient.parseHTTP} 의 {@code failedOnce} 재전송).
+ * 그래서 하위가 첫 요청을 받아 처리한 뒤 죽으면, 호출자가 보는 예외는 재전송이 맞은
+ * {@code ConnectException: Connection refused} 다 — 연결 거부인데 요청은 이미 닿았다. 본문 없는 {@code @DeleteMapping}
+ * 이라면 삭제가 끝났는데 "닿지 않았으니 다시 보내도 된다" 가 된다. JDK 21 + feign-core 13.5·13.6.1 로 실측했다 (서버가
+ * 요청을 다 읽고 응답 없이 끊은 뒤 리스너를 닫음): GET·DELETE → {@code ConnectException}, 본문 있는 POST·PUT →
+ * {@code SocketException: Unexpected end of file from server}. 본문이 있으면 Feign 이 스트리밍 모드
+ * ({@code setFixedLengthStreamingMode}/{@code setChunkedStreamingMode})로 보내고, JDK 는 스트리밍 요청을 다시 보내지
+ * 않는다. 그러므로 본문이 있는 요청의 {@code ConnectException} 은 첫 연결 시도에서 난 것이고, 요청 바이트는 하위에
+ * 한 번도 가지 않았다.
+ *
+ * <p><b>이 판정은 Feign 의 요청 버퍼링 해제(기본값 {@code disableRequestBuffering = true})에 기댄다.</b>
+ * {@code new Client.Default(ssl, verifier, false)} 처럼 버퍼링을 켜면 본문이 있어도 스트리밍이 아니게 되고, 같은
+ * 실측에서 <b>버퍼링한 POST·PUT 도 몰래 재전송돼</b> {@code ConnectException} 으로 끝났다 ({@code sun.net.http.retryPost}
+ * 기본값 {@code true}). 버퍼링을 켜거나 다른 HTTP 클라이언트(Apache·OkHttp 등 자체 재시도가 있는 것)로 바꾸면 이 판정을
+ * 다시 따져야 한다. 빈 본문({@code byte[0]})은 실측상 재전송되지 않았지만, 본문이 실린다는 보장이 없는 경계라
+ * 보수적으로 "본문 없음" 으로 친다. gate 의 {@code RemoteCalls} 와 같은 기준이다.
  *
  * <p><b>왜 호출처마다 감싸지 않고 빈을 감싸는가.</b> gate 는 {@code RemoteCalls.of} 를 호출처
  * 마다 부른다. face·palm 은 Feign 호출 지점이 UseCase 20여 곳에 흩어져 있어 하나만 빠뜨려도
@@ -129,10 +160,20 @@ public class FeignFailureTranslator implements BeanPostProcessor {
                 // "90여 줄 스택트레이스를 없앴다" 고 적고 있었다. 반면 디코딩 실패는 우리 쪽
                 // 파싱 문제일 수 있어 스택이 단서가 되므로 그대로 싣는다.
                 boolean 응답을_못_받았다 = feignException instanceof RetryableException;
+                String operation = "%s#%s".formatted(target.getSimpleName(), method.getName());
+
+                // UG-362: 본문 있는 요청의 연결 거부·경로 없음만 "닿지 않았다" 로 가른다. 상태·사유·cause 는 아래와
+                // 같다 — 이력과 로그는 그대로이고 응답만 503 SWAGGER-006 이 된다. 본문 없는 요청은 JDK 의 몰래 재전송
+                // 때문에 연결 거부여도 이미 닿았을 수 있다 (클래스 설명).
+                if (feignException instanceof RetryableException retryable
+                        && 연결하지_못했다(retryable) && 본문이_있다(retryable)) {
+                    throw UpstreamCallException.notDelivered(
+                            UpstreamCallException.NO_RESPONSE, operation, 원인_요약(feignException));
+                }
 
                 throw new UpstreamCallException(
                         UpstreamCallException.NO_RESPONSE,
-                        "%s#%s".formatted(target.getSimpleName(), method.getName()),
+                        operation,
                         원인_요약(feignException),
                         응답을_못_받았다 ? null : feignException);
             }
@@ -153,6 +194,43 @@ public class FeignFailureTranslator implements BeanPostProcessor {
     private static boolean Object_equals_인가(java.lang.reflect.Method method) {
         return "equals".equals(method.getName())
                 && Arrays.equals(method.getParameterTypes(), new Class<?>[] {Object.class});
+    }
+
+    /**
+     * 원인 사슬에 "연결을 맺지 못했다" 는 예외가 있는가 (UG-362). gate 의 {@code RemoteCalls} 와 같은 기준이다.
+     *
+     * <p>{@code ConnectException} 의 하위 타입(Apache HttpClient 5 의 {@code HttpHostConnectException} 등)도
+     * 포함된다. {@code SocketTimeoutException} 은 {@code ConnectException} 의 하위가 아니므로 걸리지 않는다 — 연결
+     * 타임아웃과 읽기 타임아웃을 예외 타입으로 가를 수 없어 일부러 뺐다. 사슬이 순환해도 끝나도록 깊이를 제한한다.
+     */
+    static boolean 연결하지_못했다(Throwable e) {
+        Throwable current = e;
+        for (int depth = 0; current != null && depth < 16; depth++) {
+            if (current instanceof ConnectException || current instanceof NoRouteToHostException) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * 요청에 본문이 실려 있는가 — 즉 JDK 가 몰래 다시 보내지 않는 스트리밍 요청인가 (UG-362 반박 리뷰).
+     *
+     * <p>본문 없는 요청은 {@code HttpURLConnection} 이 응답 읽기 실패 뒤 새 연결로 한 번 더 보내므로, 그 재전송의
+     * 연결 거부가 "닿지 않았다" 를 뜻하지 않는다. 요청 정보가 없으면 판단할 수 없으므로 예전 그대로 둔다. 상세는
+     * 클래스 설명 참고. gate 의 {@code RemoteCalls} 와 같은 기준이다.
+     */
+    static boolean 본문이_있다(RetryableException e) {
+        Request request = e.request();
+        if (request == null) {
+            return false;
+        }
+        byte[] body = request.body();
+        return body != null && body.length > 0;
     }
 
     /**

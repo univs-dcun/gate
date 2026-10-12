@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -86,6 +87,26 @@ class UpstreamCallStatusTest {
                 new UpstreamCallException(503, "MatchFeign#identify", "Service Unavailable"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * UG-362: 요청이 하위에 닿지 않았음이 확실하면 503 + {@code SWAGGER-006} + {@code Retry-After} 다.
+     *
+     * <p>gate 의 디코더가 503 + {@code TEMPORARILY_UNAVAILABLE} 을 {@code PJ-006} 으로 바꾼다. 5xx 이므로 위의 안전
+     * 성질(gate 가 4xx 를 정상 결과로 흡수)도 지켜진다.
+     */
+    @Test
+    @DisplayName("UG-362: 닿지 않은 실패는 503 + SWAGGER-006 + Retry-After — 응답 없음·로드밸런서 503 모두")
+    void 닿지_않음은_503() {
+        for (int upstreamStatus : new int[] {UpstreamCallException.NO_RESPONSE, 503}) {
+            ResponseEntity<ResponseApi<?>> response = handler.handleUpstreamCallException(
+                    UpstreamCallException.notDelivered(upstreamStatus, "MatchFeign#identify", "연결 실패·타임아웃 (ConnectException)"));
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+            assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("1");
+            assertThat(response.getBody().errors().code()).isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE.getCode());
+            assertThat(response.getBody().errors().type()).isEqualTo(ErrorType.TEMPORARILY_UNAVAILABLE.name());
+        }
     }
 
     /** 본문은 두 경우 모두 같다 — 상태 코드만 갈린다. */

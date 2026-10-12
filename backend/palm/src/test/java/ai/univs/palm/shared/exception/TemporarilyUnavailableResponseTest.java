@@ -69,6 +69,19 @@ class TemporarilyUnavailableResponseTest {
         void boom() {
             throw new IllegalStateException("boom");
         }
+
+        @GetMapping("/upstream/refused")
+        void upstreamRefused() {
+            // UG-362: 팜 모듈에 연결하지 못했다 — 요청이 닿지 않았다
+            throw UpstreamCallException.notDelivered(UpstreamCallException.NO_RESPONSE, "PalmFeign#identify",
+                    "연결 실패·타임아웃 (ConnectException)");
+        }
+
+        @GetMapping("/upstream/read-timeout")
+        void upstreamReadTimeout() {
+            throw new UpstreamCallException(UpstreamCallException.NO_RESPONSE, "PalmFeign#register",
+                    "연결 실패·타임아웃 (SocketTimeoutException)");
+        }
     }
 
     private MockMvc mvc;
@@ -131,5 +144,24 @@ class TemporarilyUnavailableResponseTest {
                 .andExpect(header().doesNotExist("Retry-After"))
                 .andExpect(jsonPath("$.errors.code").value("SWAGGER-005"))
                 .andExpect(jsonPath("$.errors.type").value("INTERNAL_SERVER_ERROR"));
+    }
+
+    @Test
+    @DisplayName("UG-362: 팜 모듈 연결 거부는 503 + SWAGGER-006 + Retry-After — 요청이 닿지 않았다")
+    void 연결_거부는_503() throws Exception {
+        mvc.perform(get("/upstream/refused"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.errors.code").value("SWAGGER-006"))
+                .andExpect(jsonPath("$.errors.type").value("TEMPORARILY_UNAVAILABLE"));
+    }
+
+    @Test
+    @DisplayName("UG-362 대조군: 읽기 타임아웃은 결과를 모르므로 예전처럼 500 SWAGGER-005 이고 Retry-After 가 없다")
+    void 읽기_타임아웃은_500() throws Exception {
+        mvc.perform(get("/upstream/read-timeout"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(header().doesNotExist("Retry-After"))
+                .andExpect(jsonPath("$.errors.code").value("SWAGGER-005"));
     }
 }

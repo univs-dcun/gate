@@ -123,15 +123,28 @@ public class GlobalExceptionHandler {
      * 갈렸다 — 하위 모듈이 오류를 <b>응답한</b> 경우는 UG-299 가 맞춘 400 그대로고, 응답을
      * <b>못 받은</b> 경우({@code NO_RESPONSE})는 500 이다. 두 값 모두 UG-308 이전 거동과
      * 같으므로 클라이언트가 보는 계약은 바뀌지 않는다. 이유는 아래 분기 주석에 있다.
+     *
+     * <p><b>예외 하나 (UG-362).</b> 요청이 하위에 닿지 않았음이 확실한 경우({@link UpstreamCallException#isNotDelivered()}
+     * — 연결 거부·경로 없음, 로드밸런서에 인스턴스 없음)는 503 + {@code SWAGGER-006} + {@code Retry-After} 다. gate 의
+     * 디코더가 그것을 {@code PJ-006} 으로 바꿔 클라이언트에게 "다시 보내도 된다" 고 알린다. 로그는 같은 ERROR 한 줄이다.
      */
     @ExceptionHandler(UpstreamCallException.class)
     public ResponseEntity<ResponseApi<?>> handleUpstreamCallException(UpstreamCallException ex) {
         // cause 를 마지막 인자로 넘긴다. slf4j 는 마지막 인자가 Throwable 일 때만 스택트레이스로
         // 취급하므로, null 이면 자리표시자 개수를 넘는 여분 인자로 조용히 무시된다. 즉 분기를
         // 따로 쓸 필요가 없다 — 실제로 if/else 로 나눠 봤더니 관측 가능한 차이가 없었다.
-        log.error("[{}] ML 모듈 호출 실패 {} — operation={}, upstreamStatus={}, reason={}",
+        log.error("[{}] ML 모듈 호출 실패 {} — operation={}, upstreamStatus={}, reason={}{}",
                 ex.getErrorType().getCode(), requestInfo(),
-                ex.getOperation(), ex.getUpstreamStatus(), ex.getReason(), ex.getCause());
+                ex.getOperation(), ex.getUpstreamStatus(), ex.getReason(),
+                ex.isNotDelivered() ? " (연결하지 못했다 — 요청이 닿지 않았다)" : "",
+                ex.getCause());
+
+        // UG-362: 요청이 하위에 닿지 않았다 — 다시 보내도 안전하므로 503 SWAGGER-006 + Retry-After 다. 로그는 위의 ERROR
+        // 그대로다. 혼잡 신호(TemporarilyUnavailableException, WARN)와 달리 이 실패를 기록한 하위가 없다 — 요청이 닿지
+        // 않았으니 match 로그는 비어 있다. 5xx 이므로 아래 주석의 안전 성질(gate 의 4xx 흡수)도 그대로 지켜진다.
+        if (ex.isNotDelivered()) {
+            return temporarilyUnavailable();
+        }
 
         // UG-308: 응답을 못 받은 실패만 5xx 로 남긴다. 나머지(하위 모듈이 오류를 응답한
         // 경우)는 UG-299 가 정한 대로 400 그대로다.

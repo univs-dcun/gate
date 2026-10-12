@@ -37,6 +37,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -131,6 +132,13 @@ class SingleConnectionWritePathSliceTest {
                 .getSingleResult());
     }
 
+    private long 이력_행수(String transactionUuid) {
+        return tx.execute(status -> em.createQuery(
+                        "SELECT COUNT(h) FROM FaceHistory h WHERE h.transactionUuid = :t", Long.class)
+                .setParameter("t", transactionUuid)
+                .getSingleResult());
+    }
+
     private long 라이브니스_행수(String transactionUuid) {
         return tx.execute(status -> em.createQuery(
                         "SELECT COUNT(e) FROM FaceLiveness e WHERE e.faceHistory.transactionUuid = :t", Long.class)
@@ -197,6 +205,38 @@ class SingleConnectionWritePathSliceTest {
         assertThat(history.getFailureMessage()).isEqualTo("INTERNAL_SERVER_ERROR");
         assertThat(history.getFaceId()).isEqualTo("caller-ug358");
         assertThat(라이브니스_행수(txn)).isEqualTo(1);
+    }
+
+    /**
+     * UG-363 반박 리뷰 L3: 쓰기 경로의 결과 커밋이 DB 에서 실패해도(여기서는 라이브니스 행의 quality 가 컬럼보다 길다) 이력은
+     * <b>시작 행 하나</b>로 남고 실패로 갱신된다. 시작 행은 그 트랜잭션 전에 이미 커밋됐으므로 롤백 때 id 를 지우면 안 된다 —
+     * 지우면 실패 기록이 merge(UPDATE) 대신 persist(INSERT)로 가서 같은 transactionUuid 의 행이 둘이 된다.
+     *
+     * <p>단위 테스트(목)만으로는 「newHistory 와 무관하게 늘 id 를 지운다」는 변이를 실제 JPA 동작으로 확인하지 못한다. 그 변이로
+     * 이 테스트가 실패하는 것을 확인했다.
+     */
+    @Test
+    @DisplayName("UG-363 등록의 결과 커밋이 DB 에서 실패 — 이력은 시작 행 하나가 실패로 갱신된다 (id 유지, 새 행 없음)")
+    void 등록_결과_커밋_실패면_시작_행을_갱신() {
+        given(extractFeign.extractWithOptionalLivenessAndMultiFace(anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), any()))
+                .willReturn(new ExtractFeignResponseApi<>("SUCCESS", "ok", new ExtractFeignResponseDTO(
+                        new ExtractBodyFeignResponseDTO("", "descriptor-ug363"),
+                        new LivenessBodyFeignResponseDTO("0.99", 0, "real", "q".repeat(300), "0.5"),
+                        1)));
+        given(matchFeign.registerWithFaceId(any())).willReturn(
+                new FeignResponseApi<>(true, new MatchFeignResponseDTO("branch-ug363", "caller-ug363"), null));
+        String txn = UUID.randomUUID().toString();
+
+        assertThatThrownBy(() -> registerUseCase.execute(new RegisterInput(
+                "caller-ug363", new MockMultipartFile("image", new byte[] {1}), "branch-ug363", txn, CLIENT, true, true)))
+                .isInstanceOf(DataAccessException.class);
+
+        assertThat(이력_행수(txn)).as("시작 행을 갱신한다 — 롤백 때 커밋된 시작 행의 id 를 지우면 행이 둘이 된다").isEqualTo(1);
+        FaceHistory history = 이력(txn);
+        assertThat(history.isResult()).isFalse();
+        assertThat(history.getFailureMessage()).isEqualTo("INTERNAL_SERVER_ERROR");
+        assertThat(history.getFaceId()).as("match 에 반영된 faceId 가 남는다(UG-338)").isEqualTo("caller-ug363");
+        assertThat(라이브니스_행수(txn)).as("라이브니스 행 자체가 실패 원인이라 포기한다").isZero();
     }
 
     @Test
