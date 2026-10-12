@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -267,7 +268,8 @@ class FaceHistoryRecorderTest {
         withLiveness.recordFailure(history, cause, CLIENT);
 
         assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
-        verify(faceHistoryRepository).save(history);   // 한 트랜잭션 묶음은 라이브니스에서 실패, 이력만 다시 저장
+        // 한 트랜잭션 묶음(이력 → 라이브니스)은 라이브니스에서 실패해 롤백, 이력만 다시 저장 — 이력 저장 시도는 두 번
+        verify(faceHistoryRepository, times(2)).save(history);
         assertThat(history.getPendingLiveness()).isNull();
         assertThat(cause.getSuppressed()).hasSize(1);
     }
@@ -286,15 +288,59 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
-    @DisplayName("finish — 매칭 결과 행과 이력을 함께 저장한다(결과 행이 먼저)")
-    void finish는_결과행과_이력을_저장한다() {
+    @DisplayName("UG-363 finish — 이력을 먼저 저장하고 결과 행을 저장한다(읽기 경로는 이력 INSERT 가 결과 행의 FK 를 준다)")
+    void finish는_이력부터_저장한다() {
         FaceMatch match = FaceMatch.create(history, "", 0.3, 0.85, MatchType.IDENTIFY, CLIENT);
 
         recorder.finish(history, match);
 
-        InOrder order = inOrder(faceMatchRepository, faceHistoryRepository);
-        order.verify(faceMatchRepository).save(match);
+        InOrder order = inOrder(faceHistoryRepository, faceMatchRepository);
         order.verify(faceHistoryRepository).save(history);
+        order.verify(faceMatchRepository).save(match);
+    }
+
+    /** 저장소 목이 IDENTITY 처럼 INSERT 때 id 를 써 넣게 한다. */
+    private void historyInsertAssignsId(long id) {
+        given(faceHistoryRepository.save(any())).willAnswer(i -> {
+            FaceHistory h = i.getArgument(0);
+            if (h.getId() == null) ReflectionTestUtils.setField(h, "id", id);
+            return h;
+        });
+    }
+
+    @Test
+    @DisplayName("UG-363 새 이력의 결과 커밋이 롤백되면 그 트랜잭션이 써 둔 id 를 지운다 — 실패 기록이 merge 가 아니라 INSERT 로 간다")
+    void 롤백된_새_이력의_id를_지운다() {
+        FaceLivenessJpaRepository livenesses = org.mockito.Mockito.mock(FaceLivenessJpaRepository.class);
+        FaceHistoryRecorder withLiveness = TestRecorders.of(faceHistoryRepository, faceMatchRepository, livenesses);
+        FaceLiveness liveness = FaceLiveness.builder().faceHistory(history).prdioction(0).build();
+        given(livenesses.save(any())).willAnswer(i -> {
+            ReflectionTestUtils.setField(liveness, "id", 77L);
+            return liveness;
+        });
+        historyInsertAssignsId(42L);
+        history.attachLiveness(liveness);
+        history.successMatch(true, CLIENT);
+        FaceMatch match = FaceMatch.create(history, "face-1", 0.93, 0.85, MatchType.IDENTIFY, CLIENT);
+        DataAccessResourceFailureException dbDown = new DataAccessResourceFailureException("commit failed");
+        given(faceMatchRepository.save(any())).willThrow(dbDown);
+
+        assertThatThrownBy(() -> withLiveness.finish(history, match)).isSameAs(dbDown);
+
+        assertThat(history.getId()).as("롤백된 INSERT 의 id").isNull();
+        assertThat(liveness.getId()).as("롤백된 라이브니스 INSERT 의 id").isNull();
+        assertThat(history.getPendingLiveness()).as("실패 기록이 함께 남긴다").isSameAs(liveness);
+    }
+
+    @Test
+    @DisplayName("UG-363 이미 커밋된 이력(쓰기·추출의 시작 행)은 결과 커밋이 롤백돼도 id 를 지우지 않는다 — 그 행을 갱신해야 한다")
+    void 커밋된_시작_행의_id는_그대로() {
+        ReflectionTestUtils.setField(history, "id", 7L);
+        given(faceHistoryRepository.save(any())).willThrow(new DataAccessResourceFailureException("db down"));
+
+        assertThatThrownBy(() -> recorder.finish(history, null)).isInstanceOf(DataAccessResourceFailureException.class);
+
+        assertThat(history.getId()).isEqualTo(7L);
     }
 
     @Test
