@@ -11,6 +11,7 @@ import ai.univs.gate.support.feature.DownstreamAbsence;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,7 @@ public class ProjectDataPurgeService {
     private final FaceService faceService;
     private final PalmService palmService;
     private final FileService fileService;
+    private final JobConnectionTimeout jobConnectionTimeout;
 
     /**
      * 한 프로젝트의 생체 데이터를 지운다.
@@ -91,6 +93,7 @@ public class ProjectDataPurgeService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int purgeProject(Long projectId) {
+        jobConnectionTimeout.extendForCurrentTransaction();   // 특징점을 페이지 없이 한 번에 읽는다 (UG-367)
         Project project = projectPurgeRepository.findDeletedProject(projectId).orElse(null);
         if (project == null) {
             // 이 실행 중에 복구됐거나 이미 정리됐다. 경쟁 상황이지 오류가 아니다.
@@ -197,6 +200,7 @@ public class ProjectDataPurgeService {
     /** 유예가 지난 삭제 프로젝트 id 목록. 조회만 하므로 호출자의 트랜잭션을 요구하지 않는다. */
     @Transactional(readOnly = true)
     public List<Long> findPurgeTargets(LocalDateTime deletedBefore, int limit) {
+        jobConnectionTimeout.extendForCurrentTransaction();   // UG-367
         return projectPurgeRepository.findPurgeTargetIds(deletedBefore, limit);
     }
 }

@@ -4,6 +4,7 @@ import ai.univs.gate.modules.api_key.domain.entity.ApiKey;
 import ai.univs.gate.modules.api_key.domain.repository.ApiKeyRepository;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.project.ProjectService;
+import ai.univs.gate.support.api_key.ApiKeyLookupCache;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ public class DeleteProjectUseCase {
 
     private final ProjectService projectService;
     private final ApiKeyRepository apiKeyRepository;
+    private final ApiKeyLookupCache apiKeyLookupCache;
 
     /**
      * 프로젝트를 삭제하고 그 프로젝트의 API 키를 함께 비활성화한다 (UG-288).
@@ -45,6 +47,9 @@ public class DeleteProjectUseCase {
 
         List<ApiKey> activeKeys = apiKeyRepository.findAllActiveByProjectId(projectId);
         activeKeys.forEach(ApiKey::deactivate);
+        // UG-364: 키 조회 캐시에서 이 프로젝트의 키를 커밋 뒤에 지운다 — 지우지 않으면 삭제한 프로젝트의 키가 캐시 수명 동안
+        // 통과한다(UG-288 회귀). 롤백되면 지우지 않는다.
+        apiKeyLookupCache.evictProjectAfterCommit(projectId);
 
         if (!activeKeys.isEmpty()) {
             log.info("프로젝트 삭제로 API 키를 비활성화했다. projectId={}, apiKeyIds={}",

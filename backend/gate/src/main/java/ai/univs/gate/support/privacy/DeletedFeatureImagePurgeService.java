@@ -2,6 +2,7 @@ package ai.univs.gate.support.privacy;
 
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.file.FileUtil.DeleteOutcome;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,12 +66,15 @@ public class DeletedFeatureImagePurgeService {
      * 삼켜, 즉시 파기가 조용히 한 번도 일어나지 않는다 (슬라이스 테스트가 잡았다).
      */
     private final TransactionTemplate requiresNew;
+    private final JobConnectionTimeout jobConnectionTimeout;
 
     public DeletedFeatureImagePurgeService(DeletedFeatureImagePurgeRepository repository, FileService fileService,
                                            PlatformTransactionManager transactionManager,
+                                           JobConnectionTimeout jobConnectionTimeout,
                                            @Value("${gate.privacy.deleted-feature-image-purge.enabled:true}") boolean enabled) {
         this.repository = repository;
         this.fileService = fileService;
+        this.jobConnectionTimeout = jobConnectionTimeout;
         this.enabled = enabled;
         this.requiresNew = new TransactionTemplate(transactionManager);
         this.requiresNew.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -86,9 +90,21 @@ public class DeletedFeatureImagePurgeService {
      * @throws RuntimeException 파일에 접근하지 못했거나 저장소를 볼 수 없을 때 — 경로는 남고 다음 실행이 다시 집는다
      */
     public Outcome purge(Long featureSeq) {
-        Target target = requiresNew.execute(status -> repository.findImagePathOfDeleted(featureSeq)
-                .map(path -> new Target(path, !path.isBlank() && repository.isReferencedByLiveFeature(path)))
-                .orElse(null));
+        return purge(featureSeq, true);
+    }
+
+    /**
+     * @param job 정기 정리에서 부르면 {@code true} — 참조 확인({@code isReferencedByLiveFeature})이 인덱스 없이 큰 테이블을
+     *            훑으므로 DB 응답 상한을 늘린다 (UG-367). 삭제 API 의 즉시 파기는 늘리지 않는다: 요청 경로라 기본 상한에 걸리면
+     *            실패로 두고 정기 정리에 맡기는 편이 낫다.
+     */
+    private Outcome purge(Long featureSeq, boolean job) {
+        Target target = requiresNew.execute(status -> {
+            if (job) jobConnectionTimeout.extendForCurrentTransaction();
+            return repository.findImagePathOfDeleted(featureSeq)
+                    .map(path -> new Target(path, !path.isBlank() && repository.isReferencedByLiveFeature(path)))
+                    .orElse(null);
+        });
         if (target == null) {
             return Outcome.NOT_TARGET;
         }
@@ -119,7 +135,7 @@ public class DeletedFeatureImagePurgeService {
             return;
         }
         try {
-            purge(featureSeq);
+            purge(featureSeq, false);
         } catch (RuntimeException e) {
             log.warn("삭제한 특징점의 이미지 즉시 파기 실패 — 정기 정리가 다시 시도한다. featureSeq={}, 원인={}",
                     featureSeq, e.getClass().getSimpleName());
@@ -128,7 +144,10 @@ public class DeletedFeatureImagePurgeService {
 
     /** 정리 대상 id ({@code afterId} 다음부터). */
     public List<Long> findTargets(long afterId, int limit) {
-        return requiresNew.execute(status -> repository.findTargetIds(afterId, limit));
+        return requiresNew.execute(status -> {
+            jobConnectionTimeout.extendForCurrentTransaction();   // UG-367
+            return repository.findTargetIds(afterId, limit);
+        });
     }
 
     private record Target(String path, boolean sharedWithLive) {

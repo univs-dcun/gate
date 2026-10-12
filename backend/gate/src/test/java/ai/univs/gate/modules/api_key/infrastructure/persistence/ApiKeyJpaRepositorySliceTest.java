@@ -126,8 +126,8 @@ class ApiKeyJpaRepositorySliceTest {
         /**
          * LAZY 연관이 실제로 지연 로딩되는지.
          *
-         * <p>{@code ApiKeyService.validateOwnership} 이 {@code getProject().getAccountId()} 로
-         * 프록시를 초기화하는 것에 의존한다. 그 전제가 여기서 확인된다.
+         * <p>매핑 자체는 LAZY 다. 키 문자열 조회 두 개만 프로젝트를 함께 가져온다(UG-364, 아래 테스트) — 그 밖의 조회는
+         * 여전히 지연 로딩이므로 매핑을 바꾸면 여기서 깨진다. 프로젝트를 함께 가져오지 않는 조회로 본다.
          */
         @Test
         @DisplayName("project 연관이 LAZY 로 실려 나중에 초기화된다")
@@ -135,7 +135,7 @@ class ApiKeyJpaRepositorySliceTest {
             키를_저장한다(project, KEY, true);
             반영하고_비운다();
 
-            ApiKey found = apiKeyJpaRepository.findByApiKeyAndIsActive(KEY, true).orElseThrow();
+            ApiKey found = apiKeyJpaRepository.findAllByProjectIdAndIsActive(project.getId(), true).getFirst();
 
             // 초판은 getBranchName() 이 나오는지만 봤는데, 그건 EAGER 여도 통과한다
             // (변이 심기로 확인). 지연 '여부' 를 보려면 초기화 상태를 직접 물어야 한다.
@@ -146,8 +146,25 @@ class ApiKeyJpaRepositorySliceTest {
             assertThat(found.getProject().getBranchName()).isEqualTo("branch-1");
 
             assertThat(Hibernate.isInitialized(found.getProject()))
-                    .as("필드를 읽는 순간 초기화된다 — 소유 검증이 기대는 동작이다")
+                    .as("필드를 읽는 순간 초기화된다")
                     .isTrue();
+        }
+
+        /**
+         * UG-364: 키 문자열 조회는 프로젝트를 함께 가져온다. {@code ApiKeyService} 가 트랜잭션 없이 결과를 캐시용 사본으로
+         * 옮기므로, 프록시로 오면 사본을 만들 때 {@code LazyInitializationException} 이 난다.
+         */
+        @Test
+        @DisplayName("UG-364: 키 문자열 조회 두 개는 프로젝트를 함께 가져온다 — 트랜잭션 밖에서 사본을 만든다")
+        void 키_조회는_프로젝트를_함께_가져온다() {
+            키를_저장한다(project, KEY, true);
+            반영하고_비운다();
+
+            assertThat(Hibernate.isInitialized(apiKeyJpaRepository
+                    .findByApiKeyAndIsActiveAndProject_IsDeletedFalse(KEY, true).orElseThrow().getProject())).isTrue();
+            반영하고_비운다();
+            assertThat(Hibernate.isInitialized(apiKeyJpaRepository
+                    .findByApiKeyAndIsActive(KEY, true).orElseThrow().getProject())).isTrue();
         }
     }
 

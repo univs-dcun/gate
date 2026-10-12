@@ -9,6 +9,7 @@ import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.support.jpa.JpaSliceTest;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -31,7 +32,7 @@ import org.springframework.context.annotation.Import;
  * 로 과거 시각을 만든다.
  */
 @JpaSliceTest
-@Import(OrphanRegistrationRepository.class)
+@Import({OrphanRegistrationRepository.class, JobConnectionTimeout.class})
 @DisplayName("UG-338: 결과를 모르는 등록 선별 쿼리")
 class OrphanRegistrationRepositorySliceTest {
 

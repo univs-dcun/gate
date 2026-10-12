@@ -18,6 +18,7 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.file.FileUtil.DeleteOutcome;
 import ai.univs.gate.support.privacy.DeletedFeatureImagePurgeService.Outcome;
 import ai.univs.gate.support.jpa.JpaSliceTest;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 만든 행은 끝날 때 지운다. 같은 슬라이스 DB 를 다른 클래스도 쓰므로 대상 목록은 「포함·미포함」으로만 본다.
  */
 @JpaSliceTest
-@Import({DeletedFeatureImagePurgeService.class, DeletedFeatureImagePurgeRepository.class})
+@Import({DeletedFeatureImagePurgeService.class, DeletedFeatureImagePurgeRepository.class, JobConnectionTimeout.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-347: 삭제한 특징점의 이미지 파기")
 class DeletedFeatureImagePurgeSliceTest {
@@ -52,6 +53,7 @@ class DeletedFeatureImagePurgeSliceTest {
     @Autowired private EntityManager em;
     @Autowired private TransactionTemplate tx;
     @Autowired private PlatformTransactionManager transactionManager;
+    @Autowired private JobConnectionTimeout jobConnectionTimeout;
 
     private Project project;
     private final List<Long> created = new ArrayList<>();
@@ -212,7 +214,7 @@ class DeletedFeatureImagePurgeSliceTest {
     @DisplayName("반박 리뷰 W4: 꺼져 있으면 즉시 파기도 하지 않는다 — 재배포 없이 멈출 수 있어야 한다")
     void 꺼짐() {
         Long id = 특징점("/face/k.jpg", true);
-        var disabled = new DeletedFeatureImagePurgeService(repository, fileService, transactionManager, false);
+        var disabled = new DeletedFeatureImagePurgeService(repository, fileService, transactionManager, jobConnectionTimeout, false);
 
         disabled.purgeQuietly(id);
 
@@ -241,7 +243,7 @@ class DeletedFeatureImagePurgeSliceTest {
         given(fileService.deleteReporting("/face/m.jpg")).willReturn(DeleteOutcome.DELETED);
 
         // 이 테스트 안에서 만든다 — 생성자의 전파 설정이 이 테스트에 걸리도록(컨텍스트가 만든 빈은 다른 테스트 때 생성된다)
-        var fresh = new DeletedFeatureImagePurgeService(repository, fileService, transactionManager, true);
+        var fresh = new DeletedFeatureImagePurgeService(repository, fileService, transactionManager, jobConnectionTimeout, true);
         tx.executeWithoutResult(status -> {
             fresh.purge(id);
             status.setRollbackOnly();

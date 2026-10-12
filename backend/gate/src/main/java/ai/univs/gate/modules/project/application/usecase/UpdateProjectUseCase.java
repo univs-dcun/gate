@@ -4,6 +4,7 @@ import ai.univs.gate.modules.project.application.input.UpdateProjectInput;
 import ai.univs.gate.modules.project.application.result.ProjectResult;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.support.project.ProjectService;
+import ai.univs.gate.support.api_key.ApiKeyLookupCache;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateProjectUseCase {
 
     private final ProjectService projectService;
+    private final ApiKeyLookupCache apiKeyLookupCache;
 
     /**
      * UG-311: 잠그고 읽는다. {@code Project} 는 낙관적 잠금(버전 컬럼)이 없고 더티 체킹 UPDATE 가 전 컬럼을 쓴다
@@ -27,6 +29,8 @@ public class UpdateProjectUseCase {
         Project project = projectService.validateOwnershipForUpdate(input.projectId(), input.accountId());
 
         project.updateInfo(input.projectName(), input.description(), input.colorTag());
+        // UG-364: 키 조회 캐시의 프로젝트 사본(이름 등)이 낡지 않게 커밋 뒤에 지운다.
+        apiKeyLookupCache.evictProjectAfterCommit(project.getId());
 
         return ProjectResult.from(project);
     }
