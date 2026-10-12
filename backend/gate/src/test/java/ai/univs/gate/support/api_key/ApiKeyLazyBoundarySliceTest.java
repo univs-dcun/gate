@@ -42,7 +42,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 실패를 가려 주던 상태이고, 이 테스트가 확인하려는 것은 그 가림막 없이도 동작하는가다.
  */
 @JpaSliceTest
-@Import({ApiKeyService.class, ApiKeyRepositoryImpl.class})
+@Import({ApiKeyService.class, ApiKeyRepositoryImpl.class, ApiKeyLookupCache.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("UG-335: 트랜잭션 밖 지연 로딩 경계")
 class ApiKeyLazyBoundarySliceTest {
@@ -61,6 +61,9 @@ class ApiKeyLazyBoundarySliceTest {
 
     @Autowired
     private TransactionTemplate tx;
+
+    @Autowired
+    private ApiKeyLookupCache lookupCache;
 
     @BeforeEach
     void setUp() {
@@ -91,6 +94,7 @@ class ApiKeyLazyBoundarySliceTest {
      */
     @AfterEach
     void tearDown() {
+        lookupCache.invalidateAll();   // 같은 키 문자열로 행을 다시 만든다 — 앞 테스트의 사본이 남지 않게 (UG-364)
         tx.executeWithoutResult(status -> {
             em.createQuery("DELETE FROM ApiKey k WHERE k.apiKey = :key")
                     .setParameter("key", KEY).executeUpdate();
@@ -102,14 +106,18 @@ class ApiKeyLazyBoundarySliceTest {
     /**
      * 가드가 지키려는 조건이 실재하는지 — 대조군.
      *
-     * <p>리포지토리를 직접 부르면 연관은 프록시인 채로 나오고, 트랜잭션 밖에서 건드리면
-     * 터진다. 이것이 성립하지 않으면(예: 연관이 EAGER 로 바뀌면) 아래 테스트는 아무것도
-     * 증명하지 못한 채 통과한다.
+     * <p>연관 매핑은 LAZY 라, 프로젝트를 함께 가져오지 않는 조회는 프록시를 주고 트랜잭션 밖에서 건드리면 터진다. 이것이 성립하지
+     * 않으면(예: 연관이 EAGER 로 바뀌면) 아래 테스트는 아무것도 증명하지 못한 채 통과한다.
+     *
+     * <p>UG-364 부터 키 문자열 조회({@code findActiveByApiKeyWithLiveProject})는 프로젝트를 함께 가져와 이 조건이 없다 —
+     * 그래서 대조군은 프로젝트로 키를 찾는 조회로 본다.
      */
     @Test
-    @DisplayName("리포지토리를 직접 부르면 트랜잭션 밖에서 프록시를 못 읽는다")
+    @DisplayName("프로젝트를 함께 가져오지 않는 조회는 트랜잭션 밖에서 프록시를 못 읽는다")
     void 리포지토리_직접_조회는_프록시로_나온다() {
-        ApiKey found = apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY).orElseThrow();
+        Long projectId = tx.execute(status -> em.createQuery(
+                "SELECT p.id FROM Project p WHERE p.branchName = 'branch-osiv'", Long.class).getSingleResult());
+        ApiKey found = apiKeyRepository.findLatestActiveByProjectId(projectId).orElseThrow();
 
         assertThat(Hibernate.isInitialized(found.getProject()))
                 .as("연관이 EAGER 로 바뀌면 이 테스트 전체가 의미를 잃는다")
@@ -119,6 +127,18 @@ class ApiKeyLazyBoundarySliceTest {
                 .as("트랜잭션도 요청 스코프 컨텍스트도 없으면 지연 로딩은 실패한다. "
                         + "이것이 UG-335 가 드러낸 조건이다")
                 .isInstanceOf(LazyInitializationException.class);
+    }
+
+    /**
+     * UG-364: 키 문자열 조회는 프로젝트를 함께 가져온다 — {@code ApiKeyService} 가 트랜잭션 없이 캐시용 사본을 만드는 전제다.
+     */
+    @Test
+    @DisplayName("UG-364: 키 문자열 조회는 트랜잭션 밖에서도 프로젝트가 읽힌 채로 나온다")
+    void 키_조회는_프로젝트를_함께_가져온다() {
+        ApiKey found = apiKeyRepository.findActiveByApiKeyWithLiveProject(KEY).orElseThrow();
+
+        assertThat(Hibernate.isInitialized(found.getProject())).isTrue();
+        assertThat(found.getProject().getAccountId()).isEqualTo(OWNER);
     }
 
     /**

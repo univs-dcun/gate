@@ -9,7 +9,6 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,25 +36,16 @@ import org.springframework.transaction.annotation.Transactional;
  * 계정이 없고, 그 자리에서 카메라가 바로 떠야 하기 때문이다. 즉 데모에는 대조할 accountId 자체가
  * 없으므로 검증할 수 없다 — 생략이 아니라 부재다.
  *
- * <p><b>왜 클래스에 {@code @Transactional(readOnly = true)} 가 붙어 있는가 (UG-335).</b>
- * {@link #validateOwnership} 이 {@code apiKey.getProject().getAccountId()} 로 지연 프록시를
- * 초기화한다. 영속성 컨텍스트가 열려 있어야 하는데, 예전에는 그 책임이 <b>호출자</b>에게
- * 있었다 — 유스케이스 47개 중 43개가 {@code @Transactional} 이라 대부분 성립했고, 나머지는
- * {@code open-in-view} 기본값(true)이 요청 끝까지 컨텍스트를 열어 둔 덕에 동작했다.
+ * <p><b>지연 로딩의 경계 (UG-335 → UG-364).</b> {@link #validateOwnership} 은 {@code apiKey.getProject().getAccountId()} 를
+ * 읽는다. UG-335 는 {@code open-in-view} 를 끄면서 이 클래스에 읽기 트랜잭션을 붙여, 지연 프록시를 그 안에서 초기화했다 —
+ * 트랜잭션 없는 호출자({@code ExtractUseCase} 등)가 조회 직후 Feign 을 부르므로 호출자를 감싸면 원격 호출 내내 커넥션을
+ * 붙들기 때문이다.
  *
- * <p>UG-335 가 그것을 끄면서 두 유스케이스({@code ExtractUseCase},
- * {@code GetFeatureListUseCase})가 드러났다. 반박 리뷰가 세 번째
- * ({@code CreatePalmFeatureUseCase})를 더 찾았는데, 그쪽은 이 클래스가 아니라 자기
- * {@code @Transactional} 로 해결했다 — 쌍둥이인 face 쪽과 대칭을 맞추는 편이 맞았다.
- * 앞의 둘에 선언을 붙이는 방법도 있었지만
- * {@code ExtractUseCase} 는 조회 직후 face 서비스를 Feign 으로 부른다 — 트랜잭션으로 감싸면
- * <b>원격 호출 내내 DB 커넥션을 붙든다.</b> 부하가 걸릴 때 풀을 고갈시키는, OSIV 를 끄려던
- * 이유와 똑같은 형태의 문제다.
- *
- * <p>그래서 자기 지연 로딩의 경계는 자기가 연다. 이 클래스는 조회만 하고 원격 호출이 없으므로
- * 경계가 짧고, 바깥 트랜잭션이 있으면 {@code REQUIRED} 로 합류해 기존 43곳의 동작은 달라지지
- * 않는다. 호출자는 반환된 엔티티의 {@code getProject()} 를 트랜잭션 밖에서도 읽을 수 있다 —
- * 소유 검증이 이미 프록시를 초기화해 두기 때문이다.
+ * <p>UG-364 에서 키 조회 결과를 캐시에 두면서 방식을 바꿨다. 클래스 트랜잭션이 남아 있으면 캐시가 적중해도 트랜잭션을 열며
+ * 커넥션을 빌린다. 그래서 키 조회는 트랜잭션을 열지 않고, 지연 로딩이 아예 일어나지 않게 했다 — 키 문자열 조회가 프로젝트를
+ * 함께 가져오고({@code @EntityGraph}), 호출자에게는 값만 담은 사본({@link ApiKeySnapshot})을 준다. 호출자는 반환된
+ * {@code getProject()} 를 트랜잭션 밖에서도 읽을 수 있다. {@link #findByProject} 만 지연 프록시를 돌려주므로 자기 읽기
+ * 트랜잭션을 연다. 사본이라 객체 동일성으로 비교하면 안 된다(프로젝트 비교는 id 로).
  *
  * <p>그래서 이 검증이 오히려 데모 설계를 지탱한다. 데모 페이지는 브라우저에서 직접
  * {@code /api/v1/demo/**} 를 호출하므로 API 키가 반드시 클라이언트에 노출된다. 그 키만으로 할 수 있는
@@ -65,10 +55,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ApiKeyService {
 
     private final ApiKeyRepository apiKeyRepository;
+    private final ApiKeyLookupCache lookupCache;
 
     /**
      * 인증 경로 전용 조회. {@code accountId} 가 이 키의 프로젝트 소유자와 다르면 거부한다.
@@ -158,23 +148,25 @@ public class ApiKeyService {
      * 같은 열거 오라클이 된다.
      */
     public ApiKey findByApiKeyUnverified(String apiKey) {
+        // UG-364: 캐시에서 답하면 DB·커넥션을 쓰지 않는다. 그래서 이 클래스는 트랜잭션을 열지 않는다 — 열면 적중해도
+        // 커넥션을 빌린다. 소유 검증·삭제 거부의 의미는 그대로다(ApiKeyLookupCache 설명).
+        ApiKeySnapshot cached = lookupCache.get(apiKey);
+        if (cached != null) {
+            return cached.toApiKey();
+        }
+
+        long generation = lookupCache.generation();   // 읽기 전에 받아 둔다 — 그사이 삭제되면 넣지 않는다
         ApiKey found = apiKeyRepository.findActiveByApiKeyWithLiveProject(apiKey)
                 .orElseThrow(() -> {
                     warnIfProjectDeleted(apiKey);
                     return new CustomGateException(ErrorType.API_KEY_NOT_FOUND);
                 });
 
-        // 이 클래스가 자기 지연 로딩의 경계를 자기가 연다는 원칙(UG-335)을 이 경로에도 적용한다.
-        // 인증 경로는 validateOwnership 이 getAccountId() 를 읽으며 프록시를 초기화하지만,
-        // 데모 경로는 소유 검증을 하지 않아 그 지점이 없다. 호출자가 트랜잭션을 열지 않으면
-        // (UG-293 에서 매칭 유스케이스들이 그렇게 됐다) project 의 실제 필드를 읽는 순간
-        // LazyInitializationException 이 난다 — 데모 매칭 API 5개가 전부 500 이었다.
-        //
-        // 이 클래스는 이미 트랜잭션 안이므로 여기서 초기화하는 데 드는 비용은 쿼리 한 번이고,
-        // 그 쿼리는 어차피 호출자가 곧 일으킬 것이었다.
-        Hibernate.initialize(found.getProject());
-
-        return found;
+        // 조회가 프로젝트를 함께 가져오므로(fetch) 트랜잭션 밖에서 읽어도 지연 로딩이 없다(UG-335 의 경계 문제가 사라진다).
+        // 호출자에게는 늘 사본을 준다 — 적중·미적중이 같은 모양이어야 한다(객체 동일성에 기대는 코드가 한쪽에서만 깨지지 않게).
+        ApiKeySnapshot snapshot = ApiKeySnapshot.of(found);
+        lookupCache.put(apiKey, snapshot, generation);
+        return snapshot.toApiKey();
     }
 
     /**
@@ -230,6 +222,7 @@ public class ApiKeyService {
      * 을 응답으로 구분할 수 있게 된다. 이 가드는 <b>아직 없는 호출처</b>를 위한 것이므로 그 호출처가
      * API 키 인증 경로일지 계정 인증 경로일지 알 수 없고, 안전한 쪽으로 맞춘다.
      */
+    @Transactional(readOnly = true)
     public ApiKey findByProject(Project project) {
         if (project.isDeleted()) {
             log.warn("삭제된 프로젝트로 API 키를 조회했다. projectId={}", project.getId());

@@ -1,6 +1,7 @@
 package ai.univs.gate.support.privacy;
 
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.shared.utils.JobConnectionTimeout;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -82,6 +83,7 @@ public class HistoryPurgeService {
 
     private final HistoryPurgeRepository historyPurgeRepository;
     private final FileService fileService;
+    private final JobConnectionTimeout jobConnectionTimeout;
 
     /**
      * 인증 이력 한 배치.
@@ -94,6 +96,7 @@ public class HistoryPurgeService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int purgeMatchHistoryBatch(LocalDateTime cutoff, int batchSize) {
+        jobConnectionTimeout.extendForCurrentTransaction();   // 이미지 경로 참조 확인이 큰 테이블을 훑는다 (UG-367)
         return purgeBatch(
                 historyPurgeRepository.findMatchHistoryToPurge(cutoff, batchSize),
                 historyPurgeRepository::deleteMatchHistory);
@@ -102,6 +105,7 @@ public class HistoryPurgeService {
     /** 특징점 사건 이력 한 배치. 인증 이력과 <b>같은 규칙</b>을 거친다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int purgeFeatureHistoryBatch(LocalDateTime cutoff, int batchSize) {
+        jobConnectionTimeout.extendForCurrentTransaction();   // UG-367
         return purgeBatch(
                 historyPurgeRepository.findFeatureHistoryToPurge(cutoff, batchSize),
                 historyPurgeRepository::deleteFeatureHistory);

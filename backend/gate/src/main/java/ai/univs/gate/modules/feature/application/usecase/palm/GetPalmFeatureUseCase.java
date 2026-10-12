@@ -44,7 +44,8 @@ public class GetPalmFeatureUseCase {
         // 특히 위험했던 이유: consentEnabled 를 '호출자' 프로젝트 설정에서 가져오므로,
         // 공격자가 자기 프로젝트의 동의만 켜면 피해자가 동의를 껐어도 featureImagePath 가
         // 채워져 나갔다. 그 경로는 /api/v1/file 이 무인증으로 서빙한다.
-        if (!biometricFeature.getProject().equals(project)) {
+        // UG-364: id 로 비교한다 — 키 조회는 요청마다 프로젝트 사본을 주므로 객체 동일성은 늘 다르다.
+        if (!biometricFeature.getProject().getId().equals(project.getId())) {
             log.error("Not palmFeature who created based on this apikey. accountId: {}, apiKey: {}, palmFeatureId: {}",
                     input.accountId(), ApiKeyMasker.mask(input.apiKey()), input.palmFeatureId());
             throw new CustomGateException(ErrorType.INVALID_USER);
