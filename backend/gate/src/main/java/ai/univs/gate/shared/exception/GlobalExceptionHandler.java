@@ -180,6 +180,14 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * {@code LoggingAspect} 가 같은 기준을 쓰도록 공개한다 — 두 지점이 갈리면 한쪽만 조용해진다.
+     * 판정 집합은 {@link UpstreamErrorTypes} 에 있다 (UG-338: 등록 이력도 같은 기준을 쓴다).
+     */
+    public static boolean isUpstreamServerError(String type) {
+        return UpstreamErrorTypes.isServerError(type);
+    }
+
+    /**
      * 하위 서비스가 우리 포맷으로 돌려준 오류 (UG-290).
      *
      * <p>{@link CustomFeignException} 은 {@link BusinessException} 계열이 아니라 자체
@@ -204,15 +212,12 @@ public class GlobalExceptionHandler {
      * SWAGGER-005" 가 7,321 건 관측됐다. 그 코드는 문서에 없고 내부 구성을 드러낸다. 하위 응답을 받았으니 결과를
      * 모르는 실패라 503 이 아니라 400 이다. 업무 오류(라이브니스·매칭 실패·없음 등)는 예전처럼 그대로 전달한다 —
      * 클라이언트가 그 코드로 분기한다.
+     *
+     * <p>감추는 것은 판정 집합({@link UpstreamErrorTypes})에 든 <b>내부(서버) 오류</b> 유형뿐이다. 하위의 공통 오류
+     * {@code SWAGGER-001~004}({@code UNAUTHORIZED}·{@code NEED_SERVICE_ROLE}·{@code NOT_FOUND}·
+     * {@code METHOD_NOT_ALLOWED})는 예전처럼 그대로 나간다. 일부러 넓히지 않았다 — {@code NOT_FOUND} 는 업무상
+     * 의미(대상 없음)를 실을 수 있어, 감추면 클라이언트 분기가 깨질 수 있다 (UG-362 반박 리뷰).
      */
-    /**
-     * {@code LoggingAspect} 가 같은 기준을 쓰도록 공개한다 — 두 지점이 갈리면 한쪽만 조용해진다.
-     * 판정 집합은 {@link UpstreamErrorTypes} 에 있다 (UG-338: 등록 이력도 같은 기준을 쓴다).
-     */
-    public static boolean isUpstreamServerError(String type) {
-        return UpstreamErrorTypes.isServerError(type);
-    }
-
     @ExceptionHandler(CustomFeignException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseApi<?> CustomFeignException(CustomFeignException ex) {

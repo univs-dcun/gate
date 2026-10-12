@@ -93,12 +93,17 @@ public class UpstreamCallException extends CustomPalmException {
     /**
      * 요청이 팜 모듈에 <b>닿지 않았다</b> — 모듈은 아무것도 하지 않았다 (UG-362).
      *
-     * <p>딱 두 경우다. 연결이 거부됐거나 경로가 없는 경우({@code FeignFailureTranslator} 가 원인 사슬에서
-     * {@code ConnectException}·{@code NoRouteToHostException} 을 찾은 경우)와, Spring Cloud LoadBalancer 가 대상
+     * <p>딱 두 경우다. 본문이 있는 요청의 연결이 거부됐거나 경로가 없는 경우({@code FeignFailureTranslator} 가 원인
+     * 사슬에서 {@code ConnectException}·{@code NoRouteToHostException} 을 찾았고 요청에 본문이 있는 경우)와, Spring Cloud
+     * LoadBalancer 가 대상
      * 인스턴스를 하나도 갖고 있지 않아 스스로 503 을 만든 경우({@code CommonErrorDecoder})다. 둘 다 요청 바이트가
      * 모듈에 가지 않았으므로 같은 요청을 다시 보내도 안전하다. 그래서 응답만 503 {@code SWAGGER-006} 으로 바꾼다.
      * (지금 팜 모듈 클라이언트는 {@code url} 고정이라 로드밸런서를 거치지 않는다 — 후자는 face 와 규칙을 맞춰 둔
      * 것이다.)
+     *
+     * <p>본문 없는 요청(GET·DELETE)의 연결 거부는 넣지 않는다 (UG-362 반박 리뷰). JDK {@code HttpURLConnection} 은 응답
+     * 읽기에 실패한 본문 없는 요청을 새 연결로 몰래 한 번 더 보내므로, 하위가 처리한 뒤 죽어도 호출자는 재전송이 맞은 연결
+     * 거부를 본다. 상세와 실측은 {@code FeignFailureTranslator} 클래스 설명에 있다.
      *
      * <p>읽기·연결 타임아웃({@code SocketTimeoutException})과 연결 리셋은 넣지 않는다 — 연결 타임아웃은 읽기 타임아웃과
      * 같은 타입이라 가를 수 없고, 읽기 타임아웃·리셋은 모듈이 등록을 끝낸 뒤 응답만 잃었을 수 있다. 그런 실패에

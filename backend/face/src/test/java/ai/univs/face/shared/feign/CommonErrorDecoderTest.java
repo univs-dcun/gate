@@ -2,11 +2,17 @@ package ai.univs.face.shared.feign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import ai.univs.face.shared.exception.CustomFeignException;
 import ai.univs.face.shared.exception.TemporarilyUnavailableException;
 import ai.univs.face.shared.exception.UpstreamCallException;
 import ai.univs.face.shared.web.enums.ErrorType;
+import feign.Client;
 import feign.Request;
 import feign.Response;
 import java.io.ByteArrayInputStream;
@@ -14,10 +20,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerProperties;
+import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
+import org.springframework.cloud.openfeign.loadbalancer.FeignBlockingLoadBalancerClient;
 
 /**
  * UG-299: ML 모듈 오류를 어떤 타입으로 바꾸는가.
@@ -163,11 +174,38 @@ class CommonErrorDecoderTest {
     // FeignBlockingLoadBalancerClient 가 합성하는 본문 그대로다 (spring-cloud-openfeign-core 4.1.4·4.3.1·4.3.2 동일).
     private static final String LB_BODY = "Load balancer does not contain an instance for the service match-server";
 
+    /**
+     * 문구를 상수끼리 비교하지 않고 <b>라이브러리가 실제로 합성한 응답</b>으로 확인한다 (UG-362 반박 리뷰 L2).
+     *
+     * <p>초판은 상수를 같은 문자열 리터럴과 비교했다 — 라이브러리가 문구를 바꿔도 초록인 동어반복이었다. 여기서는 진짜
+     * {@link FeignBlockingLoadBalancerClient} 에 인스턴스를 하나도 고르지 못하는 {@link LoadBalancerClient} 를 물려
+     * {@code execute} 를 돌리고, 그 응답을 그대로 디코더에 넣는다. 의존성을 올리며 문구가 바뀌면 이 테스트가 깨진다.
+     */
     @Test
-    @DisplayName("UG-362: 로드밸런서 문구가 라이브러리와 같다 — 바뀌면 판정이 조용히 꺼진다")
-    void 로드밸런서_문구_고정() {
-        assertThat(CommonErrorDecoder.NO_INSTANCE_PREFIX)
-                .isEqualTo("Load balancer does not contain an instance for the service ");
+    @DisplayName("UG-362: 로드밸런서가 실제로 합성한 503 이 우리 판정 문구로 시작하고, 디코더가 닿지 않음으로 읽는다")
+    void 라이브러리가_합성한_응답으로_판정() throws IOException {
+        LoadBalancerClient loadBalancer = mock(LoadBalancerClient.class);
+        when(loadBalancer.choose(eq("match-server"), any())).thenReturn(null);
+        LoadBalancerClientFactory factory = mock(LoadBalancerClientFactory.class);
+        when(factory.getProperties("match-server")).thenReturn(new LoadBalancerProperties());
+        Client delegate = mock(Client.class);
+        FeignBlockingLoadBalancerClient client =
+                new FeignBlockingLoadBalancerClient(delegate, loadBalancer, factory, List.of());
+
+        Response synthesized = client.execute(
+                Request.create(Request.HttpMethod.POST, "http://match-server/api/v1/identify",
+                        Collections.emptyMap(), "{}".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8, null),
+                new Request.Options());
+
+        // 인스턴스가 없으면 요청을 보내지 않는다 — "닿지 않았다" 의 근거다.
+        verifyNoInteractions(delegate);
+        assertThat(synthesized.status()).isEqualTo(503);
+        try (InputStream in = synthesized.body().asInputStream()) {
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8))
+                    .startsWith(CommonErrorDecoder.NO_INSTANCE_PREFIX);
+        }
+        UpstreamCallException ex = (UpstreamCallException) decoder.decode("MatchFeign#identify()", synthesized);
+        assertThat(ex.isNotDelivered()).isTrue();
     }
 
     @Test
