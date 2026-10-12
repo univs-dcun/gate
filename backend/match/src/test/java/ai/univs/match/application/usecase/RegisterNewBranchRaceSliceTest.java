@@ -30,6 +30,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -178,6 +180,18 @@ class RegisterNewBranchRaceSliceTest {
         }
     }
 
+    /** 동시 등록을 두 유스케이스 모두로 돌린다 — 어느 쪽에 {@code @Transactional} 이 되살아나도 잡히게. */
+    enum 등록_경로 {
+        일반_등록, faceId_지정_등록
+    }
+
+    private MatchResult 등록(등록_경로 경로, String faceId) {
+        return switch (경로) {
+            case 일반_등록 -> registerUseCase.execute(BRANCH, descriptor());
+            case faceId_지정_등록 -> registerWithFaceIdUseCase.execute(new RegisterWithFaceIdInput(BRANCH, faceId, descriptor()));
+        };
+    }
+
     private void 중단된_트랜잭션은_없었다() {
         assertThat(db.rejectedInAbortedTransaction).as("중단된 트랜잭션에서 실행한 문장(PostgreSQL 이면 25P02)").hasValue(0);
         assertThat(db.silentRollbacks).as("중단된 트랜잭션을 커밋(PostgreSQL 이면 조용히 롤백)").hasValue(0);
@@ -277,10 +291,12 @@ class RegisterNewBranchRaceSliceTest {
     /**
      * 실제 동시 등록. 처음 두 요청은 브랜치 조회 직후 서로를 기다리게 해 <b>둘 다 「없다」 를 보고</b> INSERT 하게 만든다 — 경합이
      * 반드시 한 번 이상 난다. 풀이 2 라 요청 하나가 커넥션을 둘 쥐는 구조였다면 두 요청이 서로를 기다리다 대기 상한에 걸린다.
+     * 두 유스케이스({@link RegisterUseCase}·{@link RegisterWithFaceIdUseCase})를 각각 돌린다 — 한쪽에만 {@code @Transactional}
+     * 이 되살아나고 가드까지 빠지면 그쪽 경우만 깨진다.
      */
-    @Test
-    @DisplayName("(3) 새 브랜치에 16건 동시 등록(풀 2) — 모두 성공, 브랜치 한 행, 특징점 16행")
-    void 동시_등록() throws Exception {
+    @ParameterizedTest(name = "(3) {0} — 새 브랜치에 16건 동시 등록(풀 2), 모두 성공, 브랜치 한 행, 특징점 16행")
+    @EnumSource(등록_경로.class)
+    void 동시_등록(등록_경로 경로) throws Exception {
         int requests = 16;
         CyclicBarrier firstTwo = new CyclicBarrier(2);
         AtomicInteger barrierSlots = new AtomicInteger(2);
@@ -302,7 +318,7 @@ class RegisterNewBranchRaceSliceTest {
                 String faceId = "face-" + i;
                 futures.add(pool.submit(() -> {
                     start.await();
-                    return registerWithFaceIdUseCase.execute(new RegisterWithFaceIdInput(BRANCH, faceId, descriptor()));
+                    return 등록(경로, faceId);
                 }));
             }
             start.countDown();

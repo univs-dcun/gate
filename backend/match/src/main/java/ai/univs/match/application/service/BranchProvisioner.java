@@ -33,7 +33,8 @@ import java.util.Optional;
  * READ COMMITTED 인 새 트랜잭션에서 그 행이 보인다. 브랜치는 지우는 경로가 없다 — 그래도 못 찾으면 예전처럼 서버 오류다.
  *
  * <p><b>트랜잭션 밖에서만 부른다 — 커넥션 풀 때문이다.</b> 이 메서드는 커넥션을 한 번에 하나만 쓴다: 조회(저장소의 읽기 전용
- * 트랜잭션) → 생성(아래 {@code REQUIRES_NEW}) → 경합에서 졌으면 다시 조회, 각각 빌렸다 돌려준다. 만약 바깥 트랜잭션 안에서
+ * 트랜잭션) → 생성(아래 {@code REQUIRES_NEW}) → 경합에서 졌으면 다시 조회. OSIV 가 꺼져 있으면 각각 빌렸다 돌려주고,
+ * 운영처럼 켜져 있으면 요청 범위 세션이 쥔 커넥션 하나를 이어 쓴다({@link RegisterService} 「대가 ①」). 만약 바깥 트랜잭션 안에서
  * 부르면 {@code REQUIRES_NEW} 는 바깥 커넥션을 쥔 채 커넥션을 하나 더 빌린다. 이 서비스는 트랜잭션을 시작할 때 커넥션을
  * 바로 잡으므로(Hikari autoCommit 기본값 → Hibernate 가 begin 에서 획득) 바깥이 아직 DB 를 안 건드렸어도 마찬가지다. 풀은
  * 10, 대기 상한은 1.5초다(UG-359). 첫 등록 10건이 동시에 오면 10개가 바깥 커넥션을 다 쥐고 서로의 두 번째 커넥션을 기다리다
@@ -46,6 +47,13 @@ import java.util.Optional;
  * 조용히 무시된다. 생성과 "잡고 다시 읽기" 를 한 클래스에 두면서 경계를 확실히 하려고 {@link TransactionTemplate} 으로 연다.
  *
  * <p>Oracle 은 제약 위반에서 트랜잭션을 중단시키지 않는다(문장 단위 롤백). 같은 경로로 문제없이 동작한다.
+ *
+ * <p><b>경합 ERROR 줄 — 장애가 아니다.</b> 진 쪽 INSERT 는 예외가 여기 오기 전에 Hibernate {@code SqlExceptionHelper} 가
+ * ERROR 로 {@code duplicate key value violates unique constraint "uk_branch_branch_name"} 을 한 줄 남긴다(PostgreSQL 문구,
+ * 바로 앞에 WARN {@code SQLState: 23505} 줄). 요청은 위 「다시 읽기」 로 성공하고, 뒤이어 INFO 「브랜치 동시 생성 경합」 이
+ * 찍힌다. 새 브랜치의 첫 등록이 동시에 몰릴 때만 나며, 진 요청 수만큼이다. 수용했다 — 없애려면 PostgreSQL
+ * {@code INSERT ... ON CONFLICT DO NOTHING}·Oracle {@code MERGE} 같은 벤더별 SQL 을 따로 둬야 해서 하지 않았다. 당직은 이 줄을
+ * 실패로 다루지 않는다 — 같은 요청에 INFO 경합 줄이 뒤따르는지, 이어서 등록 실패가 없는지만 본다.
  */
 @Slf4j
 @Component
