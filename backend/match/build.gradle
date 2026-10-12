@@ -27,6 +27,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // UG-372: 새 브랜치 첫 등록 경합을 실제 트랜잭션·커넥션 풀로 보는 슬라이스 테스트용 (Testcontainers 는 이미지 pull 불가).
+    // face 와 같은 방식이다. 버전은 Spring Boot BOM 이 정한다.
+    testRuntimeOnly 'com.h2database:h2'
 
     /* MSA */
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
