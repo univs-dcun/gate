@@ -14,10 +14,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.sql.SQLException;
 import java.util.Base64;
@@ -29,13 +31,18 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @DisplayName("RegisterService")
 @ExtendWith(MockitoExtension.class)
 class RegisterServiceTest {
+
+    @Mock
+    private BranchProvisioner branchProvisioner;
 
     @Mock
     private BranchRepository branchRepository;
@@ -45,6 +52,10 @@ class RegisterServiceTest {
 
     @Mock
     private DuplicateService duplicateService;
+
+    /** 목이라 실제 트랜잭션은 없다 — 템플릿이 getTransaction·commit·rollback 을 부르는 순서만 본다. */
+    @Mock
+    private PlatformTransactionManager transactionManager;
 
     @InjectMocks
     private RegisterService registerService;
@@ -67,45 +78,70 @@ class RegisterServiceTest {
     }
 
     // -------------------------------------------------------------------------
-    // 브랜치가 존재하지 않는 경우
+    // UG-372: 트랜잭션 경계 — 브랜치를 먼저 정하고, 그다음 등록 트랜잭션을 연다
     // -------------------------------------------------------------------------
 
     @Nested
-    @DisplayName("브랜치가 존재하지 않을 때")
-    class WhenBranchDoesNotExist {
-
-        @BeforeEach
-        void setUp() {
-            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.empty());
-            when(branchRepository.saveAndFlush(any(Branch.class))).thenAnswer(inv -> inv.getArgument(0));
-        }
+    @DisplayName("UG-372: 트랜잭션 경계")
+    class TransactionBoundary {
 
         @Test
-        @DisplayName("새 브랜치를 생성하여 저장한다")
-        void whenBranchNotFound_thenSavesNewBranch() {
+        @DisplayName("브랜치를 정한 뒤에 등록 트랜잭션을 열고, 그 안에서 특징점을 저장한다")
+        void 브랜치_먼저_트랜잭션_나중() {
+            when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(existingBranch);
+            when(branchRepository.getReferenceById(1L)).thenReturn(existingBranch);
+
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
-            ArgumentCaptor<Branch> captor = ArgumentCaptor.forClass(Branch.class);
-            verify(branchRepository).saveAndFlush(captor.capture());
-            assertThat(captor.getValue().getBranchName()).isEqualTo(BRANCH_NAME);
+            InOrder order = inOrder(branchProvisioner, transactionManager, descriptorRepository);
+            order.verify(branchProvisioner).findOrCreate(BRANCH_NAME);
+            order.verify(transactionManager).getTransaction(any());
+            order.verify(descriptorRepository).saveAndFlush(any(Descriptor.class));
+            order.verify(transactionManager).commit(any());
         }
 
+        /** 깨진 특징점으로 빈 브랜치를 만들지 않는다 — 예전(브랜치 생성 전에 해석)과 같은 순서. */
         @Test
-        @DisplayName("새 브랜치에 descriptor를 저장한다")
-        void whenBranchNotFound_thenSavesDescriptorWithNewBranch() {
+        @DisplayName("특징점 형식이 깨졌으면 브랜치를 정하지도, 트랜잭션을 열지도 않는다")
+        void 형식_오류는_브랜치_전에() {
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, "not base64 !!"))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            verifyNoInteractions(branchProvisioner, transactionManager, descriptorRepository);
+        }
+
+        /** 분리된 엔티티를 물리지 않는다 — 등록 트랜잭션에서 id 로 참조를 다시 얻는다. */
+        @Test
+        @DisplayName("특징점은 브랜치 id 로 다시 얻은 참조에 묶인다")
+        void 브랜치는_id_참조로() {
+            Branch detached = Branch.builder().id(7L).branchName(BRANCH_NAME).build();
+            Branch reference = Branch.builder().id(7L).branchName(BRANCH_NAME).build();
+            when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(detached);
+            when(branchRepository.getReferenceById(7L)).thenReturn(reference);
+
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
             ArgumentCaptor<Descriptor> captor = ArgumentCaptor.forClass(Descriptor.class);
             verify(descriptorRepository).saveAndFlush(captor.capture());
+            assertThat(captor.getValue().getBranch()).isSameAs(reference);
             assertThat(captor.getValue().getFaceId()).isEqualTo(FACE_ID);
+            verify(branchRepository, never()).saveAndFlush(any());
+            verify(duplicateService, never()).checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
         }
 
         @Test
-        @DisplayName("중복 검사를 수행하지 않는다")
-        void whenBranchNotFound_thenNeverChecksDuplicate() {
-            registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
+        @DisplayName("거절(이미 등록됨)이면 등록 트랜잭션을 롤백한다")
+        void 거절은_롤백() {
+            when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(existingBranch);
+            when(branchRepository.getReferenceById(1L)).thenReturn(existingBranch);
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch))
+                    .thenReturn(Optional.of(new Descriptor()));
 
-            verify(duplicateService, never()).checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class);
+
+            verify(transactionManager).rollback(any());
+            verify(transactionManager, never()).commit(any());
         }
     }
 
@@ -119,7 +155,8 @@ class RegisterServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.of(existingBranch));
+            when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(existingBranch);
+            when(branchRepository.getReferenceById(1L)).thenReturn(existingBranch);
         }
 
         @Test
@@ -250,28 +287,6 @@ class RegisterServiceTest {
     }
 
     // -------------------------------------------------------------------------
-    // 브랜치 저장 여부 검증
-    // -------------------------------------------------------------------------
-
-    @Nested
-    @DisplayName("브랜치 저장 동작")
-    class BranchSaveBehavior {
-
-        @Test
-        @DisplayName("브랜치가 이미 존재하면 branchRepository.save를 호출하지 않는다")
-        void whenBranchExists_thenNeverSavesBranch() {
-            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.of(existingBranch));
-            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch))
-                    .thenReturn(Optional.empty());
-            when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
-
-            registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
-
-            verify(branchRepository, never()).saveAndFlush(any());
-        }
-    }
-
-    // -------------------------------------------------------------------------
     // UG-340: 동시 등록 — 사전 조회를 함께 통과한 두 번째 저장은 제약이 막는다
     // -------------------------------------------------------------------------
 
@@ -287,7 +302,8 @@ class RegisterServiceTest {
 
         @BeforeEach
         void setUp() {
-            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.of(existingBranch));
+            when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(existingBranch);
+            when(branchRepository.getReferenceById(1L)).thenReturn(existingBranch);
             when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
             when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
         }
@@ -310,41 +326,6 @@ class RegisterServiceTest {
         void 다른_위반은_그대로() {
             DataIntegrityViolationException other = 제약_위반("descriptor_face_id_not_null");
             when(descriptorRepository.saveAndFlush(any(Descriptor.class))).thenThrow(other);
-
-            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor)).isSameAs(other);
-        }
-    }
-
-    @Nested
-    @DisplayName("UG-340: 새 브랜치 동시 생성")
-    class ConcurrentBranchCreation {
-
-        @BeforeEach
-        void setUp() {
-            when(branchRepository.findByBranchName(BRANCH_NAME)).thenReturn(Optional.empty());
-        }
-
-        /**
-         * 다른 요청이 같은 브랜치를 먼저 만들었다. 이 트랜잭션은 이미 오류 상태라 이어 갈 수 없다 — 재시도하면
-         * 정상 경로를 탄다. 서버 오류 유형이라 gate 는 "결과를 모른다" 로 다룬다(UG-338).
-         */
-        @Test
-        @DisplayName("브랜치 이름 유니크 위반은 INTERNAL_SERVER_ERROR 로 돌려주고 특징점은 저장하지 않는다")
-        void 브랜치_경합은_서버_오류() {
-            when(branchRepository.saveAndFlush(any(Branch.class))).thenThrow(제약_위반("uk_branch_branch_name"));
-
-            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
-                    .isInstanceOf(CustomFaceMatcherException.class)
-                    .extracting(ex -> ((CustomFaceMatcherException) ex).getErrorType())
-                    .isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
-            verify(descriptorRepository, never()).saveAndFlush(any());
-        }
-
-        @Test
-        @DisplayName("브랜치 저장의 다른 위반은 그대로 던진다")
-        void 브랜치_다른_위반은_그대로() {
-            DataIntegrityViolationException other = 제약_위반("branch_name_not_null");
-            when(branchRepository.saveAndFlush(any(Branch.class))).thenThrow(other);
 
             assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor)).isSameAs(other);
         }
