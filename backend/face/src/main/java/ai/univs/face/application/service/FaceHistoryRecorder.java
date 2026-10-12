@@ -40,6 +40,27 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 그래서 프로세스가 원격 호출 도중 죽어도(kill -9·OOM) 요청 흔적은 gate 에 남는다 — face 쪽 행만 없다. 예외로 끝나는
  * 실패는 지금처럼 {@link #recordFailure} 가 남기므로 UG-280 의 「어떤 예외든 행이 남는다」는 그대로다.
  *
+ * <p><b>읽기에서 약해진 보장 — 알고 받아들인 것 (UG-363 반박 리뷰 M1·L2).</b>
+ * <ul>
+ *   <li><b>M1 — DB 장애의 503 이 늦게 나가고, 그동안 fxp·match 를 쓴다.</b> 예전에는 face 자기 풀이 고갈되거나 DB 가 멈추면
+ *       {@link #start} 가 원격 호출 <b>전에</b> 빨리 실패했다(connection-timeout 약 2초 / socketTimeout 3초). 이제는 원격
+ *       호출이 먼저 돌고 실패가 {@link #finish} 에서 드러난다 — face 의 503 은 「원격 시간 + 2~3초」 뒤에 나가고, 장애 동안
+ *       들어온 요청도 fxp·match 를 소비한다. 받아들인 이유:
+ *       <ol>
+ *         <li>평상시 경합에서 요청당 커넥션 획득을 둘에서 하나로 줄이는 것이 이 변경의 목적이다. 원격 호출 전 사전 점검
+ *             (예: Hikari {@code threadsAwaitingConnection > 0} 이면 503)은 정상 부하도 거절한다 — scaling 측정에서 평상
+ *             부하에서도 face 풀 대기가 14 안팎이었다.
+ *         <li>시간 예산 안이다 — 원격은 최악 1~2초(갤러리 100만 1:N 약 1.2초), 여기에 2~3초를 더해도 gate 의 Feign
+ *             readTimeout 5초(gate-config {@code gate-service.yml}, 예산 근거는 {@code face-service-postgresql.yml}) 안에
+ *             503 이 닿는다.
+ *         <li>공유 DB 가 멈추면 gate 자신의 {@code HistoryRecorder.start}(REQUIRES_NEW, 같은 DB)가 먼저 막혀 face 까지
+ *             오지 않는다. 늦어지는 것은 face 풀만 고갈된 경우다.
+ *       </ol>
+ *   <li><b>L2 — {@code Error}(OOM·StackOverflowError)로 끝난 읽기는 face 행이 없다.</b> 예전에는 사유 없는 시작 행이
+ *       남았다. 유스케이스는 {@code RuntimeException} 만 잡아 {@link #recordFailure} 로 보낸다. JVM 강제 종료와 같은
+ *       이유로 받아들인다 — gate 의 시작 행이 그 요청을 남긴다.
+ * </ul>
+ *
  * <p><b>쓰기·추출은 바꾸지 않는다.</b> 쓰기는 match 에 반영한 뒤라 시작 행(호출자가 발급한 v2 id)이 고아를 찾는 단서이고,
  * 추출은 gate 가 자기 이력을 남기지 않아 face 의 시작 행이 유일한 흔적이다.
  *
@@ -90,6 +111,9 @@ public class FaceHistoryRecorder {
      * faceId 는 지우지 않는다 — 등록이면 match 가 준 id 가 실패 이력에 남아 운영자가 고아를 찾을 수 있다. 풀 고갈이면
      * {@link #recordFailure} 가 저장을 건너뛰므로, 매처가 발급한 id(v1)는 행에 남지 않는다(호출자가 발급한 v2 id 는 시작
      * 행에 이미 있다) — 그래서 여기서 로그로도 남긴다.
+     *
+     * <p><b>읽기 경로에서는 DB 장애가 여기서 처음 드러난다 (UG-363 반박 리뷰 M1).</b> 시작 커밋이 없으므로 풀 고갈·DB 멈춤은
+     * fxp·match 호출을 마친 뒤 이 커밋에서 실패한다 — 503 이 「원격 시간 + 2~3초」 뒤에 나간다. 받아들인 이유는 클래스 설명.
      */
     public void finish(FaceHistory faceHistory, FaceMatch faceMatch) {
         try {
@@ -148,6 +172,9 @@ public class FaceHistoryRecorder {
      *
      * <p>풀 고갈·DB 응답 시간 초과로 실패하면 저장하지 않는다(UG-359·UG-367). 쓰기·추출은 시작 행이 사유 없이 남고,
      * 읽기는 face 쪽 행이 없다 — gate 의 시작 행·실패 전이가 그 요청을 남긴다.
+     *
+     * <p>{@code Error}(OOM·StackOverflowError)는 여기로 오지 않는다 — 읽기는 face 행이 없고(예전에는 사유 없는 시작 행),
+     * gate 의 시작 행이 남는다(UG-363 반박 리뷰 L2, 클래스 설명).
      *
      * <p>이 기록이 실패해도(DB 장애) 원래 예외를 가리지 않는다 — 억제된 예외로 붙이고 돌아간다.
      */
