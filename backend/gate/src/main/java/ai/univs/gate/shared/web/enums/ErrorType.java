@@ -45,15 +45,17 @@ public enum ErrorType {
     /**
      * 지금은 처리할 여력이 없다 — 잠시 뒤 같은 요청을 다시 보내면 된다 (UG-359).
      *
-     * <p>두 경우에 나간다. gate 자신의 DB 커넥션 풀에서 커넥션을 제때 얻지 못했거나
-     * ({@code PoolExhaustion}), 하위 서비스(face)가 같은 사정을 503 + 이 유형으로 알려 왔을 때다
-     * ({@code CommonErrorDecoder}). 예전에는 둘 다 {@link #INTERNAL_SERVER_ERROR} 로 뭉개져
-     * 클라이언트가 "다시 보내도 되는 실패" 와 "다시 보내도 같은 실패" 를 가를 수 없었다.
+     * <p>세 경우에 나간다. gate 자신의 DB 커넥션 풀에서 커넥션을 제때 얻지 못했거나
+     * ({@code PoolExhaustion}), 하위 서비스(face)가 같은 사정을 503 + 이 유형으로 알려 왔을 때
+     * ({@code CommonErrorDecoder}), 그리고 요청이 하위 서비스에 <b>닿지 않았음이 확실할 때</b>다 — 연결 거부·경로
+     * 없음, 로드밸런서에 인스턴스 없음 (UG-362, {@code RemoteCallException.notDelivered}). 예전에는 모두
+     * {@link #INTERNAL_SERVER_ERROR} 로 뭉개져 클라이언트가 "다시 보내도 되는 실패" 와 "다시 보내도 같은 실패" 를
+     * 가를 수 없었다. 하위의 읽기 타임아웃·연결 리셋·5xx 는 결과를 모르므로 여기 들지 않는다 — {@code PJ-005} 다.
      *
      * <p><b>이 상수는 {@code status} 가 실제 응답 상태와 같다</b> — 위 클래스 설명의 예외다.
      * {@code BusinessException} 계열로 던지지 않고 {@code GlobalExceptionHandler} 가 직접 503 과
      * {@code Retry-After} 를 붙여 내보낸다. 로그 수준도 {@code logByStatus} 를 거치지 않고 그 자리에서
-     * 정한다 — 풀 혼잡은 버스트에서 예상되는 일이라 WARN, DB 에 닿지 못하는 것이면 ERROR.
+     * 정한다 — 풀 혼잡은 버스트에서 예상되는 일이라 WARN, DB 나 하위 서비스에 닿지 못하는 것이면 ERROR.
      */
     TEMPORARILY_UNAVAILABLE("PJ-006", HttpStatus.SERVICE_UNAVAILABLE),
 
