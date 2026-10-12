@@ -79,6 +79,24 @@ class TemporarilyUnavailableResponseTest {
         void upstreamPlain503() {
             throw new UpstreamCallException(503, "ExtractFeign#extract()", "Service Unavailable");
         }
+
+        @GetMapping("/upstream/no-instance")
+        void upstreamNoInstance() {
+            // UG-362: 로드밸런서에 match 인스턴스가 없다 — scaling 에서 400 SWAGGER-005 로 새던 경우
+            throw UpstreamCallException.notDelivered(503, "MatchFeign#identify(IdentifyFeignRequestDTO)", "로드밸런서에 인스턴스 없음");
+        }
+
+        @GetMapping("/upstream/refused")
+        void upstreamRefused() {
+            throw UpstreamCallException.notDelivered(UpstreamCallException.NO_RESPONSE, "MatchFeign#identify",
+                    "연결 실패·타임아웃 (ConnectException)");
+        }
+
+        @GetMapping("/upstream/read-timeout")
+        void upstreamReadTimeout() {
+            throw new UpstreamCallException(UpstreamCallException.NO_RESPONSE, "MatchFeign#register",
+                    "연결 실패·타임아웃 (SocketTimeoutException)");
+        }
     }
 
     private MockMvc mvc;
@@ -151,6 +169,34 @@ class TemporarilyUnavailableResponseTest {
                 .andExpect(header().string("Retry-After", "1"))
                 .andExpect(jsonPath("$.errors.code").value("SWAGGER-006"))
                 .andExpect(jsonPath("$.errors.type").value("TEMPORARILY_UNAVAILABLE"));
+    }
+
+    @Test
+    @DisplayName("UG-362: 로드밸런서에 match 인스턴스가 없으면 503 + SWAGGER-006 + Retry-After — 요청이 닿지 않았다")
+    void 인스턴스_없음은_503() throws Exception {
+        mvc.perform(get("/upstream/no-instance"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.errors.code").value("SWAGGER-006"))
+                .andExpect(jsonPath("$.errors.type").value("TEMPORARILY_UNAVAILABLE"));
+    }
+
+    @Test
+    @DisplayName("UG-362: match 연결 거부도 503 + SWAGGER-006 + Retry-After")
+    void 연결_거부는_503() throws Exception {
+        mvc.perform(get("/upstream/refused"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.errors.code").value("SWAGGER-006"));
+    }
+
+    @Test
+    @DisplayName("UG-362 대조군: 읽기 타임아웃은 결과를 모르므로 예전처럼 500 SWAGGER-005 이고 Retry-After 가 없다")
+    void 읽기_타임아웃은_500() throws Exception {
+        mvc.perform(get("/upstream/read-timeout"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(header().doesNotExist("Retry-After"))
+                .andExpect(jsonPath("$.errors.code").value("SWAGGER-005"));
     }
 
     @Test

@@ -6,6 +6,8 @@ import feign.FeignException;
 import feign.RetryableException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import java.util.function.Supplier;
 
 /**
@@ -22,12 +24,19 @@ import java.util.function.Supplier;
  * <ul>
  *   <li>{@link RetryableException} — 연결 거부·읽기 타임아웃·연결 리셋.
  *       {@code SynchronousMethodHandler.executeAndDecode} 가 {@code IOException} 을 감싼다.
+ *       이 중 연결 거부·경로 없음만 {@link RemoteCallException#notDelivered} 가 된다 (UG-362).
  *       {@code Retryer} 빈이 없어(기본값 {@code NEVER_RETRY}) 그대로 올라온다.
  *   <li>{@link FeignException} — 본문 디코딩 실패. {@code ResponseHandler.handleResponse} 가
  *       {@code FeignException.errorReading()} 으로 감싼다. <b>200 응답에서도 발생한다</b>
  *       (프록시가 본문을 잘라 보내는 경우 등). {@code RetryableException} 은 이것의 하위 타입이다.
  *   <li>인코딩 실패 — {@code EncodeException} 은 {@link FeignException} 하위라 함께 잡힌다.
  * </ul>
+ *
+ * <p><b>연결 자체를 못 한 경우는 따로 표시한다 (UG-362).</b> {@link RetryableException} 의 원인 사슬에
+ * {@code ConnectException}(연결 거부) 또는 {@code NoRouteToHostException}(경로 없음)이 있으면 요청이 하위에
+ * 닿지 않은 것이 확실하므로 {@link RemoteCallException#notDelivered} 로 던진다 — 응답만 503 {@code PJ-006}
+ * 이 된다. 읽기·연결 타임아웃({@code SocketTimeoutException}), 연결 리셋, {@code UnknownHostException} 은
+ * 예전 그대로다. 이유는 {@link RemoteCallException#notDelivered} 설명에 있다.
  *
  * <p>다만 {@code CommonFeignConfig} 의 인터셉터가 던지는 임의의 {@code RuntimeException} 은
  * {@link FeignException} 이 아니므로 여기서 잡히지 않는다 — 아래 "여기서 잡지 않는 것" 과 같은
@@ -58,9 +67,36 @@ public final class RemoteCalls {
         try {
             return call.get();
         } catch (FeignException e) {
+            // UG-362: 연결 거부·경로 없음만 "닿지 않았다" 로 가른다. ErrorType·upstreamStatus 는 아래와 같다 —
+            // 이력과 로그 수준은 그대로이고 응답만 503 PJ-006 이 된다.
+            if (e instanceof RetryableException && 연결하지_못했다(e)) {
+                throw RemoteCallException.notDelivered(RemoteCallException.NO_RESPONSE, operation, e);
+            }
             // RetryableException 도 FeignException 하위다. 디코딩·인코딩 실패를 함께 덮는다.
             throw new RemoteCallException(RemoteCallException.NO_RESPONSE, operation, e);
         }
+    }
+
+    /**
+     * 원인 사슬에 "연결을 맺지 못했다" 는 예외가 있는가 (UG-362).
+     *
+     * <p>{@code ConnectException} 의 하위 타입(Apache HttpClient 5 의 {@code HttpHostConnectException} 등)도
+     * 포함된다. {@code SocketTimeoutException} 은 {@code ConnectException} 의 하위가 아니므로 걸리지 않는다 —
+     * 연결 타임아웃과 읽기 타임아웃을 예외 타입으로 가를 수 없어 일부러 뺐다. 사슬이 순환해도 끝나도록 깊이를
+     * 제한한다.
+     */
+    static boolean 연결하지_못했다(Throwable e) {
+        Throwable current = e;
+        for (int depth = 0; current != null && depth < 16; depth++) {
+            if (current instanceof ConnectException || current instanceof NoRouteToHostException) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     public static void run(String operation, Runnable call) {

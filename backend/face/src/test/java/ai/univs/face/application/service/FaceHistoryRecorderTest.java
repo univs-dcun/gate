@@ -72,6 +72,20 @@ class FaceHistoryRecorderTest {
     }
 
     @Test
+    @DisplayName("UG-362: match 에 닿지 않은 실패도 예전처럼 INTERNAL_SERVER_ERROR 로 남긴다 — 응답만 503 이고 이력은 그대로")
+    void 닿지_않은_실패도_사유를_남긴다() {
+        // 풀 고갈·DB 응답 시간 초과의 저장 건너뛰기(UG-359·UG-367)는 원인 사슬을 본다. 이 예외는 cause 를 싣지 않으므로
+        // 그 판정에 걸리지 않고 저장된다.
+        UpstreamCallException cause = UpstreamCallException.notDelivered(
+                503, "MatchFeign#identify", "로드밸런서에 인스턴스 없음");
+
+        recorder.recordFailure(history, cause, CLIENT);
+
+        verify(faceHistoryRepository).save(history);
+        assertThat(history.getFailureMessage()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR.name());
+    }
+
+    @Test
     @DisplayName("UG-359: match 의 '잠시 뒤 다시'(TemporarilyUnavailableException) 는 TEMPORARILY_UNAVAILABLE 로 남는다")
     void 일시_불가는_전용_사유() {
         // 디코더가 match 의 503 + TEMPORARILY_UNAVAILABLE 을 이 예외로 바꾼다. CustomFaceException 하위라

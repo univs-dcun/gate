@@ -5,6 +5,8 @@ import feign.FeignException;
 import feign.RetryableException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import java.util.Arrays;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -23,7 +25,8 @@ import org.springframework.stereotype.Component;
  * ERROR 에 스택트레이스가 통째로 붙고, <b>어느 호출이 왜 실패했는지 알 수 없었다.</b>
  *
  * <p><b>고치는 것은 진단 정보이지 응답이 아니다.</b> 이 경로는 예전에도 500 이었고 지금도 500
- * 이다 — 델타 리뷰가 상태·본문·헤더를 바이트 단위로 대조해 확인했다. 초판은 티켓 항목 4를
+ * 이다 — 델타 리뷰가 상태·본문·헤더를 바이트 단위로 대조해 확인했다(UG-362 에서 연결 거부·경로 없음만
+ * 503 이 됐다 — 아래 참고). 초판은 티켓 항목 4를
  * 따라 400 으로 통일하려 했는데, 그러면 gate 의 {@code IdentifyPalmUseCase} 가 4xx 를 정상
  * 결과로 흡수해 모듈 전면 장애가 HTTP 200 "매칭 실패" 로 나간다. 상세는
  * {@code GlobalExceptionHandler.handleUpstreamCallException} 의 분기 주석에 있다.
@@ -40,6 +43,13 @@ import org.springframework.stereotype.Component;
  *       (프록시가 본문을 잘라 보내는 경우 등). {@code RetryableException} 은 이것의 하위 타입이다.
  *   <li>인코딩 실패 — {@code EncodeException} 도 {@link FeignException} 하위다.
  * </ul>
+ *
+ * <p><b>연결 자체를 못 한 경우는 따로 표시한다 (UG-362).</b> {@link RetryableException} 의 원인 사슬에
+ * {@code ConnectException}(연결 거부) 또는 {@code NoRouteToHostException}(경로 없음)이 있으면 요청이 하위에 닿지
+ * 않은 것이 확실하므로 {@link UpstreamCallException#notDelivered} 로 던진다 — 핸들러가 500 대신 503
+ * {@code SWAGGER-006} 으로 내보내고, gate 가 그것을 {@code PJ-006} 으로 바꾼다. 5xx 이므로 위의 안전 성질
+ * ({@code IdentifyPalmUseCase} 의 4xx 흡수)은 그대로다. 타임아웃·연결 리셋·{@code UnknownHostException} 은 예전
+ * 그대로 500 이다. 이유는 {@link UpstreamCallException#notDelivered} 설명에 있다.
  *
  * <p><b>왜 호출처마다 감싸지 않고 빈을 감싸는가.</b> gate 는 {@code RemoteCalls.of} 를 호출처
  * 마다 부른다. face·palm 은 Feign 호출 지점이 UseCase 20여 곳에 흩어져 있어 하나만 빠뜨려도
@@ -129,10 +139,18 @@ public class FeignFailureTranslator implements BeanPostProcessor {
                 // "90여 줄 스택트레이스를 없앴다" 고 적고 있었다. 반면 디코딩 실패는 우리 쪽
                 // 파싱 문제일 수 있어 스택이 단서가 되므로 그대로 싣는다.
                 boolean 응답을_못_받았다 = feignException instanceof RetryableException;
+                String operation = "%s#%s".formatted(target.getSimpleName(), method.getName());
+
+                // UG-362: 연결 거부·경로 없음만 "닿지 않았다" 로 가른다. 상태·사유·cause 는 아래와 같다 —
+                // 이력과 로그는 그대로이고 응답만 503 SWAGGER-006 이 된다.
+                if (응답을_못_받았다 && 연결하지_못했다(feignException)) {
+                    throw UpstreamCallException.notDelivered(
+                            UpstreamCallException.NO_RESPONSE, operation, 원인_요약(feignException));
+                }
 
                 throw new UpstreamCallException(
                         UpstreamCallException.NO_RESPONSE,
-                        "%s#%s".formatted(target.getSimpleName(), method.getName()),
+                        operation,
                         원인_요약(feignException),
                         응답을_못_받았다 ? null : feignException);
             }
@@ -153,6 +171,27 @@ public class FeignFailureTranslator implements BeanPostProcessor {
     private static boolean Object_equals_인가(java.lang.reflect.Method method) {
         return "equals".equals(method.getName())
                 && Arrays.equals(method.getParameterTypes(), new Class<?>[] {Object.class});
+    }
+
+    /**
+     * 원인 사슬에 "연결을 맺지 못했다" 는 예외가 있는가 (UG-362). gate 의 {@code RemoteCalls} 와 같은 기준이다.
+     *
+     * <p>{@code ConnectException} 의 하위 타입(Apache HttpClient 5 의 {@code HttpHostConnectException} 등)도
+     * 포함된다. {@code SocketTimeoutException} 은 {@code ConnectException} 의 하위가 아니므로 걸리지 않는다 — 연결
+     * 타임아웃과 읽기 타임아웃을 예외 타입으로 가를 수 없어 일부러 뺐다. 사슬이 순환해도 끝나도록 깊이를 제한한다.
+     */
+    static boolean 연결하지_못했다(Throwable e) {
+        Throwable current = e;
+        for (int depth = 0; current != null && depth < 16; depth++) {
+            if (current instanceof ConnectException || current instanceof NoRouteToHostException) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     /**

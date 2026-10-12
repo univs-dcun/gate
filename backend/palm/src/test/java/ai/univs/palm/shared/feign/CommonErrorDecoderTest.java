@@ -5,8 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.univs.palm.shared.exception.CustomFeignException;
 import ai.univs.palm.shared.exception.UpstreamCallException;
+import ai.univs.palm.shared.web.enums.ErrorType;
 import feign.Request;
 import feign.Response;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -86,5 +90,85 @@ class CommonErrorDecoderTest {
                 """));
 
         assertThat(result).isInstanceOf(CustomFeignException.class);
+    }
+
+    /**
+     * 실제 HTTP 응답처럼 본문을 <b>한 번만</b> 읽을 수 있는 응답 (UG-362). 문자열 본문은 다시 읽을 수 있어서 두 판정이
+     * 각자 스트림을 여는 결함을 잡지 못한다.
+     */
+    private static Response streamResponse(int status, String body) {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        return response(status, "").toBuilder().body(new ByteArrayInputStream(bytes), bytes.length).build();
+    }
+
+    // FeignBlockingLoadBalancerClient 가 합성하는 본문 그대로다 (spring-cloud-openfeign-core 4.1.4·4.3.1·4.3.2 동일).
+    private static final String LB_BODY = "Load balancer does not contain an instance for the service match-server";
+
+    @Test
+    @DisplayName("UG-362: 로드밸런서 문구가 라이브러리와 같다 — 바뀌면 판정이 조용히 꺼진다")
+    void 로드밸런서_문구_고정() {
+        assertThat(CommonErrorDecoder.NO_INSTANCE_PREFIX)
+                .isEqualTo("Load balancer does not contain an instance for the service ");
+    }
+
+    @Test
+    @DisplayName("UG-362: 로드밸런서에 인스턴스가 없어 만든 503 은 닿지 않음이다 — ErrorType·upstreamStatus 는 그대로")
+    void 인스턴스_없음은_닿지_않음() {
+        Exception result = decoder.decode("MatchFeign#identify(IdentifyFeignRequestDTO)", response(503, LB_BODY));
+
+        assertThat(result).isInstanceOf(UpstreamCallException.class);
+        UpstreamCallException ex = (UpstreamCallException) result;
+        assertThat(ex.isNotDelivered()).isTrue();
+        assertThat(ex.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+        assertThat(ex.getUpstreamStatus()).isEqualTo(503);
+        assertThat(ex.getOperation()).isEqualTo("MatchFeign#identify(IdentifyFeignRequestDTO)");
+    }
+
+    @Test
+    @DisplayName("UG-362: 본문 스트림을 한 번만 읽을 수 있어도 로드밸런서 503 을 판정한다")
+    void 일회용_스트림의_인스턴스_없음() {
+        UpstreamCallException ex = (UpstreamCallException) decoder.decode("x", streamResponse(503, LB_BODY));
+
+        assertThat(ex.isNotDelivered()).isTrue();
+    }
+
+    @ParameterizedTest(name = "body={0}")
+    @ValueSource(strings = {
+            "<html>503 Service Temporarily Unavailable</html>",
+            "",
+            "load balancer does not contain an instance for the service match-server",
+            "Service Unavailable: Load balancer does not contain an instance for the service match-server"
+    })
+    @DisplayName("UG-362: 다른 503 은 닿지 않음이 아니다 — 하위가 받았을 수 있다")
+    void 다른_503은_닿지_않음이_아니다(String body) {
+        UpstreamCallException ex = (UpstreamCallException) decoder.decode("x", response(503, body));
+
+        assertThat(ex.isNotDelivered()).isFalse();
+    }
+
+    @ParameterizedTest(name = "status={0}")
+    @ValueSource(ints = {500, 502, 504})
+    @DisplayName("UG-362: 503 이 아니면 같은 문구여도 닿지 않음이 아니다")
+    void 상태가_503이_아니면_닿지_않음이_아니다(int status) {
+        UpstreamCallException ex = (UpstreamCallException) decoder.decode("x", response(status, LB_BODY));
+
+        assertThat(ex.isNotDelivered()).isFalse();
+    }
+
+    @Test
+    @DisplayName("UG-362: 503 본문을 읽다 실패해도 던지지 않고 예전 그대로 UpstreamCallException(503) 이다")
+    void 본문_읽기_실패는_예전_그대로() {
+        InputStream broken = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new IOException("connection reset while reading body");
+            }
+        };
+
+        UpstreamCallException ex = (UpstreamCallException) decoder.decode(
+                "x", response(503, "").toBuilder().body(broken, null).build());
+
+        assertThat(ex.isNotDelivered()).isFalse();
+        assertThat(ex.getUpstreamStatus()).isEqualTo(503);
     }
 }

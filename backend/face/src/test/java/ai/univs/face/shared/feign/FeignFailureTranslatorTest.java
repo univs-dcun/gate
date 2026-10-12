@@ -5,15 +5,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.univs.face.shared.exception.CustomFeignException;
 import ai.univs.face.shared.exception.UpstreamCallException;
+import ai.univs.face.shared.web.enums.ErrorType;
 import feign.FeignException;
 import feign.Request;
 import feign.RetryableException;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.cloud.openfeign.FeignClient;
 
 /**
@@ -41,6 +50,24 @@ class FeignFailureTranslatorTest {
     /** 어노테이션이 없는 평범한 빈. 감싸이면 안 된다. */
     interface PlainBean {
         String call();
+    }
+
+    static Stream<Throwable> 닿지_않은_원인() {
+        return Stream.of(
+                new ConnectException("Connection refused"),
+                new NoRouteToHostException("No route to host"),
+                // 클라이언트 라이브러리가 한 번 더 감싸도 사슬에서 찾는다
+                new IOException("connect failed", new ConnectException("Connection refused")));
+    }
+
+    static Stream<Throwable> 결과를_모르는_원인() {
+        return Stream.of(
+                // 연결 타임아웃과 읽기 타임아웃은 같은 타입이라 가를 수 없다
+                new SocketTimeoutException("Read timed out"),
+                new SocketTimeoutException("Connect timed out"),
+                new SocketException("Connection reset"),
+                new UnknownHostException("match-server"),
+                new IOException("Connection refused"));
     }
 
     private static Request 더미요청() {
@@ -87,6 +114,53 @@ class FeignFailureTranslatorTest {
                         // 정보가 없다. 상세는 리뷰_보완.연결실패는_cause_없음 참고.
                         assertThat(ex.getCause()).isNull();
                     });
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("ai.univs.face.shared.feign.FeignFailureTranslatorTest#닿지_않은_원인")
+        @DisplayName("UG-362: 연결 거부·경로 없음 → 닿지 않음 표시. 상태·사유·cause 는 예전 그대로다")
+        void 연결_거부는_닿지_않음(Throwable 근원) {
+            var 원인 = new RetryableException(
+                    -1, "refused", Request.HttpMethod.POST, 근원, (Long) null, 더미요청());
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .isInstanceOf(UpstreamCallException.class)
+                    .satisfies(e -> {
+                        var ex = (UpstreamCallException) e;
+                        assertThat(ex.isNotDelivered()).isTrue();
+                        // 이력 사유(recordFailure)가 여기서 나온다 — 예전과 같아야 한다
+                        assertThat(ex.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+                        assertThat(ex.getUpstreamStatus()).isEqualTo(UpstreamCallException.NO_RESPONSE);
+                        assertThat(ex.getOperation()).isEqualTo("ProbeFeign#call");
+                        assertThat(ex.getReason()).startsWith("연결 실패·타임아웃 (");
+                        assertThat(ex.getCause()).isNull();
+                    });
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("ai.univs.face.shared.feign.FeignFailureTranslatorTest#결과를_모르는_원인")
+        @DisplayName("UG-362: 타임아웃·연결 리셋·이름 해석 실패는 닿지 않음이 아니다 — 하위가 처리했을 수 있다")
+        void 결과를_모르면_예전_그대로(Throwable 근원) {
+            var 원인 = new RetryableException(
+                    -1, "x", Request.HttpMethod.POST, 근원, (Long) null, 더미요청());
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .isInstanceOf(UpstreamCallException.class)
+                    .satisfies(e -> {
+                        var ex = (UpstreamCallException) e;
+                        assertThat(ex.isNotDelivered()).isFalse();
+                        assertThat(ex.getUpstreamStatus()).isEqualTo(UpstreamCallException.NO_RESPONSE);
+                    });
+        }
+
+        @Test
+        @DisplayName("UG-362: 디코딩 실패는 원인 사슬에 연결 실패가 있어도 닿지 않음이 아니다 — 응답을 받은 뒤다")
+        void 디코딩_실패는_닿지_않음이_아니다() {
+            var 원인 = new FeignException.InternalServerError("broken", 더미요청(), new byte[0], Map.of());
+            원인.initCause(new ConnectException("unrelated"));
+
+            assertThatThrownBy(() -> 감싼다(원인).call())
+                    .satisfies(e -> assertThat(((UpstreamCallException) e).isNotDelivered()).isFalse());
         }
 
         @Test

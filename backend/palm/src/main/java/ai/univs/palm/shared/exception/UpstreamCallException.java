@@ -25,6 +25,10 @@ import lombok.Getter;
  * 400, 응답을 <b>못 받은</b> 경우({@link #NO_RESPONSE})는 500. 둘 다 각 경우의 이전 거동과
  * 같으므로 클라이언트가 보는 계약은 바뀌지 않는다.
  *
+ * <p><b>UG-362 에서 세 번째 상태가 생겼다.</b> 요청이 하위에 <b>닿지 않았음이 확실한</b> 경우({@link #notDelivered})는
+ * 503 + {@code SWAGGER-006} + {@code Retry-After} 다 — gate 의 디코더가 그것을 {@code PJ-006} 으로 바꿔 클라이언트에게
+ * "다시 보내도 된다" 고 알린다. face 와 같은 규칙이다.
+ *
  * <p>{@link #upstreamStatus} 와 {@link #operation} 은 로그용이다. 응답에는 넣지 않는다 — 하위
  * 모듈의 상태 코드나 내부 호출 이름을 노출하면 내부 구성이 드러난다.
  */
@@ -57,6 +61,9 @@ public class UpstreamCallException extends CustomPalmException {
     /** HTTP 상태 문구. 알 수 없으면 {@code null}. */
     private final String reason;
 
+    /** 요청이 하위에 닿지 않았음이 확실한지 (UG-362). {@link #notDelivered} 설명 참고. */
+    private final boolean notDelivered;
+
     public UpstreamCallException(int upstreamStatus, String operation, String reason) {
         this(upstreamStatus, operation, reason, null);
     }
@@ -68,12 +75,46 @@ public class UpstreamCallException extends CustomPalmException {
      * 응답을 해석하지 못한 경우는 우리 쪽 파싱 문제일 수 있어 스택트레이스가 단서가 된다.
      */
     public UpstreamCallException(int upstreamStatus, String operation, String reason, Throwable cause) {
+        this(upstreamStatus, operation, reason, cause, false);
+    }
+
+    private UpstreamCallException(
+            int upstreamStatus, String operation, String reason, Throwable cause, boolean notDelivered) {
         super(ErrorType.INTERNAL_SERVER_ERROR);
         this.upstreamStatus = upstreamStatus;
         this.operation = operation;
         this.reason = reason;
+        this.notDelivered = notDelivered;
         if (cause != null) {
             initCause(cause);
         }
+    }
+
+    /**
+     * 요청이 팜 모듈에 <b>닿지 않았다</b> — 모듈은 아무것도 하지 않았다 (UG-362).
+     *
+     * <p>딱 두 경우다. 연결이 거부됐거나 경로가 없는 경우({@code FeignFailureTranslator} 가 원인 사슬에서
+     * {@code ConnectException}·{@code NoRouteToHostException} 을 찾은 경우)와, Spring Cloud LoadBalancer 가 대상
+     * 인스턴스를 하나도 갖고 있지 않아 스스로 503 을 만든 경우({@code CommonErrorDecoder})다. 둘 다 요청 바이트가
+     * 모듈에 가지 않았으므로 같은 요청을 다시 보내도 안전하다. 그래서 응답만 503 {@code SWAGGER-006} 으로 바꾼다.
+     * (지금 팜 모듈 클라이언트는 {@code url} 고정이라 로드밸런서를 거치지 않는다 — 후자는 face 와 규칙을 맞춰 둔
+     * 것이다.)
+     *
+     * <p>읽기·연결 타임아웃({@code SocketTimeoutException})과 연결 리셋은 넣지 않는다 — 연결 타임아웃은 읽기 타임아웃과
+     * 같은 타입이라 가를 수 없고, 읽기 타임아웃·리셋은 모듈이 등록을 끝낸 뒤 응답만 잃었을 수 있다. 그런 실패에
+     * 재시도를 권하면 중복 등록을 부른다 (gate UG-338).
+     *
+     * <p>{@code ErrorType} 은 {@code INTERNAL_SERVER_ERROR} 그대로라 이력 사유가 예전과 같다. cause 는 싣지 않는다 —
+     * 연결 실패의 스택은 매번 같은 Feign 경로라 정보가 없다. 로그는 핸들러가 예전처럼 ERROR 로 남긴다.
+     *
+     * @param upstreamStatus 응답이 없으면 {@link #NO_RESPONSE}, 로드밸런서가 만든 응답이면 503 — 예전과 같은 값이다
+     */
+    public static UpstreamCallException notDelivered(int upstreamStatus, String operation, String reason) {
+        return new UpstreamCallException(upstreamStatus, operation, reason, null, true);
+    }
+
+    /** 요청이 하위에 닿지 않았음이 확실한 실패인지 (UG-362). */
+    public boolean isNotDelivered() {
+        return notDelivered;
     }
 }

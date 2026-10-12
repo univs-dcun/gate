@@ -5,17 +5,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.univs.gate.shared.exception.CustomFeignException;
 import ai.univs.gate.shared.exception.RemoteCallException;
+import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.feign.dto.FeignResponseApi;
 import feign.FeignException;
 import feign.Request;
 import feign.RetryableException;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * UG-280 반박 리뷰에서 나온 BLOCKER 의 회귀 테스트.
@@ -153,6 +161,87 @@ class RemoteCallsTest {
         FeignResponseApi<String> ok = new FeignResponseApi<>(true, "face-id-1", null);
 
         assertThat(RemoteCalls.data("face.createFace", () -> ok)).isEqualTo("face-id-1");
+    }
+
+    private static RetryableException retryable(Throwable cause) {
+        return new RetryableException(
+                -1, cause.getMessage(), Request.HttpMethod.POST, cause, (Long) null,
+                Request.create(Request.HttpMethod.POST, "http://face-service/x",
+                        Collections.emptyMap(), new byte[0], StandardCharsets.UTF_8, null));
+    }
+
+    static Stream<Throwable> 닿지_않은_원인() {
+        return Stream.of(
+                new ConnectException("Connection refused"),
+                new NoRouteToHostException("No route to host"),
+                // 클라이언트 라이브러리가 한 번 더 감싸도 사슬에서 찾는다
+                new IOException("connect failed", new ConnectException("Connection refused")));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("닿지_않은_원인")
+    @DisplayName("UG-362: 연결 거부·경로 없음은 닿지 않음으로 표시하고 ErrorType·NO_RESPONSE 는 그대로다")
+    void 연결_실패는_닿지_않음(Throwable cause) {
+        RetryableException retryable = retryable(cause);
+
+        assertThatThrownBy(() -> RemoteCalls.of("face.identify", () -> {
+            throw retryable;
+        }))
+                .isInstanceOf(RemoteCallException.class)
+                .satisfies(e -> {
+                    RemoteCallException r = (RemoteCallException) e;
+                    assertThat(r.isNotDelivered()).isTrue();
+                    // 이력(failUpstream)이 남기는 값은 예전과 같아야 한다
+                    assertThat(r.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+                    assertThat(r.isNoResponse()).isTrue();
+                    assertThat(r.getOperation()).isEqualTo("face.identify");
+                    assertThat(r.getCause()).isSameAs(retryable);
+                });
+    }
+
+    static Stream<Throwable> 결과를_모르는_원인() {
+        return Stream.of(
+                // 연결 타임아웃과 읽기 타임아웃은 같은 타입이라 가를 수 없다 — 읽기 타임아웃이면 하위가 등록을 끝냈을 수 있다
+                new SocketTimeoutException("Read timed out"),
+                new SocketTimeoutException("Connect timed out"),
+                new SocketException("Connection reset"),
+                new UnknownHostException("face-service"),
+                new IOException("Connection refused"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("결과를_모르는_원인")
+    @DisplayName("UG-362: 타임아웃·연결 리셋·이름 해석 실패는 예전 그대로 — 닿지 않았다고 단정하지 않는다")
+    void 결과를_모르면_예전_그대로(Throwable cause) {
+        RetryableException retryable = retryable(cause);
+
+        assertThatThrownBy(() -> RemoteCalls.of("face.createFace", () -> {
+            throw retryable;
+        }))
+                .isInstanceOf(RemoteCallException.class)
+                .satisfies(e -> {
+                    RemoteCallException r = (RemoteCallException) e;
+                    assertThat(r.isNotDelivered()).isFalse();
+                    assertThat(r.isNoResponse()).isTrue();
+                });
+    }
+
+    @Test
+    @DisplayName("UG-362: RetryableException 이 아닌 FeignException 은 원인 사슬에 연결 실패가 있어도 닿지 않음이 아니다")
+    void 디코딩_실패는_닿지_않음이_아니다() {
+        // 응답을 받은 뒤의 실패다 — 요청은 하위에 닿았다.
+        FeignException decodeFailure = new FeignException.InternalServerError(
+                "decode", Request.create(Request.HttpMethod.POST, "http://face-service/x",
+                        Collections.emptyMap(), new byte[0], StandardCharsets.UTF_8, null),
+                new byte[0], Collections.emptyMap());
+        decodeFailure.initCause(new ConnectException("unrelated"));
+
+        assertThatThrownBy(() -> RemoteCalls.of("face.identify", () -> {
+            throw decodeFailure;
+        }))
+                .isInstanceOf(RemoteCallException.class)
+                .extracting(e -> ((RemoteCallException) e).isNotDelivered())
+                .isEqualTo(false);
     }
 
     @Test

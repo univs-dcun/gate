@@ -111,25 +111,45 @@ public class GlobalExceptionHandler {
      *       90여 줄이 반복될 뿐이다. 하위 장애 시에는 이 예외가 대량으로 발생한다.
      * </ul>
      *
-     * <p>응답 본문·상태 코드는 위 핸들러와 동일하다 ({@code PJ-005}, 400). 클라이언트가 보는
-     * 계약을 바꾸지 않기 위해 일부러 맞췄다.
+     * <p>응답 본문·상태 코드는 기본적으로 위 핸들러와 동일하다 ({@code PJ-005}, 400). 클라이언트가 보는
+     * 계약을 바꾸지 않기 위해 일부러 맞췄다. 예외는 아래 두 가지다.
      *
      * <p>{@code ErrorType} 이 {@code INTERNAL_SERVER_ERROR}(5xx) 이므로 UG-290 의 분류상 ERROR 로
      * 남는다. 원인이 우리 쪽 인프라·하위 서비스이므로 그게 맞다 — 클라이언트 입력 문제가 아니다.
      *
-     * <p><b>예외 하나 (UG-359).</b> 하위가 503 + {@code TEMPORARILY_UNAVAILABLE} 로 "잠시 뒤 다시" 를 알려 온
-     * 경우({@link RemoteCallException#isTemporarilyUnavailable()})는 400 이 아니라 503 + {@code PJ-006} +
-     * {@code Retry-After} 다. 상태 코드가 갈리므로 {@code @ResponseStatus} 대신 {@link ResponseEntity} 로
-     * 돌려준다. 나머지 하위 실패(다른 5xx·응답 없음)는 예전 그대로 400 {@code PJ-005} 다.
+     * <ul>
+     *   <li><b>UG-359.</b> 하위가 503 + {@code TEMPORARILY_UNAVAILABLE} 로 "잠시 뒤 다시" 를 알려 온
+     *       경우({@link RemoteCallException#isTemporarilyUnavailable()})는 503 + {@code PJ-006} + {@code Retry-After} 다.
+     *   <li><b>UG-362.</b> 요청이 하위에 닿지 않았음이 확실한 경우({@link RemoteCallException#isNotDelivered()} —
+     *       연결 거부·경로 없음, 로드밸런서에 인스턴스 없음)도 같은 503 응답이다. 하위가 아무것도 하지 않았으니
+     *       다시 보내도 안전하다.
+     * </ul>
+     * 상태 코드가 갈리므로 {@code @ResponseStatus} 대신 {@link ResponseEntity} 로 돌려준다. 나머지 하위 실패(읽기
+     * 타임아웃·연결 리셋·하위 5xx)는 예전 그대로 400 {@code PJ-005} 다 — 등록·삭제가 반영됐는지 모르므로 재시도를
+     * 권하지 않는다 (UG-338).
      */
     @ExceptionHandler(RemoteCallException.class)
     public ResponseEntity<ResponseApi<?>> handleRemoteCallException(RemoteCallException ex) {
         // UG-359: 하위(face)가 "잠시 뒤 다시" 를 알려 왔다. 그쪽 풀이 붐볐을 뿐이므로 WARN 이고 스택트레이스는
         // 없다 — DB 에 닿지 못하는 것이었다면 그 서비스가 자기 로그에 ERROR 로 남겼다. 여기서도 ERROR 를 남기면
-        // 버스트 한 번에 하위·gate 양쪽 대시보드가 같은 사건으로 가득 찬다.
+        // 버스트 한 번에 하위·gate 양쪽 대시보드가 같은 사건으로 가득 찬다. face 가 그 아래(match·fxp)에 연결하지
+        // 못한 경우(UG-362)도 이 신호로 올라오는데, 그때도 face 가 자기 로그에 ERROR 로 남겼다.
         if (ex.isTemporarilyUnavailable()) {
             log.warn("[{}] 하위 서비스가 일시적으로 처리할 수 없다고 알렸다 {} — operation={}, upstreamStatus={}",
                     ex.getErrorType().getCode(), requestInfo(), ex.getOperation(), ex.getUpstreamStatus());
+            return temporarilyUnavailable();
+        }
+
+        // UG-362: 요청이 하위에 닿지 않았다. 응답만 503 PJ-006 으로 바꾸고 로그는 예전처럼 ERROR 다 — 요청이 닿지
+        // 않았으니 이 실패를 기록한 하위 서비스가 없다. 여기서 WARN 으로 내리면 하위 전면 장애가 어디에도 ERROR 로
+        // 남지 않는다. 스택트레이스는 예전처럼 남기지 않는다(호출 스택이 매번 같다). 대신 원인 클래스를 적는다.
+        if (ex.isNotDelivered()) {
+            log.error("[{}] 하위 서비스에 연결하지 못했다 — 요청이 닿지 않았다 {} — operation={}, upstreamStatus={}, cause={}",
+                    ErrorType.TEMPORARILY_UNAVAILABLE.getCode(),
+                    requestInfo(),
+                    ex.getOperation(),
+                    ex.getUpstreamStatus(),
+                    notDeliveredCause(ex));
             return temporarilyUnavailable();
         }
 
@@ -141,6 +161,22 @@ public class GlobalExceptionHandler {
                 ex.isNoResponse() ? " (응답 없음 — 연결 거부·타임아웃)" : "");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getExceptionResponse(ex.getErrorType()));
+    }
+
+    /**
+     * 닿지 않은 실패의 원인을 짧게 (UG-362). 연결 실패면 사슬 맨 아래 예외의 클래스 이름(예: {@code ConnectException}),
+     * 원인이 없으면 로드밸런서가 인스턴스를 찾지 못한 경우다. 예외 메시지는 싣지 않는다 — Feign 메시지에는 요청 URL 이
+     * 들어 있다.
+     */
+    private static String notDeliveredCause(RemoteCallException ex) {
+        Throwable root = ex.getCause();
+        if (root == null) {
+            return "로드밸런서에 인스턴스 없음";
+        }
+        for (int depth = 0; root.getCause() != null && root.getCause() != root && depth < 16; depth++) {
+            root = root.getCause();
+        }
+        return root.getClass().getSimpleName();
     }
 
     /**
@@ -161,6 +197,13 @@ public class GlobalExceptionHandler {
      * {@code type} 에 {@code ErrorType.name()} 을 싣는다 — 하위가 자기 문제라고 말한 것을 그대로
      * 읽는 셈이다. 판정 불가일 때는 4xx 로 둔다. 여기서 잘못 올리면 라이브니스 오류처럼 정상
      * 흐름에서 흡수되는 것까지 ERROR 가 된다.
+     *
+     * <p><b>응답에서는 하위의 내부 코드를 감춘다 (UG-362).</b> 하위가 자기 오류라고 말한 유형이면 로그는 위와 같이
+     * ERROR 로 하위의 code·type·message 를 그대로 남기고, 클라이언트에게는 gate 자신의 400 {@code PJ-005} 를 준다.
+     * 예전에는 {@code SWAGGER-005} 같은 하위 코드와 하위의 메시지가 그대로 나갔다 — scaling 에서 "gate 400
+     * SWAGGER-005" 가 7,321 건 관측됐다. 그 코드는 문서에 없고 내부 구성을 드러낸다. 하위 응답을 받았으니 결과를
+     * 모르는 실패라 503 이 아니라 400 이다. 업무 오류(라이브니스·매칭 실패·없음 등)는 예전처럼 그대로 전달한다 —
+     * 클라이언트가 그 코드로 분기한다.
      */
     /**
      * {@code LoggingAspect} 가 같은 기준을 쓰도록 공개한다 — 두 지점이 갈리면 한쪽만 조용해진다.
@@ -176,9 +219,10 @@ public class GlobalExceptionHandler {
         if (isUpstreamServerError(ex.getType())) {
             log.error("[{}] 하위 서비스가 자기 오류를 알렸다 — {} {} — {}",
                     ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
-        } else {
-            log.warn("[{}] {} {} — {}", ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
+            // UG-362: 하위의 내부 코드(SWAGGER-005 등)와 메시지는 응답에 싣지 않는다.
+            return getExceptionResponse(ErrorType.INTERNAL_SERVER_ERROR);
         }
+        log.warn("[{}] {} {} — {}", ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
 
         Errors errors = new Errors(
                 ex.getCode(),

@@ -8,6 +8,9 @@ import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import feign.Request;
 import feign.Response;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +45,16 @@ class CommonErrorDecoderTest {
                 .headers(Collections.emptyMap())
                 .body(body, StandardCharsets.UTF_8)
                 .build();
+    }
+
+    /**
+     * 실제 HTTP 응답처럼 본문을 <b>한 번만</b> 읽을 수 있는 응답 (UG-362). 문자열 본문은 몇 번이고 다시 읽을 수
+     * 있어서, 두 판정이 각자 스트림을 여는 결함을 잡지 못한다.
+     */
+    private static Response streamResponse(int status, String body) {
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        InputStream once = new ByteArrayInputStream(bytes);
+        return response(status, "").toBuilder().body(once, bytes.length).build();
     }
 
     private static final String OUR_FORMAT_BODY = """
@@ -172,6 +185,104 @@ class CommonErrorDecoderTest {
             RemoteCallException e = (RemoteCallException) decoder.decode("x", response(status, BUSY_BODY));
 
             assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Nested
+    @DisplayName("UG-362: 로드밸런서가 만든 503 — 요청이 하위에 닿지 않은 경우")
+    class NoInstance {
+
+        // FeignBlockingLoadBalancerClient 가 합성하는 본문 그대로다 (spring-cloud-openfeign-core 4.1.4·4.3.1·4.3.2 동일).
+        private static final String LB_BODY = "Load balancer does not contain an instance for the service face-service";
+
+        @Test
+        @DisplayName("문구가 라이브러리와 같다 — 바뀌면 판정이 조용히 꺼진다")
+        void 문구_고정() {
+            assertThat(CommonErrorDecoder.NO_INSTANCE_PREFIX)
+                    .isEqualTo("Load balancer does not contain an instance for the service ");
+        }
+
+        @Test
+        @DisplayName("닿지 않음으로 표시하되 ErrorType·upstreamStatus 는 예전 그대로다 — 이력이 바뀌지 않는다")
+        void 인스턴스_없음은_닿지_않음() {
+            Exception result = decoder.decode("FaceClient#identify()", response(503, LB_BODY));
+
+            assertThat(result).isInstanceOf(RemoteCallException.class);
+            RemoteCallException e = (RemoteCallException) result;
+            assertThat(e.isNotDelivered()).isTrue();
+            assertThat(e.isTemporarilyUnavailable()).isFalse();
+            // failUpstream 이 이 두 값을 이력에 남긴다. 예전(RemoteCallException(503))과 같아야 한다.
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+            assertThat(e.getUpstreamStatus()).isEqualTo(503);
+            assertThat(e.getOperation()).isEqualTo("FaceClient#identify()");
+        }
+
+        @Test
+        @DisplayName("본문 스트림을 한 번만 읽을 수 있어도 판정한다")
+        void 일회용_스트림에서도_판정() {
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", streamResponse(503, LB_BODY));
+
+            assertThat(e.isNotDelivered()).isTrue();
+        }
+
+        @ParameterizedTest(name = "status={0}")
+        @ValueSource(ints = {500, 502, 504})
+        @DisplayName("503 이 아니면 같은 문구여도 일반 하위 실패다")
+        void 상태가_503이_아니면_일반_실패(int status) {
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", response(status, LB_BODY));
+
+            assertThat(e.isNotDelivered()).isFalse();
+        }
+
+        @ParameterizedTest(name = "body={0}")
+        @ValueSource(strings = {
+                "<html>503 Service Temporarily Unavailable</html>",
+                "",
+                "load balancer does not contain an instance for the service face-service",
+                "Service Unavailable: Load balancer does not contain an instance for the service face-service"
+        })
+        @DisplayName("다른 503 은 닿지 않음으로 보지 않는다 — 하위가 받았을 수 있다")
+        void 다른_503은_닿지_않음이_아니다(String body) {
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", response(503, body));
+
+            assertThat(e.isNotDelivered()).isFalse();
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Nested
+    @DisplayName("UG-362: 503 본문은 한 번만 읽는다")
+    class SingleRead {
+
+        @Test
+        @DisplayName("일회용 스트림 본문이어도 TEMPORARILY_UNAVAILABLE 신호를 잃지 않는다")
+        void 일회용_스트림의_일시_불가() {
+            String busy = """
+                    {"success":false,"data":null,"errors":{"code":"SWAGGER-006","type":"TEMPORARILY_UNAVAILABLE","message":"busy"}}
+                    """;
+
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", streamResponse(503, busy));
+
+            assertThat(e.isTemporarilyUnavailable()).isTrue();
+            assertThat(e.isNotDelivered()).isFalse();
+        }
+
+        @Test
+        @DisplayName("본문을 읽다 실패해도 던지지 않고 일반 하위 실패다")
+        void 읽기_실패는_일반_실패() {
+            InputStream broken = new InputStream() {
+                @Override
+                public int read() throws IOException {
+                    throw new IOException("connection reset while reading body");
+                }
+            };
+            Response r = response(503, "").toBuilder().body(broken, null).build();
+
+            RemoteCallException e = (RemoteCallException) decoder.decode("x", r);
+
+            assertThat(e.getErrorType()).isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+            assertThat(e.isNotDelivered()).isFalse();
+            assertThat(e.getUpstreamStatus()).isEqualTo(503);
         }
     }
 
