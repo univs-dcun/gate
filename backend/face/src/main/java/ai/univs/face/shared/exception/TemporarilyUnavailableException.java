@@ -17,6 +17,10 @@ import lombok.Getter;
  * {@code FaceHistoryRecorder.recordFailure} 로 이력을 남길 때 {@code getErrorType()} 에서 실패 유형을 읽는다. 그래서
  * 이력의 {@code failure_message} 에 {@code TEMPORARILY_UNAVAILABLE} 이 남는다. {@link UpstreamCallException} 을
  * 상속하지 않는 것은 그쪽 핸들러가 400/500 + ERROR 로 처리하기 때문이다 — 혼잡을 장애로 기록하지 않는다.
+ *
+ * <p>요청이 match 에 닿지 않은 실패(연결 거부·로드밸런서에 인스턴스 없음, UG-362)도 같은 503 {@code SWAGGER-006} 으로
+ * 나가지만 이 타입이 아니다 — {@link UpstreamCallException#notDelivered} 로 ERROR 를 남기고 이력 사유도
+ * {@code INTERNAL_SERVER_ERROR} 그대로다. 혼잡이 아니라 장애다.
  */
 @Getter
 public class TemporarilyUnavailableException extends CustomFaceException {

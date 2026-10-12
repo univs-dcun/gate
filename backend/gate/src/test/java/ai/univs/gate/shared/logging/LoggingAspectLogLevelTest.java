@@ -158,6 +158,21 @@ class LoggingAspectLogLevelTest {
     }
 
     @Test
+    @DisplayName("UG-362: 요청이 하위에 닿지 않은 실패는 응답이 503 이어도 ERROR 그대로 — 하위 로그는 비어 있다")
+    void 하위에_닿지_않으면_ERROR() throws Throwable {
+        assertThat(levelOfExceptionLine(RemoteCallException.notDelivered(503, "FaceClient#identify()", null)))
+                .isEqualTo(Level.ERROR);
+    }
+
+    @Test
+    @DisplayName("UG-362: 연결 거부도 ERROR 그대로")
+    void 연결_거부는_ERROR() throws Throwable {
+        assertThat(levelOfExceptionLine(RemoteCallException.notDelivered(
+                RemoteCallException.NO_RESPONSE, "face.identify", new java.net.ConnectException("Connection refused"))))
+                .isEqualTo(Level.ERROR);
+    }
+
+    @Test
     @DisplayName("정상 응답은 [RESPONSE] 로 끝나고 [EXCEPTION] 을 남기지 않는다")
     void 정상_경로() throws Throwable {
         given(joinPoint.proceed()).willReturn("ok");

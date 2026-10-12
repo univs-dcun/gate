@@ -6,8 +6,18 @@ import ai.univs.palm.shared.feign.dto.ProblemDetailFeignResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Response;
 import feign.codec.ErrorDecoder;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class CommonErrorDecoder implements ErrorDecoder {
+
+    private static final int SERVICE_UNAVAILABLE = 503;
+
+    /** 503 본문을 판정하려고 읽는 최대 바이트 (UG-362). {@link #readBodyQuietly} 참고. */
+    static final int MAX_503_BODY_BYTES = 64 * 1024;
+
+    /** Spring Cloud LoadBalancer 가 인스턴스 없음을 알릴 때 합성하는 본문의 앞부분 (UG-362). gate·face 와 같은 값이다. */
+    static final String NO_INSTANCE_PREFIX = "Load balancer does not contain an instance for the service ";
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -35,10 +45,46 @@ public class CommonErrorDecoder implements ErrorDecoder {
             return new CustomFeignException(code, type, message);
         }
 
+        // UG-362: 팜 모듈이 아니라 우리 쪽 로드밸런서가 만든 503 이다 — 인스턴스가 없어 요청을 보내지도 않았다.
+        // upstreamStatus 는 예전과 같은 503 이고, 핸들러가 503 SWAGGER-006 으로 내보낸다. 지금 PalmFeign 은 url 고정이라
+        // 로드밸런서를 거치지 않지만 face 와 규칙을 맞춰 둔다 — 본문을 읽는 것은 503 일 때뿐이다.
+        if (status == SERVICE_UNAVAILABLE && isNoInstance(readBodyQuietly(response))) {
+            return UpstreamCallException.notDelivered(status, s, "로드밸런서에 인스턴스 없음");
+        }
+
         // 3xx or 5xx. 3xx 도 여기로 온다 — Feign 은 리다이렉트를 따라가지 않으므로 호출은
         // 실패한 것이지만 "죽었다" 와는 성격이 다르다. 그래서 메시지에 상태 코드를 그대로
         // 싣고 단정적인 표현을 쓰지 않는다.
         return new UpstreamCallException(status, s, response.reason());
+    }
+
+    /**
+     * 503 본문을 바이트로 한 번 읽는다 (UG-362). <b>절대 던지지 않는다</b> — 읽지 못하면 빈 배열이다.
+     *
+     * <p>503 은 팜 모듈·프록시도 낸다. 본문이 HTML 이거나 비어 있거나 아예 없는 것이 정상이고, 그때는 예전과 같은
+     * {@link UpstreamCallException} 으로 떨어져야 한다. 판정에 필요한 것은 앞부분뿐이라 상한({@link #MAX_503_BODY_BYTES})을
+     * 둔다.
+     */
+    private static byte[] readBodyQuietly(Response response) {
+        if (response.body() == null) {
+            return new byte[0];
+        }
+        try (InputStream in = response.body().asInputStream()) {
+            return in.readNBytes(MAX_503_BODY_BYTES);
+        } catch (Exception e) {
+            return new byte[0];
+        }
+    }
+
+    /**
+     * Spring Cloud LoadBalancer 가 대상 인스턴스를 찾지 못해 <b>스스로 만든</b> 503 인가 (UG-362).
+     *
+     * <p>{@code FeignBlockingLoadBalancerClient}(재시도판도 같다)는 인스턴스가 없으면 요청을 보내지 않고 상태 503,
+     * 평문 본문 {@value #NO_INSTANCE_PREFIX}{@code <serviceId>} 인 응답을 합성한다. spring-cloud-openfeign-core
+     * 4.1.4·4.3.1·4.3.2 에서 문구가 같음을 확인했다. 문구가 바뀌면 판정이 거짓이 되어 예전 동작으로 돌아간다.
+     */
+    private static boolean isNoInstance(byte[] body) {
+        return new String(body, StandardCharsets.UTF_8).startsWith(NO_INSTANCE_PREFIX);
     }
 
     private ProblemDetailFeignResponseDTO parseProblemDetail(String methodKey, Response response) {

@@ -3,9 +3,12 @@ package ai.univs.gate.support.feign;
 import ai.univs.gate.shared.exception.RemoteCallException;
 import ai.univs.gate.support.feign.dto.FeignResponseApi;
 import feign.FeignException;
+import feign.Request;
 import feign.RetryableException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import java.util.function.Supplier;
 
 /**
@@ -22,12 +25,38 @@ import java.util.function.Supplier;
  * <ul>
  *   <li>{@link RetryableException} — 연결 거부·읽기 타임아웃·연결 리셋.
  *       {@code SynchronousMethodHandler.executeAndDecode} 가 {@code IOException} 을 감싼다.
+ *       이 중 <b>본문이 있는 요청의</b> 연결 거부·경로 없음만 {@link RemoteCallException#notDelivered} 가 된다
+ *       (UG-362).
  *       {@code Retryer} 빈이 없어(기본값 {@code NEVER_RETRY}) 그대로 올라온다.
  *   <li>{@link FeignException} — 본문 디코딩 실패. {@code ResponseHandler.handleResponse} 가
  *       {@code FeignException.errorReading()} 으로 감싼다. <b>200 응답에서도 발생한다</b>
  *       (프록시가 본문을 잘라 보내는 경우 등). {@code RetryableException} 은 이것의 하위 타입이다.
  *   <li>인코딩 실패 — {@code EncodeException} 은 {@link FeignException} 하위라 함께 잡힌다.
  * </ul>
+ *
+ * <p><b>연결 자체를 못 한 경우는 따로 표시한다 (UG-362).</b> {@link RetryableException} 의 원인 사슬에
+ * {@code ConnectException}(연결 거부) 또는 {@code NoRouteToHostException}(경로 없음)이 있고 <b>요청에 본문이
+ * 있으면</b> 요청이 하위에 닿지 않은 것이 확실하므로 {@link RemoteCallException#notDelivered} 로 던진다 — 응답만
+ * 503 {@code PJ-006} 이 된다. 읽기·연결 타임아웃({@code SocketTimeoutException}), 연결 리셋,
+ * {@code UnknownHostException} 은 예전 그대로다. 이유는 {@link RemoteCallException#notDelivered} 설명에 있다.
+ *
+ * <p><b>본문 없는 요청(GET·DELETE)은 연결 거부여도 예전 그대로다 (UG-362 반박 리뷰).</b> Feign 기본 클라이언트
+ * ({@code Client.Default}, JDK {@code HttpURLConnection})는 응답을 읽다 실패하면 <b>본문 없는 요청을 새 연결로 한 번
+ * 몰래 다시 보낸다</b> ({@code sun.net.www.http.HttpClient.parseHTTP} 의 {@code failedOnce} 재전송). 그래서 하위가
+ * 첫 요청을 받아 처리한 뒤 죽으면, 호출자가 보는 예외는 재전송이 맞은 {@code ConnectException: Connection refused}
+ * 다 — 연결 거부인데 요청은 이미 닿았다. JDK 21 + feign-core 13.5·13.6.1 로 실측했다 (서버가 요청을 다 읽고 응답
+ * 없이 끊은 뒤 리스너를 닫음): GET·DELETE → {@code ConnectException}, 본문 있는 POST·PUT →
+ * {@code SocketException: Unexpected end of file from server}. 본문이 있으면 Feign 이 스트리밍 모드
+ * ({@code setFixedLengthStreamingMode}/{@code setChunkedStreamingMode})로 보내고, JDK 는 스트리밍 요청을 다시 보내지
+ * 않는다. 그러므로 본문이 있는 요청의 {@code ConnectException} 은 첫 연결 시도에서 난 것이고, 요청 바이트는 하위에
+ * 한 번도 가지 않았다.
+ *
+ * <p><b>이 판정은 Feign 의 요청 버퍼링 해제(기본값 {@code disableRequestBuffering = true})에 기댄다.</b>
+ * {@code new Client.Default(ssl, verifier, false)} 처럼 버퍼링을 켜면 본문이 있어도 스트리밍이 아니게 되고, 같은
+ * 실측에서 <b>버퍼링한 POST·PUT 도 몰래 재전송돼</b> {@code ConnectException} 으로 끝났다 ({@code sun.net.http.retryPost}
+ * 기본값 {@code true}). 버퍼링을 켜거나 다른 HTTP 클라이언트(Apache·OkHttp 등 자체 재시도가 있는 것)로 바꾸면 이
+ * 판정을 다시 따져야 한다. 빈 본문({@code byte[0]})은 실측상 재전송되지 않았지만, 본문이 실린다는 보장이 없는
+ * 경계라 보수적으로 "본문 없음" 으로 친다.
  *
  * <p>다만 {@code CommonFeignConfig} 의 인터셉터가 던지는 임의의 {@code RuntimeException} 은
  * {@link FeignException} 이 아니므로 여기서 잡히지 않는다 — 아래 "여기서 잡지 않는 것" 과 같은
@@ -58,9 +87,53 @@ public final class RemoteCalls {
         try {
             return call.get();
         } catch (FeignException e) {
+            // UG-362: 본문 있는 요청의 연결 거부·경로 없음만 "닿지 않았다" 로 가른다. ErrorType·upstreamStatus 는
+            // 아래와 같다 — 이력과 로그 수준은 그대로이고 응답만 503 PJ-006 이 된다. 본문 없는 요청은 JDK 의 몰래
+            // 재전송 때문에 연결 거부여도 이미 닿았을 수 있다 (클래스 설명).
+            if (e instanceof RetryableException retryable && 연결하지_못했다(retryable) && 본문이_있다(retryable)) {
+                throw RemoteCallException.notDelivered(RemoteCallException.NO_RESPONSE, operation, e);
+            }
             // RetryableException 도 FeignException 하위다. 디코딩·인코딩 실패를 함께 덮는다.
             throw new RemoteCallException(RemoteCallException.NO_RESPONSE, operation, e);
         }
+    }
+
+    /**
+     * 원인 사슬에 "연결을 맺지 못했다" 는 예외가 있는가 (UG-362).
+     *
+     * <p>{@code ConnectException} 의 하위 타입(Apache HttpClient 5 의 {@code HttpHostConnectException} 등)도
+     * 포함된다. {@code SocketTimeoutException} 은 {@code ConnectException} 의 하위가 아니므로 걸리지 않는다 —
+     * 연결 타임아웃과 읽기 타임아웃을 예외 타입으로 가를 수 없어 일부러 뺐다. 사슬이 순환해도 끝나도록 깊이를
+     * 제한한다.
+     */
+    static boolean 연결하지_못했다(Throwable e) {
+        Throwable current = e;
+        for (int depth = 0; current != null && depth < 16; depth++) {
+            if (current instanceof ConnectException || current instanceof NoRouteToHostException) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * 요청에 본문이 실려 있는가 — 즉 JDK 가 몰래 다시 보내지 않는 스트리밍 요청인가 (UG-362 반박 리뷰).
+     *
+     * <p>본문 없는 요청은 {@code HttpURLConnection} 이 응답 읽기 실패 뒤 새 연결로 한 번 더 보내므로, 그 재전송의
+     * 연결 거부가 "닿지 않았다" 를 뜻하지 않는다. 요청 정보가 없으면 판단할 수 없으므로 예전 그대로 둔다. 상세는
+     * 클래스 설명 참고.
+     */
+    static boolean 본문이_있다(RetryableException e) {
+        Request request = e.request();
+        if (request == null) {
+            return false;
+        }
+        byte[] body = request.body();
+        return body != null && body.length > 0;
     }
 
     public static void run(String operation, Runnable call) {

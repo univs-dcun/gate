@@ -162,6 +162,37 @@ class ExceptionLogLevelTest {
     }
 
     @Test
+    @DisplayName("UG-362: 요청이 하위에 닿지 않은 실패는 응답이 503 이어도 ERROR 다 — 이 실패를 기록한 하위가 없다")
+    void 하위에_닿지_않으면_ERROR() {
+        handler.handleRemoteCallException(RemoteCallException.notDelivered(
+                RemoteCallException.NO_RESPONSE, "face.identify",
+                new RuntimeException("wrapper", new java.net.ConnectException("Connection refused"))));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel())
+                .as("혼잡 신호(WARN)와 달리 하위 로그는 비어 있다 — 여기서 조용해지면 어디에도 남지 않는다")
+                .isEqualTo(Level.ERROR);
+        assertThat(event.getThrowableProxy()).isNull();
+        assertThat(event.getFormattedMessage())
+                .contains("연결하지 못했다")
+                .contains("face.identify")
+                .contains("ConnectException");
+    }
+
+    @Test
+    @DisplayName("UG-362: 로드밸런서 인스턴스 없음도 ERROR 이고 그 사실을 적는다")
+    void 인스턴스_없음도_ERROR() {
+        handler.handleRemoteCallException(RemoteCallException.notDelivered(503, "FaceClient#identify()", null));
+
+        ILoggingEvent event = onlyEvent();
+        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+        assertThat(event.getFormattedMessage())
+                .contains("FaceClient#identify()")
+                .contains("503")
+                .contains("로드밸런서");
+    }
+
+    @Test
     @DisplayName("하위 서비스가 돌려준 4xx 는 WARN 이다")
     void 하위서비스_4xx는_WARN() {
         handler.CustomFeignException(
@@ -187,6 +218,8 @@ class ExceptionLogLevelTest {
         ILoggingEvent event = onlyEvent();
         assertThat(event.getLevel()).isEqualTo(Level.ERROR);
         assertThat(event.getFormattedMessage()).contains("INTERNAL_SERVER_ERROR");
+        // UG-362: 응답에서는 감추지만 로그에는 하위의 코드·메시지를 그대로 남긴다 — 원인을 찾는 단서다
+        assertThat(event.getFormattedMessage()).contains("SWAGGER-005").contains("matcher down");
     }
 
     @Test

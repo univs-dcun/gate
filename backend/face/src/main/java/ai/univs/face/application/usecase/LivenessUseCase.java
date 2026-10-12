@@ -19,19 +19,23 @@ public class LivenessUseCase {
     /**
      * 트랜잭션이 없다 (UG-358 2단계). fxp 호출 동안 DB 커넥션을 쥐지 않는다.
      *
+     * <p>이력은 <b>끝에서 한 번만</b> 쓴다 (UG-363). 결과는 {@link FaceHistoryRecorder#finish} 가 라이브니스 행과 한 트랜잭션으로,
+     * 예외는 {@link FaceHistoryRecorder#recordFailure} 가 따로 INSERT 한다 — 시작 행을 먼저 커밋하지 않는다. 이 요청의
+     * 시작 행은 gate 가 같은 transactionUuid 로 이미 커밋해 둔다(gate {@code HistoryRecorder.start}).
+     *
      * <p>라이브니스 실패·다중 얼굴은 예외가 아니다 — {@code extractForLiveness} 가 이력에 사유만 적고 결과를 돌려준다.
      * 그 뒤 성공 표시(result=true)와 함께 커밋하는 것이 예전 동작이고, 그대로 둔다(사유 + result=true). 예외로 끝나는
      * 경우(FACE_NOT_FOUND, 5xx·타임아웃)만 {@code recordFailure} 로 간다.
      */
     public LivenessResult execute(LivenessInput input) {
-        // 라이브니스 요청 이력 저장 — 먼저 커밋한다
-        FaceHistory faceHistory = faceHistoryRecorder.start(FaceHistory.create(
+        // 라이브니스 요청 이력 — 아직 저장하지 않는다. 끝에서 결과와 함께 한 번 INSERT 한다(UG-363)
+        FaceHistory faceHistory = FaceHistory.create(
                 ActionType.EXTRACT,
                 "",
                 input.transactionUuid(),
                 input.clientId(),
                 true,
-                true));
+                true);
 
         try {
             // 라이브니스 요청

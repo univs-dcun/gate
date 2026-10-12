@@ -1,6 +1,9 @@
 package ai.univs.gate.shared.exception;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,7 +28,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 풀 고갈·하위의 "잠시 뒤 다시" 가 503 + PJ-006 + Retry-After 로 나간다 (UG-359).
+ * 풀 고갈·하위의 "잠시 뒤 다시" 가 503 + PJ-006 + Retry-After 로 나간다 (UG-359). 요청이 하위에 닿지 않은
+ * 실패도 같다 (UG-362).
  *
  * <p>핸들러 메서드를 직접 부르지 않고 MockMvc 로 HTTP 응답을 본다. 상태 코드가 {@code @ResponseStatus} 가
  * 아니라 {@code ResponseEntity} 로 정해지므로, 실제 응답에 무엇이 실리는지는 디스패처를 거쳐야 확인된다.
@@ -85,6 +89,37 @@ class TemporarilyUnavailableResponseTest {
         @GetMapping("/upstream/503")
         void upstreamPlain503() {
             throw new RemoteCallException(503, "FaceClient#identify()", null);
+        }
+
+        @GetMapping("/upstream/no-instance")
+        void upstreamNoInstance() {
+            // UG-362: 로드밸런서에 인스턴스가 없어 요청을 보내지도 않았다 (CommonErrorDecoder)
+            throw RemoteCallException.notDelivered(503, "FaceClient#identify()", null);
+        }
+
+        @GetMapping("/upstream/refused")
+        void upstreamRefused() {
+            // UG-362: 연결 거부 (RemoteCalls.of)
+            throw RemoteCallException.notDelivered(RemoteCallException.NO_RESPONSE, "face.identify",
+                    new java.net.ConnectException("Connection refused"));
+        }
+
+        @GetMapping("/upstream/read-timeout")
+        void upstreamReadTimeout() {
+            // 결과를 모른다 — 하위가 등록을 끝냈을 수 있다
+            throw new RemoteCallException(RemoteCallException.NO_RESPONSE, "face.createFace",
+                    new java.net.SocketTimeoutException("Read timed out"));
+        }
+
+        @GetMapping("/upstream/internal-error")
+        void upstreamInternalError() {
+            // face 가 자기 5xx 를 400 + INTERNAL_SERVER_ERROR 로 감싸 보낸 모양 (scaling 의 "gate 400 SWAGGER-005")
+            throw new CustomFeignException("SWAGGER-005", "INTERNAL_SERVER_ERROR", "match-server 호출 실패");
+        }
+
+        @GetMapping("/upstream/business")
+        void upstreamBusiness() {
+            throw new CustomFeignException("MATCH-003", "FACE_ID_NOT_FOUND", "face id not found");
         }
     }
 
@@ -168,6 +203,56 @@ class TemporarilyUnavailableResponseTest {
                 .andExpect(jsonPath("$.errors.type").value("TEMPORARILY_UNAVAILABLE"))
                 .andExpect(jsonPath("$.errors.message").value(
                         "The service is temporarily unable to handle the request. Please try again shortly."));
+    }
+
+    @Test
+    @DisplayName("UG-362: 로드밸런서에 인스턴스가 없으면 503 + PJ-006 + Retry-After — 요청이 하위에 닿지 않았다")
+    void 인스턴스_없음은_503() throws Exception {
+        mvc.perform(get("/upstream/no-instance").locale(Locale.KOREAN))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.errors.code").value("PJ-006"))
+                .andExpect(jsonPath("$.errors.type").value("TEMPORARILY_UNAVAILABLE"));
+    }
+
+    @Test
+    @DisplayName("UG-362: 연결 거부도 503 + PJ-006 + Retry-After")
+    void 연결_거부는_503() throws Exception {
+        mvc.perform(get("/upstream/refused").locale(Locale.ENGLISH))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().string("Retry-After", "1"))
+                .andExpect(jsonPath("$.errors.code").value("PJ-006"));
+    }
+
+    @Test
+    @DisplayName("UG-362 대조군: 읽기 타임아웃은 결과를 모르므로 400 PJ-005 이고 Retry-After 가 없다")
+    void 읽기_타임아웃은_400() throws Exception {
+        mvc.perform(get("/upstream/read-timeout").locale(Locale.KOREAN))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().doesNotExist("Retry-After"))
+                .andExpect(jsonPath("$.errors.code").value("PJ-005"));
+    }
+
+    @Test
+    @DisplayName("UG-362: 하위가 자기 오류라고 알린 400 은 gate 의 PJ-005 로 내보낸다 — 하위 코드·메시지를 드러내지 않는다")
+    void 하위_내부_오류_코드는_감춘다() throws Exception {
+        mvc.perform(get("/upstream/internal-error").locale(Locale.KOREAN))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().doesNotExist("Retry-After"))
+                .andExpect(jsonPath("$.errors.code").value("PJ-005"))
+                .andExpect(jsonPath("$.errors.type").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(content().string(not(containsString("SWAGGER"))))
+                .andExpect(content().string(not(containsString("match-server"))));
+    }
+
+    @Test
+    @DisplayName("UG-362 대조군: 하위의 업무 오류는 예전처럼 code·type·message 를 그대로 전한다")
+    void 하위_업무_오류는_그대로() throws Exception {
+        mvc.perform(get("/upstream/business").locale(Locale.KOREAN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.code").value("MATCH-003"))
+                .andExpect(jsonPath("$.errors.type").value("FACE_ID_NOT_FOUND"))
+                .andExpect(jsonPath("$.errors.message").value("face id not found"));
     }
 
     @Test
