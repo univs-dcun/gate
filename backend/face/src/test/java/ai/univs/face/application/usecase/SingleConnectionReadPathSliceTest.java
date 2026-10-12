@@ -25,11 +25,15 @@ import ai.univs.face.shared.feign.dto.FeignResponseApi;
 import ai.univs.face.shared.locale.MessageService;
 import com.zaxxer.hikari.HikariDataSource;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import java.sql.Connection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.sql.DataSource;
+import org.hibernate.SessionFactory;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +42,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +64,8 @@ import static org.mockito.BDDMockito.given;
  *   <li>원격 호출 목(fxp 추출·match) 안에서 {@code isActualTransactionActive()} 가 false 인가 (티켓 완료 기준)
  *   <li>그 안에서 풀의 유일한 커넥션을 <b>빌릴 수 있는가</b> — 호출자가 쥐고 있으면 못 빌린다
  *   <li>풀이 하나여도 끝까지 도는가 — 요청이 커넥션 둘을 동시에 요구하면 {@code connectionTimeout} 뒤 실패한다
+ *   <li>UG-363: 요청 하나가 <b>트랜잭션 하나·INSERT 만</b> 쓰는가 — Hibernate 통계로 센다. 예전(UG-358 1단계)은 시작
+ *       커밋 + 결과 커밋(merge 의 PK SELECT, UPDATE)으로 트랜잭션 둘이었다
  * </ul>
  *
  * <p>트랜잭션 없이 돈다({@code NOT_SUPPORTED}). {@code @DataJpaTest} 의 기본 테스트 트랜잭션은 그 자체로 커넥션을
@@ -77,6 +84,11 @@ import static org.mockito.BDDMockito.given;
         "spring.datasource.hikari.minimum-idle=1",
         // Hikari 하한이 250ms 다. 정상 경로는 기다릴 일이 없으므로 1초면 느린 CI 에서도 오판하지 않는다.
         "spring.datasource.hikari.connection-timeout=1000",
+        // UG-363: 요청 하나의 트랜잭션·SQL 수를 센다
+        "spring.jpa.properties.hibernate.generate_statistics=true",
+        // UG-363 반박 리뷰 L1: 실제로 나간 SQL 을 문장 단위로 센다 — 엔티티 통계는 「행이 없는 SELECT」를 세지 못한다
+        "spring.jpa.properties.hibernate.session_factory.statement_inspector="
+                + "ai.univs.face.application.usecase.SingleConnectionReadPathSliceTest$SqlRecorder",
         "face.match.threshold=0.85"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -97,6 +109,7 @@ class SingleConnectionReadPathSliceTest {
     @Autowired private DataSource dataSource;
     @Autowired private EntityManager em;
     @Autowired private TransactionTemplate tx;
+    @Autowired private EntityManagerFactory emf;
 
     /** 원격 호출마다 남긴 관찰: 그 순간 트랜잭션이 있었는가, 커넥션을 빌렸는가. */
     private final List<String> 원격_관찰 = new CopyOnWriteArrayList<>();
@@ -104,6 +117,58 @@ class SingleConnectionReadPathSliceTest {
     @BeforeEach
     void setUp() {
         원격_관찰.clear();
+        통계().clear();
+        SqlRecorder.SQL.clear();
+    }
+
+    /**
+     * Hibernate 가 준비한 SQL 을 그대로 적는다 (UG-363 반박 리뷰 L1).
+     *
+     * <p>{@code getEntityLoadCount()}·{@code getEntityFetchCount()} 는 SELECT 가 <b>행을 읽어 엔티티를 만들 때만</b>
+     * 오른다. 롤백된 id 로 merge 하면 PK SELECT 가 나가지만 행이 없으니 두 값 모두 0 이다 — 「조회 0」으로는 그 회귀를
+     * 잡지 못한다. 그래서 문장 자체를 센다.
+     */
+    public static class SqlRecorder implements StatementInspector {
+        static final List<String> SQL = new CopyOnWriteArrayList<>();
+
+        @Override
+        public String inspect(String sql) {
+            SQL.add(String.join(" ", sql.strip().toLowerCase().split("\\s+")));   // 줄바꿈 서식이 켜져도 같은 모양
+            return sql;
+        }
+    }
+
+    /** 나간 SQL 을 「동사 + 테이블」로 줄인다 — 예: {@code insert face_history}, {@code select face_history}. */
+    private static List<String> 나간_SQL() {
+        return SqlRecorder.SQL.stream().map(sql -> {
+            String[] w = sql.split("\\s+");
+            return switch (w[0]) {
+                case "insert" -> "insert " + w[2];
+                case "update" -> "update " + w[1];
+                case "delete" -> "delete " + w[2];
+                case "select" -> "select " + sql.substring(sql.indexOf(" from ") + 6).split("\\s+")[0];
+                default -> w[0];
+            };
+        }).toList();
+    }
+
+    private Statistics 통계() {
+        return emf.unwrap(SessionFactory.class).getStatistics();
+    }
+
+    /**
+     * 유스케이스가 쓴 트랜잭션·SQL — 검증용 조회(이력·행수)를 부르기 <b>전에</b> 읽는다.
+     *
+     * <p>{@code 조회} 는 실제로 나간 SELECT 문장 수다({@link SqlRecorder}). 엔티티 통계(load·fetch)는 행이 없는 SELECT 를
+     * 세지 못해 쓰지 않는다(반박 리뷰 L1).
+     */
+    private record 쓰기_통계(long 트랜잭션, long SQL, long INSERT, long UPDATE, long 조회) {
+    }
+
+    private 쓰기_통계 쓰기_통계() {
+        Statistics s = 통계();
+        return new 쓰기_통계(s.getSuccessfulTransactionCount(), s.getPrepareStatementCount(), s.getEntityInsertCount(),
+                s.getEntityUpdateCount(), 나간_SQL().stream().filter(sql -> sql.startsWith("select")).count());
     }
 
     /** 원격 호출 목의 본체 — 트랜잭션 여부를 적고, 풀에 남는 커넥션이 있는지 빌려 본다. */
@@ -180,6 +245,8 @@ class SingleConnectionReadPathSliceTest {
                 "branch-ug358", new MockMultipartFile("image", new byte[] {1}), txn, CLIENT, true, true));
 
         assertThat(result.result()).isTrue();
+        // UG-363: 트랜잭션 하나에 INSERT 셋(이력·라이브니스·결과) — 시작 커밋도, merge 의 사전 SELECT·UPDATE 도 없다
+        assertThat(쓰기_통계()).isEqualTo(new 쓰기_통계(1, 3, 3, 0, 0));
         assertThat(원격_관찰).containsExactly(
                 "fxp:트랜잭션=false,커넥션=빌림",
                 "match:트랜잭션=false,커넥션=빌림");
@@ -192,8 +259,8 @@ class SingleConnectionReadPathSliceTest {
     }
 
     /**
-     * 예전에는 {@code UpstreamCallException} 이 noRollbackFor 에 없어 이력 행이 통째로 롤백됐다. 이제 시작이 먼저
-     * 커밋되므로 행이 남고, 사유가 비지 않는다(UG-280 교훈).
+     * 예전에는 {@code UpstreamCallException} 이 noRollbackFor 에 없어 이력 행이 통째로 롤백됐다. 이제 실패 기록이 별도
+     * 트랜잭션으로 사유와 함께 INSERT 하므로 행이 남는다(UG-280 교훈, UG-363 부터 시작 행 없이 한 번에).
      */
     @Test
     @DisplayName("match 5xx — 이력 행이 남고 사유는 INTERNAL_SERVER_ERROR (예전에는 행이 롤백으로 사라졌다)")
@@ -209,6 +276,7 @@ class SingleConnectionReadPathSliceTest {
                 "branch-ug358", new MockMultipartFile("image", new byte[] {1}), txn, CLIENT, false, false)))
                 .isInstanceOf(UpstreamCallException.class);
 
+        assertThat(쓰기_통계()).as("UG-363: 실패 기록 트랜잭션 하나에 이력 INSERT 하나").isEqualTo(new 쓰기_통계(1, 1, 1, 0, 0));
         assertThat(원격_관찰).containsExactly(
                 "fxp:트랜잭션=false,커넥션=빌림",
                 "match:트랜잭션=false,커넥션=빌림");
@@ -231,9 +299,48 @@ class SingleConnectionReadPathSliceTest {
                 new VerifyByDescriptorInput("d1", "d2", txn, CLIENT));
 
         assertThat(result.result()).isFalse();
+        assertThat(쓰기_통계()).as("UG-363: 트랜잭션 하나에 INSERT 둘(이력·결과)").isEqualTo(new 쓰기_통계(1, 2, 2, 0, 0));
         assertThat(원격_관찰).containsExactly("match:트랜잭션=false,커넥션=빌림");
         FaceHistory history = 이력(txn);
         assertThat(history.getFailureMessage()).isEqualTo("NOT_MATCH");
         assertThat(행수(FaceMatch.class, txn)).isEqualTo(1);
+    }
+
+    /**
+     * UG-363: 결과 커밋이 DB 에서 실패하면(여기서는 결과 행의 faceId 가 컬럼보다 길다) 그 트랜잭션은 통째로 롤백되고, 실패
+     * 기록이 이력을 <b>다시 INSERT</b> 한다. 롤백된 INSERT 가 객체에 남긴 id 를 지우지 않으면 실패 기록이 merge 로 가서
+     * PK SELECT 가 한 번 더 돈다(Hibernate 6.6+ 에서는 행이 없어 실패한다).
+     *
+     * <p>그것을 막는 것은 <b>나간 문장 목록</b>이다(반박 리뷰 L1). 예전 판의 「조회 0」은 엔티티 통계(load·fetch)였는데,
+     * merge 의 PK SELECT 가 행을 못 찾으면 그 값이 오르지 않아 이 회귀를 보지 못했다. {@code discardRolledBackId} 호출을
+     * 빼는 변이로 이 단언이 실패하는 것을 확인했다.
+     */
+    @Test
+    @DisplayName("UG-363 결과 커밋이 DB 에서 실패 — 롤백 뒤 실패 기록이 이력·라이브니스를 다시 INSERT 한다 (merge·조회 없음)")
+    void 결과_커밋_실패면_실패_기록이_다시_INSERT() {
+        fxp_추출_성공();
+        given(matchFeign.identify(any())).willReturn(
+                new FeignResponseApi<>(true, new IdentifyFeignResponseDTO("f".repeat(300), "0.93"), null));
+        String txn = UUID.randomUUID().toString();
+
+        assertThatThrownBy(() -> identifyUseCase.execute(new IdentifyInput(
+                "branch-ug363", new MockMultipartFile("image", new byte[] {1}), txn, CLIENT, true, true)))
+                .isInstanceOf(DataAccessException.class);
+
+        // 검증용 조회(이력·행수)보다 먼저 읽는다
+        List<String> sql = 나간_SQL();
+        쓰기_통계 쓰기 = 쓰기_통계();
+        assertThat(sql).as("결과 커밋(롤백) 뒤 실패 기록이 INSERT 만 한다 — 롤백된 id 로 merge 하면 select face_history 가 낀다")
+                .containsExactly(
+                        "insert face_history", "insert face_liveness", "insert face_match",   // 결과 커밋 — face_match 에서 실패
+                        "insert face_history", "insert face_liveness");                      // 실패 기록
+        assertThat(쓰기.트랜잭션()).as("실패 기록만 커밋된다").isEqualTo(1);
+        assertThat(쓰기.UPDATE()).isZero();
+        assertThat(쓰기.조회()).as("롤백된 id 로 merge 하지 않는다").isZero();
+        FaceHistory history = 이력(txn);
+        assertThat(history.isResult()).isFalse();
+        assertThat(history.getFailureMessage()).isEqualTo("INTERNAL_SERVER_ERROR");
+        assertThat(행수(FaceMatch.class, txn)).isZero();
+        assertThat(행수(FaceLiveness.class, txn)).as("라이브니스 행은 실패 기록과 함께 남는다").isEqualTo(1);
     }
 }

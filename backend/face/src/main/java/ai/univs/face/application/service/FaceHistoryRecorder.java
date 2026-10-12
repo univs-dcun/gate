@@ -23,20 +23,55 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * <p>예전 유스케이스는 메서드 전체가 트랜잭션이라 fxp 추출(이미지 업로드)과 match 호출이 끝날 때까지 DB 커넥션을
  * 쥐었다. 동시 32 에서 face 풀(10)이 active 10/10, 대기 50여 건으로 막혔다(UP-6 측정). 이제 유스케이스는 트랜잭션이
- * 없고, 이 빈의 메서드만 각자 짧게 커밋한다.
- * <ol>
- *   <li>{@link #start} — 요청 이력을 먼저 커밋한다. 원격 호출이 어떻게 끝나도 행이 남는다.
- *   <li>원격 호출 — 트랜잭션 없이 한다.
- *   <li>{@link #finish} — 결과를 커밋한다. 예외로 끝나면 {@link #recordFailure} 가 사유를 채워 남긴다.
- * </ol>
+ * 없고, 이 빈의 메서드만 각자 짧게 커밋한다. 원격 호출은 트랜잭션 없이 한다.
+ *
+ * <p><b>경로마다 이력을 쓰는 횟수가 다르다 (UG-363).</b>
+ * <ul>
+ *   <li><b>읽기(1:1·1:N 6개, 라이브니스)</b> — 시작 행을 먼저 커밋하지 않는다. 메모리에서 만든 이력을 {@link #finish}
+ *       (결과 행과 한 트랜잭션) 또는 {@link #recordFailure}(예외 사유)가 <b>한 번 INSERT</b> 한다. 요청 하나가 커밋 하나,
+ *       merge 의 사전 조회(PK SELECT)도 없다. UG-358 1단계가 커밋을 둘로 늘려 동시 8 p50 이 15~20% 늘었다(scaling
+ *       측정, 1:1 32→38ms, 1:N 37→45ms) — 그 몫을 되돌린다.
+ *   <li><b>쓰기(등록·수정·삭제)와 추출</b> — 예전처럼 {@link #start} 가 시작 행을 먼저 커밋하고, 결과는 merge 로 갱신한다.
+ * </ul>
+ *
+ * <p><b>읽기에서 시작 행을 뺄 수 있는 이유.</b> 원격 호출 도중 face_history 행을 읽는 곳이 없다 — 저장소에 조회 메서드가
+ * 없고, 정리·대사 작업도, 이력 id 를 쓰는 로그·응답도 없다. face 는 gate 만 부르고(게이트웨이 직접 노출은 UG-275 에서
+ * 제거), gate 는 같은 transactionUuid 로 <b>자기 시작 행을 원격 호출 전에 커밋한다</b>(gate {@code HistoryRecorder.start}).
+ * 그래서 프로세스가 원격 호출 도중 죽어도(kill -9·OOM) 요청 흔적은 gate 에 남는다 — face 쪽 행만 없다. 예외로 끝나는
+ * 실패는 지금처럼 {@link #recordFailure} 가 남기므로 UG-280 의 「어떤 예외든 행이 남는다」는 그대로다.
+ *
+ * <p><b>읽기에서 약해진 보장 — 알고 받아들인 것 (UG-363 반박 리뷰 M1·L2).</b>
+ * <ul>
+ *   <li><b>M1 — DB 장애의 503 이 늦게 나가고, 그동안 fxp·match 를 쓴다.</b> 예전에는 face 자기 풀이 고갈되거나 DB 가 멈추면
+ *       {@link #start} 가 원격 호출 <b>전에</b> 빨리 실패했다(connection-timeout 약 2초 / socketTimeout 3초). 이제는 원격
+ *       호출이 먼저 돌고 실패가 {@link #finish} 에서 드러난다 — face 의 503 은 「원격 시간 + 2~3초」 뒤에 나가고, 장애 동안
+ *       들어온 요청도 fxp·match 를 소비한다. 받아들인 이유:
+ *       <ol>
+ *         <li>평상시 경합에서 요청당 커넥션 획득을 둘에서 하나로 줄이는 것이 이 변경의 목적이다. 원격 호출 전 사전 점검
+ *             (예: Hikari {@code threadsAwaitingConnection > 0} 이면 503)은 정상 부하도 거절한다 — scaling 측정에서 평상
+ *             부하에서도 face 풀 대기가 14 안팎이었다.
+ *         <li>시간 예산 안이다 — 원격은 최악 1~2초(갤러리 100만 1:N 약 1.2초), 여기에 2~3초를 더해도 gate 의 Feign
+ *             readTimeout 5초(gate-config {@code gate-service.yml}, 예산 근거는 {@code face-service-postgresql.yml}) 안에
+ *             503 이 닿는다.
+ *         <li>공유 DB 가 멈추면 gate 자신의 {@code HistoryRecorder.start}(REQUIRES_NEW, 같은 DB)가 먼저 막혀 face 까지
+ *             오지 않는다. 늦어지는 것은 face 풀만 고갈된 경우다.
+ *       </ol>
+ *   <li><b>L2 — {@code Error}(OOM·StackOverflowError)로 끝난 읽기는 face 행이 없다.</b> 예전에는 사유 없는 시작 행이
+ *       남았다. 유스케이스는 {@code RuntimeException} 만 잡아 {@link #recordFailure} 로 보낸다. JVM 강제 종료와 같은
+ *       이유로 받아들인다 — gate 의 시작 행이 그 요청을 남긴다.
+ * </ul>
+ *
+ * <p><b>쓰기·추출은 바꾸지 않는다.</b> 쓰기는 match 에 반영한 뒤라 시작 행(호출자가 발급한 v2 id)이 고아를 찾는 단서이고,
+ * 추출은 gate 가 자기 이력을 남기지 않아 face 의 시작 행이 유일한 흔적이다.
  *
  * <p><b>전파는 REQUIRED 다(REQUIRES_NEW 아님).</b> 호출자가 트랜잭션 없이 부르는 것이 전제다. 바깥 트랜잭션 안에서
  * REQUIRES_NEW 로 열면 요청 하나가 커넥션 둘을 쥐어, 풀 크기만큼의 동시 요청에서 교착한다(gate UG-336). 유스케이스
  * (1단계 읽기 6개, 2단계 등록·수정·삭제·추출·라이브니스)에 {@code @Transactional} 이 다시 붙지 않는지는
  * {@code UseCaseTransactionGuardTest} 가 막는다.
  *
- * <p>호출 사이의 {@link FaceHistory} 는 준영속이다(open-in-view 끔). {@code save} 가 merge 로 갱신한다 — merge 의
- * 사전 조회가 PK 한 번이 되도록 FaceHistory 의 역방향 EAGER 연관을 지웠다(반박 리뷰 H1).
+ * <p>쓰기·추출의 {@link FaceHistory} 는 호출 사이에 준영속이다(open-in-view 끔). {@code save} 가 merge 로 갱신한다 —
+ * merge 의 사전 조회가 PK 한 번이 되도록 FaceHistory 의 역방향 EAGER 연관을 지웠다(반박 리뷰 H1). 읽기의 이력은 id 가
+ * 없으므로 같은 {@code save} 가 persist(INSERT)로 간다.
  */
 @Slf4j
 @Service
@@ -48,16 +83,24 @@ public class FaceHistoryRecorder {
     private final FaceLivenessJpaRepository faceLivenessRepository;
     private final TransactionTemplate transactionTemplate;
 
-    /** 요청 이력을 커밋하고 저장된 것을 돌려준다 — 이후 단계는 돌려받은 것을 쓴다. */
+    /**
+     * 요청 이력을 커밋하고 저장된 것을 돌려준다 — 이후 단계는 돌려받은 것을 쓴다.
+     *
+     * <p>쓰기(등록·수정·삭제)와 추출만 쓴다. 읽기는 부르지 않는다(UG-363) — 클래스 설명 참고.
+     */
     @Transactional
     public FaceHistory start(FaceHistory faceHistory) {
         return faceHistoryRepository.save(faceHistory);
     }
 
     /**
-     * 결과를 한 번에 커밋한다 — 매칭 결과 행(있으면)과 이력의 성공·실패 상태.
+     * 결과를 한 번에 커밋한다 — 이력의 성공·실패 상태와 매칭 결과 행(있으면), 붙여 둔 라이브니스 행.
      *
      * <p>임계치 미달(NOT_MATCH)도 여기로 온다. 매칭 결과 행은 성공·미달 모두 남기는 것이 예전 동작이다.
+     *
+     * <p><b>이력을 먼저 저장한다 (UG-363).</b> 읽기 경로의 이력은 아직 행이 없다 — IDENTITY 라 persist 가 곧바로 INSERT 하고
+     * id 를 받는다. 결과·라이브니스 행은 그 id 를 FK 로 쓰므로 뒤에 넣는다(먼저 넣으면 저장 안 된 이력을 가리킨다).
+     * 쓰기·추출의 준영속 이력은 merge 라 순서와 무관하다.
      *
      * <p>{@code @Transactional} 대신 {@link TransactionTemplate} 을 쓰는 이유: 커밋 실패까지 여기서 받아야 한다.
      * 선언형이면 커밋은 프록시가 메서드 밖에서 하므로 잡을 수 없다. 실패하면 이력을 「결과 미기록(result=false) +
@@ -68,15 +111,17 @@ public class FaceHistoryRecorder {
      * faceId 는 지우지 않는다 — 등록이면 match 가 준 id 가 실패 이력에 남아 운영자가 고아를 찾을 수 있다. 풀 고갈이면
      * {@link #recordFailure} 가 저장을 건너뛰므로, 매처가 발급한 id(v1)는 행에 남지 않는다(호출자가 발급한 v2 id 는 시작
      * 행에 이미 있다) — 그래서 여기서 로그로도 남긴다.
+     *
+     * <p><b>읽기 경로에서는 DB 장애가 여기서 처음 드러난다 (UG-363 반박 리뷰 M1).</b> 시작 커밋이 없으므로 풀 고갈·DB 멈춤은
+     * fxp·match 호출을 마친 뒤 이 커밋에서 실패한다 — 503 이 「원격 시간 + 2~3초」 뒤에 나간다. 받아들인 이유는 클래스 설명.
      */
     public void finish(FaceHistory faceHistory, FaceMatch faceMatch) {
         try {
-            transactionTemplate.executeWithoutResult(status -> {
+            commit(faceHistory, () -> {
+                faceHistoryRepository.save(faceHistory);
                 savePendingLiveness(faceHistory);
                 if (faceMatch != null) faceMatchRepository.save(faceMatch);
-                faceHistoryRepository.save(faceHistory);
             });
-            faceHistory.clearPendingLiveness();
         } catch (RuntimeException e) {
             faceHistory.failUnrecorded(ErrorType.INTERNAL_SERVER_ERROR.name(), faceHistory.getModifiedBy());
             if (isRemoteWrite(faceHistory.getType())) {
@@ -88,6 +133,31 @@ public class FaceHistoryRecorder {
         }
     }
 
+    /**
+     * 한 트랜잭션으로 커밋하고, 붙여 둔 라이브니스는 커밋되면 비운다 — 같은 행을 두 번 넣지 않게.
+     *
+     * <p><b>롤백되면 그 트랜잭션이 준 id 를 지운다 (UG-363).</b> IDENTITY 는 INSERT 때 id 를 객체에 써 두고, 롤백은 객체를
+     * 되돌리지 않는다. 그대로 두면 다음 저장({@link #recordFailure})이 그 id 로 merge 를 시도한다 — 사전 조회가 한 번 더
+     * 돌고, 행이 없으니 Hibernate 6.6+ 에서는 실패한다(이전 판에서는 새 id 로 다시 넣는다). 지우면 다시 persist(INSERT)
+     * 한다. 이 트랜잭션 전에 이미 커밋돼 있던 이력(쓰기·추출의 시작 행)의 id 는 그대로 둔다. 라이브니스 행은 커밋된 적이
+     * 없으므로(커밋되면 비운다) 늘 지운다.
+     *
+     * <p>알려진 한계: 커밋은 됐는데 그 응답만 잃은 경우(COMMIT 직후 연결 끊김) 읽기 경로는 행이 둘(결과·실패)이 될 수 있다 —
+     * 예전에는 merge 가 같은 행을 실패로 덮었다. 드물고, 응답 시간 초과는 {@link #recordFailure} 가 저장을 건너뛰므로(UG-367)
+     * 대개 해당하지 않는다. 같은 transactionUuid 라 묶어 볼 수 있다.
+     */
+    private void commit(FaceHistory faceHistory, Runnable writes) {
+        boolean newHistory = faceHistory.getId() == null;
+        try {
+            transactionTemplate.executeWithoutResult(status -> writes.run());
+        } catch (RuntimeException e) {
+            if (newHistory) faceHistory.discardRolledBackId();
+            if (faceHistory.getPendingLiveness() != null) faceHistory.getPendingLiveness().discardRolledBackId();
+            throw e;
+        }
+        faceHistory.clearPendingLiveness();
+    }
+
     private static boolean isRemoteWrite(ActionType type) {
         return type == ActionType.ADD || type == ActionType.UPDATE || type == ActionType.REMOVE;
     }
@@ -96,8 +166,15 @@ public class FaceHistoryRecorder {
      * 예외로 끝난 요청의 이력을 남긴다 — 실패 사유가 비어 있으면 채운다 (UG-280 교훈).
      *
      * <p>예전에는 fxp·match 의 5xx·타임아웃·연결 실패({@code UpstreamCallException}), 빈 응답의 NPE 같은 예외가
-     * noRollbackFor 에 없어 <b>이력 행 자체가 롤백으로 사라졌다.</b> 이제 시작 행이 이미 커밋돼 있으므로 사유를
-     * 채워 남긴다. 사유를 이미 적은 실패(FACE_NOT_FOUND, 라이브니스, match 의 오류 응답, 결과 커밋 실패)는 그대로 둔다.
+     * noRollbackFor 에 없어 <b>이력 행 자체가 롤백으로 사라졌다.</b> 이제 사유를 채워 별도 트랜잭션으로 남긴다 — 쓰기·추출은
+     * 커밋된 시작 행을 갱신(merge)하고, 읽기는 이때 처음 INSERT 한다(UG-363). 사유를 이미 적은 실패(FACE_NOT_FOUND,
+     * 라이브니스, match 의 오류 응답, 결과 커밋 실패)는 그대로 둔다.
+     *
+     * <p>풀 고갈·DB 응답 시간 초과로 실패하면 저장하지 않는다(UG-359·UG-367). 쓰기·추출은 시작 행이 사유 없이 남고,
+     * 읽기는 face 쪽 행이 없다 — gate 의 시작 행·실패 전이가 그 요청을 남긴다.
+     *
+     * <p>{@code Error}(OOM·StackOverflowError)는 여기로 오지 않는다 — 읽기는 face 행이 없고(예전에는 사유 없는 시작 행),
+     * gate 의 시작 행이 남는다(UG-363 반박 리뷰 L2, 클래스 설명).
      *
      * <p>이 기록이 실패해도(DB 장애) 원래 예외를 가리지 않는다 — 억제된 예외로 붙이고 돌아간다.
      */
@@ -126,16 +203,16 @@ public class FaceHistoryRecorder {
         }
         try {
             // 붙여 둔 라이브니스 결과(라이브니스 실패 -777 등)도 이력과 한 트랜잭션으로 남긴다 — 예전에도 이 경우 행이 남았다.
-            transactionTemplate.executeWithoutResult(status -> {
-                savePendingLiveness(faceHistory);
+            // 이력이 먼저다 — 읽기 경로는 여기서 처음 INSERT 하고, 라이브니스 행이 그 id 를 FK 로 쓴다(UG-363).
+            commit(faceHistory, () -> {
                 faceHistoryRepository.save(faceHistory);
+                savePendingLiveness(faceHistory);
             });
-            faceHistory.clearPendingLiveness();
         } catch (RuntimeException recordError) {
             cause.addSuppressed(recordError);
             // 2단계 델타 리뷰 L-1·L-2: 라이브니스 행 자체가 실패의 원인일 수 있다(fxp 가 NOT NULL 필드를 빠뜨림 — 이제 그
-            // insert 는 match 등록 뒤 결과 커밋에서 난다). 또 결과 커밋 롤백 뒤 남은 IDENTITY id 때문에 merge 가 실패할 수도
-            // 있다(Hibernate 6.6+). 어느 쪽이든 사유를 잃지 않게 이력만 한 번 더 남긴다 — 라이브니스 행은 포기한다.
+            // insert 는 match 등록 뒤 결과 커밋에서 난다). 사유를 잃지 않게 이력만 한 번 더 남긴다 — 라이브니스 행은 포기한다.
+            // 롤백이 남긴 IDENTITY id 는 commit 이 지웠으므로 읽기 경로의 이력은 다시 INSERT 된다(UG-363).
             faceHistory.clearPendingLiveness();
             try {
                 faceHistoryRepository.save(faceHistory);

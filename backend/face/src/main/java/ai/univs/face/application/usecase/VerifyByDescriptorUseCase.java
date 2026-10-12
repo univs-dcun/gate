@@ -26,18 +26,21 @@ public class VerifyByDescriptorUseCase {
     private final SimilarityParser similarityParser;
 
     /**
-     * 트랜잭션이 없다 (UG-358). 이력 시작·결과만 {@link FaceHistoryRecorder} 가 짧게 커밋하고, 원격 호출 동안에는
-     * DB 커넥션을 쥐지 않는다.
+     * 트랜잭션이 없다 (UG-358). 원격 호출 동안에는 DB 커넥션을 쥐지 않는다.
+     *
+     * <p>이력은 <b>끝에서 한 번만</b> 쓴다 (UG-363). 결과는 {@link FaceHistoryRecorder#finish} 가 결과 행과 한 트랜잭션으로,
+     * 예외는 {@link FaceHistoryRecorder#recordFailure} 가 따로 INSERT 한다 — 시작 행을 먼저 커밋하지 않는다. 이 요청의
+     * 시작 행은 gate 가 같은 transactionUuid 로 이미 커밋해 둔다(gate {@code HistoryRecorder.start}).
      */
     public VerifyByDescriptorResult execute(VerifyByDescriptorInput input) {
-        // 1:1 확인 요청 이력 저장
-        FaceHistory faceHistory = faceHistoryRecorder.start(FaceHistory.create(
+        // 1:1 확인 요청 이력 — 아직 저장하지 않는다. 끝에서 결과와 함께 한 번 INSERT 한다(UG-363)
+        FaceHistory faceHistory = FaceHistory.create(
                 ActionType.MATCH,
                 "",
                 input.transactionUuid(),
                 input.clientId(),
                 false,
-                false));
+                false);
 
         try {
             return verify(input, faceHistory);
