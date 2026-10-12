@@ -3,7 +3,9 @@ package ai.univs.match.infrastructure.persistence;
 import ai.univs.match.infrastructure.persistence.projection.MatchPostgresqlProjection;
 import ai.univs.match.infrastructure.persistence.projection.MatchResultProjection;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 
@@ -79,5 +81,48 @@ public class PostgresqlDescriptorCustomRepositoryImpl implements DescriptorCusto
                         .getResultList();
 
         return projections.stream().map(MatchResultProjection::new).toList();
+    }
+
+    /** UG-374. {@code FOR NO KEY UPDATE} 인 이유는 {@link DescriptorCustomRepository#lockBranchForRecheck} 참고. */
+    @Override
+    public void lockBranchForRecheck(Long branchId) {
+        em.createNativeQuery("SELECT branch_id FROM branch WHERE branch_id = :branchId FOR NO KEY UPDATE")
+                .setParameter("branchId", branchId)
+                .getResultList();
+    }
+
+    /** UG-374. 모양은 {@link #oneToManyMatch} 에 최근·버전·자기 제외 조건을 더한 것이다. */
+    @Override
+    public Optional<MatchResultProjection> nearestRecent(Long branchId,
+                                                         Long excludeDescriptorId,
+                                                         LocalDateTime since,
+                                                         int descriptorVersion,
+                                                         byte[] descriptorBody,
+                                                         int version) {
+        String sql = """
+            SELECT
+                d.face_id AS faceId,
+                CAST(vlmatch(:descriptorBody, d.descriptor_body, :version) AS double precision) AS distance
+            FROM descriptor d
+            WHERE d.branch_id = :branchId
+              AND d.created_at >= :since
+              AND d.descriptor_id <> :excludeDescriptorId
+              AND d.descriptor_version = :descriptorVersion
+            ORDER BY distance ASC, d.face_id ASC
+            LIMIT 1
+        """;
+
+        @SuppressWarnings("unchecked")
+        List<MatchPostgresqlProjection> projections =
+                em.createNativeQuery(sql, MatchPostgresqlProjection.class)
+                        .setParameter("branchId", branchId)
+                        .setParameter("since", since)
+                        .setParameter("excludeDescriptorId", excludeDescriptorId)
+                        .setParameter("descriptorVersion", descriptorVersion)
+                        .setParameter("descriptorBody", descriptorBody)
+                        .setParameter("version", version)
+                        .getResultList();
+
+        return projections.stream().findFirst().map(MatchResultProjection::new);
     }
 }

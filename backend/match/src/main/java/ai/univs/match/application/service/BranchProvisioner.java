@@ -1,6 +1,7 @@
 package ai.univs.match.application.service;
 
 import ai.univs.match.domain.entity.Branch;
+import ai.univs.match.infrastructure.persistence.BranchCustomRepository;
 import ai.univs.match.infrastructure.persistence.BranchRepository;
 import ai.univs.match.infrastructure.persistence.UniqueViolation;
 import ai.univs.match.shared.exception.CustomFaceMatcherException;
@@ -48,22 +49,26 @@ import java.util.Optional;
  *
  * <p>Oracle 은 제약 위반에서 트랜잭션을 중단시키지 않는다(문장 단위 롤백). 같은 경로로 문제없이 동작한다.
  *
- * <p><b>경합 ERROR 줄 — 장애가 아니다.</b> 진 쪽 INSERT 는 예외가 여기 오기 전에 Hibernate {@code SqlExceptionHelper} 가
- * ERROR 로 {@code duplicate key value violates unique constraint "uk_branch_branch_name"} 을 한 줄 남긴다(PostgreSQL 문구,
- * 바로 앞에 WARN {@code SQLState: 23505} 줄). 요청은 위 「다시 읽기」 로 성공하고, 뒤이어 INFO 「브랜치 동시 생성 경합」 이
- * 찍힌다. 새 브랜치의 첫 등록이 동시에 몰릴 때만 나며, 진 요청 수만큼이다. 수용했다 — 없애려면 PostgreSQL
- * {@code INSERT ... ON CONFLICT DO NOTHING}·Oracle {@code MERGE} 같은 벤더별 SQL 을 따로 둬야 해서 하지 않았다. 당직은 이 줄을
- * 실패로 다루지 않는다 — 같은 요청에 INFO 경합 줄이 뒤따르는지, 이어서 등록 실패가 없는지만 본다.
+ * <p><b>경합 ERROR 줄 (UG-374 에서 없앰).</b> UG-372 에서는 진 쪽 INSERT 가 위반을 받아, 예외가 여기 오기 전에 Hibernate
+ * {@code SqlExceptionHelper} 가 ERROR 를 진 요청마다 한 줄 남겼다(요청은 성공). 이제 생성은 {@link BranchCustomRepository#insertIfAbsent}
+ * — PostgreSQL {@code ON CONFLICT DO NOTHING}, Oracle {@code IGNORE_ROW_ON_DUPKEY_INDEX} 힌트 — 라 이미 있으면 0 건을 넣고
+ * 끝난다. 0 건이면 경합에서 진 것이므로 INFO 「브랜치 동시 생성 경합」을 남기고 다시 읽는다. 실제 PostgreSQL 17·Oracle 23 에서
+ * 새 브랜치 동시 16건에 위반 0 건이었다. 위반을 잡아 다시 읽는 경로는 예외 대비로 남겨 두었다 — 그때만 ERROR 줄이 남는다
+ * (요청은 성공).
  */
 @Slf4j
 @Component
 public class BranchProvisioner {
 
     private final BranchRepository branchRepository;
+    private final BranchCustomRepository branchCustomRepository;
     private final TransactionTemplate createTransaction;
 
-    public BranchProvisioner(BranchRepository branchRepository, PlatformTransactionManager transactionManager) {
+    public BranchProvisioner(BranchRepository branchRepository,
+                             BranchCustomRepository branchCustomRepository,
+                             PlatformTransactionManager transactionManager) {
         this.branchRepository = branchRepository;
+        this.branchCustomRepository = branchCustomRepository;
         this.createTransaction = new TransactionTemplate(transactionManager);
         this.createTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -86,26 +91,24 @@ public class BranchProvisioner {
         }
 
         try {
-            return createTransaction.execute(status -> branchRepository.saveAndFlush(newBranch(branchName)));
+            Integer inserted = createTransaction.execute(
+                    status -> branchCustomRepository.insertIfAbsent(branchName, LocalDateTime.now(ZoneOffset.UTC)));
+            if (inserted == null || inserted == 0) {
+                // 같은 이름을 다른 요청이 먼저 만들고 커밋했다 (PostgreSQL 은 상대가 끝나길 기다린 뒤 0 건으로 끝난다)
+                log.info("브랜치 동시 생성 경합 — 먼저 만든 브랜치를 다시 읽어 이어 간다. branchName={}", branchName);
+            }
         } catch (DataIntegrityViolationException e) {
             if (!UniqueViolation.of(e, UniqueViolation.BRANCH_NAME)) {
                 throw e;
             }
-            // 같은 이름을 다른 요청이 먼저 만들고 커밋했다. 실패한 INSERT 의 트랜잭션은 이미 롤백됐고, 여기는 새 트랜잭션이다.
-            log.info("브랜치 동시 생성 경합 — 먼저 만든 브랜치를 다시 읽어 이어 간다. branchName={}", branchName);
-            return branchRepository.findByBranchName(branchName).orElseThrow(() -> {
-                log.error("브랜치 이름 위반을 받았는데 다시 읽으니 없다. branchName={}", branchName, e);
-                return new CustomFaceMatcherException(ErrorType.INTERNAL_SERVER_ERROR);
-            });
+            // 위반 없는 INSERT 인데도 위반이 났다(예외 대비). 실패한 INSERT 의 트랜잭션은 이미 롤백됐고, 아래는 새 트랜잭션이다.
+            log.info("브랜치 동시 생성 경합(위반) — 먼저 만든 브랜치를 다시 읽어 이어 간다. branchName={}", branchName);
         }
-    }
 
-    private static Branch newBranch(String branchName) {
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        return Branch.builder()
-                .branchName(branchName)
-                .createdAt(now)
-                .modifiedAt(now)
-                .build();
+        // 넣었든 졌든 다시 읽는다 — 네이티브 INSERT 는 엔티티를 돌려주지 않는다. 새 브랜치일 때만 SELECT 가 하나 더 나간다.
+        return branchRepository.findByBranchName(branchName).orElseThrow(() -> {
+            log.error("브랜치를 만들었거나 경합에서 졌는데 다시 읽으니 없다. branchName={}", branchName);
+            return new CustomFaceMatcherException(ErrorType.INTERNAL_SERVER_ERROR);
+        });
     }
 }

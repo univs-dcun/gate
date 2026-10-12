@@ -35,8 +35,11 @@ final class PostgresAbortEmulatingDataSource extends DelegatingDataSource {
     /** 브랜치 이름 조회가 끝날 때마다 실행한다 (커넥션을 쥔 채). */
     volatile Runnable afterBranchSelect = () -> { };
 
-    /** 브랜치 INSERT 가 {@code uk_branch_branch_name} 위반으로 실패한 횟수 — 경합이 실제로 일어났는가. */
+    /** 브랜치 INSERT 가 {@code uk_branch_branch_name} 위반으로 실패한 횟수. UG-374 이후 PostgreSQL 경로에서는 0 이어야 한다. */
     final AtomicInteger branchNameViolations = new AtomicInteger();
+
+    /** 브랜치 INSERT 가 위반 없이 0 건으로 끝난 횟수({@code ON CONFLICT DO NOTHING}) — UG-374 이후 경합이 실제로 일어났는가. */
+    final AtomicInteger branchInsertsSkipped = new AtomicInteger();
 
     /** 중단된 트랜잭션에서 문장을 실행하려 한 횟수 — PostgreSQL 이었으면 25P02. */
     final AtomicInteger rejectedInAbortedTransaction = new AtomicInteger();
@@ -52,6 +55,7 @@ final class PostgresAbortEmulatingDataSource extends DelegatingDataSource {
         beforeBranchInsert.set(null);
         afterBranchSelect = () -> { };
         branchNameViolations.set(0);
+        branchInsertsSkipped.set(0);
         rejectedInAbortedTransaction.set(0);
         silentRollbacks.set(0);
     }
@@ -126,13 +130,15 @@ final class PostgresAbortEmulatingDataSource extends DelegatingDataSource {
             }
             String sql = !preparedSql.isEmpty() ? preparedSql
                     : args != null && args.length > 0 && args[0] instanceof String s ? s : "";
-            String lower = sql.toLowerCase(Locale.ROOT);
+            // 네이티브 쿼리는 텍스트 블록이라 앞에 공백·줄바꿈이 붙는다 (UG-374)
+            String lower = sql.strip().toLowerCase(Locale.ROOT);
             if (state.aborted) {
                 rejectedInAbortedTransaction.incrementAndGet();
                 throw new SQLException(
                         "ERROR: current transaction is aborted, commands ignored until end of transaction block", "25P02");
             }
-            boolean branchInsert = lower.startsWith("insert into branch ") || lower.startsWith("insert into branch(");
+            boolean branchInsert = lower.startsWith("insert into branch ") || lower.startsWith("insert into branch(")
+                    || lower.startsWith("merge into branch ");
             if (branchInsert) {
                 Runnable hook = beforeBranchInsert.getAndSet(null);
                 if (hook != null) {
@@ -143,6 +149,9 @@ final class PostgresAbortEmulatingDataSource extends DelegatingDataSource {
                 Object result = invoke(target, method, args);
                 if (lower.contains(" from branch ") && lower.contains("branch_name")) {
                     afterBranchSelect.run();
+                }
+                if (branchInsert && result instanceof Number n && n.intValue() == 0) {
+                    branchInsertsSkipped.incrementAndGet();
                 }
                 return result;
             } catch (SQLException e) {

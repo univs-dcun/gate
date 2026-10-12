@@ -1,7 +1,9 @@
 package ai.univs.match.infrastructure.persistence;
 
 import ai.univs.match.infrastructure.persistence.projection.MatchResultProjection;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -29,4 +31,30 @@ public interface DescriptorCustomRepository {
      */
     List<MatchResultProjection> oneToManyMatchTopK(
             Long branchId, byte[] requestDescriptor, int version, int limit);
+
+    /**
+     * 커밋 뒤 재검사를 브랜치마다 한 번에 하나씩 돌게 브랜치 행을 잠근다 (UG-374). 트랜잭션이 끝나면 풀린다.
+     *
+     * <p>잠그는 동안 하는 일은 {@link #nearestRecent} 한 번과 (중복이면) 자기 행 삭제뿐이라 짧다. 1:N 중복 검사는 이 잠금
+     * 밖에서 돈다. <b>특징점 INSERT 를 막으면 안 된다.</b> 지금 {@code descriptor.branch_id} 에는 외래키가 없어 INSERT 가
+     * 브랜치 행을 건드리지 않는다 — 어느 잠금이든 INSERT 는 기다리지 않는다(실제 DB 로 확인). 외래키가 생기면 PostgreSQL 의
+     * 자식 INSERT 가 부모 행에 {@code FOR KEY SHARE} 를 걸고, {@code FOR UPDATE} 는 그것과 충돌해 같은 브랜치의 등록이 전부
+     * 이 잠금 뒤에 줄을 선다. 그래서 PostgreSQL 은 미리 {@code FOR NO KEY UPDATE} 로 건다(서로끼리는 충돌, KEY SHARE 와는
+     * 충돌 안 함). Oracle 은 외래키가 있어도 자식 INSERT 가 부모 행을 잠그지 않아 {@code FOR UPDATE} 로 충분하다.
+     */
+    void lockBranchForRecheck(Long branchId);
+
+    /**
+     * 같은 브랜치에서 {@code since} 이후에 저장된 같은 버전 특징점 중 가장 가까운 1건 (UG-374 커밋 뒤 재검사). 자기 자신
+     * ({@code excludeDescriptorId})은 뺀다. 없으면 빈 값.
+     *
+     * <p>{@code (branch_id, created_at)} 인덱스(V6)로 최근 행만 읽는다 — 브랜치 전체를 훑는 {@link #oneToManyMatch} 와
+     * 다르다. 버전이 다른 특징점은 비교하지 않는다 — 추출기가 다르면 거리가 같은 척도가 아니다.
+     */
+    Optional<MatchResultProjection> nearestRecent(Long branchId,
+                                                  Long excludeDescriptorId,
+                                                  LocalDateTime since,
+                                                  int descriptorVersion,
+                                                  byte[] requestDescriptor,
+                                                  int version);
 }
