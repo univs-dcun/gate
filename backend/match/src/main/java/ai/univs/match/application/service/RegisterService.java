@@ -9,7 +9,9 @@ import ai.univs.match.infrastructure.persistence.UniqueViolation;
 import ai.univs.match.shared.exception.CustomFaceMatcherException;
 import ai.univs.match.shared.web.enums.ErrorType;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.persistence.NoResultException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -42,8 +44,11 @@ import java.time.ZoneOffset;
  * 따진다. ② 새 브랜치의 첫 등록이 브랜치 커밋 뒤에 실패하면(이미 등록됨·풀 고갈 등) 빈 브랜치가 남는다. 마지막 특징점을
  * 지운 브랜치와 같은 상태라 다음 등록이 그대로 쓴다.
  *
- * <p>새 브랜치에 첫 등록이 동시에 몰리면 경합에서 진 요청마다 ERROR 로그가 한 줄 남지만 요청은 성공한다 —
- * {@link BranchProvisioner} 의 「경합 ERROR 줄」.
+ *
+ * <p><b>같은 얼굴 동시 등록 (UG-374).</b> 등록 트랜잭션이 커밋된 뒤 {@link RecentDuplicateCheck} 가 같은 브랜치의 최근 특징점과
+ * 한 번 더 비교한다. 같은 얼굴이 보이면 방금 저장한 행을 지우고 MATCH-003 으로 끝낸다 — 응답은 그 뒤에 나가므로 성공 응답을
+ * 받은 등록이 나중에 사라지는 일은 없다. 이것도 별도 트랜잭션이라 커넥션을 동시에 둘 쥐지 않는다(OSIV 면 같은 커넥션을 이어
+ * 쓴다).
  */
 @Slf4j
 @Component
@@ -53,18 +58,21 @@ public class RegisterService {
     private final BranchRepository branchRepository;
     private final DescriptorRepository descriptorRepository;
     private final DuplicateService duplicateService;
+    private final RecentDuplicateCheck recentDuplicateCheck;
     private final TransactionTemplate registerTransaction;
 
     public RegisterService(BranchProvisioner branchProvisioner,
                            BranchRepository branchRepository,
                            DescriptorRepository descriptorRepository,
                            DuplicateService duplicateService,
+                           RecentDuplicateCheck recentDuplicateCheck,
                            PlatformTransactionManager transactionManager
     ) {
         this.branchProvisioner = branchProvisioner;
         this.branchRepository = branchRepository;
         this.descriptorRepository = descriptorRepository;
         this.duplicateService = duplicateService;
+        this.recentDuplicateCheck = recentDuplicateCheck;
         this.registerTransaction = new TransactionTemplate(transactionManager);
     }
 
@@ -77,10 +85,37 @@ public class RegisterService {
 
         Long branchId = branchProvisioner.findOrCreate(branchName).getId();
 
-        registerTransaction.executeWithoutResult(status -> save(branchId, faceId, descriptorDetail));
+        Long descriptorId = registerTransaction.execute(status -> save(branchId, faceId, descriptorDetail));
+
+        // 커밋 뒤 — 동시에 들어온 같은 얼굴이 있으면 방금 저장한 행을 물린다 (UG-374)
+        if (recentDuplicateCheck.withdrawIfDuplicated(branchId, descriptorId, descriptorDetail)) {
+            throw new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
+        }
     }
 
-    private void save(Long branchId, String faceId, DescriptorDetail descriptorDetail) {
+    /**
+     * 1:N 중복 검사. 위의 "있는가" 와 이 검사 사이에 비교할 특징점이 사라졌으면 중복 없음으로 보고 넘어간다 (UG-374).
+     *
+     * <p>사라지는 경로는 동시에 들어온 삭제 API 다. 그러면 중복 검사의 빈 갤러리 확인이 EMPTY_GALLERY 를, 1:N 쿼리가 결과
+     * 없음(EmptyResultDataAccessException)을 낸다 — 등록이 엉뚱한 오류로 실패한다. 비교할 것이 없으니 중복도 없다.
+     * (재검사의 자기 삭제로는 비지 않는다 — 물러나는 행은 다른 살아 있는 행을 보고 물러난다. 처음 구현에서 재검사 잠금을
+     * 빼 본 실험에서 재현됐던 것이다, 반박 리뷰 L1.)
+     */
+    private void checkDuplicateUnlessEmptied(Branch branch, DescriptorDetail descriptorDetail) {
+        try {
+            duplicateService.checkDuplicateDescriptor(branch, descriptorDetail, null, false);
+        } catch (CustomFaceMatcherException e) {
+            if (e.getErrorType() != ErrorType.EMPTY_GALLERY) {
+                throw e;
+            }
+            log.info("중복 검사 직전에 비교할 특징점이 사라졌다 — 중복 없음으로 진행한다 (EMPTY_GALLERY)");
+        } catch (EmptyResultDataAccessException | NoResultException e) {
+            log.info("중복 검사 직전에 비교할 특징점이 사라졌다 — 중복 없음으로 진행한다 (결과 없음)");
+        }
+    }
+
+    /** @return 저장한 특징점의 id — 커밋 뒤 재검사가 자기 행을 가리키는 데 쓴다 */
+    private Long save(Long branchId, String faceId, DescriptorDetail descriptorDetail) {
         // 브랜치는 다른 트랜잭션에서 읽었다 — 이 영속성 컨텍스트에는 없을 수 있다(분리 상태). 분리된 엔티티를 그대로 물리면
         // 지금은 동작해도 cascade 가 붙는 순간 "detached entity passed to persist" 가 된다. id 로 참조만 얻는다 — SELECT 도
         // INSERT 도 나가지 않고, 이미 컨텍스트에 있으면(OSIV) 그 인스턴스가 온다.
@@ -92,10 +127,12 @@ public class RegisterService {
             throw new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
         }
 
-        // 브렌치에 등록된 사용자가 한 명이라도 있는지 확인합니다. 세지 않고 있는지만 본다 (UG-357)
-        if (descriptorRepository.existsByBranch(branch)) {
+        // 브랜치에 같은 버전(추출기)의 특징점이 하나라도 있으면 1:N 중복 검사를 한다. 세지 않고 있는지만 본다 (UG-357).
+        // 버전을 함께 본다 (UG-374) — 중복 검사(identify)는 같은 버전이 없으면 EMPTY_GALLERY 를 던진다. 예전처럼 버전 없이
+        // 보면, 다른 버전 특징점만 있는 브랜치에서 등록이 EMPTY_GALLERY 로 실패했다.
+        if (descriptorRepository.existsByBranchAndDescriptorVersion(branch, descriptorDetail.descriptorSpec().getVersion())) {
             // 이미 등록된 사용자들 중 동일한 사용자가 있는지 확인합니다.
-            duplicateService.checkDuplicateDescriptor(branch, descriptorDetail, null, false);
+            checkDuplicateUnlessEmptied(branch, descriptorDetail);
         }
 
         Descriptor descriptor = Descriptor.builder()
@@ -112,7 +149,7 @@ public class RegisterService {
             // 위의 사전 조회는 빠른 경로다. 동시 요청 둘이 함께 통과할 수 있어 최종 판정은 제약이 한다 (UG-340).
             // 위반을 이 자리에서 받아 바꾸려면 INSERT 가 여기서 나가야 한다. 지금은 IDENTITY 라 save 도 즉시
             // INSERT 하지만, id 전략이 바뀌면 커밋 시점으로 밀려 catch 를 빠져나간다 — flush 로 명시한다.
-            descriptorRepository.saveAndFlush(descriptor);
+            return descriptorRepository.saveAndFlush(descriptor).getId();
         } catch (DataIntegrityViolationException e) {
             if (!UniqueViolation.of(e, UniqueViolation.DESCRIPTOR_BRANCH_FACE)) {
                 throw e;
