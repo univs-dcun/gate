@@ -96,10 +96,10 @@ public class RegisterService {
     /**
      * 1:N 중복 검사. 위의 "있는가" 와 이 검사 사이에 비교할 특징점이 사라졌으면 중복 없음으로 보고 넘어간다 (UG-374).
      *
-     * <p>사라지는 경로: 같은 얼굴 동시 등록에서 커밋 뒤 재검사가 자기 행을 지운다({@link RecentDuplicateCheck}), 또는 삭제
-     * API. 그러면 중복 검사의 빈 갤러리 확인이 EMPTY_GALLERY 를, 1:N 쿼리가 결과 없음(EmptyResultDataAccessException)을
-     * 낸다 — 등록이 엉뚱한 오류로 실패한다(실제 PostgreSQL 에서 재현). 비교할 것이 없으니 중복도 없다. 동시에 들어온 같은
-     * 얼굴은 커밋 뒤 재검사가 거른다.
+     * <p>사라지는 경로는 동시에 들어온 삭제 API 다. 그러면 중복 검사의 빈 갤러리 확인이 EMPTY_GALLERY 를, 1:N 쿼리가 결과
+     * 없음(EmptyResultDataAccessException)을 낸다 — 등록이 엉뚱한 오류로 실패한다. 비교할 것이 없으니 중복도 없다.
+     * (재검사의 자기 삭제로는 비지 않는다 — 물러나는 행은 다른 살아 있는 행을 보고 물러난다. 처음 구현에서 재검사 잠금을
+     * 빼 본 실험에서 재현됐던 것이다, 반박 리뷰 L1.)
      */
     private void checkDuplicateUnlessEmptied(Branch branch, DescriptorDetail descriptorDetail) {
         try {

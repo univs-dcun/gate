@@ -147,6 +147,7 @@ class RecentDuplicateCheckTest {
     void 잠금_실패면_유지() {
         doThrow(new CannotAcquireLockException("lock timeout"))
                 .when(descriptorCustomRepository).lockBranchForRecheck(BRANCH_ID);
+        when(descriptorRepository.existsById(SELF_ID)).thenReturn(true);
 
         assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
 
@@ -160,10 +161,33 @@ class RecentDuplicateCheckTest {
         최근_조회가_돌려준다(가장_가까운(0.0));
         doThrow(new DataAccessResourceFailureException("connection lost"))
                 .when(descriptorRepository).deleteById(SELF_ID);
+        when(descriptorRepository.existsById(SELF_ID)).thenReturn(true);
 
         assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
 
         verify(transactionManager).rollback(any());
         verify(transactionManager, never()).commit(any());
+    }
+
+    /** 반박 리뷰 L2 — 삭제 커밋 중 연결이 끊기면 지워졌는지 모른다. 지워졌는데 성공으로 돌려주면 gate 에만 faceId 가 남는다. */
+    @Test
+    @DisplayName("재검사가 실패했어도 자기 행이 이미 없으면 물린 것으로 본다(true) — 커밋 결과를 모르는 삭제")
+    void 실패했지만_이미_지워졌으면_물림() {
+        최근_조회가_돌려준다(가장_가까운(0.0));
+        doThrow(new DataAccessResourceFailureException("commit outcome unknown"))
+                .when(transactionManager).commit(any());
+        when(descriptorRepository.existsById(SELF_ID)).thenReturn(false);
+
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isTrue();
+    }
+
+    @Test
+    @DisplayName("재검사가 실패하고 다시 읽기도 실패하면 유지한다(false)")
+    void 다시_읽기도_실패하면_유지() {
+        doThrow(new CannotAcquireLockException("lock timeout"))
+                .when(descriptorCustomRepository).lockBranchForRecheck(BRANCH_ID);
+        when(descriptorRepository.existsById(SELF_ID)).thenThrow(new DataAccessResourceFailureException("down"));
+
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
     }
 }

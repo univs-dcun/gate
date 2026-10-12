@@ -83,9 +83,13 @@ public class PostgresqlDescriptorCustomRepositoryImpl implements DescriptorCusto
         return projections.stream().map(MatchResultProjection::new).toList();
     }
 
-    /** UG-374. {@code FOR NO KEY UPDATE} 인 이유는 {@link DescriptorCustomRepository#lockBranchForRecheck} 참고. */
+    /**
+     * UG-374. {@code FOR NO KEY UPDATE} 인 이유와 대기 상한은 {@link DescriptorCustomRepository#lockBranchForRecheck} 참고.
+     * {@code SET LOCAL} 이라 이 트랜잭션이 끝나면 원래 값으로 돌아간다.
+     */
     @Override
     public void lockBranchForRecheck(Long branchId) {
+        em.createNativeQuery("SET LOCAL lock_timeout = '" + RECHECK_LOCK_WAIT.toMillis() + "ms'").executeUpdate();
         em.createNativeQuery("SELECT branch_id FROM branch WHERE branch_id = :branchId FOR NO KEY UPDATE")
                 .setParameter("branchId", branchId)
                 .getResultList();

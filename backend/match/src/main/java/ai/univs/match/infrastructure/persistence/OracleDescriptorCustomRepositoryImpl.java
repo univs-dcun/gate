@@ -96,10 +96,11 @@ public class OracleDescriptorCustomRepositoryImpl implements DescriptorCustomRep
         return projections.stream().map(MatchResultProjection::new).toList();
     }
 
-    /** UG-374. Oracle 은 자식 INSERT 가 부모 행을 잠그지 않아 {@code FOR UPDATE} 로 충분하다. */
+    /** UG-374. Oracle 은 자식 INSERT 가 부모 행을 잠그지 않아 {@code FOR UPDATE} 로 충분하다. 대기 상한은 {@code WAIT} 초 단위다. */
     @Override
     public void lockBranchForRecheck(Long branchId) {
-        em.createNativeQuery("SELECT branch_id FROM branch WHERE branch_id = :branchId FOR UPDATE")
+        em.createNativeQuery("SELECT branch_id FROM branch WHERE branch_id = :branchId FOR UPDATE WAIT "
+                        + RECHECK_LOCK_WAIT.toSeconds())
                 .setParameter("branchId", branchId)
                 .getResultList();
     }

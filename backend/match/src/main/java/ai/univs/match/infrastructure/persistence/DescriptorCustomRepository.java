@@ -1,6 +1,7 @@
 package ai.univs.match.infrastructure.persistence;
 
 import ai.univs.match.infrastructure.persistence.projection.MatchResultProjection;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,8 +42,15 @@ public interface DescriptorCustomRepository {
      * 자식 INSERT 가 부모 행에 {@code FOR KEY SHARE} 를 걸고, {@code FOR UPDATE} 는 그것과 충돌해 같은 브랜치의 등록이 전부
      * 이 잠금 뒤에 줄을 선다. 그래서 PostgreSQL 은 미리 {@code FOR NO KEY UPDATE} 로 건다(서로끼리는 충돌, KEY SHARE 와는
      * 충돌 안 함). Oracle 은 외래키가 있어도 자식 INSERT 가 부모 행을 잠그지 않아 {@code FOR UPDATE} 로 충분하다.
+     *
+     * <p><b>대기 상한 {@link #RECHECK_LOCK_WAIT}.</b> 넘으면 던지고, 호출자는 등록을 유지한다(재검사 실패). 상한이 없으면
+     * 한 브랜치에 등록이 몰릴 때 대기가 DB 쿼리 상한(PG statement_timeout 3.5초, Oracle 은 소켓 4초)까지 늘어, 1:N 검사와
+     * 합쳐 face→match 읽기 상한(5초)을 넘을 수 있다 — 그러면 face·gate 는 실패로 기록하는데 match 는 저장한 채로 남는다.
      */
     void lockBranchForRecheck(Long branchId);
+
+    /** {@link #lockBranchForRecheck} 의 잠금 대기 상한. Oracle {@code WAIT} 가 초 단위라 초로 둔다. */
+    Duration RECHECK_LOCK_WAIT = Duration.ofSeconds(1);
 
     /**
      * 같은 브랜치에서 {@code since} 이후에 저장된 같은 버전 특징점 중 가장 가까운 1건 (UG-374 커밋 뒤 재검사). 자기 자신

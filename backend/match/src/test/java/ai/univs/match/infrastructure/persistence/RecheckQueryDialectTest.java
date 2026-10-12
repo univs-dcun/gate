@@ -3,6 +3,7 @@ package ai.univs.match.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,12 +46,13 @@ class RecheckQueryDialectTest {
         when(query.getResultList()).thenReturn(List.of());
     }
 
-    private String 잠금_SQL(DescriptorCustomRepository repository) {
+    /** 잠금에 쓴 네이티브 SQL 전부 (PostgreSQL 은 대기 상한 SET LOCAL + 잠금 SELECT) */
+    private List<String> 잠금_SQL(DescriptorCustomRepository repository) {
         repository.lockBranchForRecheck(BRANCH_ID);
         ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
-        verify(em).createNativeQuery(sql.capture());
+        verify(em, atLeastOnce()).createNativeQuery(sql.capture());
         verify(query).setParameter("branchId", BRANCH_ID);
-        return sql.getValue();
+        return sql.getAllValues();
     }
 
     private String 최근_비교_SQL(DescriptorCustomRepository repository) {
@@ -71,19 +73,24 @@ class RecheckQueryDialectTest {
     @Test
     @DisplayName("postgresql 잠금은 FOR NO KEY UPDATE — 외래키가 생기면 FOR UPDATE 는 특징점 INSERT(부모 행 KEY SHARE)를 줄 세운다")
     void postgresql_잠금_종류() {
-        String sql = 잠금_SQL(new PostgresqlDescriptorCustomRepositoryImpl(em));
+        List<String> sqls = 잠금_SQL(new PostgresqlDescriptorCustomRepositoryImpl(em));
 
-        assertThat(sql).containsPattern(패턴("FROM\\s+branch\\s+WHERE\\s+branch_id\\s*=\\s*:branchId"));
-        assertThat(sql).containsPattern(패턴("FOR\\s+NO\\s+KEY\\s+UPDATE"));
+        assertThat(sqls).hasSize(2);
+        assertThat(sqls.get(0)).as("잠금보다 먼저, 이 트랜잭션에만 대기 상한 1초 (반박 리뷰 M2)")
+                .containsPattern(패턴("SET\\s+LOCAL\\s+lock_timeout\\s*=\\s*'1000ms'"));
+        assertThat(sqls.get(1)).containsPattern(패턴("FROM\\s+branch\\s+WHERE\\s+branch_id\\s*=\\s*:branchId"));
+        assertThat(sqls.get(1)).containsPattern(패턴("FOR\\s+NO\\s+KEY\\s+UPDATE"));
+        verify(query).executeUpdate();
     }
 
     @Test
-    @DisplayName("oracle 잠금은 FOR UPDATE — 자식 INSERT 가 부모 행을 잠그지 않는다")
+    @DisplayName("oracle 잠금은 FOR UPDATE WAIT 1 — 자식 INSERT 가 부모 행을 잠그지 않는다, 대기 상한 1초")
     void oracle_잠금_종류() {
-        String sql = 잠금_SQL(new OracleDescriptorCustomRepositoryImpl(em));
+        List<String> sqls = 잠금_SQL(new OracleDescriptorCustomRepositoryImpl(em));
 
-        assertThat(sql).containsPattern(패턴("FROM\\s+branch\\s+WHERE\\s+branch_id\\s*=\\s*:branchId"));
-        assertThat(sql).containsPattern(패턴("FOR\\s+UPDATE"));
+        assertThat(sqls).hasSize(1);
+        assertThat(sqls.get(0)).containsPattern(패턴("FROM\\s+branch\\s+WHERE\\s+branch_id\\s*=\\s*:branchId"));
+        assertThat(sqls.get(0)).containsPattern(패턴("FOR\\s+UPDATE\\s+WAIT\\s+1\\b"));
     }
 
     @Test
