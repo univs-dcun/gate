@@ -29,6 +29,8 @@ import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureB
 import ai.univs.gate.modules.feature.application.usecase.face.CreateFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.DeleteFaceFeatureUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.ExtractUseCase;
+import ai.univs.gate.modules.feature.application.usecase.face.UpdateFaceFeatureDescriptionUseCase;
+import ai.univs.gate.modules.feature.application.usecase.palm.UpdatePalmFeatureDescriptionUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureIdUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.FaceVerifyByFeatureImageUseCase;
 import ai.univs.gate.modules.feature.application.usecase.face.GetFaceFeatureByFaceIdUseCase;
@@ -113,6 +115,7 @@ class ApiKeyPropagationTest {
     @Mock private CreateFaceFeatureByDescriptorUseCase createFaceFeatureByDescriptorUseCase;
     @Mock private IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
     @Mock private IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
+    @Mock private UpdateFaceFeatureDescriptionUseCase updateFaceFeatureDescriptionUseCase;
 
     @Mock private CreatePalmFeatureUseCase createPalmFeatureUseCase;
     @Mock private DeletePalmFeatureUseCase deletePalmFeatureUseCase;
@@ -120,6 +123,7 @@ class ApiKeyPropagationTest {
     @Mock private GetPalmFeaturesUseCase getPalmFeaturesUseCase;
     @Mock private IdentifyPalmUseCase identifyPalmUseCase;
     @Mock private LivenessPalmUseCase livenessPalmUseCase;
+    @Mock private UpdatePalmFeatureDescriptionUseCase updatePalmFeatureDescriptionUseCase;
 
     @Mock private GetMatchHistoriesUseCase getMatchHistoriesUseCase;
     @Mock private GetMatchHistoryByTransactionUuidUseCase getMatchHistoryByTransactionUuidUseCase;
@@ -254,6 +258,14 @@ class ApiKeyPropagationTest {
         }
 
         @Test
+        @DisplayName("메모 수정 (UG-376)")
+        void 메모수정() {
+            given(updateFaceFeatureDescriptionUseCase.execute(any())).willAnswer(captureFirstArg());
+            var request = new ai.univs.gate.modules.feature.api.dto.UpdateFeatureDescriptionRequestDTO("memo");
+            assertApiKeyPropagated(capture(() -> faceController.updateDescription(1L, request)));
+        }
+
+        @Test
         @DisplayName("faceId 기반 조회")
         void faceId조회() {
             given(getFaceFeatureByFaceIdUseCase.execute(any())).willAnswer(captureFirstArg());
@@ -302,6 +314,14 @@ class ApiKeyPropagationTest {
         void 삭제() {
             willAnswer(captureFirstArg()).given(deletePalmFeatureUseCase).execute(any());
             assertApiKeyPropagated(capture(() -> palmController.delete(1L)));
+        }
+
+        @Test
+        @DisplayName("메모 수정 (UG-376)")
+        void 메모수정() {
+            given(updatePalmFeatureDescriptionUseCase.execute(any())).willAnswer(captureFirstArg());
+            var request = new ai.univs.gate.modules.feature.api.dto.UpdateFeatureDescriptionRequestDTO("memo");
+            assertApiKeyPropagated(capture(() -> palmController.updateDescription(1L, request)));
         }
 
         @Test

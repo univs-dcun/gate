@@ -1,5 +1,7 @@
 package ai.univs.gate.modules.feature.api.controller;
 
+import ai.univs.gate.modules.feature.api.dto.UpdateFeatureDescriptionRequestDTO;
+import ai.univs.gate.modules.feature.application.input.UpdateFeatureDescriptionInput;
 import ai.univs.gate.modules.feature.api.dto.face.*;
 import ai.univs.gate.modules.feature.application.input.face.DeleteFaceFeatureInput;
 import ai.univs.gate.modules.feature.application.input.face.GetFaceFeatureByFeatureIdInput;
@@ -51,6 +53,7 @@ public class FaceController {
     private final IdentifyByDescriptorUseCase identifyByDescriptorUseCase;
     private final IdentifyCandidatesByDescriptorUseCase identifyCandidatesByDescriptorUseCase;
     private final MessageService messageService;
+    private final UpdateFaceFeatureDescriptionUseCase updateFaceFeatureDescriptionUseCase;
 
     @Operation(summary = "특징점 얼굴 등록")
     @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreateFaceFeatureRequestDTO.class)))
@@ -121,6 +124,32 @@ public class FaceController {
         var input = new DeleteFaceFeatureInput(ctx.getAccountIdAsLong(), ctx.getApiKey(), faceFeatureId);
         deleteFaceFeatureUseCase.execute(input);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "특징점 얼굴 메모 수정",
+            description = "메모(description)만 바꾼다. 얼굴 사진(특징점)은 바꿀 수 없다 — 바꾸려면 삭제한 뒤 다시 등록한다. "
+                    + "응답은 단건 조회와 같다 (UG-376)")
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key")
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
+    })
+    @PatchMapping(value = "/{faceFeatureId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<FaceFeatureResponseDTO>> updateDescription(
+            @Parameter(description = "특징점 얼굴 ID") @PathVariable Long faceFeatureId,
+            @org.springframework.web.bind.annotation.RequestBody @Valid UpdateFeatureDescriptionRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = new UpdateFeatureDescriptionInput(
+                ctx.getAccountIdAsLong(), ctx.getApiKey(), faceFeatureId, request.description());
+        var result = updateFaceFeatureDescriptionUseCase.execute(input);
+        var response = FaceFeatureResponseDTO.from(result, ctx.getTimezone());
+        return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
     @Operation(summary = "특징점 얼굴 단건 조회")
