@@ -43,4 +43,9 @@ public class BiometricFeature extends BaseEntity {
     public void delete() {
         this.isDeleted = true;
     }
+
+    /** 메모만 바꾼다 (UG-376). 비어 있으면 메모 없음(null)이다 — 콘솔의 「메모 비우기」. */
+    public void changeDescription(String description) {
+        this.description = description == null || description.isBlank() ? null : description;
+    }
 }
