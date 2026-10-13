@@ -105,6 +105,12 @@ UG-279 에서 주석 처리했다가 UG-284 에서 소스에서 완전히 삭제
 `PAGES['p-face-feature-update']`, `ERR_ENDPOINT['p-face-feature-update']`, 수정에서만 나던 오류
 `FACE-004 MISMATCH` 카탈로그 엔트리. `USER-101`·`FACE-008` 의 "수정" 언급도 정리했다.
 
+### UG-376 — 얼굴 메모 수정(PATCH /api/v1/feature/face/{faceFeatureId}) 페이지 추가 (2026-10-13)
+
+메모(`description`)만 바꾸는 API 다. 특징점(사진) 변경은 여전히 없다 — 삭제 후 재등록. 추가한 곳: nav
+`메모 수정`(PATCH 배지 `.mb-patch-sm`/`.mb-patch` 신설), `p-face-feature-update-description` 페이지 div, nav i18n ko/en,
+`PAGES`·`ERR_ENDPOINT` 엔트리, `USER-101` 발생 조건에 "메모 수정" 추가.
+
 ### 복원하려면
 
 `git log --oneline -- docs/api/gate-api-docs.html` 에서 UG-284 커밋(`d2ffb4e`) 직전 상태를 꺼낸다.
@@ -141,7 +147,7 @@ print('\n;\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', t, re.S)))
 
 ## ERRORS 두 페이지는 데이터에서 렌더링된다 (UG-321)
 
-`오류 응답 형식` · `오류 코드 목록` 두 페이지와 **엔드포인트 17개 페이지의 `Errors` 표**는
+`오류 응답 형식` · `오류 코드 목록` 두 페이지와 **엔드포인트 18개 페이지의 `Errors` 표**는
 정적 마크업이 아니라 인라인 스크립트의 데이터에서 그려진다.
 
 | 데이터 | 내용 |

@@ -175,6 +175,7 @@ public class SwaggerDescriptions {
     /* Face Feature */
     public static final String FACE_FEATURE_ID = "특징점 얼굴 식별 번호";
     public static final String FACE_FEATURE_DESCRIPTION = "특징점 얼굴 설명";
+    public static final String FEATURE_DESCRIPTION_UPDATE = "바꿀 메모(최대 1000자). 빈 문자열이면 메모를 지운다";
     public static final String FACE_FEATURE_LIST = "특징점 얼굴 목록";
 
     /* Palm Feature */

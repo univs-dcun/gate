@@ -1,5 +1,7 @@
 package ai.univs.gate.modules.feature.api.controller;
 
+import ai.univs.gate.modules.feature.api.dto.UpdateFeatureDescriptionRequestDTO;
+import ai.univs.gate.modules.feature.application.input.UpdateFeatureDescriptionInput;
 import ai.univs.gate.modules.feature.api.dto.palm.*;
 import ai.univs.gate.modules.feature.application.input.palm.DeletePalmFeatureInput;
 import ai.univs.gate.modules.feature.application.input.palm.GetPalmFeatureInput;
@@ -41,6 +43,7 @@ public class PalmController {
     private final IdentifyPalmUseCase identifyPalmUseCase;
     private final LivenessPalmUseCase livenessPalmUseCase;
     private final MessageService messageService;
+    private final UpdatePalmFeatureDescriptionUseCase updatePalmFeatureDescriptionUseCase;
 
     @Operation(summary = "팜 등록")
     @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE, schema = @Schema(implementation = CreatePalmFeatureRequestDTO.class)))
@@ -82,6 +85,30 @@ public class PalmController {
         var input = new DeletePalmFeatureInput(ctx.getAccountIdAsLong(), ctx.getApiKey(), palmFeatureId);
         deletePalmFeatureUseCase.execute(input);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "팜 메모 수정", description = "메모(description)만 바꾼다. 팜은 바꿀 수 없다 — 삭제 후 재등록 (UG-376)")
+    @SecurityRequirements({
+            @SecurityRequirement(name = "Authentication"),
+            @SecurityRequirement(name = "X-Api-Key")
+    })
+    @SwaggerErrorExample({
+            @SwaggerError(errorType = ErrorType.INVALID_INPUT, status = 400),
+            @SwaggerError(errorType = ErrorType.INVALID_USER, status = 400),
+            @SwaggerError(errorType = ErrorType.API_KEY_NOT_FOUND, status = 400),
+            @SwaggerError(errorType = ErrorType.SETTINGS_NOT_FOUND, status = 400),
+    })
+    @PatchMapping(value = "/{palmFeatureId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseApi<PalmFeatureResponseDTO>> updateDescription(
+            @Parameter(description = "팜 식별 번호") @PathVariable Long palmFeatureId,
+            @org.springframework.web.bind.annotation.RequestBody @Valid UpdateFeatureDescriptionRequestDTO request
+    ) {
+        UserContext ctx = UserContext.get();
+        var input = new UpdateFeatureDescriptionInput(
+                ctx.getAccountIdAsLong(), ctx.getApiKey(), palmFeatureId, request.description());
+        var result = updatePalmFeatureDescriptionUseCase.execute(input);
+        var response = PalmFeatureResponseDTO.from(result, ctx.getTimezone());
+        return ResponseEntity.ok(ResponseApi.ok(response));
     }
 
     @Operation(summary = "팜 단건 조회")
