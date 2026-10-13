@@ -13,14 +13,6 @@ public interface DescriptorRepository extends JpaRepository<Descriptor, Long> {
     Optional<Descriptor> findByFaceIdAndBranch(String faceId, Branch branch);
 
     /**
-     * 브랜치에 특징점이 하나라도 있는가 (UG-357).
-     *
-     * <p>예전에는 {@code countByBranch(...) > 0} 이었다. 0 인지만 보면 되는데 브랜치 행을 끝까지 셌다.
-     * exists 는 첫 행에서 멈춘다.
-     */
-    boolean existsByBranch(Branch branch);
-
-    /**
      * 브랜치에 이 버전(추출기)의 특징점이 하나라도 있는가 (UG-357, scaling P0-2).
      *
      * <p>1:N 식별 전 빈 갤러리 판정용이다. 예전 {@code countByBranchAndDescriptorVersion} 은 0 인지만 쓰면서

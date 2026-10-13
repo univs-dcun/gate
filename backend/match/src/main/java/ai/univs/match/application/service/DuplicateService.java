@@ -15,6 +15,9 @@ import static ai.univs.match.shared.utils.SimilarityCalculator.parseDoubleSimila
 @RequiredArgsConstructor
 public class DuplicateService {
 
+    /** 이 유사도 이상이면 같은 사람으로 보고 등록을 막는다. 커밋 뒤 재검사(UG-374 {@link RecentDuplicateCheck})도 같은 값을 쓴다. */
+    public static final double DUPLICATE_SIMILARITY = 0.85;
+
     private final IdentifyService identifyService;
 
     // 특징점 중복 체크
@@ -27,7 +30,7 @@ public class DuplicateService {
 
         double similarity = parseDoubleSimilarity(matchingResult.similarity());
 
-        if (similarity >= 0.85 && (!isUpdate || !matchingResult.faceId().equals(faceId))) {
+        if (similarity >= DUPLICATE_SIMILARITY && (!isUpdate || !matchingResult.faceId().equals(faceId))) {
             // UG-299: 수준 판정은 GlobalExceptionHandler 가 한다. 여기서는 핸들러가
             // 알 수 없는 값만 남긴다 — ERROR 로 두면 한 사건에 ERROR 두 줄이 된다.
             log.warn("이미 등록된 descriptor 다 — similarity={}", similarity);
