@@ -4,6 +4,8 @@ import ai.univs.match.application.input.RegisterWithFaceIdInput;
 import ai.univs.match.application.result.MatchResult;
 import ai.univs.match.application.service.BranchProvisioner;
 import ai.univs.match.application.service.DuplicateService;
+import ai.univs.match.application.service.RecentDuplicateCheck;
+import ai.univs.match.infrastructure.persistence.BranchCustomRepository;
 import ai.univs.match.application.service.RegisterService;
 import ai.univs.match.shared.exception.TransactionManagerConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -34,6 +36,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.dao.PersistenceExceptionTranslationAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -64,7 +68,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 하나씩 쥔 채 서로를 기다리다 대기 상한에 걸린다 — 운영 풀(10, 1.5초)에서 첫 등록이 10건 넘게 몰릴 때와 같은 모양이다.
  *
  * <p>제약은 Flyway 대신 여기서 같은 이름으로 건다(V4·V5). 이름이 마이그레이션과 같은지는 {@code UniqueConstraintNameGuardTest}.
- * 중복 판정(1:N, PostgreSQL 전용 vlmatch)은 목으로 둔다 — 여기서 보는 것은 브랜치 생성뿐이다.
+ * 중복 판정(1:N, PostgreSQL 전용 vlmatch)과 커밋 뒤 재검사(UG-374, {@code FOR NO KEY UPDATE} 는 H2 에 없다)는 목으로 둔다 —
+ * 여기서 보는 것은 브랜치 생성뿐이다.
+ *
+ * <p>브랜치 생성(UG-374)의 방언 SQL 은 H2 가 모른다 — PostgreSQL {@code ON CONFLICT} 는 문법 오류, Oracle 힌트는 주석으로
+ * 무시돼 그냥 INSERT 가 된다. 그래서 같은 계약("있으면 0 건, 위반 없음")을 H2 표준 {@code MERGE} 로 흉내 낸 대역을 쓴다.
+ * 표준 MERGE 는 동시에 돌면 위반이 나므로 "위반을 잡아 다시 읽기" 경로도 PostgreSQL 중단 규칙 아래에서 함께 본다. 방언
+ * SQL 의 실제 동작은 {@code SameFaceConcurrentRegisterRealDbTest}(PostgreSQL 17·Oracle 23).
  */
 @DataJpaTest(properties = {
         "spring.cloud.config.enabled=false",
@@ -80,6 +90,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.datasource.hikari.connection-timeout=5000"
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+// 운영처럼 @Repository 예외 번역을 켠다 — @DataJpaTest 는 이 자동 설정을 올리지 않는다. 브랜치 생성의 위반 처리가 기대는 것이다 (UG-374)
+@ImportAutoConfiguration(PersistenceExceptionTranslationAutoConfiguration.class)
 @Import({RegisterUseCase.class, RegisterWithFaceIdUseCase.class, RegisterService.class, BranchProvisioner.class,
         TransactionManagerConfig.class, RegisterNewBranchRaceSliceTest.AbortEmulation.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -91,6 +103,21 @@ class RegisterNewBranchRaceSliceTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class AbortEmulation {
+        /** H2 대역 — 계약은 운영 구현과 같다(있으면 0 건). RepositoryConfig 는 슬라이스에 올라오지 않는다 */
+        @Bean
+        BranchCustomRepository branchCustomRepository(EntityManager em) {
+            return (branchName, now) -> em.createNativeQuery("""
+                        MERGE INTO branch b
+                        USING dual
+                        ON (b.branch_name = :branchName)
+                        WHEN NOT MATCHED THEN
+                            INSERT (branch_name, created_at, modified_at) VALUES (:branchName, :now, :now)
+                    """)
+                    .setParameter("branchName", branchName)
+                    .setParameter("now", now)
+                    .executeUpdate();
+        }
+
         @Bean
         static BeanPostProcessor postgresAbortEmulation() {
             return new BeanPostProcessor() {
@@ -104,6 +131,8 @@ class RegisterNewBranchRaceSliceTest {
     }
 
     @MockBean private DuplicateService duplicateService;
+    /** 기본값(false) — 재검사 통과. 같은 얼굴 경합은 {@code SameFaceConcurrentRegisterRealDbTest} 가 실제 DB 로 본다 */
+    @MockBean private RecentDuplicateCheck recentDuplicateCheck;
 
     @Autowired private RegisterUseCase registerUseCase;
     @Autowired private RegisterWithFaceIdUseCase registerWithFaceIdUseCase;
@@ -256,7 +285,7 @@ class RegisterNewBranchRaceSliceTest {
 
     /**
      * 「없다」 를 본 뒤 INSERT 직전에 다른 요청이 같은 이름을 커밋한다. UG-340 에서는 여기서 INTERNAL_SERVER_ERROR 였다.
-     * 위반이 실제로 났고(1회), 그 뒤 중단된 트랜잭션에서 아무것도 하지 않았음을 함께 본다.
+     * UG-372 에서는 위반을 받고 다시 읽었다(ERROR 로그 한 줄). UG-374 부터는 INSERT 가 위반 없이 0 건으로 끝나고 다시 읽는다.
      */
     @Test
     @DisplayName("(2) 경합 주입 — 진 쪽도 성공하고, 브랜치는 이긴 쪽 한 행, 특징점은 그 브랜치에 저장된다")
@@ -266,7 +295,8 @@ class RegisterNewBranchRaceSliceTest {
         MatchResult result = registerWithFaceIdUseCase.execute(new RegisterWithFaceIdInput(BRANCH, "face-race", descriptor()));
 
         assertThat(result.faceId()).isEqualTo("face-race");
-        assertThat(db.branchNameViolations).as("경합이 실제로 났는가").hasValue(1);
+        assertThat(db.branchInsertsSkipped).as("경합이 실제로 났는가 — INSERT 가 0 건").hasValue(1);
+        assertThat(db.branchNameViolations).as("위반(= Hibernate ERROR 줄)은 없다").hasValue(0);
         assertThat(브랜치_행수()).isEqualTo(1);
         assertThat(특징점_브랜치_id들()).containsExactly(브랜치_id());
         중단된_트랜잭션은_없었다();
@@ -282,7 +312,8 @@ class RegisterNewBranchRaceSliceTest {
                 registerWithFaceIdUseCase.execute(new RegisterWithFaceIdInput(BRANCH, "face-race", descriptor())));
 
         assertThat(result.faceId()).isEqualTo("face-race");
-        assertThat(db.branchNameViolations).hasValue(1);
+        assertThat(db.branchInsertsSkipped).hasValue(1);
+        assertThat(db.branchNameViolations).hasValue(0);
         assertThat(브랜치_행수()).isEqualTo(1);
         assertThat(특징점_브랜치_id들()).containsExactly(브랜치_id());
         중단된_트랜잭션은_없었다();
@@ -336,7 +367,8 @@ class RegisterNewBranchRaceSliceTest {
             db.afterBranchSelect = () -> { };
         }
 
-        assertThat(db.branchNameViolations).as("경합이 실제로 났는가").hasValueGreaterThanOrEqualTo(1);
+        assertThat(db.branchInsertsSkipped.get() + db.branchNameViolations.get())
+                .as("경합이 실제로 났는가").isGreaterThanOrEqualTo(1);
         assertThat(브랜치_행수()).isEqualTo(1);
         Long branchId = 브랜치_id();
         assertThat(특징점_브랜치_id들()).hasSize(requests).containsOnly(branchId);

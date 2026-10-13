@@ -19,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.sql.SQLException;
@@ -32,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -53,6 +55,10 @@ class RegisterServiceTest {
     @Mock
     private DuplicateService duplicateService;
 
+    /** 기본값(false) 은 "재검사 통과 — 등록 유지" 다. */
+    @Mock
+    private RecentDuplicateCheck recentDuplicateCheck;
+
     /** 목이라 실제 트랜잭션은 없다 — 템플릿이 getTransaction·commit·rollback 을 부르는 순서만 본다. */
     @Mock
     private PlatformTransactionManager transactionManager;
@@ -62,6 +68,7 @@ class RegisterServiceTest {
 
     private static final String BRANCH_NAME = "testBranch";
     private static final String FACE_ID = "face-001";
+    private static final Long SAVED_ID = 501L;
     private String base64Descriptor;
     private DescriptorDetail descriptorDetail;
     private Branch existingBranch;
@@ -75,6 +82,10 @@ class RegisterServiceTest {
                 .id(1L)
                 .branchName(BRANCH_NAME)
                 .build();
+
+        // 저장하면 id 가 붙는다(IDENTITY) — 커밋 뒤 재검사가 그 id 로 자기 행을 가리킨다 (UG-374)
+        lenient().when(descriptorRepository.saveAndFlush(any(Descriptor.class)))
+                .thenReturn(Descriptor.builder().id(SAVED_ID).build());
     }
 
     // -------------------------------------------------------------------------
@@ -196,7 +207,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("브랜치에 등록된 descriptor가 없으면 중복 검사를 수행하지 않는다")
             void whenBranchIsEmpty_thenSkipsDuplicateCheck() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(false);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -206,7 +217,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("브랜치에 등록된 descriptor가 없어도 descriptor는 저장한다")
             void whenBranchIsEmpty_thenSavesDescriptor() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(false);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -216,7 +227,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("브랜치에 기존 descriptor가 있으면 올바른 인자로 중복 검사를 수행한다")
             void whenBranchHasDescriptors_thenChecksDuplicate() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -233,7 +244,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("중복 검사를 통과하면 descriptor를 저장한다")
             void whenDuplicateCheckPasses_thenSavesDescriptor() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -246,7 +257,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("저장되는 descriptor의 버전이 descriptorDetail의 spec 버전과 일치한다")
             void whenSaving_thenDescriptorVersionMatchesSpec() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(false);
 
                 registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 
@@ -259,7 +270,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("중복 검사에서 ALREADY_REGISTERED_DESCRIPTOR가 발생하면 그대로 전파된다")
             void whenDuplicateCheckFails_thenPropagatesException() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
                 doThrow(new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR))
                         .when(duplicateService)
                         .checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
@@ -274,7 +285,7 @@ class RegisterServiceTest {
             @Test
             @DisplayName("중복 검사 실패 시 descriptor를 저장하지 않는다")
             void whenDuplicateCheckFails_thenNeverSavesDescriptor() {
-                when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(true);
+                when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
                 doThrow(new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR))
                         .when(duplicateService)
                         .checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
@@ -283,6 +294,125 @@ class RegisterServiceTest {
 
                 verify(descriptorRepository, never()).saveAndFlush(any());
             }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // UG-374: 같은 얼굴 동시 등록 — 커밋 뒤 재검사
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("UG-374: 커밋 뒤 재검사")
+    class RecheckAfterCommit {
+
+        @BeforeEach
+        void setUp() {
+            when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(existingBranch);
+            when(branchRepository.getReferenceById(1L)).thenReturn(existingBranch);
+        }
+
+        @Test
+        @DisplayName("등록 트랜잭션이 커밋된 뒤에, 저장한 행의 id 로 재검사한다")
+        void 커밋_뒤에_저장한_id_로() {
+            registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
+
+            InOrder order = inOrder(transactionManager, recentDuplicateCheck);
+            order.verify(transactionManager).commit(any());
+            ArgumentCaptor<DescriptorDetail> detail = ArgumentCaptor.forClass(DescriptorDetail.class);
+            order.verify(recentDuplicateCheck).withdrawIfDuplicated(eq(1L), eq(SAVED_ID), detail.capture());
+            assertThat(detail.getValue().descriptorSpec()).isEqualTo(descriptorDetail.descriptorSpec());
+        }
+
+        @Test
+        @DisplayName("재검사가 같은 얼굴을 보고 물렸으면 ALREADY_REGISTERED_DESCRIPTOR(MATCH-003) 로 끝낸다")
+        void 물렸으면_이미_등록됨() {
+            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any())).thenReturn(true);
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class)
+                    .extracting(ex -> ((CustomFaceMatcherException) ex).getErrorType())
+                    .isEqualTo(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
+        }
+
+        @Test
+        @DisplayName("재검사를 통과하면 그대로 성공한다")
+        void 통과하면_성공() {
+            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any())).thenReturn(false);
+
+            registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
+
+            verify(transactionManager, never()).rollback(any());
+        }
+
+        @Test
+        @DisplayName("등록이 거절되면(이미 있는 faceId) 재검사하지 않는다 — 지울 행이 없다")
+        void 거절이면_재검사_없음() {
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch))
+                    .thenReturn(Optional.of(new Descriptor()));
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class);
+
+            verifyNoInteractions(recentDuplicateCheck);
+        }
+
+        /** 실제 PostgreSQL 에서 재현했다 — 같은 얼굴 동시 등록에서 비교 대상이 재검사로 지워지는 사이 */
+        @Test
+        @DisplayName("중복 검사 직전에 비교할 특징점이 사라지면(EMPTY_GALLERY) 중복 없음으로 보고 저장한다")
+        void 사이에_비면_EMPTY_GALLERY_무시() {
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
+            doThrow(new CustomFaceMatcherException(ErrorType.EMPTY_GALLERY))
+                    .when(duplicateService).checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
+
+            registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
+
+            verify(descriptorRepository).saveAndFlush(any(Descriptor.class));
+        }
+
+        @Test
+        @DisplayName("중복 검사 직전에 비교할 특징점이 사라져 1:N 결과가 없어도(EmptyResultDataAccessException) 저장한다")
+        void 사이에_비면_결과_없음_무시() {
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
+            doThrow(new EmptyResultDataAccessException(1))
+                    .when(duplicateService).checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
+
+            registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
+
+            verify(descriptorRepository).saveAndFlush(any(Descriptor.class));
+        }
+
+        @Test
+        @DisplayName("중복 검사의 다른 오류는 그대로 던진다 — 사라짐만 넘어간다")
+        void 다른_오류는_그대로() {
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(true);
+            doThrow(new CustomFaceMatcherException(ErrorType.INTERNAL_SERVER_ERROR))
+                    .when(duplicateService).checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class)
+                    .extracting(ex -> ((CustomFaceMatcherException) ex).getErrorType())
+                    .isEqualTo(ErrorType.INTERNAL_SERVER_ERROR);
+            verify(descriptorRepository, never()).saveAndFlush(any());
+        }
+
+        /**
+         * 함께 고친 결함. 예전에는 "브랜치에 특징점이 있는가" 를 버전 없이 보고 중복 검사(identify)에 들어갔는데, identify 는
+         * 같은 버전이 없으면 EMPTY_GALLERY 를 던졌다 — 다른 버전 특징점만 있는 브랜치에서 등록이 실패했다.
+         */
+        @Test
+        @DisplayName("요청과 같은 버전의 특징점이 없으면 중복 검사에 들어가지 않는다 — 다른 버전만 있는 브랜치에서 EMPTY_GALLERY 로 실패하지 않게")
+        void 다른_버전만_있으면_중복_검사_안함() {
+            String v62 = createBase64Descriptor(62);
+            when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 62)).thenReturn(false);
+
+            registerService.register(BRANCH_NAME, FACE_ID, v62);
+
+            verify(duplicateService, never()).checkDuplicateDescriptor(any(), any(), any(), any(Boolean.class));
+            verify(descriptorRepository).saveAndFlush(any(Descriptor.class));
         }
     }
 
@@ -305,7 +435,7 @@ class RegisterServiceTest {
             when(branchProvisioner.findOrCreate(BRANCH_NAME)).thenReturn(existingBranch);
             when(branchRepository.getReferenceById(1L)).thenReturn(existingBranch);
             when(descriptorRepository.findByFaceIdAndBranch(FACE_ID, existingBranch)).thenReturn(Optional.empty());
-            when(descriptorRepository.existsByBranch(existingBranch)).thenReturn(false);
+            when(descriptorRepository.existsByBranchAndDescriptorVersion(existingBranch, 59)).thenReturn(false);
         }
 
         @Test
