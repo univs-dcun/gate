@@ -13225,9 +13225,12 @@
         "properties": {
           "description": {
             "type": "string",
-            "description": "바꿀 메모(최대 1000자). 비우거나 생략하면 메모를 지운다"
+            "description": "바꿀 메모(최대 1000자). 빈 문자열이면 메모를 지운다"
           }
-        }
+        },
+        "required": [
+          "description"
+        ]
       },
       "CustomPage": {
         "type": "object",

@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 2026-10-12 재확인). 콘솔 개인정보 동의 화면의 「메모 수정」이 이 API 를 쓴다.
  *
  * <p><b>이력을 남기지 않는다.</b> 메모는 gate 에만 있는 표시용 값이라 하위 서비스를 부르지 않고, 생체 인증 처리도 아니다 —
- * 등록·삭제처럼 feature_history 에 행을 남기지 않는다. 바뀐 시각은 {@code modified_at} 에 남는다.
+ * 등록·삭제처럼 feature_history 에 행을 남기지 않는다. 바뀐 시각은 {@code updated_at} 에 남는다.
  *
  * <p>조회·소유 검증은 단건 조회와 같다: 지워졌거나 다른 종류거나 이 키의 프로젝트 것이 아니면 모두 {@code INVALID_USER} —
  * 남의 특징점이 있는지조차 알려 주지 않는다. 응답도 단건 조회와 같은 모양이라, 콘솔이 결과를 알 수 없을 때 단건 조회로 메모를
@@ -44,7 +44,10 @@ public class UpdatePalmFeatureDescriptionUseCase {
 
     @Transactional
     public PalmFeatureResult execute(UpdateFeatureDescriptionInput input) {
-        BiometricFeature feature = biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(input.featureId(), FeatureType.PALM)
+        // 잠그고 읽는다 — 삭제(UG-345)와 줄을 세운다. 잠그지 않으면 삭제가 커밋된 뒤 이 트랜잭션이 읽어 둔 낡은 행을
+        // flush 하면서 is_deleted = false 로 되살린다(엔티티 UPDATE 는 모든 컬럼을 쓴다 — 반박 리뷰 H). 삭제가 먼저면
+        // 잠금을 기다린 뒤 조건을 다시 봐 빈 결과다.
+        BiometricFeature feature = biometricFeatureRepository.findForUpdateByIdAndTypeAndIsDeletedFalse(input.featureId(), FeatureType.PALM)
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
         ApiKey apiKey = apiKeyService.findOwnedByApiKey(input.apiKey(), input.accountId());

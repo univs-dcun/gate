@@ -72,7 +72,7 @@ class UpdateFeatureDescriptionUseCaseTest {
         BiometricFeature feature = BiometricFeature.builder()
                 .id(FEATURE_ID).project(project).type(type).featureId("fid").featureImagePath("feature/a.jpg")
                 .description(description).isDeleted(false).build();
-        given(biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(FEATURE_ID, type)).willReturn(Optional.of(feature));
+        given(biometricFeatureRepository.findForUpdateByIdAndTypeAndIsDeletedFalse(FEATURE_ID, type)).willReturn(Optional.of(feature));
         return feature;
     }
 
@@ -81,7 +81,7 @@ class UpdateFeatureDescriptionUseCaseTest {
     }
 
     @Test
-    @DisplayName("얼굴: 내 특징점이면 메모를 바꾸고, 단건 조회와 같은 모양으로 돌려준다")
+    @DisplayName("얼굴: 내 특징점이면 메모를 바꾸고, 단건 조회와 같은 모양으로 돌려준다 — 잠그고 읽는다(삭제와 줄 세우기)")
     void 얼굴_메모_변경() {
         BiometricFeature feature = 특징점(FeatureType.FACE, mine, "old");
 
@@ -101,7 +101,7 @@ class UpdateFeatureDescriptionUseCaseTest {
 
         assertThat(feature.getDescription()).isEqualTo("palm memo");
         assertThat(result.palmFeatureId()).isEqualTo(FEATURE_ID);
-        verify(biometricFeatureRepository, never()).findByIdAndTypeAndIsDeletedFalse(FEATURE_ID, FeatureType.FACE);
+        verify(biometricFeatureRepository, never()).findForUpdateByIdAndTypeAndIsDeletedFalse(FEATURE_ID, FeatureType.FACE);
     }
 
     @ParameterizedTest(name = "[{0}]")
@@ -130,9 +130,21 @@ class UpdateFeatureDescriptionUseCaseTest {
     }
 
     @Test
+    @DisplayName("팜: 남의 프로젝트 특징점이면 바꾸지 않고 INVALID_USER")
+    void 팜_남의_특징점() {
+        BiometricFeature feature = 특징점(FeatureType.PALM, others, "victim memo");
+
+        assertThatThrownBy(() -> palm.execute(입력("hacked")))
+                .isInstanceOf(CustomGateException.class)
+                .extracting(e -> ((CustomGateException) e).getErrorType())
+                .isEqualTo(ErrorType.INVALID_USER);
+        assertThat(feature.getDescription()).isEqualTo("victim memo");
+    }
+
+    @Test
     @DisplayName("없거나 지워진(또는 다른 종류의) 특징점이면 INVALID_USER")
     void 없는_특징점() {
-        given(biometricFeatureRepository.findByIdAndTypeAndIsDeletedFalse(FEATURE_ID, FeatureType.FACE)).willReturn(Optional.empty());
+        given(biometricFeatureRepository.findForUpdateByIdAndTypeAndIsDeletedFalse(FEATURE_ID, FeatureType.FACE)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> face.execute(입력("x")))
                 .isInstanceOf(CustomGateException.class)
