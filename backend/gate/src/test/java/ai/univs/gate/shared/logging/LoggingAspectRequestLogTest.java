@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 class LoggingAspectRequestLogTest {
 
     private static final String CLIENT_IP = "203.0.113.7";
+    private static final String ACCOUNT_ID = "4242";
 
     @Mock private ProceedingJoinPoint joinPoint;
     @Mock private MethodSignature signature;
@@ -60,6 +61,7 @@ class LoggingAspectRequestLogTest {
     void setUp() throws NoSuchMethodException {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/feature/face/identify");
         request.addHeader("X-Forwarded-For", CLIENT_IP);
+        request.addHeader("X-Account-Id", ACCOUNT_ID);
         aspect = new LoggingAspect(request);
 
         given(joinPoint.getSignature()).willReturn(signature);
@@ -83,7 +85,7 @@ class LoggingAspectRequestLogTest {
     }
 
     @Test
-    @DisplayName("INFO 에서는 정상 요청 하나에 [RESPONSE] 한 줄만 남고, 거기에 IP·경로·소요시간이 있다")
+    @DisplayName("INFO 에서는 정상 요청 하나에 [RESPONSE] 한 줄만 남고, 거기에 IP·계정·경로·소요시간이 있다")
     void INFO는_요청당_한_줄() throws Throwable {
         logger.setLevel(Level.INFO);
         given(joinPoint.proceed()).willReturn("ok");
@@ -98,6 +100,7 @@ class LoggingAspectRequestLogTest {
                 .contains("POST")
                 .contains("/api/v1/feature/face/identify")
                 .contains("ip=" + CLIENT_IP)
+                .contains("account=" + ACCOUNT_ID)
                 .contains("duration=")
                 .doesNotContain("body-value");
     }
@@ -114,7 +117,7 @@ class LoggingAspectRequestLogTest {
     }
 
     @Test
-    @DisplayName("INFO 에서 실패한 요청은 [EXCEPTION] 한 줄이고, 거기에도 IP 가 있다")
+    @DisplayName("INFO 에서 실패한 요청은 [EXCEPTION] 한 줄이고, 거기에도 IP·계정이 있다")
     void INFO_실패는_EXCEPTION_한_줄() throws Throwable {
         logger.setLevel(Level.INFO);
         given(joinPoint.proceed()).willThrow(new CustomGateException(ErrorType.INVALID_INPUT));
@@ -125,6 +128,7 @@ class LoggingAspectRequestLogTest {
         assertThat(appender.list.get(0).getFormattedMessage())
                 .startsWith("[EXCEPTION]")
                 .contains("ip=" + CLIENT_IP)
+                .contains("account=" + ACCOUNT_ID)
                 .contains("duration=");
     }
 

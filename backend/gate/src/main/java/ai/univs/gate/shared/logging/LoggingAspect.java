@@ -46,6 +46,8 @@ public class LoggingAspect {
             "descriptor"
     );
 
+    private static final String HEADER_ACCOUNT_ID = "X-Account-Id";
+
     private final HttpServletRequest request;
 
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
@@ -55,6 +57,9 @@ public class LoggingAspect {
     @Around("restControllerMethods()")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
         String clientIp = getClientIpAddress(request);
+        // UG-383: 「누가」 — UserContextInterceptor 의 Header info 줄을 DEBUG 로 내리면서 옮겨 왔다.
+        // 온프레미스 로그 패턴에는 MDC accountId 가 없어 이 줄이 유일하다.
+        String accountId = Objects.toString(request.getHeader(HEADER_ACCOUNT_ID), "-");
         String httpMethod = request.getMethod();
         String uri = request.getRequestURI();
         String controller = joinPoint.getSignature().getDeclaringType().getSimpleName();
@@ -73,8 +78,9 @@ public class LoggingAspect {
         long start = System.currentTimeMillis();
         try {
             Object result = joinPoint.proceed();
-            log.info("[RESPONSE] {} {} | {}.{} | ip={} | duration={}ms",
-                    httpMethod, uri, controller, methodName, clientIp, System.currentTimeMillis() - start);
+            log.info("[RESPONSE] {} {} | {}.{} | ip={} | account={} | duration={}ms",
+                    httpMethod, uri, controller, methodName, clientIp, accountId,
+                    System.currentTimeMillis() - start);
             return result;
         } catch (Throwable ex) {
             // UG-290/291: 이 줄은 요청의 종결선이다 — 소요시간이 여기에만 있으므로 지우면
@@ -85,8 +91,8 @@ public class LoggingAspect {
             //  2. 예외 상세는 여기서 늘리지 않는다. GlobalExceptionHandler 가 코드·메시지·
             //     스택트레이스를 담당하고, 이 줄은 "어느 요청이 얼마 만에 어떻게 끝났는가" 만 맡는다.
             //     두 줄이 남지만 겹치는 내용은 예외 이름 하나뿐이다.
-            String line = "[EXCEPTION] {} {} | {}.{} | ip={} | duration={}ms | exception={}";
-            Object[] args = {httpMethod, uri, controller, methodName, clientIp,
+            String line = "[EXCEPTION] {} {} | {}.{} | ip={} | account={} | duration={}ms | exception={}";
+            Object[] args = {httpMethod, uri, controller, methodName, clientIp, accountId,
                     System.currentTimeMillis() - start, ex.getMessage()};
             if (isClientError(ex) || isTemporarilyBusy(ex)) {
                 log.warn(line, args);
