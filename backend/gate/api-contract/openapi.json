@@ -11299,6 +11299,11 @@
           "message": {
             "type": "string",
             "description": "실패 메시지"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "오류별 추가 정보. 없으면 생략 — MATCH-003 이면 {\"featureId\": 이미 등록된 같은 얼굴의 특징점 ID}"
           }
         }
       },

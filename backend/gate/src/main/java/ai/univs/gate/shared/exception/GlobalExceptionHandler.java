@@ -229,10 +229,12 @@ public class GlobalExceptionHandler {
         }
         log.warn("[{}] {} {} — {}", ex.getCode(), ex.getType(), requestInfo(), ex.getMessage());
 
+        // UG-378: details 는 gate 가 정한 공개 값만 — 하위의 upstreamDetails(match faceId 등)는 싣지 않는다
         Errors errors = new Errors(
                 ex.getCode(),
                 ex.getType(),
-                ex.getMessage());
+                ex.getMessage(),
+                ex.getDetails());
         return ResponseApi.fail(errors);
     }
 

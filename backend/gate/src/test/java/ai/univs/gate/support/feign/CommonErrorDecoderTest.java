@@ -89,6 +89,28 @@ class CommonErrorDecoderTest {
         }
 
         @Test
+        @DisplayName("UG-378: errors.details 는 내부용 upstreamDetails 로만 옮긴다 — 공개 details 는 비어 있다")
+        void details_는_upstreamDetails_로() {
+            Exception result = decoder.decode("FaceClient#createFace()", response(400, """
+                    {"success":false,"data":null,"errors":{"code":"MATCH-003","type":"ALREADY_REGISTERED_DESCRIPTOR",
+                     "message":"dup","details":{"faceId":"dup-face"}}}
+                    """));
+
+            CustomFeignException e = (CustomFeignException) result;
+            assertThat(e.getUpstreamDetails()).containsEntry("faceId", "dup-face");
+            assertThat(e.getDetails()).isNull();
+        }
+
+        @Test
+        @DisplayName("UG-378: details 가 없는 예전 응답은 upstreamDetails 가 null")
+        void details_없음() {
+            CustomFeignException e = (CustomFeignException) decoder.decode("FaceClient#identify()",
+                    response(400, OUR_FORMAT_BODY));
+
+            assertThat(e.getUpstreamDetails()).isNull();
+        }
+
+        @Test
         @DisplayName("type 은 LivenessErrorType 판정에 쓰이므로 보존돼야 한다")
         void type_보존() {
             // 이 값이 유실되면 UseCase 가 라이브니스 오류를 흡수하지 못하고 그대로 400 을 낸다

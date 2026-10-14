@@ -15,6 +15,7 @@ import ai.univs.gate.modules.feature.domain.enums.FeatureType;
 import ai.univs.gate.modules.feature.domain.repository.BiometricFeatureRepository;
 import ai.univs.gate.modules.feature.domain.entity.FeatureHistory;
 import ai.univs.gate.modules.feature.domain.enums.FeatureActionType;
+import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceByDescriptorFeignRequestDTO;
 import ai.univs.gate.modules.feature.infrastructure.client.face.dto.CreateFaceFeignRequestDTO;
 import ai.univs.gate.modules.project.domain.entity.Project;
 import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
@@ -30,6 +31,7 @@ import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -288,6 +290,131 @@ class FaceFeatureServiceTest {
 
         assertThat(result.biometricFeature().getFeatureImagePath()).isNull();
         assertThat(result.livenessChecked()).isFalse();
+    }
+
+    // -------------------------------------------------------------------------
+    // UG-378: MATCH-003 에 겹친 특징점의 featureId 를 싣는다
+    // -------------------------------------------------------------------------
+
+    private static final String DUPLICATE_FEATURE_ID = "dup-feature-id";
+
+    private static CustomFeignException duplicateFromMatch(Map<String, Object> upstreamDetails) {
+        return new CustomFeignException("MATCH-003", "ALREADY_REGISTERED_DESCRIPTOR", "이미 등록된 얼굴", upstreamDetails);
+    }
+
+    private BiometricFeature existingFace(String featureId) {
+        return BiometricFeature.builder()
+                .id(99L)
+                .project(project)
+                .type(FeatureType.FACE)
+                .featureId(featureId)
+                .isDeleted(false)
+                .build();
+    }
+
+    private CustomFeignException registerFailsWith(CustomFeignException downstream) {
+        givenCommonFlow(true, true, UPLOADED_IMAGE_PATH);
+        given(faceService.createFace(any(CreateFaceFeignRequestDTO.class))).willThrow(downstream);
+        try {
+            faceFeatureService.createFaceFeature(CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, null);
+        } catch (CustomFeignException thrown) {
+            return thrown;
+        }
+        throw new AssertionError("CustomFeignException 이 나야 한다");
+    }
+
+    @Test
+    @DisplayName("UG-378: MATCH-003 의 faceId 가 이 프로젝트의 얼굴 특징점이면 그 featureId 를 공개 details 에 싣는다")
+    void duplicate_found_exposesFeatureId() {
+        given(biometricFeatureRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
+                DUPLICATE_FEATURE_ID, PROJECT_ID, FeatureType.FACE))
+                .willReturn(Optional.of(existingFace(DUPLICATE_FEATURE_ID)));
+        CustomFeignException downstream = duplicateFromMatch(Map.of("faceId", DUPLICATE_FEATURE_ID));
+
+        CustomFeignException thrown = registerFailsWith(downstream);
+
+        assertThat(thrown.getCode()).isEqualTo("MATCH-003");
+        assertThat(thrown.getType()).isEqualTo("ALREADY_REGISTERED_DESCRIPTOR");
+        assertThat(thrown.getMessage()).isEqualTo("이미 등록된 얼굴");
+        assertThat(thrown.getDetails()).containsExactly(Map.entry("featureId", DUPLICATE_FEATURE_ID));
+        assertThat(thrown.getCause()).isSameAs(downstream);
+        // 실패 이력은 예전과 같다
+        assertThat(capturedFeatureHistory().getFailureType()).isEqualTo("ALREADY_REGISTERED_DESCRIPTOR");
+        verify(biometricFeatureRepository, never()).save(any(BiometricFeature.class));
+    }
+
+    @Test
+    @DisplayName("UG-378: 이 프로젝트에서 찾지 못하면(동시 등록의 상대·삭제됨·다른 프로젝트) details 없이 같은 예외")
+    void duplicate_notFound_noDetails() {
+        given(biometricFeatureRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
+                DUPLICATE_FEATURE_ID, PROJECT_ID, FeatureType.FACE))
+                .willReturn(Optional.empty());
+        CustomFeignException downstream = duplicateFromMatch(Map.of("faceId", DUPLICATE_FEATURE_ID));
+
+        CustomFeignException thrown = registerFailsWith(downstream);
+
+        assertThat(thrown).isSameAs(downstream);
+        assertThat(thrown.getDetails()).isNull();
+    }
+
+    @Test
+    @DisplayName("UG-378: 조회가 실패해도 결과는 같은 MATCH-003 — details 만 빠진다")
+    void duplicate_lookupFails_noDetails() {
+        given(biometricFeatureRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
+                DUPLICATE_FEATURE_ID, PROJECT_ID, FeatureType.FACE))
+                .willThrow(new IllegalStateException("db down"));
+        CustomFeignException downstream = duplicateFromMatch(Map.of("faceId", DUPLICATE_FEATURE_ID));
+
+        CustomFeignException thrown = registerFailsWith(downstream);
+
+        assertThat(thrown).isSameAs(downstream);
+        assertThat(thrown.getDetails()).isNull();
+    }
+
+    @Test
+    @DisplayName("UG-378: 하위가 faceId 를 주지 않으면(구버전 match) 조회하지 않는다")
+    void duplicate_withoutUpstreamDetails_noLookup() {
+        CustomFeignException downstream = duplicateFromMatch(null);
+
+        CustomFeignException thrown = registerFailsWith(downstream);
+
+        assertThat(thrown).isSameAs(downstream);
+        verify(biometricFeatureRepository, never())
+                .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("UG-378: MATCH-003 이 아닌 오류는 하위 details 가 있어도 조회·공개하지 않는다")
+    void otherError_upstreamDetailsNeverExposed() {
+        CustomFeignException downstream = new CustomFeignException("ML-101", "FAKE", "liveness failed",
+                Map.of("faceId", DUPLICATE_FEATURE_ID));
+
+        CustomFeignException thrown = registerFailsWith(downstream);
+
+        assertThat(thrown).isSameAs(downstream);
+        assertThat(thrown.getDetails()).isNull();
+        verify(biometricFeatureRepository, never())
+                .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("UG-378: 특징점 등록(descriptor)도 같은 방식으로 featureId 를 싣는다")
+    void duplicate_byDescriptor_exposesFeatureId() {
+        settings = ProjectSettings.builder().id(2L).project(project).consentEnabled(false).build();
+        given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
+        given(projectSettingsService.findByProject(project)).willReturn(settings);
+        given(historyRecorder.start(any(FeatureHistory.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(faceService.createFaceByDescriptor(any(CreateFaceByDescriptorFeignRequestDTO.class)))
+                .willThrow(duplicateFromMatch(Map.of("faceId", DUPLICATE_FEATURE_ID)));
+        given(biometricFeatureRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
+                DUPLICATE_FEATURE_ID, PROJECT_ID, FeatureType.FACE))
+                .willReturn(Optional.of(existingFace(DUPLICATE_FEATURE_ID)));
+
+        assertThatThrownBy(() -> faceFeatureService.createFaceFeatureByDescriptor(
+                ACCOUNT_ID, API_KEY, "descriptor", TRANSACTION_UUID, null))
+                .isInstanceOf(CustomFeignException.class)
+                .extracting(e -> ((CustomFeignException) e).getDetails())
+                .isEqualTo(Map.of("featureId", DUPLICATE_FEATURE_ID));
     }
 
     @Test

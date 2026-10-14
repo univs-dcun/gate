@@ -49,7 +49,8 @@ public class CommonErrorDecoder implements ErrorDecoder {
             return new CustomFeignException(
                     feignErrors.getCode(),
                     feignErrors.getType(),
-                    feignErrors.getMessage());
+                    feignErrors.getMessage(),
+                    feignErrors.getDetails());
         }
 
         if (status == SERVICE_UNAVAILABLE) {

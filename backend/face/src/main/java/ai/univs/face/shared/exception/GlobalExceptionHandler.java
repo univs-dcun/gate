@@ -234,7 +234,7 @@ public class GlobalExceptionHandler {
     public ResponseApi<?> handleInvalidFaceModuleException(InvalidFaceModuleException ex) {
         logUpstream(ex.getCode(), ex.getType(), ex.getMessage());
 
-        Errors errors = new Errors(ex.getCode(), ex.getType(), ex.getMessage());
+        Errors errors = new Errors(ex.getCode(), ex.getType(), ex.getMessage(), ex.getDetails());
         return getExceptionResponse(errors);
     }
 
@@ -243,7 +243,7 @@ public class GlobalExceptionHandler {
     public ResponseApi<?> CustomFeignException(CustomFeignException ex) {
         logUpstream(ex.getCode(), ex.getType(), ex.getMessage());
 
-        Errors errors = new Errors(ex.getCode(), ex.getType(), ex.getMessage());
+        Errors errors = new Errors(ex.getCode(), ex.getType(), ex.getMessage(), ex.getDetails());
         return getExceptionResponse(errors);
     }
 
