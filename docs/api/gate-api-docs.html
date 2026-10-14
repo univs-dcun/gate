@@ -516,7 +516,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 설명 (최대 1000자)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
             <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다</td></tr>
@@ -985,7 +985,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">특징점 추출할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">특징점 추출할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1052,7 +1052,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 대상 featureId (최대 100자)</td></tr>
-            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">확인할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">확인할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1334,7 +1334,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1677,7 +1677,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">라이브니스 검사할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -2693,7 +2693,7 @@ var PAGES = {
     pdsc: [
       { ko: '<code>Bearer {accessToken}</code>', en: '<code>Bearer {accessToken}</code>' },
       { ko: '프로젝트 API Key (최대 36자)', en: 'Project API Key (max 36 chars)' },
-      { ko: '얼굴 이미지 (jpg, jpeg, png)', en: 'Face image (jpg, jpeg, png)' },
+      { ko: '얼굴 이미지 (jpg, jpeg)', en: 'Face image (jpg, jpeg)' },
       { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
       { ko: '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)', en: 'Request UUID (auto-generated if not provided, max 36 chars)' },
       { ko: '외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다', en: 'External key — the user identifier in your own system (max 255 chars). Registering again with the same key after a delete links the history before and after, and it is searchable in history queries' },
@@ -2830,7 +2830,7 @@ var PAGES = {
       en: 'Extract a feature descriptor from a face image. The extracted descriptor can be used in the <code>verify/descriptor</code> (1:1 verify), <code>descriptor</code> (register), and <code>identify/descriptor</code> (1:N identify) APIs.'
     },
     pdsc: [
-      { ko: '특징점 추출할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for feature extraction (jpg, jpeg, png)' },
+      { ko: '특징점 추출할 얼굴 이미지 (jpg, jpeg)', en: 'Face image for feature extraction (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '추출된 얼굴 특징점 디스크립터 (Base64 인코딩된 벡터)', en: 'Extracted face feature descriptor (Base64-encoded vector)' }
     ],
@@ -2848,7 +2848,7 @@ var PAGES = {
     },
     pdsc: [
       { ko: '비교 대상 featureId (최대 100자)', en: 'Target featureId to compare (max 100 chars)' },
-      { ko: '확인할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image to verify (jpg, jpeg, png)' },
+      { ko: '확인할 얼굴 이미지 (jpg, jpeg)', en: 'Face image to verify (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
@@ -2937,7 +2937,7 @@ var PAGES = {
       en: 'Compare a submitted face image against all registered features in the project to find the most similar match. A liveness check may be performed depending on project settings.'
     },
     pdsc: [
-      { ko: '매칭할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image to match (jpg, jpeg, png)' },
+      { ko: '매칭할 얼굴 이미지 (jpg, jpeg)', en: 'Face image to match (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
@@ -3027,7 +3027,7 @@ var PAGES = {
       en: 'Detect whether a submitted face image is a real live person. Prevents spoofing attempts using photos, videos, or masks.'
     },
     pdsc: [
-      { ko: '라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for liveness check (jpg, jpeg, png)' },
+      { ko: '라이브니스 검사할 얼굴 이미지 (jpg, jpeg)', en: 'Face image for liveness check (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '라이브니스 통과 여부', en: 'Whether liveness check passed' },
       { ko: '실패 원인 메시지 (성공 시 null)', en: 'Failure reason message (null on success)' },
