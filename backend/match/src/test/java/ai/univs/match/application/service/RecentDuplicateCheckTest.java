@@ -100,11 +100,12 @@ class RecentDuplicateCheckTest {
     }
 
     @Test
-    @DisplayName("같은 얼굴(임계치 이상)이 보이면 자기 행을 지우고 true — 호출자는 MATCH-003")
+    @DisplayName("같은 얼굴(임계치 이상)이 보이면 자기 행을 지우고 상대 faceId 를 돌려준다 — 호출자는 MATCH-003 (UG-378)")
     void 같은_얼굴이면_물린다() {
         최근_조회가_돌려준다(가장_가까운(0.0));
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isTrue();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail))
+                .contains(new RecentDuplicateCheck.Withdrawal("other-face"));
 
         verify(descriptorRepository).deleteById(SELF_ID);
         verify(transactionManager).commit(any());
@@ -115,7 +116,7 @@ class RecentDuplicateCheckTest {
     void 임계치_위() {
         최근_조회가_돌려준다(가장_가까운(거리(0.86)));
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isTrue();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isPresent();
     }
 
     @Test
@@ -123,7 +124,7 @@ class RecentDuplicateCheckTest {
     void 임계치_아래() {
         최근_조회가_돌려준다(가장_가까운(거리(0.84)));
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isEmpty();
 
         verify(descriptorRepository, never()).deleteById(any());
     }
@@ -133,7 +134,7 @@ class RecentDuplicateCheckTest {
     void 최근_없음() {
         최근_조회가_돌려준다(Optional.empty());
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isEmpty();
 
         verify(descriptorRepository, never()).deleteById(any());
     }
@@ -149,7 +150,7 @@ class RecentDuplicateCheckTest {
                 .when(descriptorCustomRepository).lockBranchForRecheck(BRANCH_ID);
         when(descriptorRepository.existsById(SELF_ID)).thenReturn(true);
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isEmpty();
 
         verify(descriptorRepository, never()).deleteById(any());
         verify(transactionManager).rollback(any());
@@ -163,7 +164,7 @@ class RecentDuplicateCheckTest {
                 .when(descriptorRepository).deleteById(SELF_ID);
         when(descriptorRepository.existsById(SELF_ID)).thenReturn(true);
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isEmpty();
 
         verify(transactionManager).rollback(any());
         verify(transactionManager, never()).commit(any());
@@ -171,23 +172,24 @@ class RecentDuplicateCheckTest {
 
     /** 반박 리뷰 L2 — 삭제 커밋 중 연결이 끊기면 지워졌는지 모른다. 지워졌는데 성공으로 돌려주면 gate 에만 faceId 가 남는다. */
     @Test
-    @DisplayName("재검사가 실패했어도 자기 행이 이미 없으면 물린 것으로 본다(true) — 커밋 결과를 모르는 삭제")
+    @DisplayName("재검사가 실패했어도 자기 행이 이미 없으면 물린 것으로 본다 — 상대는 모르니 faceId 없이 (UG-378)")
     void 실패했지만_이미_지워졌으면_물림() {
         최근_조회가_돌려준다(가장_가까운(0.0));
         doThrow(new DataAccessResourceFailureException("commit outcome unknown"))
                 .when(transactionManager).commit(any());
         when(descriptorRepository.existsById(SELF_ID)).thenReturn(false);
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isTrue();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail))
+                .contains(new RecentDuplicateCheck.Withdrawal(null));
     }
 
     @Test
-    @DisplayName("재검사가 실패하고 다시 읽기도 실패하면 유지한다(false)")
+    @DisplayName("재검사가 실패하고 다시 읽기도 실패하면 유지한다")
     void 다시_읽기도_실패하면_유지() {
         doThrow(new CannotAcquireLockException("lock timeout"))
                 .when(descriptorCustomRepository).lockBranchForRecheck(BRANCH_ID);
         when(descriptorRepository.existsById(SELF_ID)).thenThrow(new DataAccessResourceFailureException("down"));
 
-        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isFalse();
+        assertThat(check.withdrawIfDuplicated(BRANCH_ID, SELF_ID, detail)).isEmpty();
     }
 }

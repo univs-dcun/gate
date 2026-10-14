@@ -167,6 +167,19 @@ class DescriptorUseCaseTest {
         }
 
         @Test
+        @DisplayName("UG-378: 매처 실패의 details(겹친 faceId)를 InvalidFaceModuleException 에 그대로 싣는다")
+        void 매처_실패_details_전달() {
+            given(matchFeign.register(any(RegisterV2FeignRequestDTO.class)))
+                    .willThrow(new CustomFeignException("MATCH-003", "ALREADY_REGISTERED_DESCRIPTOR", "이미 등록된 얼굴",
+                            java.util.Map.of("faceId", "dup-face")));
+
+            assertThatThrownBy(() -> useCase.execute(input))
+                    .isInstanceOf(InvalidFaceModuleException.class)
+                    .extracting(e -> ((InvalidFaceModuleException) e).getDetails())
+                    .isEqualTo(java.util.Map.of("faceId", "dup-face"));
+        }
+
+        @Test
         @DisplayName("ExtractService 를 주입받지 않는다 — 라이브니스가 구조적으로 실행 불가")
         void 추출_의존성_없음() {
             assertNoExtractServiceDependency(RegisterByDescriptorUseCase.class);

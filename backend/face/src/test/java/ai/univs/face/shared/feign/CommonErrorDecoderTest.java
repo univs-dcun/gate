@@ -148,6 +148,28 @@ class CommonErrorDecoderTest {
     }
 
     @Test
+    @DisplayName("UG-378: 4xx 의 errors.details 를 CustomFeignException 에 싣는다 — MATCH-003 의 겹친 faceId")
+    void 해석_가능한_4xx_details() {
+        Exception result = decoder.decode("MatchFeign#register(RegisterFeignRequestDTO)", response(400, """
+                {"success":false,"data":null,"errors":{"code":"MATCH-003","type":"ALREADY_REGISTERED_DESCRIPTOR",
+                 "message":"dup","details":{"faceId":"dup-face"}}}
+                """));
+
+        assertThat(result).isInstanceOf(CustomFeignException.class);
+        assertThat(((CustomFeignException) result).getDetails()).containsEntry("faceId", "dup-face");
+    }
+
+    @Test
+    @DisplayName("UG-378: details 가 없으면 null — 예전 하위 응답도 그대로 읽는다")
+    void 해석_가능한_4xx_details_없음() {
+        Exception result = decoder.decode("FaceClient#verify()", response(400, """
+                {"success":false,"data":null,"errors":{"code":"ML-101","type":"FACE_NOT_FOUND","message":"no face"}}
+                """));
+
+        assertThat(((CustomFeignException) result).getDetails()).isNull();
+    }
+
+    @Test
     @DisplayName("4xx 인데 errors 가 비어 있어도 NPE 로 500 이 나가지 않는다")
     void errors_없는_4xx() {
         // 델타 리뷰가 실측했다. 예전에는 여기서 NPE 가 나 handleGlobalException 으로 떨어졌고

@@ -28,7 +28,11 @@ public class LoggingAspect {
             "password",
             "token",
             "faceData",
-            "secret"
+            "secret",
+            // UG-382: gate·face 는 UG-279 에서 넣었는데 match 만 빠져 있었다. descriptor 는 생체 정보에서
+            // 파생된 템플릿이고, 등록·1:1·1:N 요청마다 base64 전문이 INFO "Data:" 줄에 평문으로 쌓였다.
+            // 키 이름 contains 매칭이라 targetDescriptor 도 함께 가려진다.
+            "descriptor"
     );
 
     @Autowired
