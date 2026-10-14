@@ -46,6 +46,8 @@ public class LoggingAspect {
             "descriptor"
     );
 
+    private static final String HEADER_ACCOUNT_ID = "X-Account-Id";
+
     private final HttpServletRequest request;
 
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
@@ -55,23 +57,33 @@ public class LoggingAspect {
     @Around("restControllerMethods()")
     public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
         String clientIp = getClientIpAddress(request);
+        // UG-383: 「누가」 — UserContextInterceptor 의 Header info 줄을 DEBUG 로 내리면서 옮겨 왔다.
+        // 온프레미스 로그 패턴에는 MDC accountId 가 없어 이 줄이 유일하다.
+        String accountId = Objects.toString(request.getHeader(HEADER_ACCOUNT_ID), "-");
         String httpMethod = request.getMethod();
         String uri = request.getRequestURI();
         String controller = joinPoint.getSignature().getDeclaringType().getSimpleName();
         String methodName = joinPoint.getSignature().getName();
-        Map<String, Object> requestData = extractRequestData(joinPoint);
 
-        log.info("[REQUEST] {} {} | {}.{} | ip={} | data={}",
-                httpMethod, uri, controller, methodName, clientIp, requestData);
+        // UG-383: 요청 데이터 덤프는 DEBUG 다. INFO 에서 요청마다 두 줄(시작·끝)을 남기면 부하에 비례해
+        // 로그가 불어나고, 컨테이너에는 로그 크기 제한도 없다. INFO 에는 끝날 때 한 줄([RESPONSE] 또는
+        // [EXCEPTION])만 남기고, 거기에 IP 를 옮겨 담아 "누가 무엇을 얼마 만에" 는 그대로 남긴다.
+        // 데이터가 필요하면 logging.level.ai.univs.gate.shared.logging.LoggingAspect=DEBUG 로 켠다.
+        // DEBUG 가 꺼져 있으면 요청 데이터를 만들지도 않는다 — 리플렉션으로 DTO 를 훑는 비용이 매 요청 든다.
+        if (log.isDebugEnabled()) {
+            log.debug("[REQUEST] {} {} | {}.{} | ip={} | data={}",
+                    httpMethod, uri, controller, methodName, clientIp, extractRequestData(joinPoint));
+        }
 
         long start = System.currentTimeMillis();
         try {
             Object result = joinPoint.proceed();
-            log.info("[RESPONSE] {} {} | {}.{} | duration={}ms",
-                    httpMethod, uri, controller, methodName, System.currentTimeMillis() - start);
+            log.info("[RESPONSE] {} {} | {}.{} | ip={} | account={} | duration={}ms",
+                    httpMethod, uri, controller, methodName, clientIp, accountId,
+                    System.currentTimeMillis() - start);
             return result;
         } catch (Throwable ex) {
-            // UG-290/291: 이 줄은 [REQUEST] 의 종결선이다 — 소요시간이 여기에만 있으므로 지우면
+            // UG-290/291: 이 줄은 요청의 종결선이다 — 소요시간이 여기에만 있으므로 지우면
             // 요청이 어떻게 끝났는지 알 수 없게 된다. 대신 두 가지를 바꿨다.
             //
             //  1. 수준을 오류 성격에 맞춘다. 클라이언트 입력이 원인인 4xx 를 ERROR 로 남기면
@@ -79,8 +91,8 @@ public class LoggingAspect {
             //  2. 예외 상세는 여기서 늘리지 않는다. GlobalExceptionHandler 가 코드·메시지·
             //     스택트레이스를 담당하고, 이 줄은 "어느 요청이 얼마 만에 어떻게 끝났는가" 만 맡는다.
             //     두 줄이 남지만 겹치는 내용은 예외 이름 하나뿐이다.
-            String line = "[EXCEPTION] {} {} | {}.{} | duration={}ms | exception={}";
-            Object[] args = {httpMethod, uri, controller, methodName,
+            String line = "[EXCEPTION] {} {} | {}.{} | ip={} | account={} | duration={}ms | exception={}";
+            Object[] args = {httpMethod, uri, controller, methodName, clientIp, accountId,
                     System.currentTimeMillis() - start, ex.getMessage()};
             if (isClientError(ex) || isTemporarilyBusy(ex)) {
                 log.warn(line, args);

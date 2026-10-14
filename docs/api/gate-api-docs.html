@@ -516,7 +516,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">특징점 설명 (최대 1000자)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (미전송 시 자동 생성, 최대 36자)</td></tr>
             <tr><td><span class="pname">externalKey</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다</td></tr>
@@ -985,7 +985,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">특징점 추출할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">featureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">특징점 추출할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1052,7 +1052,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td><span class="pname">faceId</span></td><td><span class="ptyp">string</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">비교 대상 featureId (최대 100자)</td></tr>
-            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">확인할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">확인할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1334,7 +1334,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">매칭할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -1677,7 +1677,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
         <table class="tbl">
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImage</span></td><td><span class="ptyp">file</span></td><td><span class="preq">REQUIRED</span></td><td class="pdsc">라이브니스 검사할 얼굴 이미지 (jpg, jpeg)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td><span class="popt">OPTIONAL</span></td><td class="pdsc">요청 식별 UUID (최대 36자)</td></tr>
           </tbody>
         </table>
@@ -2243,8 +2243,8 @@ var ERR_CATALOG = [
     ko: { when: '갤러리에 그 <code>faceId</code> 로 등록된 사용자가 없다.', act: '등록 여부와 <code>faceId</code> 를 확인한다.' },
     en: { when: 'No user is registered in the gallery under that <code>faceId</code>.', act: 'Check that the user is registered and the <code>faceId</code> is right.' } },
   { g: 'upstream', code: 'MATCH-003', type: 'ALREADY_REGISTERED_DESCRIPTOR',
-    ko: { when: '이미 등록된 인물이다. 같은 사람을 두 번 등록하려 했다.', act: '기존 등록을 조회해 재사용하거나, 교체가 목적이면 삭제 후 다시 등록한다. 직전 등록이 <code>PJ-006</code>(503)이나 <code>PJ-005</code> 로 끝났는데 목록에 없다면, 앞 요청이 일부 반영된 채 정리를 기다리는 중이다 — 약 15분 안에 정리되니 그 뒤 다시 등록한다.' },
-    en: { when: 'That person is already registered — a duplicate registration was attempted.', act: 'Look up the existing entry and reuse it, or delete it and register again to replace it. If the previous register ended with <code>PJ-006</code> (503) or <code>PJ-005</code> and the feature is not in the list, that earlier request was partially applied and is waiting to be cleaned up — it is cleaned up within about 15 minutes, so register again after that.' } },
+    ko: { when: '이미 등록된 인물이다. 같은 사람을 두 번 등록하려 했다. 이미 등록된 특징점을 찾을 수 있으면 <code>errors.details</code> 에 그 특징점의 <code>faceFeatureId</code>(일련번호)와 <code>featureId</code> 가 실린다 — 등록 성공 응답의 두 값과 같다. 없을 수도 있다(동시에 들어온 같은 얼굴 등).', act: '<code>details</code> 가 있으면 <code>details.faceFeatureId</code> 로 특징점 단건 조회(<code>GET /api/v1/feature/face/{faceFeatureId}</code>)를 해 기존 등록을 확인한다. 기존 등록을 재사용하거나, 교체가 목적이면 삭제 후 다시 등록한다. 직전 등록이 <code>PJ-006</code>(503)이나 <code>PJ-005</code> 로 끝났는데 목록에 없다면, 앞 요청이 일부 반영된 채 정리를 기다리는 중이다 — 약 15분 안에 정리되니 그 뒤 다시 등록한다.' },
+    en: { when: 'That person is already registered — a duplicate registration was attempted. When the existing feature can be found, <code>errors.details</code> carries its <code>faceFeatureId</code> (serial number) and <code>featureId</code> — the same two values a successful register returns. It may be absent (for example, when the same face arrived concurrently).', act: 'If <code>details</code> is present, check the existing entry with the single feature lookup using <code>details.faceFeatureId</code> (<code>GET /api/v1/feature/face/{faceFeatureId}</code>). Reuse the existing entry, or delete it and register again to replace it. If the previous register ended with <code>PJ-006</code> (503) or <code>PJ-005</code> and the feature is not in the list, that earlier request was partially applied and is waiting to be cleaned up — it is cleaned up within about 15 minutes, so register again after that.' } },
   { g: 'upstream', code: 'MATCH-002', type: 'NOT_SUPPORTED_VERSION',
     ko: { when: '<code>descriptor</code> 의 추출 버전을 지원하지 않는다. 오래 보관해 둔 특징점을 보낼 때 발생한다.',
           act: '특징점 추출 API 로 다시 추출해 보낸다.' },
@@ -2449,7 +2449,7 @@ function renderFailureReasons(lang) {
    언어별 마크업을 통째로 둔다 — 두 문서가 나란히 있어 한쪽만 고치는 실수가 눈에 띈다. */
 var ERR_FMT = {
   ko: '<div class="sec-blk"><div class="sec-ttl">응답 봉투</div>'
-    + '<p class="err-p">성공과 실패 모두 같은 세 필드로 감싸 돌려준다. <code>success</code> 로 구분하고, 실패면 <code>errors</code> 에 <code>code</code>·<code>type</code>·<code>message</code> 세 값이 함께 온다.</p>'
+    + '<p class="err-p">성공과 실패 모두 같은 세 필드로 감싸 돌려준다. <code>success</code> 로 구분하고, 실패면 <code>errors</code> 에 <code>code</code>·<code>type</code>·<code>message</code> 세 값이 함께 온다. 일부 오류는 <code>details</code> 객체를 덧붙인다 — 지금은 <code>MATCH-003</code> 의 <code>faceFeatureId</code>·<code>featureId</code> 뿐이고, 덧붙일 것이 없으면 <code>details</code> 키 자체가 없다.</p>'
     + '<div class="err-cols">'
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: { ... },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">false</span>,\n  <span class="jk">"data"</span>: <span class="jnu">null</span>,\n  <span class="jk">"errors"</span>: {\n    <span class="jk">"code"</span>: <span class="js">"PJ-105"</span>,\n    <span class="jk">"type"</span>: <span class="js">"API_KEY_NOT_FOUND"</span>,\n    <span class="jk">"message"</span>: <span class="js">"API KEY 를 찾을 수 없습니다."</span>\n  }\n}</pre></div>'
@@ -2475,6 +2475,7 @@ var ERR_FMT = {
     + '<li><b>인증 실패는 상태 코드가 세 갈래로 갈린다.</b> 헤더 누락·형식 오류는 400(<code>PJ-101</code>), 토큰이 무효로 판정되면 본문 없는 401, 서명 불일치는 500 이다. <b>재발급으로 해결되는 것은 401 뿐이다</b> — 400 은 요청 헤더를 고쳐야 하고, 500 은 토큰이 서버와 다른 환경에서 발급된 것이므로 다시 로그인해야 한다.</li>'
     + '<li>401 을 받으면 <b>토큰 재발급 후 한 번 재시도</b>한다. 재발급까지 실패하면 (<code>AUTH-107</code>) 다시 로그인한다.</li>'
     + '<li>재시도가 의미 있는 것은 503(<code>PJ-006</code> 포함)·<code>PJ-005</code> 뿐이다. 503 에 <code>Retry-After</code> 가 있으면 그 초만큼 기다린 뒤 보내고, 반복되면 간격을 늘린다 — 곧바로 연달아 보내면 같은 혼잡에 다시 부딪힌다. <code>PJ-101</code>·<code>PJ-105</code>·<code>PJ-106</code> 는 요청이나 설정을 고치지 않으면 결과가 같다.</li>'
+    + '<li><code>errors.details</code> 는 없을 수 있고, 모르는 키가 늘어날 수 있다. 있을 때만 읽고 모르는 키는 무시한다.</li>'
     + '<li>요청마다 <code>transactionUuid</code> 를 직접 지정해 보관하면, 문의 시 서버 이력과 대조할 수 있다.</li>'
     + '</ul></div>'
 
@@ -2486,7 +2487,7 @@ var ERR_FMT = {
     + '<p class="err-foot">정의되지 않은 사유는 <b>키 문자열이 그대로</b> 실린다 — 사람에게 보여주기 전에 알려진 사유인지 확인해야 한다. 그리고 <b>이 목록은 위 세 계열(1:1 확인·1:N 매칭·라이브니스)에만 적용된다.</b> 라이브니스를 켠 프로젝트의 <b>등록</b>에서는 같은 사유가 흡수되지 않고 <code>code</code> 가 <code>-777</code> 인 <b>오류</b>로 온다 (사유는 <code>type</code>).</p></div>',
 
   en: '<div class="sec-blk"><div class="sec-ttl">Response Envelope</div>'
-    + '<p class="err-p">Success and failure share the same three fields. Use <code>success</code> to tell them apart; on failure, <code>errors</code> carries <code>code</code>, <code>type</code> and <code>message</code>.</p>'
+    + '<p class="err-p">Success and failure share the same three fields. Use <code>success</code> to tell them apart; on failure, <code>errors</code> carries <code>code</code>, <code>type</code> and <code>message</code>. Some errors add a <code>details</code> object — currently only <code>MATCH-003</code>, with <code>faceFeatureId</code> and <code>featureId</code>; when there is nothing to add, the <code>details</code> key is absent.</p>'
     + '<div class="err-cols">'
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Success</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: { ... },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">Error</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">false</span>,\n  <span class="jk">"data"</span>: <span class="jnu">null</span>,\n  <span class="jk">"errors"</span>: {\n    <span class="jk">"code"</span>: <span class="js">"PJ-105"</span>,\n    <span class="jk">"type"</span>: <span class="js">"API_KEY_NOT_FOUND"</span>,\n    <span class="jk">"message"</span>: <span class="js">"API key not found."</span>\n  }\n}</pre></div>'
@@ -2512,6 +2513,7 @@ var ERR_FMT = {
     + '<li><b>Authentication failures split across three status codes.</b> A missing or malformed header is a 400 (<code>PJ-101</code>), a token judged invalid is a bodiless 401, and a signature mismatch is a 500. <b>Only the 401 is fixed by refreshing</b> — the 400 needs the request header corrected, and the 500 means the token was issued against a different environment, so log in again.</li>'
     + '<li>On a 401, <b>refresh the token and retry once</b>. If the refresh also fails (<code>AUTH-107</code>), log in again.</li>'
     + '<li>Only 503 (including <code>PJ-006</code>) and <code>PJ-005</code> are worth retrying. When a 503 carries <code>Retry-After</code>, wait that many seconds before resending, and back off further if it repeats — resending immediately runs into the same congestion. <code>PJ-101</code>, <code>PJ-105</code> and <code>PJ-106</code> return the same result until the request or the configuration changes.</li>'
+    + '<li><code>errors.details</code> may be absent, and new keys may be added. Read it only when present and ignore keys you do not know.</li>'
     + '<li>Send your own <code>transactionUuid</code> on every request and keep it — it lets support match your call against the server-side history.</li>'
     + '</ul></div>'
 
@@ -2693,7 +2695,7 @@ var PAGES = {
     pdsc: [
       { ko: '<code>Bearer {accessToken}</code>', en: '<code>Bearer {accessToken}</code>' },
       { ko: '프로젝트 API Key (최대 36자)', en: 'Project API Key (max 36 chars)' },
-      { ko: '얼굴 이미지 (jpg, jpeg, png)', en: 'Face image (jpg, jpeg, png)' },
+      { ko: '얼굴 이미지 (jpg, jpeg)', en: 'Face image (jpg, jpeg)' },
       { ko: '특징점 설명 (최대 1000자)', en: 'Feature description (max 1000 chars)' },
       { ko: '요청 식별 UUID (미전송 시 자동 생성, 최대 36자)', en: 'Request UUID (auto-generated if not provided, max 36 chars)' },
       { ko: '외부 키 — 고객사 시스템의 사용자 식별자 (최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다', en: 'External key — the user identifier in your own system (max 255 chars). Registering again with the same key after a delete links the history before and after, and it is searchable in history queries' },
@@ -2830,7 +2832,7 @@ var PAGES = {
       en: 'Extract a feature descriptor from a face image. The extracted descriptor can be used in the <code>verify/descriptor</code> (1:1 verify), <code>descriptor</code> (register), and <code>identify/descriptor</code> (1:N identify) APIs.'
     },
     pdsc: [
-      { ko: '특징점 추출할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for feature extraction (jpg, jpeg, png)' },
+      { ko: '특징점 추출할 얼굴 이미지 (jpg, jpeg)', en: 'Face image for feature extraction (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '추출된 얼굴 특징점 디스크립터 (Base64 인코딩된 벡터)', en: 'Extracted face feature descriptor (Base64-encoded vector)' }
     ],
@@ -2848,7 +2850,7 @@ var PAGES = {
     },
     pdsc: [
       { ko: '비교 대상 featureId (최대 100자)', en: 'Target featureId to compare (max 100 chars)' },
-      { ko: '확인할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image to verify (jpg, jpeg, png)' },
+      { ko: '확인할 얼굴 이미지 (jpg, jpeg)', en: 'Face image to verify (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
@@ -2937,7 +2939,7 @@ var PAGES = {
       en: 'Compare a submitted face image against all registered features in the project to find the most similar match. A liveness check may be performed depending on project settings.'
     },
     pdsc: [
-      { ko: '매칭할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image to match (jpg, jpeg, png)' },
+      { ko: '매칭할 얼굴 이미지 (jpg, jpeg)', en: 'Face image to match (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '매칭 이력 ID', en: 'Match history ID' },
       { ko: '프로젝트 ID', en: 'Project ID' },
@@ -3027,7 +3029,7 @@ var PAGES = {
       en: 'Detect whether a submitted face image is a real live person. Prevents spoofing attempts using photos, videos, or masks.'
     },
     pdsc: [
-      { ko: '라이브니스 검사할 얼굴 이미지 (jpg, jpeg, png)', en: 'Face image for liveness check (jpg, jpeg, png)' },
+      { ko: '라이브니스 검사할 얼굴 이미지 (jpg, jpeg)', en: 'Face image for liveness check (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '라이브니스 통과 여부', en: 'Whether liveness check passed' },
       { ko: '실패 원인 메시지 (성공 시 null)', en: 'Failure reason message (null on success)' },

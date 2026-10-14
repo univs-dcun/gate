@@ -30,7 +30,9 @@ public class UserContextInterceptor implements HandlerInterceptor {
         String apiKey = request.getHeader(HEADER_API_KEY);
         String timezone = request.getHeader(HEADER_TIMEZONE);
 
-        log.info("#### Header info accountId: {}, apiKey: {}, timezone: {}",
+        // UG-383: 요청마다 남는 INFO 줄이라 DEBUG 로 내렸다. accountId 는 LoggingAspect 의 종결선
+        // ([RESPONSE]/[EXCEPTION]) 에 함께 남는다.
+        log.debug("#### Header info accountId: {}, apiKey: {}, timezone: {}",
                 accountId, ApiKeyMasker.mask(apiKey), timezone);
 
         if (StringUtils.hasText(accountId)) {

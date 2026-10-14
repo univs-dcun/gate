@@ -126,6 +126,19 @@ class RegisterUseCaseTest {
         }
 
         @Test
+        @DisplayName("UG-378: MatchFeign 실패의 details(겹친 faceId)를 InvalidFaceModuleException 에 그대로 싣는다")
+        void execute_whenMatchFeignFailsWithDetails_forwardsDetails() {
+            given(matchFeign.registerWithFaceId(any()))
+                    .willThrow(new CustomFeignException("MATCH-003", "ALREADY_REGISTERED_DESCRIPTOR", "이미 등록된 얼굴",
+                            java.util.Map.of("faceId", "dup-face")));
+
+            assertThatThrownBy(() -> registerUseCase.execute(inputWithFaceId(FACE_ID)))
+                    .isInstanceOf(InvalidFaceModuleException.class)
+                    .extracting(e -> ((InvalidFaceModuleException) e).getDetails())
+                    .isEqualTo(java.util.Map.of("faceId", "dup-face"));
+        }
+
+        @Test
         @DisplayName("ExtractService 실패 시 예외가 그대로 전파된다")
         void execute_whenExtractFails_exceptionPropagates() {
             ErrorType errorType = ErrorType.FACE_NOT_FOUND;

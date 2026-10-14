@@ -7,6 +7,7 @@ import ai.univs.match.application.result.IdentifyResult;
 import ai.univs.match.application.result.MatchResult;
 import ai.univs.match.application.result.VerifyResult;
 import ai.univs.match.application.usecase.*;
+import ai.univs.match.shared.exception.CustomFaceMatcherException;
 import ai.univs.match.shared.locale.MessageService;
 import ai.univs.match.shared.web.enums.ErrorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,10 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.util.Map;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -245,6 +250,34 @@ class MatcherControllerTest {
             perform(post(URL), request)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors.type").value("INVALID_INPUT"));
+        }
+
+        @Test
+        @DisplayName("같은 얼굴이 이미 있으면 400 MATCH-003 에 겹친 faceId 를 details 로 싣는다 (UG-378)")
+        void whenDuplicated_thenReturnsDuplicateFaceIdInDetails() throws Exception {
+            when(registerUseCase.execute(anyString(), anyString())).thenThrow(new CustomFaceMatcherException(
+                    ErrorType.ALREADY_REGISTERED_DESCRIPTOR, Map.of("faceId", "dup-face")));
+            var request = new RegisterRequestDTO(BRANCH_NAME, DESCRIPTOR);
+
+            perform(post(URL), request)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.code").value("MATCH-003"))
+                    .andExpect(jsonPath("$.errors.details.faceId").value("dup-face"));
+        }
+
+        @Test
+        @DisplayName("details 가 없는 오류는 응답에 details 키가 없다 (UG-378)")
+        void whenNoDetails_thenOmitsDetailsKey() throws Exception {
+            when(registerUseCase.execute(anyString(), anyString()))
+                    .thenThrow(new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR));
+            var request = new RegisterRequestDTO(BRANCH_NAME, DESCRIPTOR);
+
+            perform(post(URL), request)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.code").value("MATCH-003"))
+                    .andExpect(jsonPath("$.errors.details").doesNotExist())
+                    // doesNotExist 는 null 값도 통과시킨다 — 키 자체가 없음을 본문으로 확인한다
+                    .andExpect(content().string(not(containsString("\"details\""))));
         }
     }
 

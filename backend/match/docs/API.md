@@ -53,7 +53,7 @@ Register a user's facial descriptor using a client-provided faceId.
 |-------------|--------|-------------|
 | CLIENT_INPUT_ERROR | 400 | Invalid input |
 | ALREADY_REGISTERED_USER | 400 | faceId already exists in branch |
-| ALREADY_REGISTERED_DESCRIPTOR | 400 | Descriptor matches existing user (similarity >= 0.85) |
+| ALREADY_REGISTERED_DESCRIPTOR | 400 | Descriptor matches existing user (similarity >= 0.85). `errors.details.faceId` = matched faceId (UG-378) |
 
 ---
 
@@ -93,7 +93,7 @@ Register a user's facial descriptor. The server generates a UUID for faceId.
 |-------------|--------|-------------|
 | CLIENT_INPUT_ERROR | 400 | Invalid input |
 | ALREADY_REGISTERED_USER | 400 | faceId already exists |
-| ALREADY_REGISTERED_DESCRIPTOR | 400 | Descriptor matches existing user |
+| ALREADY_REGISTERED_DESCRIPTOR | 400 | Descriptor matches existing user. `errors.details.faceId` = matched faceId (UG-378) |
 
 ---
 
@@ -136,7 +136,7 @@ Update an existing user's facial descriptor.
 | CLIENT_INPUT_ERROR | 400 | Invalid input |
 | EMPTY_GALLERY | 400 | Branch does not exist |
 | INVALID_FACE_ID | 400 | faceId not found in branch |
-| ALREADY_REGISTERED_DESCRIPTOR | 400 | New descriptor matches another user |
+| ALREADY_REGISTERED_DESCRIPTOR | 400 | New descriptor matches another user. `errors.details.faceId` = matched faceId (UG-378) |
 
 ---
 

@@ -84,7 +84,8 @@ public class GlobalExceptionHandler {
     public ResponseApi<?> handleFaceMatcherCustomException(CustomFaceMatcherException ex) {
         logByStatus(ex.getErrorType(), ex, null);
 
-        return getExceptionResponse(ex.getErrorType());
+        ErrorType errorType = ex.getErrorType();
+        return ResponseApi.fail(Errors.from(errorType, messageService.getMessage(errorType), ex.getDetails()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

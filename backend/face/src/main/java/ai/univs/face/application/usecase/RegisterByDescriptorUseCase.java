@@ -77,10 +77,12 @@ public class RegisterByDescriptorUseCase {
             // 등록 실패 이력 저장
             faceHistory.fail(e.getType(), input.clientId());
 
+            // details 도 그대로 넘긴다 — MATCH-003 의 겹친 faceId (UG-378)
             throw new InvalidFaceModuleException(
                     e.getCode(),
                     e.getType(),
-                    e.getMessage());
+                    e.getMessage(),
+                    e.getDetails());
         }
     }
 }
