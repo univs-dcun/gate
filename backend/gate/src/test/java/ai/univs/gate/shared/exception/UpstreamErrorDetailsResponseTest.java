@@ -36,7 +36,7 @@ class UpstreamErrorDetailsResponseTest {
         void duplicateWithFeature() {
             throw new CustomFeignException("MATCH-003", "ALREADY_REGISTERED_DESCRIPTOR", "이미 등록된 얼굴",
                     Map.of("faceId", "dup-feature-id"))
-                    .withDetails(Map.of("featureId", "dup-feature-id"));
+                    .withDetails(Map.of("faceFeatureId", 99L, "featureId", "dup-feature-id"));
         }
 
         @GetMapping("/duplicate/upstream-only")
@@ -74,12 +74,13 @@ class UpstreamErrorDetailsResponseTest {
     }
 
     @Test
-    @DisplayName("MATCH-003 에 gate 가 찾은 featureId 를 details 로 싣는다")
+    @DisplayName("MATCH-003 에 gate 가 찾은 faceFeatureId·featureId 를 details 로 싣는다")
     void 공개_details() throws Exception {
         mvc.perform(get("/duplicate/with-feature").locale(Locale.KOREAN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.code").value("MATCH-003"))
                 .andExpect(jsonPath("$.errors.type").value("ALREADY_REGISTERED_DESCRIPTOR"))
+                .andExpect(jsonPath("$.errors.details.faceFeatureId").value(99))
                 .andExpect(jsonPath("$.errors.details.featureId").value("dup-feature-id"))
                 .andExpect(jsonPath("$.errors.details.faceId").doesNotExist());
     }
@@ -91,6 +92,8 @@ class UpstreamErrorDetailsResponseTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.code").value("MATCH-003"))
                 .andExpect(jsonPath("$.errors.details").doesNotExist())
+                // doesNotExist 는 null 값도 통과시킨다 — 키 자체가 없음을 본문으로 확인한다
+                .andExpect(content().string(not(containsString("\"details\""))))
                 .andExpect(content().string(not(containsString(UPSTREAM_ONLY_VALUE))));
     }
 
@@ -101,6 +104,8 @@ class UpstreamErrorDetailsResponseTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.code").value("PJ-005"))
                 .andExpect(jsonPath("$.errors.details").doesNotExist())
+                // doesNotExist 는 null 값도 통과시킨다 — 키 자체가 없음을 본문으로 확인한다
+                .andExpect(content().string(not(containsString("\"details\""))))
                 .andExpect(content().string(not(containsString(UPSTREAM_ONLY_VALUE))));
     }
 }

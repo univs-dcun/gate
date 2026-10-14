@@ -324,7 +324,7 @@ class FaceFeatureServiceTest {
     }
 
     @Test
-    @DisplayName("UG-378: MATCH-003 의 faceId 가 이 프로젝트의 얼굴 특징점이면 그 featureId 를 공개 details 에 싣는다")
+    @DisplayName("UG-378: MATCH-003 의 faceId 가 이 프로젝트의 얼굴 특징점이면 그 faceFeatureId·featureId 를 공개 details 에 싣는다")
     void duplicate_found_exposesFeatureId() {
         given(biometricFeatureRepository.findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(
                 DUPLICATE_FEATURE_ID, PROJECT_ID, FeatureType.FACE))
@@ -336,7 +336,8 @@ class FaceFeatureServiceTest {
         assertThat(thrown.getCode()).isEqualTo("MATCH-003");
         assertThat(thrown.getType()).isEqualTo("ALREADY_REGISTERED_DESCRIPTOR");
         assertThat(thrown.getMessage()).isEqualTo("이미 등록된 얼굴");
-        assertThat(thrown.getDetails()).containsExactly(Map.entry("featureId", DUPLICATE_FEATURE_ID));
+        assertThat(thrown.getDetails()).containsExactly(
+                Map.entry("faceFeatureId", 99L), Map.entry("featureId", DUPLICATE_FEATURE_ID));
         assertThat(thrown.getCause()).isSameAs(downstream);
         // 실패 이력은 예전과 같다
         assertThat(capturedFeatureHistory().getFailureType()).isEqualTo("ALREADY_REGISTERED_DESCRIPTOR");
@@ -398,7 +399,7 @@ class FaceFeatureServiceTest {
     }
 
     @Test
-    @DisplayName("UG-378: 특징점 등록(descriptor)도 같은 방식으로 featureId 를 싣는다")
+    @DisplayName("UG-378: 특징점 등록(descriptor)도 같은 방식으로 싣는다")
     void duplicate_byDescriptor_exposesFeatureId() {
         settings = ProjectSettings.builder().id(2L).project(project).consentEnabled(false).build();
         given(apiKeyService.findOwnedByApiKey(API_KEY, ACCOUNT_ID)).willReturn(apiKey);
@@ -414,7 +415,7 @@ class FaceFeatureServiceTest {
                 ACCOUNT_ID, API_KEY, "descriptor", TRANSACTION_UUID, null))
                 .isInstanceOf(CustomFeignException.class)
                 .extracting(e -> ((CustomFeignException) e).getDetails())
-                .isEqualTo(Map.of("featureId", DUPLICATE_FEATURE_ID));
+                .isEqualTo(Map.of("faceFeatureId", 99L, "featureId", DUPLICATE_FEATURE_ID));
     }
 
     @Test

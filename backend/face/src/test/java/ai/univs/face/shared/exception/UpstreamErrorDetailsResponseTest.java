@@ -1,6 +1,9 @@
 package ai.univs.face.shared.exception;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,6 +77,8 @@ class UpstreamErrorDetailsResponseTest {
         mvc.perform(get("/module/plain"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.code").value("MATCH-004"))
-                .andExpect(jsonPath("$.errors.details").doesNotExist());
+                .andExpect(jsonPath("$.errors.details").doesNotExist())
+                // doesNotExist 는 null 값도 통과시킨다 — 키 자체가 없음을 본문으로 확인한다
+                .andExpect(content().string(not(containsString("\"details\""))));
     }
 }

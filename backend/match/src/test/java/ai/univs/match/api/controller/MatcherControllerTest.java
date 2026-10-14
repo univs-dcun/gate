@@ -25,6 +25,8 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.Map;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -273,7 +275,9 @@ class MatcherControllerTest {
             perform(post(URL), request)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors.code").value("MATCH-003"))
-                    .andExpect(jsonPath("$.errors.details").doesNotExist());
+                    .andExpect(jsonPath("$.errors.details").doesNotExist())
+                    // doesNotExist 는 null 값도 통과시킨다 — 키 자체가 없음을 본문으로 확인한다
+                    .andExpect(content().string(not(containsString("\"details\""))));
         }
     }
 

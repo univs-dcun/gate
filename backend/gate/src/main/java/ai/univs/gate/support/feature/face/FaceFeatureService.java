@@ -18,6 +18,7 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -251,7 +252,7 @@ public class FaceFeatureService {
     }
 
     /**
-     * UG-378: 같은 얼굴이 이미 있어 거절됐으면(MATCH-003) 그 특징점의 featureId 를 응답 errors.details 에 싣는다 —
+     * UG-378: 같은 얼굴이 이미 있어 거절됐으면(MATCH-003) 그 특징점의 faceFeatureId·featureId 를 응답 errors.details 에 싣는다 —
      * 콘솔이 「겹친 항목 보기」로 연다.
      *
      * <p>match 가 알려 주는 faceId 는 gate 가 발급해 내려보낸 featureId 와 같은 값이다(UG-338). 그래도 그대로 내보내지
@@ -267,12 +268,20 @@ public class FaceFeatureService {
         try {
             return biometricFeatureRepository
                     .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(faceId, projectId, FeatureType.FACE)
-                    .map(found -> e.withDetails(Map.of("featureId", found.getFeatureId())))
+                    .map(found -> e.withDetails(duplicateDetails(found)))
                     .orElse(e);
         } catch (RuntimeException lookupFailure) {
             log.warn("겹친 특징점 조회에 실패했다 — details 없이 MATCH-003 을 낸다. projectId={}", projectId, lookupFailure);
             return e;
         }
+    }
+
+    /** 성공 응답과 같은 두 식별자 — 단건 조회 경로는 faceFeatureId, 목록·이력 검색은 featureId 를 쓴다. 순서는 고정 */
+    private static Map<String, Object> duplicateDetails(BiometricFeature found) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("faceFeatureId", found.getId());
+        details.put("featureId", found.getFeatureId());
+        return details;
     }
 
     public BiometricFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {

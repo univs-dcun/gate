@@ -9,7 +9,7 @@ public class SwaggerDescriptions {
     public static final String RESPONSE_ERROR_CODE = "실패 코드";
     public static final String RESPONSE_ERROR_TYPE = "실패 타입";
     public static final String RESPONSE_ERROR_MESSAGE = "실패 메시지";
-    public static final String RESPONSE_ERROR_DETAILS = "오류별 추가 정보. 없으면 생략 — MATCH-003 이면 {\"featureId\": 이미 등록된 같은 얼굴의 특징점 ID}";
+    public static final String RESPONSE_ERROR_DETAILS = "오류별 추가 정보. 없으면 생략 — MATCH-003 이면 이미 등록된 같은 얼굴의 {\"faceFeatureId\": 특징점 일련번호, \"featureId\": 특징점 ID}";
 
     /* 페이징 */
     public static final String PAGE = "1 ~ n, 페이지 번호, 기본 값 1";
