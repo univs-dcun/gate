@@ -92,13 +92,22 @@ public class RecentDuplicateCheck {
     }
 
     /**
+     * 물린 결과 (UG-378).
+     *
+     * @param duplicateFaceId 물린 까닭인 같은 얼굴의 faceId. 재검사가 실패했는데 자기 행이 이미 지워진 경우처럼 상대를
+     *                        모르면 null 이다. 상대 행도 곧 물러날 수 있어(아직 재검사 전) 존재를 보장하지 않는다.
+     */
+    public record Withdrawal(String duplicateFaceId) {
+    }
+
+    /**
      * 방금 커밋한 특징점을 재검사하고, 같은 얼굴이 보이면 지운다. 등록 트랜잭션이 커밋된 <b>뒤에</b>, 트랜잭션 밖에서 부른다.
      *
-     * @return {@code true} 면 지웠다 — 호출자는 MATCH-003 으로 끝낸다. {@code false} 면 등록을 유지한다(재검사 실패 포함).
+     * @return 값이 있으면 지웠다 — 호출자는 MATCH-003 으로 끝낸다. 비어 있으면 등록을 유지한다(재검사 실패 포함).
      */
-    public boolean withdrawIfDuplicated(Long branchId, Long descriptorId, DescriptorDetail descriptorDetail) {
+    public Optional<Withdrawal> withdrawIfDuplicated(Long branchId, Long descriptorId, DescriptorDetail descriptorDetail) {
         try {
-            return Boolean.TRUE.equals(recheckTransaction.execute(
+            return Optional.ofNullable(recheckTransaction.execute(
                     status -> recheck(branchId, descriptorId, descriptorDetail)));
         } catch (RuntimeException e) {
             return withdrawnDespiteFailure(branchId, descriptorId, e);
@@ -110,22 +119,23 @@ public class RecentDuplicateCheck {
      * 연결이 끊기면 지워졌는지 모른다 — 그때 성공으로 돌려주면 gate 에만 있는 faceId 가 남는다. 그래서 새로 읽어 본다:
      * 없으면 물린 것(MATCH-003), 있거나 읽기도 실패하면 유지.
      */
-    private boolean withdrawnDespiteFailure(Long branchId, Long descriptorId, RuntimeException cause) {
+    private Optional<Withdrawal> withdrawnDespiteFailure(Long branchId, Long descriptorId, RuntimeException cause) {
         try {
             if (!descriptorRepository.existsById(descriptorId)) {
                 log.warn("같은 얼굴 재검사가 실패했지만 자기 행은 이미 지워졌다 — 물린 것으로 본다. branchId={}, descriptorId={}",
                         branchId, descriptorId, cause);
-                return true;
+                return Optional.of(new Withdrawal(null));
             }
         } catch (RuntimeException readFailure) {
             cause.addSuppressed(readFailure);
         }
         log.warn("같은 얼굴 재검사를 끝내지 못했다 — 등록은 유지한다(중복이 남을 수 있다). branchId={}, descriptorId={}",
                 branchId, descriptorId, cause);
-        return false;
+        return Optional.empty();
     }
 
-    private boolean recheck(Long branchId, Long descriptorId, DescriptorDetail descriptorDetail) {
+    /** @return 물렸으면 그 결과, 유지하면 null — TransactionTemplate 이 Optional 을 감싸지 않게 null 로 돌려준다 */
+    private Withdrawal recheck(Long branchId, Long descriptorId, DescriptorDetail descriptorDetail) {
         descriptorCustomRepository.lockBranchForRecheck(branchId);
 
         Optional<MatchResultProjection> nearest = descriptorCustomRepository.nearestRecent(
@@ -136,18 +146,18 @@ public class RecentDuplicateCheck {
                 descriptorDetail.descriptorBody(),
                 MATCH_VERSION);
         if (nearest.isEmpty()) {
-            return false;
+            return null;
         }
 
         double similarity = parseDoubleSimilarity(
                 getSimilarityByDistance(nearest.get().getDistance(), descriptorDetail.descriptorSpec()));
         if (similarity < DuplicateService.DUPLICATE_SIMILARITY) {
-            return false;
+            return null;
         }
 
         descriptorRepository.deleteById(descriptorId);
         log.warn("같은 얼굴이 동시에 등록돼 방금 저장한 특징점을 물린다 — similarity={}, branchId={}, descriptorId={}",
                 similarity, branchId, descriptorId);
-        return true;
+        return new Withdrawal(nearest.get().getFaceId());
     }
 }

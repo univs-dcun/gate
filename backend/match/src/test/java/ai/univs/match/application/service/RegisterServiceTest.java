@@ -24,6 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import java.sql.SQLException;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -324,20 +325,39 @@ class RegisterServiceTest {
         }
 
         @Test
-        @DisplayName("재검사가 같은 얼굴을 보고 물렸으면 ALREADY_REGISTERED_DESCRIPTOR(MATCH-003) 로 끝낸다")
+        @DisplayName("재검사가 같은 얼굴을 보고 물렸으면 ALREADY_REGISTERED_DESCRIPTOR(MATCH-003) 에 상대 faceId 를 싣는다 (UG-378)")
         void 물렸으면_이미_등록됨() {
-            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any())).thenReturn(true);
+            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any()))
+                    .thenReturn(Optional.of(new RecentDuplicateCheck.Withdrawal("dup-face")));
 
             assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
                     .isInstanceOf(CustomFaceMatcherException.class)
-                    .extracting(ex -> ((CustomFaceMatcherException) ex).getErrorType())
-                    .isEqualTo(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
+                    .satisfies(ex -> {
+                        CustomFaceMatcherException e = (CustomFaceMatcherException) ex;
+                        assertThat(e.getErrorType()).isEqualTo(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
+                        assertThat(e.getDetails()).containsExactly(Map.entry("faceId", "dup-face"));
+                    });
+        }
+
+        @Test
+        @DisplayName("물렸지만 상대를 모르면 details 없이 MATCH-003 (UG-378)")
+        void 상대_모르면_details_없음() {
+            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any()))
+                    .thenReturn(Optional.of(new RecentDuplicateCheck.Withdrawal(null)));
+
+            assertThatThrownBy(() -> registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor))
+                    .isInstanceOf(CustomFaceMatcherException.class)
+                    .satisfies(ex -> {
+                        CustomFaceMatcherException e = (CustomFaceMatcherException) ex;
+                        assertThat(e.getErrorType()).isEqualTo(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
+                        assertThat(e.getDetails()).isNull();
+                    });
         }
 
         @Test
         @DisplayName("재검사를 통과하면 그대로 성공한다")
         void 통과하면_성공() {
-            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any())).thenReturn(false);
+            when(recentDuplicateCheck.withdrawIfDuplicated(eq(1L), eq(SAVED_ID), any())).thenReturn(Optional.empty());
 
             registerService.register(BRANCH_NAME, FACE_ID, base64Descriptor);
 

@@ -122,7 +122,12 @@ class DuplicateServiceTest {
                 assertThatThrownBy(() ->
                         duplicateService.checkDuplicateDescriptor(branch, descriptorDetail, "my-face", true))
                         .isInstanceOf(CustomFaceMatcherException.class)
-                        .satisfies(ex -> assertThat085Threshold((CustomFaceMatcherException) ex));
+                        .satisfies(ex -> {
+                            assertThat085Threshold((CustomFaceMatcherException) ex);
+                            // UG-378: 겹친 상대를 details 로 싣는다
+                            org.assertj.core.api.Assertions.assertThat(((CustomFaceMatcherException) ex).getDetails())
+                                    .containsExactly(java.util.Map.entry("faceId", "other-face"));
+                        });
             }
 
             @Test

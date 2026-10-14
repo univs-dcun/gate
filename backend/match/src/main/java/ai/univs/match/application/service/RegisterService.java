@@ -8,6 +8,7 @@ import ai.univs.match.infrastructure.persistence.DescriptorRepository;
 import ai.univs.match.infrastructure.persistence.UniqueViolation;
 import ai.univs.match.shared.exception.CustomFaceMatcherException;
 import ai.univs.match.shared.web.enums.ErrorType;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.persistence.NoResultException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -88,9 +89,12 @@ public class RegisterService {
         Long descriptorId = registerTransaction.execute(status -> save(branchId, faceId, descriptorDetail));
 
         // 커밋 뒤 — 동시에 들어온 같은 얼굴이 있으면 방금 저장한 행을 물린다 (UG-374)
-        if (recentDuplicateCheck.withdrawIfDuplicated(branchId, descriptorId, descriptorDetail)) {
-            throw new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR);
-        }
+        recentDuplicateCheck.withdrawIfDuplicated(branchId, descriptorId, descriptorDetail).ifPresent(withdrawal -> {
+            // 상대를 모르면(재검사 실패 뒤 자기 행이 지워져 있던 경우) details 없이 — UG-378
+            String duplicateFaceId = withdrawal.duplicateFaceId();
+            throw new CustomFaceMatcherException(ErrorType.ALREADY_REGISTERED_DESCRIPTOR,
+                    duplicateFaceId == null ? null : Map.of("faceId", duplicateFaceId));
+        });
     }
 
     /**

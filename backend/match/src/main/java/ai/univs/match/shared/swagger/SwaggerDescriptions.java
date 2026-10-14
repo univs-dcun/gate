@@ -9,6 +9,7 @@ public class SwaggerDescriptions {
     public static final String RESPONSE_ERROR_CODE = "실패 코드";
     public static final String RESPONSE_ERROR_TYPE = "실패 타입";
     public static final String RESPONSE_ERROR_MESSAGE = "실패 메시지";
+    public static final String RESPONSE_ERROR_DETAILS = "오류별 추가 정보. 없으면 생략 — MATCH-003 이면 {\"faceId\": 겹친 특징점 ID}";
 
     /* Match */
     public static final String BRANCH_NAME = "1 ~ 255 문자열, 특징점 브렌치 이름";

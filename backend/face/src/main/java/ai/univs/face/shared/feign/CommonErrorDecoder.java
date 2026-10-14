@@ -53,7 +53,8 @@ public class CommonErrorDecoder implements ErrorDecoder {
                 throw new UpstreamCallException(status, s, "errors 없는 4xx 응답");
             }
 
-            return new CustomFeignException(feignErrors.getCode(), feignErrors.getType(), feignErrors.getMessage());
+            return new CustomFeignException(
+                    feignErrors.getCode(), feignErrors.getType(), feignErrors.getMessage(), feignErrors.getDetails());
         }
 
         if (status == SERVICE_UNAVAILABLE) {

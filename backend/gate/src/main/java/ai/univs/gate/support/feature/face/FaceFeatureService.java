@@ -18,6 +18,8 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.file.FileService;
 import ai.univs.gate.support.project.ProjectSettingsService;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,9 @@ import ai.univs.gate.shared.web.enums.CallerType;
 @Service
 @RequiredArgsConstructor
 public class FaceFeatureService {
+
+    /** match 의 「같은 얼굴이 이미 등록됨」 — face 가 코드를 그대로 넘긴다 (UG-378) */
+    static final String DUPLICATE_FACE_CODE = "MATCH-003";
 
     private final HistoryRecorder historyRecorder;
     private final BiometricFeatureRepository biometricFeatureRepository;
@@ -112,7 +117,7 @@ public class FaceFeatureService {
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
             historyRecorder.fail(featureHistory);
-            throw e;
+            throw withDuplicateFeatureId(e, project.getId());
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
@@ -204,7 +209,7 @@ public class FaceFeatureService {
         } catch (CustomFeignException e) {
             featureHistory.fail(e.getType());
             historyRecorder.fail(featureHistory);
-            throw e;
+            throw withDuplicateFeatureId(e, project.getId());
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
@@ -244,6 +249,39 @@ public class FaceFeatureService {
      */
     public static String normalizeExternalKey(String externalKey) {
         return StringUtils.hasText(externalKey) ? externalKey.trim() : null;
+    }
+
+    /**
+     * UG-378: 같은 얼굴이 이미 있어 거절됐으면(MATCH-003) 그 특징점의 faceFeatureId·featureId 를 응답 errors.details 에 싣는다 —
+     * 콘솔이 「겹친 항목 보기」로 연다.
+     *
+     * <p>match 가 알려 주는 faceId 는 gate 가 발급해 내려보낸 featureId 와 같은 값이다(UG-338). 그래도 그대로 내보내지
+     * 않고 <b>이 프로젝트의 지워지지 않은 얼굴 특징점</b>으로 찾아질 때만 싣는다 — 동시에 들어온 같은 얼굴(UG-374
+     * 재검사의 상대)은 아직 gate 에 없거나 곧 물러날 수 있고, 다른 프로젝트의 값을 내보내는 일은 없어야 한다.
+     * 찾지 못하거나 조회가 실패하면 details 없이 같은 MATCH-003 을 낸다 — 이 부가 정보 때문에 결과가 바뀌면 안 된다.
+     */
+    private CustomFeignException withDuplicateFeatureId(CustomFeignException e, Long projectId) {
+        if (!DUPLICATE_FACE_CODE.equals(e.getCode()) || e.getUpstreamDetails() == null
+                || !(e.getUpstreamDetails().get("faceId") instanceof String faceId) || faceId.isBlank()) {
+            return e;
+        }
+        try {
+            return biometricFeatureRepository
+                    .findByFeatureIdAndProjectIdAndTypeAndIsDeletedFalse(faceId, projectId, FeatureType.FACE)
+                    .map(found -> e.withDetails(duplicateDetails(found)))
+                    .orElse(e);
+        } catch (RuntimeException lookupFailure) {
+            log.warn("겹친 특징점 조회에 실패했다 — details 없이 MATCH-003 을 낸다. projectId={}", projectId, lookupFailure);
+            return e;
+        }
+    }
+
+    /** 성공 응답과 같은 두 식별자 — 단건 조회 경로는 faceFeatureId, 목록·이력 검색은 featureId 를 쓴다. 순서는 고정 */
+    private static Map<String, Object> duplicateDetails(BiometricFeature found) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("faceFeatureId", found.getId());
+        details.put("featureId", found.getFeatureId());
+        return details;
     }
 
     public BiometricFeature getFaceFeatureByFaceIdAndProjectId(String featureId, Long projectId) {
