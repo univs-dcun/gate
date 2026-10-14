@@ -1,13 +1,14 @@
 // ================================================================
-// gate-web 빌드·배포 파이프라인 (UG-236, UG-331)
+// gate-web 빌드·배포 파이프라인 (UG-236, UG-331, UG-381)
 //
 // - 수동: Jenkins에서 "Build with Parameters" (stage/master 승격은 promote)
-// - 자동(UG-331): Bitbucket main push → Generic Webhook Trigger → build-deploy / dev / main 고정.
+// - 자동(UG-331, UG-381): GitHub main push(PR 머지 포함) → Generic Webhook Trigger → build-deploy / dev / main 고정.
 //   웹훅 URL: https://jenkins.univsgate.com/generic-webhook-trigger/invoke?token=gate-web-deploy
 //   triggers 블록은 잡이 한 번 실행된 뒤에 Jenkins 에 등록된다 (선언 후 수동 1회 실행 필요).
 // - job 설정: Pipeline from SCM, Branch Specifier */master 고정
 //   (frontend 파이프라인은 모노레포 master가 단일 진실)
-// - 소스: Bitbucket univsai/univsaigateserviceweb (SSH 자격증명)
+// - 소스: GitHub univs-dcun/gate-web (UG-381 에서 Bitbucket univsai/univsaigateserviceweb 을 이력째 이관, 해시 동일)
+//   자격증명은 모노레포를 받는 github-credentials(사용자명+토큰)를 같이 쓴다.
 // - 이미지 하나로 전 환경 배포: docker-entrypoint.sh 가 기동 시 config.js 를 환경변수로 만든다.
 //   dev 에서 빌드한 태그를 stage/master 로 promote 하는 것이 정석 (백엔드와 동일).
 // ================================================================
@@ -15,17 +16,18 @@ pipeline {
     agent any
 
     triggers {
-        // Bitbucket Cloud repo:push 페이로드. 이 저장소의 main 브랜치 push 일 때만 기동한다.
+        // GitHub push 페이로드(application/json). 이 저장소의 main 브랜치 push 일 때만 기동한다 (UG-381).
+        // ping 이벤트·다른 브랜치·태그 push 는 필터에서 걸러진다($.ref 가 refs/heads/main 이 아님).
         GenericTrigger(
             genericVariables: [
-                [key: 'WEBHOOK_BRANCH', value: '$.push.changes[0].new.name'],
+                [key: 'WEBHOOK_BRANCH', value: '$.ref'],
                 [key: 'WEBHOOK_REPO',   value: '$.repository.full_name'],
-                [key: 'WEBHOOK_ACTOR',  value: '$.actor.display_name'],
+                [key: 'WEBHOOK_ACTOR',  value: '$.pusher.name'],
             ],
             token: 'gate-web-deploy',
-            causeString: 'Bitbucket push to $WEBHOOK_BRANCH by $WEBHOOK_ACTOR',
+            causeString: 'GitHub push to $WEBHOOK_BRANCH by $WEBHOOK_ACTOR',
             regexpFilterText: '$WEBHOOK_REPO/$WEBHOOK_BRANCH',
-            regexpFilterExpression: '^univsai/univsaigateserviceweb/main$',
+            regexpFilterExpression: '^univs-dcun/gate-web/refs/heads/main$',
             printContributedVariables: true,
             printPostContent: false
         )
@@ -37,7 +39,7 @@ pipeline {
         choice(name: 'TARGET_ENV', choices: ['dev', 'stage', 'master'],
                description: '배포 대상 환경. dev 는 main push 로 자동 배포되며, stage/master 는 dev 태그를 promote 한다')
         string(name: 'SOURCE_REF', defaultValue: 'main',
-               description: 'build-deploy: 빌드할 브랜치/태그/커밋 (Bitbucket 기준)')
+               description: 'build-deploy: 빌드할 브랜치/태그/커밋 (GitHub univs-dcun/gate-web 기준)')
         string(name: 'PROMOTE_TAG', defaultValue: '',
                description: 'promote: 배포할 기존 이미지 태그 (예: 20260708-a1b2c3)')
     }
@@ -49,8 +51,8 @@ pipeline {
         REPOSITORY             = "/univs-gate/${SERVICE_NAME}"
 
         MONOREPO_URL           = 'https://github.com/univs-dcun/gate'
-        SOURCE_REPO_URL        = 'git@bitbucket.org:univsai/univsaigateserviceweb.git'
-        SOURCE_CREDENTIALS_ID  = 'bitbucket-credentials'   // Jenkins에 등록된 Bitbucket credential (SSH 키 타입이어야 sshagent 동작)
+        SOURCE_REPO_URL        = 'https://github.com/univs-dcun/gate-web.git'
+        SOURCE_CREDENTIALS_ID  = 'github-credentials'   // 모노레포 checkout 과 같은 자격증명(사용자명+토큰) — UG-381
         CONFIG_DIR             = 'frontend/gate-web-config'
 
         DOCKER_REGISTRY_URL    = 'dockhub.univs.ai'
@@ -69,7 +71,7 @@ pipeline {
                     env.RUN_MODE       = fromWebhook ? 'build-deploy' : params.MODE
                     env.RUN_TARGET_ENV = fromWebhook ? 'dev'          : params.TARGET_ENV
                     env.RUN_SOURCE_REF = fromWebhook ? 'main'         : params.SOURCE_REF
-                    env.RUN_TRIGGER    = fromWebhook ? "Bitbucket push (${env.WEBHOOK_ACTOR ?: '-'})" : '수동 실행'
+                    env.RUN_TRIGGER    = fromWebhook ? "GitHub push (${env.WEBHOOK_ACTOR ?: '-'})" : '수동 실행'
                     echo "▶ 실행 조건: mode=${env.RUN_MODE} env=${env.RUN_TARGET_ENV} ref=${env.RUN_SOURCE_REF} (${env.RUN_TRIGGER})"
 
                     git branch: 'master',
@@ -96,11 +98,12 @@ pipeline {
         stage('Clone Source & Resolve Tag') {
             when { expression { env.RUN_MODE == 'build-deploy' } }
             steps {
-                sshagent(credentials: [env.SOURCE_CREDENTIALS_ID]) {
+                // https + 토큰. gitUsernamePassword 는 git 명령에만 자격증명을 건네고 로그에서는 가린다 (UG-381)
+                withCredentials([gitUsernamePassword(credentialsId: env.SOURCE_CREDENTIALS_ID, gitToolName: 'Default')]) {
                     script {
                         sh """
                             rm -rf src
-                            GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no' git clone ${SOURCE_REPO_URL} src
+                            git clone ${SOURCE_REPO_URL} src
                             cd src
                             git checkout ${env.RUN_SOURCE_REF}
                         """

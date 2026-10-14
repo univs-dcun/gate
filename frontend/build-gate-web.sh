@@ -16,7 +16,7 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 CONFIG_DIR="${REPO_ROOT}/frontend/gate-web-config"
 SERVICE="gate-web"
 VERSION="${1:-}"
-BITBUCKET_URL="git@bitbucket.org:univsai/univsaigateserviceweb.git"
+SOURCE_URL="https://github.com/univs-dcun/gate-web.git"   # UG-381: Bitbucket 에서 이관
 
 # ── 유효성 검사 ────────────────────────────────────────────────
 if [ -z "$REGISTRY" ]; then
@@ -45,13 +45,13 @@ echo "========================================"
 echo "  gate-web 빌드 및 배포"
 echo "  버전      : ${VERSION}"
 echo "  레지스트리 : ${REGISTRY}"
-echo "  소스      : ${BITBUCKET_URL}"
+echo "  소스      : ${SOURCE_URL}"
 echo "========================================"
 
-# ── 1단계: Bitbucket에서 소스 clone ────────────────────────────
+# ── 1단계: GitHub에서 소스 clone ────────────────────────────
 echo ""
 echo "[1/4] 소스 클론 중..."
-git clone --branch main --single-branch "${BITBUCKET_URL}" "${TMP_DIR}"
+git clone --branch main --single-branch "${SOURCE_URL}" "${TMP_DIR}"
 echo "  → 클론 완료: ${TMP_DIR}"
 
 # ── 2단계: 커스텀 파일 덮어쓰기 ────────────────────────────────
