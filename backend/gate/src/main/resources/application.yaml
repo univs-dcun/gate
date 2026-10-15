@@ -97,3 +97,6 @@ file:
   algorithm:
     way: ${file_algorithm_way:AES}
     mod: ${file_algorithm_mod:AES/ECB/PKCS5Padding}
+  # UG-386: 사진 URL 서명키 — 기본값 없음. 로컬 실행은 FILE_SIGNED_URL_SECRET(32자 이상)을 준다
+  signed-url:
+    secret: ${FILE_SIGNED_URL_SECRET}

@@ -38,7 +38,7 @@ public class GetMatchHistoriesUseCase {
         Page<ActivityLog> pagedMatchingHistories = activityLogRepository.findAllByQuery(query, project.getId());
 
         var results = pagedMatchingHistories.getContent().stream()
-                .map(matchingHistory -> MatchHistoryResult.from(matchingHistory, fileService.getFileServerPath(), consentEnabled))
+                .map(matchingHistory -> MatchHistoryResult.from(matchingHistory, fileService.imageUrls(project.getId(), consentEnabled)))
                 .toList();
 
         CustomPageResult page = CustomPageResult.from(

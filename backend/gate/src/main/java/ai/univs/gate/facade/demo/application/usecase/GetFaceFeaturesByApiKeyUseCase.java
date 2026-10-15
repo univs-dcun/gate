@@ -55,7 +55,7 @@ public class GetFaceFeaturesByApiKeyUseCase {
 
         boolean consentEnabled = projectSettings.getConsentEnabled();
         List<FaceFeatureResult> contents = faceFeatures.stream()
-                .map(fm -> FaceFeatureResult.from(fm, fileService.getFileServerPath(), consentEnabled))
+                .map(fm -> FaceFeatureResult.from(fm, fileService.imageUrls(project.getId(), consentEnabled)))
                 .toList();
 
         CustomPageResult page = CustomPageResult.from(

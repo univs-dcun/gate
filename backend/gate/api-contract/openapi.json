@@ -11879,7 +11879,7 @@
           },
           "featureImagePath": {
             "type": "string",
-            "description": "특징점 이미지 경로"
+            "description": "특징점 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "checkLiveness": {
             "type": "boolean",
@@ -12053,11 +12053,11 @@
           },
           "featureImagePath": {
             "type": "string",
-            "description": "특징점 이미지 경로"
+            "description": "특징점 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "matchingFeatureImagePath": {
             "type": "string",
-            "description": "매칭 이미지 경로"
+            "description": "매칭 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "threshold": {
             "type": "string",
@@ -12141,7 +12141,7 @@
           },
           "featureImagePath": {
             "type": "string",
-            "description": "사용자 이미지 경로"
+            "description": "사용자 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "checkLiveness": {
             "type": "boolean",
@@ -12268,11 +12268,11 @@
           },
           "matchingFeatureImagePath": {
             "type": "string",
-            "description": "매칭 이미지 경로"
+            "description": "매칭 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "targetMatchingFeatureImagePath": {
             "type": "string",
-            "description": "대상 이미지 경로"
+            "description": "대상 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "failureType": {
             "type": "string",
@@ -12389,11 +12389,11 @@
           },
           "featureImagePath": {
             "type": "string",
-            "description": "특징점 이미지 경로"
+            "description": "특징점 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "matchingFeatureImagePath": {
             "type": "string",
-            "description": "매칭 이미지 경로"
+            "description": "매칭 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "failureType": {
             "type": "string",
@@ -12637,11 +12637,11 @@
           },
           "featureImagePath": {
             "type": "string",
-            "description": "특징점 이미지 경로"
+            "description": "특징점 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "matchingFeatureImagePath": {
             "type": "string",
-            "description": "매칭 이미지 경로"
+            "description": "매칭 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "failureType": {
             "type": "string",
@@ -13515,11 +13515,11 @@
           },
           "featureImagePath": {
             "type": "string",
-            "description": "특징점 이미지 경로"
+            "description": "특징점 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "matchingFeatureImagePath": {
             "type": "string",
-            "description": "매칭 이미지 경로"
+            "description": "매칭 이미지 경로 — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "failureType": {
             "type": "string",
@@ -13604,7 +13604,7 @@
           },
           "imageUrl": {
             "type": "string",
-            "description": "이미지 URL"
+            "description": "이미지 URL — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다"
           },
           "featureId": {
             "type": "string",

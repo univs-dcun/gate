@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class FileServiceDeleteTest {
 
     private final FileUtil fileUtil = mock(FileUtil.class);
-    private final FileService fileService = new FileService(fileUtil);
+    private final FileService fileService = new FileService(fileUtil, null);
 
     @Test
     @DisplayName("deleteReporting 은 FileUtil 의 결과를 그대로 돌려준다")

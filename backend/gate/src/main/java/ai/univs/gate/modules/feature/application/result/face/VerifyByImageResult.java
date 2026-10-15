@@ -2,7 +2,7 @@ package ai.univs.gate.modules.feature.application.result.face;
 
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.shared.utils.ImagePathUtil;
+import ai.univs.gate.support.file.ImageUrls;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,7 +23,7 @@ public record VerifyByImageResult(
         Boolean consentSnapshot
 ) {
 
-    public static VerifyByImageResult failResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
+    public static VerifyByImageResult failResult(MatchHistory matchHistory, ImageUrls imageUrls) {
         return new VerifyByImageResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -33,14 +33,14 @@ public record VerifyByImageResult(
                 matchHistory.getSuccess(),
                 "",
                 matchHistory.getSimilarity(),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
+                imageUrls.of(matchHistory.getFeatureImagePath()),
+                imageUrls.of(matchHistory.getMatchedFeatureImagePath()),
                 matchHistory.getFailureType(),
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());
     }
 
-    public static VerifyByImageResult successResult(MatchHistory matchHistory, String prefixImagePath, boolean consentEnabled) {
+    public static VerifyByImageResult successResult(MatchHistory matchHistory, ImageUrls imageUrls) {
         return new VerifyByImageResult(
                 matchHistory.getId(),
                 matchHistory.getProject().getId(),
@@ -50,8 +50,8 @@ public record VerifyByImageResult(
                 matchHistory.getSuccess(),
                 matchHistory.getFeatureId(),
                 matchHistory.getSimilarity(),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
+                imageUrls.of(matchHistory.getFeatureImagePath()),
+                imageUrls.of(matchHistory.getMatchedFeatureImagePath()),
                 "",
                 matchHistory.getTransactionUuid(),
                 matchHistory.getConsentSnapshot());

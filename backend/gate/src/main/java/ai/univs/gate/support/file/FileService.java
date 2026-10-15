@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileService {
 
     private final FileUtil fileUtil;
+    private final FileUrlSigner fileUrlSigner;
 
     @Value("${file.enable.upload}")
     private boolean FILE_ENABLE_UPLOAD;
@@ -61,7 +62,11 @@ public class FileService {
         }
     }
 
-    public String getFileServerPath() {
-        return GATEWAY_URL + FILE_GET_API_ENDPOINT + "?filePath=";
+    /**
+     * 이 프로젝트의 응답에 실을 사진 URL 을 만드는 객체 (UG-386) — 동의가 꺼져 있으면 빈 값, 켜져 있으면 짧게 유효한 서명 URL.
+     * 예전 {@code getFileServerPath()} + 경로 이어 붙이기를 대신한다.
+     */
+    public ImageUrls imageUrls(long projectId, boolean consentEnabled) {
+        return new ImageUrls(GATEWAY_URL + FILE_GET_API_ENDPOINT, fileUrlSigner, projectId, consentEnabled);
     }
 }

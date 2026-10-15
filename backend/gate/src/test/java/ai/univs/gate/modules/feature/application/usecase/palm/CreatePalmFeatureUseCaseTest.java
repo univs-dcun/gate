@@ -14,6 +14,7 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.feature.palm.CreatePalmFeatureServiceResult;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,7 +86,7 @@ class CreatePalmFeatureUseCaseTest {
     void execute_delegatesAndMapsResult() {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
         // (UG-333 부터 input 의 externalKey 도 서비스로 전달된다)
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(palmFeatureService.createPalmFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, true, true));
@@ -107,7 +108,7 @@ class CreatePalmFeatureUseCaseTest {
     @DisplayName("동의(consent)가 비활성화면 이미지 경로가 비어 있고 livenessChecked=false가 그대로 매핑된다")
     void execute_consentDisabled_hidesImagePath() {
         // given
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(palmFeatureService.createPalmFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, false, false));
@@ -132,7 +133,7 @@ class CreatePalmFeatureUseCaseTest {
     @org.junit.jupiter.params.provider.CsvSource({"true, false", "false, true"})
     @DisplayName("UG-336: 동의와 라이브니스가 다르면 checkLiveness 와 이미지 노출이 각자의 값을 따른다")
     void 동의와_라이브니스가_다르면_제자리로_간다(boolean 라이브니스, boolean 동의) {
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(palmFeatureService.createPalmFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "external-key-1"))
                 .willReturn(new CreatePalmFeatureServiceResult(feature, 라이브니스, 동의));

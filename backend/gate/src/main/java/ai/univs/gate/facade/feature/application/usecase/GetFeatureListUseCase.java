@@ -10,10 +10,10 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.shared.usecase.result.CustomPageResult;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.ImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ public class GetFeatureListUseCase {
         Project project = apiKeyService.findOwnedByApiKey(query.apiKey(), query.accountId()).getProject();
         Long projectId = project.getId();
         ProjectSettings settings = projectSettingsService.findByProject(project);
-        String prefixImagePath = settings.getConsentEnabled() ? fileService.getFileServerPath() : "";
+        ImageUrls imageUrls = fileService.imageUrls(projectId, Boolean.TRUE.equals(settings.getConsentEnabled()));
 
         int offset = (query.page() - 1) * query.pageSize();
 
@@ -38,33 +38,31 @@ public class GetFeatureListUseCase {
             case FACE -> buildResult(
                     featureDSLRepository.findFaceRows(projectId, query, offset, query.pageSize()),
                     featureDSLRepository.countFace(projectId, query),
-                    query, prefixImagePath);
+                    query, imageUrls);
             case PALM -> buildResult(
                     featureDSLRepository.findPalmRows(projectId, query, offset, query.pageSize()),
                     featureDSLRepository.countPalm(projectId, query),
-                    query, prefixImagePath);
+                    query, imageUrls);
             // UG-269: face·palm 이 같은 테이블이므로 type 조건만 빼면 통합 조회가 된다. 예전에는
             // 양쪽을 offset+pageSize 까지 각각 읽어 자바 힙에서 병합한 뒤 한 페이지만 잘라냈다.
             case ALL -> buildResult(
                     featureDSLRepository.findAllRows(projectId, query, offset, query.pageSize()),
                     featureDSLRepository.countAll(projectId, query),
-                    query, prefixImagePath);
+                    query, imageUrls);
         };
     }
 
-    private FeatureListResult buildResult(List<FeatureRow> rows, long total, FeatureListQuery query, String prefixImagePath) {
+    private FeatureListResult buildResult(List<FeatureRow> rows, long total, FeatureListQuery query, ImageUrls imageUrls) {
         List<FeatureItemResult> items = rows.stream()
-                .map(row -> toItemResult(row, prefixImagePath))
+                .map(row -> toItemResult(row, imageUrls))
                 .toList();
         int totalPages = query.pageSize() > 0 ? (int) Math.ceil((double) total / query.pageSize()) : 0;
         CustomPageResult page = new CustomPageResult(query.pageSize(), query.page(), total, totalPages, total);
         return new FeatureListResult(items, page);
     }
 
-    private FeatureItemResult toItemResult(FeatureRow row, String prefixImagePath) {
-        String imageUrl = StringUtils.hasText(row.imagePath()) && StringUtils.hasText(prefixImagePath)
-                ? prefixImagePath + row.imagePath()
-                : "";
+    private FeatureItemResult toItemResult(FeatureRow row, ImageUrls imageUrls) {
+        String imageUrl = imageUrls.of(row.imagePath());
         return new FeatureItemResult(
                 row.featureType().name(),
                 row.featureSeq(),
