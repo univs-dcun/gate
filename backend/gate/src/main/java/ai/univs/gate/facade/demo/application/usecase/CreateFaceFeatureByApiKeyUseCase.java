@@ -32,7 +32,7 @@ public class CreateFaceFeatureByApiKeyUseCase {
                 input.transactionUuid(),
                 // UG-333: 데모 등록은 고객사 식별자를 받지 않는다.
                 null);
-        FaceFeatureResult featureResult = FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), result.consentEnabled());
+        FaceFeatureResult featureResult = FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.imageUrls(result.biometricFeature().getProject().getId(), result.consentEnabled()));
         // UG-345: 데모 토글이 켜져 있으면 웹훅으로 알린다. 데모 화면 실시간 알림으로는 보내지 않는다.
         useCaseNotifyService.notifyWebhook(CallerType.DEMO, WebhookEvent.FEATURE_REGISTERED,
                 featureResult.projectId(), featureResult.transactionUuid(), featureResult);

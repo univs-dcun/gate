@@ -15,6 +15,7 @@ import ai.univs.gate.shared.web.enums.CallerType;
 import ai.univs.gate.support.feature.face.CreateFaceFeatureServiceResult;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.webhook.WebhookEvent;
 import java.time.LocalDateTime;
@@ -87,7 +88,7 @@ class CreateFaceFeatureUseCaseTest {
     @DisplayName("입력 값이 그대로 서비스에 위임되고 서비스 결과가 FaceFeatureResult로 매핑된다")
     void execute_delegatesAndMapsResult() {
         // given: 입력 값과 정확히 일치하는 인자로만 스텁하여 위임 인자를 검증한다
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(faceFeatureService.createFaceFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, true, true));
@@ -112,7 +113,7 @@ class CreateFaceFeatureUseCaseTest {
     @DisplayName("동의(consent)가 비활성화면 이미지 경로가 비어 있고 livenessChecked=false가 그대로 매핑된다")
     void execute_consentDisabled_hidesImagePath() {
         // given
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(faceFeatureService.createFaceFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, false, false));
@@ -137,7 +138,7 @@ class CreateFaceFeatureUseCaseTest {
     @org.junit.jupiter.params.provider.CsvSource({"true, false", "false, true"})
     @DisplayName("UG-336: 동의와 라이브니스가 다르면 checkLiveness 와 이미지 노출이 각자의 값을 따른다")
     void 동의와_라이브니스가_다르면_제자리로_간다(boolean 라이브니스, boolean 동의) {
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(faceFeatureService.createFaceFeature(
                         CallerType.API, ACCOUNT_ID, API_KEY, featureImage, "홍길동", TRANSACTION_UUID, "ext-face-1"))
                 .willReturn(new CreateFaceFeatureServiceResult(feature, 라이브니스, 동의));

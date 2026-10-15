@@ -40,6 +40,6 @@ public class CreatePalmFeatureUseCase {
 
         // 커밋 뒤에는 DB 를 다시 읽지 않는다 — 이유는 CreateFaceFeatureUseCase 참고 (UG-281, UG-336).
         return PalmFeatureResult.from(result.biometricFeature(), result.livenessChecked(),
-                fileService.getFileServerPath(), result.consentEnabled());
+                fileService.imageUrls(result.biometricFeature().getProject().getId(), result.consentEnabled()));
     }
 }

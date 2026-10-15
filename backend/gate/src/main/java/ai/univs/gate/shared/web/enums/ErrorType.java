@@ -161,6 +161,12 @@ public enum ErrorType {
      * (UG-290). 코드 분리는 클라이언트 계약 변경이라 별도 판단이 필요하다.
      */
     FAILURE_COMPRESSION_FILE("FILE-105", HttpStatus.BAD_REQUEST),
+    /**
+     * 사진 URL 로 사진을 내려줄 수 없다 (UG-386) — 서명이 없거나 · 맞지 않거나 · 만료됐거나, 그 프로젝트의 개인정보 노출
+     * 동의가 지금 꺼져 있다. 이유를 나누지 않는다(어느 쪽이 틀렸는지 알려 주지 않는다). 응답은 403 이다
+     * ({@code GlobalExceptionHandler#handleFileAccessDenied}).
+     */
+    FILE_ACCESS_DENIED("FILE-106", HttpStatus.FORBIDDEN),
 
     // Mail
 

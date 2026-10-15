@@ -3,7 +3,7 @@ package ai.univs.gate.modules.feature.application.result.palm;
 import ai.univs.gate.modules.feature.domain.entity.BiometricFeature;
 import ai.univs.gate.modules.feature.domain.entity.MatchHistory;
 import ai.univs.gate.modules.feature.domain.enums.MatchType;
-import ai.univs.gate.shared.utils.ImagePathUtil;
+import ai.univs.gate.support.file.ImageUrls;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,8 +29,7 @@ public record PalmIdentifyResult(
 
     public static PalmIdentifyResult failResult(MatchHistory matchHistory,
                                                 String failureType,
-                                                String prefixImagePath,
-                                                boolean consentEnabled
+                                                ImageUrls imageUrls
     ) {
         return new PalmIdentifyResult(
                 matchHistory.getId(),
@@ -44,7 +43,7 @@ public record PalmIdentifyResult(
                 "",
                 matchHistory.getSimilarity(),
                 "",
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
+                imageUrls.of(matchHistory.getMatchedFeatureImagePath()),
                 null,
                 failureType,
                 matchHistory.getTransactionUuid(),
@@ -55,8 +54,7 @@ public record PalmIdentifyResult(
                                                    BiometricFeature biometricFeature,
                                                    BigDecimal similarity,
                                                    String threshold,
-                                                   String prefixImagePath,
-                                                   boolean consentEnabled
+                                                   ImageUrls imageUrls
     ) {
         return new PalmIdentifyResult(
                 matchHistory.getId(),
@@ -69,8 +67,8 @@ public record PalmIdentifyResult(
                 biometricFeature.getFeatureId(),
                 matchHistory.getUserDescription(),
                 similarity,
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getFeatureImagePath()),
-                ImagePathUtil.get(consentEnabled, prefixImagePath, matchHistory.getMatchedFeatureImagePath()),
+                imageUrls.of(matchHistory.getFeatureImagePath()),
+                imageUrls.of(matchHistory.getMatchedFeatureImagePath()),
                 threshold,
                 null,
                 matchHistory.getTransactionUuid(),

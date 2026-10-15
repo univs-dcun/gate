@@ -118,7 +118,7 @@ class ModalityGateCoverageTest {
      * modality 경로에서 허용된 GET — <b>조회라고 확인한 것</b>만 여기에 둔다.
      *
      * <p>확인한 내용 (UG-223, 반박 리뷰가 유스케이스까지 추적): 전부 {@code @Transactional(readOnly =
-     * true)} 이고, 부르는 것은 DB 조회와 {@code fileService.getFileServerPath()} 뿐이다. face·palm·match
+     * true)} 이고, 부르는 것은 DB 조회와 {@code fileService.imageUrls(..)} 뿐이다. face·palm·match
      * 서비스를 부르지 않는다.
      */
     private static final List<String> 조회_목록 = List.of(

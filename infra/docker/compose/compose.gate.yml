@@ -37,6 +37,8 @@ services:
       FILE_SECRET_KEY: ${FILE_SECRET_KEY}
       FILE_ALGORITHM_WAY: ${FILE_ALGORITHM_WAY}
       FILE_ALGORITHM_MOD: ${FILE_ALGORITHM_MOD}
+      # UG-386: 사진 URL 서명키 — gate-config 의 file.signed-url.secret 이 이 값을 읽는다(기본값 없음, 없으면 기동 실패)
+      FILE_SIGNED_URL_SECRET: ${FILE_SIGNED_URL_SECRET}
       MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
     depends_on:
       discovery-server:
