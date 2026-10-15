@@ -79,6 +79,16 @@ class FileUrlSignerTest {
     }
 
     @Test
+    @DisplayName("만료 시각 그 초까지는 열린다 — 경계")
+    void 만료_경계() {
+        Map<String, String> p = params(signer(KEY, "", NOW).query(PATH, 7L));
+        long exp = Long.parseLong(p.get("exp"));
+
+        assertThat(signer(KEY, "", Instant.ofEpochSecond(exp)).verify(PATH, 7L, exp, p.get("sig"))).isTrue();
+        assertThat(signer(KEY, "", Instant.ofEpochSecond(exp + 1)).verify(PATH, 7L, exp, p.get("sig"))).isFalse();
+    }
+
+    @Test
     @DisplayName("키를 바꿔도 이전 키로 만든 URL 은 previous-secret 로 받는다 — 모르는 키는 거절")
     void 키_회전() {
         Map<String, String> issuedWithOld = params(signer(OTHER_KEY, "", NOW).query(PATH, 7L));
