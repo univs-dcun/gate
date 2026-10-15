@@ -23,9 +23,12 @@ import java.time.Duration;
  *
  * <p>동의는 프로젝트마다 {@link #CONSENT_TTL} 동안 기억한다. 목록 한 쪽에 사진이 최대 40장이라 장마다 DB 를 두 번 읽으면
  * 커넥션 풀(gate 처리량의 상한, UG-359)을 쓸데없이 쓴다. 대가는 동의를 끈 뒤 최대 {@link #CONSENT_TTL} 동안 열릴 수 있다는 것.
+ * 「꺼짐」은 기억하지 않는다 — 켠 직후 받은 URL 이 잠깐 거절되지 않게. 꺼진 프로젝트는 응답에 URL 을 싣지 않으므로
+ * 이 조회는 끄기 직전에 나간 URL 에서만 일어나고, 서명을 먼저 보므로 임의의 projectId 로 유발할 수도 없다.
  *
  * <p><b>유예:</b> {@code file.signed-url.required=false} 이면 서명이 아예 없는 예전 URL 도 받는다(고객 공지 기간용).
- * 서명이 붙어 있는데 틀렸으면 이 값과 상관없이 거절한다.
+ * 서명이 붙어 있는데 틀렸으면 이 값과 상관없이 거절한다. 유예 중에는 서명된 URL 에서 서명 쿼리만 지워도 기한·동의 확인 없이
+ * 열리므로 보호 효과가 없다 — 공지 기간에만 짧게 쓴다.
  */
 @Component
 public class FileAccessGuard {
@@ -69,10 +72,17 @@ public class FileAccessGuard {
     }
 
     private boolean consentEnabled(long projectId) {
-        return consentByProject.get(projectId, id -> projectRepository.findByIdAndIsDeletedFalse(id)
+        if (consentByProject.getIfPresent(projectId) != null) {
+            return true;
+        }
+        boolean enabled = projectRepository.findByIdAndIsDeletedFalse(projectId)
                 .flatMap(projectSettingsRepository::findByProject)
                 .map(ProjectSettings::getConsentEnabled)
                 .map(Boolean.TRUE::equals)
-                .orElse(false));
+                .orElse(false);
+        if (enabled) {
+            consentByProject.put(projectId, Boolean.TRUE);
+        }
+        return enabled;
     }
 }

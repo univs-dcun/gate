@@ -3,6 +3,8 @@ package ai.univs.gate.support.file;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -27,7 +29,7 @@ class FileUrlSignerTest {
         Map<String, String> map = new LinkedHashMap<>();
         for (String pair : query.split("&")) {
             int eq = pair.indexOf('=');
-            map.put(pair.substring(0, eq), pair.substring(eq + 1));
+            map.put(pair.substring(0, eq), URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8));
         }
         return map;
     }
@@ -104,6 +106,18 @@ class FileUrlSignerTest {
         assertThat(new ImageUrls("https://gw/api/v1/file", s, 7L, true).of("")).isEmpty();
         assertThat(new ImageUrls("https://gw/api/v1/file", s, 7L, true).of(null)).isEmpty();
         assertThat(new ImageUrls("https://gw/api/v1/file", s, 7L, true).of(PATH))
-                .startsWith("https://gw/api/v1/file?filePath=" + PATH + "&pid=7&exp=").contains("&sig=");
+                .startsWith("https://gw/api/v1/file?filePath=%2Fface%2F20261015%2Fabc.jpg&pid=7&exp=").contains("&sig=");
+    }
+
+    @Test
+    @DisplayName("경로는 인코딩해 싣는다 — 확장자에 & # + 가 섞여도 쿼리가 깨지지 않고, 디코딩한 값으로 검증된다")
+    void 경로_인코딩() {
+        FileUrlSigner s = signer(KEY, "", NOW);
+        String odd = "/face/20261015/a b&c#d+e.jpg";
+
+        Map<String, String> q = params(s.query(odd, 7L));
+        assertThat(q).containsOnlyKeys("filePath", "pid", "exp", "sig");
+        assertThat(q.get("filePath")).isEqualTo(odd);
+        assertThat(s.verify(q.get("filePath"), 7L, Long.parseLong(q.get("exp")), q.get("sig"))).isTrue();
     }
 }

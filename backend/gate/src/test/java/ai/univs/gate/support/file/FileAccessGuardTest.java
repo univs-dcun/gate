@@ -97,4 +97,15 @@ class FileAccessGuardTest {
         }
         verify(projectRepository, times(1)).findByIdAndIsDeletedFalse(PID);
     }
+
+    @Test
+    @DisplayName("「꺼짐」은 기억하지 않는다 — 동의를 켠 직후 받은 URL 이 바로 열린다")
+    void 꺼짐은_캐시하지_않음() {
+        FileAccessGuard guard = guard(true);
+        consent(false);
+        assertThatThrownBy(() -> guard.check(PATH, PID, 100L, "good")).isInstanceOf(FileAccessDeniedException.class);
+
+        consent(true);
+        guard.check(PATH, PID, 100L, "good");
+    }
 }

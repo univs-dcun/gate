@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
@@ -59,11 +60,14 @@ public class FileUrlSigner implements ImageUrls.Signer {
         this.clock = clock;
     }
 
-    /** {@code filePath=…&pid=…&exp=…&sig=…} — 파일 API 의 쿼리 문자열. */
+    /**
+     * {@code filePath=…&pid=…&exp=…&sig=…} — 파일 API 의 쿼리 문자열. 경로는 인코딩한다 — 확장자는 원본 파일명에서 오므로
+     * {@code & # +} 가 섞이면 쿼리가 깨진다. 서명은 인코딩 전 경로로 만들고, 서버는 디코딩된 값으로 검증한다.
+     */
     @Override
     public String query(String filePath, long projectId) {
         long exp = clock.instant().getEpochSecond() + ttlSeconds;
-        return "filePath=" + filePath + "&pid=" + projectId + "&exp=" + exp + "&sig=" + sign(currentKey, filePath, projectId, exp);
+        return "filePath=" + URLEncoder.encode(filePath, StandardCharsets.UTF_8) + "&pid=" + projectId + "&exp=" + exp + "&sig=" + sign(currentKey, filePath, projectId, exp);
     }
 
     /** 서명이 맞고 만료 전이면 true. 이전 키로 만든 서명도 받는다. */
