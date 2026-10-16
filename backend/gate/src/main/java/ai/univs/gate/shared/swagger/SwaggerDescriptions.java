@@ -81,10 +81,17 @@ public class SwaggerDescriptions {
     /* Auth 요청/응답 DTO */
     public static final String ACCOUNT_ID = "계정 식별 번호";
 
+    /**
+     * 사진 URL 필드 공통 설명 (UG-386) — 짧게 유효한 서명 URL 이다. 고객이 URL 을 저장해 두고 나중에 열면 열리지 않으므로
+     * 계약으로 밝힌다.
+     */
+    public static final String IMAGE_URL_NOTE =
+            " — 약 10분 동안만 열리는 서명 URL 이다. 개인정보 노출 동의가 꺼져 있으면 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 열리지 않는다. 사진을 보관하려면 받은 즉시 내려받는다";
+
     /* Feature 요청/응답 DTO */
     public static final String FACE_IMAGE = "사용자 얼굴 이미지";
     public static final String FACE_ID = "사용자 식별자";
-    public static final String FACE_IMAGE_PATH = "사용자 이미지 경로";
+    public static final String FACE_IMAGE_PATH = "사용자 이미지 경로" + IMAGE_URL_NOTE;
     public static final String USER_KEYWORD = "검색용 사용자 이름 또는 성";
     
     /* Match 요청/응답 DTO */
@@ -153,10 +160,10 @@ public class SwaggerDescriptions {
     public static final String FEATURE_ID = "특징점 아이디";
     public static final String FEATURE_SEQ_ID = "특징점 식별 번호";
     public static final String FEATURE_DESCRIPTION = "특징점 설명";
-    public static final String FEATURE_IMAGE_PATH = "특징점 이미지 경로";
-    public static final String MATCHED_FEATURE_IMAGE_PATH = "매칭 이미지 경로";
+    public static final String FEATURE_IMAGE_PATH = "특징점 이미지 경로" + IMAGE_URL_NOTE;
+    public static final String MATCHED_FEATURE_IMAGE_PATH = "매칭 이미지 경로" + IMAGE_URL_NOTE;
     public static final String FEATURE_IMAGE_DELETED = "featureImagePath 의 원본 이미지가 파기됐는지 (UG-353). 이 이력이 가리키는 특징점이 삭제돼 등록 이미지가 지워졌으면 true 이고, 그때 featureImagePath 는 빈 문자열이다. matchingFeatureImagePath(인증 때 제출한 이미지)와는 무관하다";
-    public static final String TARGET_FEATURE_IMAGE_PATH = "대상 이미지 경로";
+    public static final String TARGET_FEATURE_IMAGE_PATH = "대상 이미지 경로" + IMAGE_URL_NOTE;
     public static final String EXTERNAL_KEY = "외부 키 — 고객사 시스템의 사용자 식별자 (선택, 최대 255자). 삭제 후 같은 키로 다시 등록하면 재등록 전후 이력이 한 사람으로 이어지고, 이력 조회 검색어로도 쓰인다";
     public static final String THRESHOLD = "판정 임계값";
     public static final String MATCH_THRESHOLD =
@@ -168,7 +175,7 @@ public class SwaggerDescriptions {
     /* Feature 타입 / 통합 목록 */
     public static final String FEATURE_TYPE_ALL = "특징점 타입 [FACE | PALM | ALL]";
     public static final String FEATURE_TYPE = "특징점 타입 [FACE | PALM]";
-    public static final String FEATURE_IMAGE_URL = "이미지 URL";
+    public static final String FEATURE_IMAGE_URL = "이미지 URL" + IMAGE_URL_NOTE;
     public static final String FEATURE_MEMO = "메모 (설명)";
     public static final String FEATURE_LIST_COMBINED = "특징점 목록 (Face + Palm 통합)";
     public static final String FEATURE_KEYWORD = "검색 키워드 (FID 또는 메모)";

@@ -11,6 +11,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -103,7 +104,7 @@ class GetPalmFeatureUseCaseTest {
         특징점이_속한_프로젝트(callerProject);
         given(projectSettingsService.findByProject(callerProject))
                 .willReturn(ProjectSettings.builder().id(2L).project(callerProject).consentEnabled(true).build());
-        given(fileService.getFileServerPath()).willReturn("https://gate.test/api/v1/file?filePath=");
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix("https://gate.test/api/v1/file?filePath="));
 
         assertThat(getPalmFeatureUseCase.execute(input).palmFeatureId()).isEqualTo(PALM_FEATURE_ID);
     }

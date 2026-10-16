@@ -37,7 +37,7 @@ public class CreateFaceFeatureUseCase {
         // 뺐고(커밋 뒤 조회가 실패하면 특징점은 남은 채 오류가 나간다), UG-336 은 설정 재조회도
         // 뺐다 — 이 메서드에 트랜잭션이 없으므로 그 조회는 새 커넥션을 요구하고, 거기서 실패하면
         // 클라이언트의 재시도가 이중 등록이 된다. 동의 값은 서비스가 등록 전에 읽어 돌려준다.
-        FaceFeatureResult featureResult = FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.getFileServerPath(), result.consentEnabled());
+        FaceFeatureResult featureResult = FaceFeatureResult.from(result.biometricFeature(), result.livenessChecked(), fileService.imageUrls(result.biometricFeature().getProject().getId(), result.consentEnabled()));
         // UG-345: 등록이 커밋된 뒤에 알린다 — 서비스가 돌아왔다는 것이 커밋됐다는 뜻이다.
         useCaseNotifyService.notifyWebhook(CallerType.API, WebhookEvent.FEATURE_REGISTERED,
                 featureResult.projectId(), featureResult.transactionUuid(), featureResult);

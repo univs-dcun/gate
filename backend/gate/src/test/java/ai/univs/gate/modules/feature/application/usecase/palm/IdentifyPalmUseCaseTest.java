@@ -29,6 +29,7 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -110,7 +111,7 @@ class IdentifyPalmUseCaseTest {
         given(fileService.uploadIfConsent(matchingImage, consentEnabled)).willReturn(uploadedImagePath);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.IDENTIFY))
                 .willReturn(true);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);
@@ -215,7 +216,7 @@ class IdentifyPalmUseCaseTest {
         given(fileService.uploadIfConsent(matchingImage, true)).willReturn(UPLOADED_IMAGE_PATH);
         given(projectSettingsService.isLivenessEnabled(settings, FeatureType.PALM, LivenessOperation.IDENTIFY))
                 .willReturn(true);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         given(historyRecorder.start(any(MatchHistory.class))).willAnswer(invocation -> {
             MatchHistory saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", SAVED_MATCH_HISTORY_ID);

@@ -73,6 +73,8 @@ class ErrorTypeClassificationTest {
             "INVALID_USER",
             "INVALID_FILE", "INVALID_FILE_PATH", "REQUIRED_FILE_NAME", "REQUIRED_EXTENSION",
             "FAILURE_COMPRESSION_FILE",
+            // UG-386: 사진 URL 거절 — 만료 · 서명 불일치 · 동의 꺼짐. 클라이언트가 새 URL 을 받으면 되므로 4xx(403)
+            "FILE_ACCESS_DENIED",
             // match — NOT_MATCH·MISMATCH 는 예외가 아니라 이력 실패 사유 문자열이다
             "NOT_FOUND_MATCHING_HISTORY", "NOT_MATCH", "MISMATCH",
             // Liveness — LivenessErrorType 을 그대로 미러링한다

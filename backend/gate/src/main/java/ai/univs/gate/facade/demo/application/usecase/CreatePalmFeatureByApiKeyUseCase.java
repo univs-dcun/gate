@@ -31,6 +31,6 @@ public class CreatePalmFeatureByApiKeyUseCase {
                 null);
 
         return PalmFeatureResult.from(result.biometricFeature(), result.livenessChecked(),
-                fileService.getFileServerPath(), result.consentEnabled());
+                fileService.imageUrls(result.biometricFeature().getProject().getId(), result.consentEnabled()));
     }
 }

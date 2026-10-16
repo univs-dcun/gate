@@ -62,6 +62,6 @@ public class UpdateFaceFeatureDescriptionUseCase {
         feature.changeDescription(input.description());
 
         ProjectSettings settings = projectSettingsService.findByProject(project);
-        return FaceFeatureResult.from(feature, fileService.getFileServerPath(), settings.getConsentEnabled());
+        return FaceFeatureResult.from(feature, fileService.imageUrls(project.getId(), settings.getConsentEnabled()));
     }
 }

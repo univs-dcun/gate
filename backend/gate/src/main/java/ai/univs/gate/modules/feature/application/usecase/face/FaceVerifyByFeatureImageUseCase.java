@@ -20,6 +20,7 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.ImageUrls;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
@@ -131,8 +132,8 @@ public class FaceVerifyByFeatureImageUseCase {
     }
 
     private VerifyByImageResult fail(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
-        String prefixImagePath = fileService.getFileServerPath();
-        VerifyByImageResult failResult = VerifyByImageResult.failResult(matchHistory, prefixImagePath, consentEnabled);
+        ImageUrls imageUrls = fileService.imageUrls(matchHistory.getProject().getId(), consentEnabled);
+        VerifyByImageResult failResult = VerifyByImageResult.failResult(matchHistory, imageUrls);
 
         useCaseNotifyService.notify(
                 callerType,
@@ -144,8 +145,8 @@ public class FaceVerifyByFeatureImageUseCase {
     }
 
     private VerifyByImageResult success(CallerType callerType, MatchHistory matchHistory, boolean consentEnabled) {
-        String prefixImagePath = fileService.getFileServerPath();
-        VerifyByImageResult successResult = VerifyByImageResult.successResult(matchHistory, prefixImagePath, consentEnabled);
+        ImageUrls imageUrls = fileService.imageUrls(matchHistory.getProject().getId(), consentEnabled);
+        VerifyByImageResult successResult = VerifyByImageResult.successResult(matchHistory, imageUrls);
 
         useCaseNotifyService.notify(
                 callerType,

@@ -12,6 +12,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,7 +66,7 @@ class UpdateFeatureDescriptionUseCaseTest {
                 .willReturn(ApiKey.builder().id(5L).project(mine).apiKey(API_KEY).isActive(true).build());
         given(projectSettingsService.findByProject(mine))
                 .willReturn(ProjectSettings.builder().id(3L).project(mine).consentEnabled(true).build());
-        given(fileService.getFileServerPath()).willReturn("https://gate.test/api/v1/file?filePath=");
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix("https://gate.test/api/v1/file?filePath="));
     }
 
     private BiometricFeature 특징점(FeatureType type, Project project, String description) {

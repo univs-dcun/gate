@@ -37,6 +37,10 @@ services:
       FILE_SECRET_KEY: ${FILE_SECRET_KEY}
       FILE_ALGORITHM_WAY: ${FILE_ALGORITHM_WAY}
       FILE_ALGORITHM_MOD: ${FILE_ALGORITHM_MOD}
+      # UG-386: 사진 URL 서명키 → file.signed-url.secret (32자 이상, 기본값 없음 — 없거나 짧으면 기동 실패)
+      FILE_SIGNED_URL_SECRET: ${FILE_SIGNED_URL_SECRET}
+      # 키를 바꿀 때만 이전 키를 넣는다 → file.signed-url.previous-secret (평소엔 비워 둔다)
+      FILE_SIGNED_URL_PREVIOUS_SECRET: ${FILE_SIGNED_URL_PREVIOUS_SECRET:-}
       MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT}
     depends_on:
       discovery-server:

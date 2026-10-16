@@ -21,6 +21,7 @@ import ai.univs.gate.support.history.HistoryRecorder;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.feature.palm.PalmService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.ImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -82,7 +83,7 @@ public class IdentifyPalmUseCase {
             preCheckHistory.fail(BigDecimal.ZERO, "NO_REGISTERED_PALM_USERS");
             historyRecorder.fail(preCheckHistory);
             return PalmIdentifyResult.failResult(preCheckHistory, "NO_REGISTERED_PALM_USERS",
-                    fileService.getFileServerPath(), consentEnabled);
+                    fileService.imageUrls(project.getId(), consentEnabled));
         }
 
         var imagePath = fileService.uploadIfConsent(input.featureImage(), consentEnabled);
@@ -114,7 +115,7 @@ public class IdentifyPalmUseCase {
                 input.accountId().toString(),
                 projectSettingsService.isLivenessEnabled(projectSettings, FeatureType.PALM, LivenessOperation.IDENTIFY));
 
-        String prefixImagePath = fileService.getFileServerPath();
+        ImageUrls imageUrls = fileService.imageUrls(project.getId(), consentEnabled);
 
         IdentifyPalmFeignResponseDTO data;
         try {
@@ -122,7 +123,7 @@ public class IdentifyPalmUseCase {
         } catch (CustomFeignException e) {
             matchHistory.fail(BigDecimal.ZERO, e.getType());
             historyRecorder.fail(matchHistory);
-            return PalmIdentifyResult.failResult(matchHistory, e.getType(), prefixImagePath, consentEnabled);
+            return PalmIdentifyResult.failResult(matchHistory, e.getType(), imageUrls);
         } catch (RemoteCallException e) {
             // UG-280: 하위 서비스 5xx. 예전에는 CustomGateException 이라 noRollbackFor 에
             // 걸리지 않아 트랜잭션이 롤백되고 이 이력 행 자체가 사라졌다.
@@ -134,7 +135,7 @@ public class IdentifyPalmUseCase {
         if (!data.isResult()) {
             matchHistory.fail(parseSimilarity(data.getSimilarity()), "PALM_NOT_MATCH");
             historyRecorder.fail(matchHistory);
-            return PalmIdentifyResult.failResult(matchHistory, "PALM_NOT_MATCH", prefixImagePath, consentEnabled);
+            return PalmIdentifyResult.failResult(matchHistory, "PALM_NOT_MATCH", imageUrls);
         }
 
         BiometricFeature biometricFeature;
@@ -144,14 +145,14 @@ public class IdentifyPalmUseCase {
             // 하위 서비스 실패가 아니라 우리 쪽 조회 실패(특징점 없음)다 — upstream_status 는 남기지 않는다.
             matchHistory.fail(BigDecimal.ZERO, e.getErrorType().name());
             historyRecorder.fail(matchHistory);
-            return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), prefixImagePath, consentEnabled);
+            return PalmIdentifyResult.failResult(matchHistory, e.getErrorType().name(), imageUrls);
         }
 
         BigDecimal similarity = parseSimilarity(data.getSimilarity());
         matchHistory.success(biometricFeature, similarity);
         historyRecorder.succeed(matchHistory);
 
-        return PalmIdentifyResult.successResult(matchHistory, biometricFeature, matchHistory.getSimilarity(), data.getThreshold(), prefixImagePath, consentEnabled);
+        return PalmIdentifyResult.successResult(matchHistory, biometricFeature, matchHistory.getSimilarity(), data.getThreshold(), imageUrls);
     }
 
     private BigDecimal parseSimilarity(String similarity) {

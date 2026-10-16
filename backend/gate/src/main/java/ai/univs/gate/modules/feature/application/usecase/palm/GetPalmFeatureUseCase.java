@@ -53,6 +53,6 @@ public class GetPalmFeatureUseCase {
 
         ProjectSettings settings = projectSettingsService.findByProject(project);
 
-        return PalmFeatureResult.from(biometricFeature, fileService.getFileServerPath(), settings.getConsentEnabled());
+        return PalmFeatureResult.from(biometricFeature, fileService.imageUrls(project.getId(), settings.getConsentEnabled()));
     }
 }

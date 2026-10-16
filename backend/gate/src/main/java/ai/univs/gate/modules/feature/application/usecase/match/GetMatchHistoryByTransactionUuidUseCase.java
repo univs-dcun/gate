@@ -34,6 +34,6 @@ public class GetMatchHistoryByTransactionUuidUseCase {
                 .orElseThrow(() -> new CustomGateException(ErrorType.NOT_FOUND_MATCHING_HISTORY));
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-        return MatchHistoryResult.from(matchHistory, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
+        return MatchHistoryResult.from(matchHistory, fileService.imageUrls(project.getId(), projectSettings.getConsentEnabled()));
     }
 }

@@ -35,6 +35,6 @@ public class GetFaceFeatureByFaceIdUseCase {
                 .orElseThrow(() -> new CustomGateException(ErrorType.INVALID_USER));
 
         ProjectSettings projectSettings = projectSettingsService.findByProject(project);
-        return FaceFeatureResult.from(biometricFeature, fileService.getFileServerPath(), projectSettings.getConsentEnabled());
+        return FaceFeatureResult.from(biometricFeature, fileService.imageUrls(project.getId(), projectSettings.getConsentEnabled()));
     }
 }
