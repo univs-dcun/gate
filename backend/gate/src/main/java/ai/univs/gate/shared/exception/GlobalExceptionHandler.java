@@ -51,6 +51,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 사진 URL 거절은 403 이다 (UG-386). 다른 업무 오류처럼 400 으로 두면 「요청을 잘못 만들었다」로 읽혀, 만료된 링크를 다시
+     * 받으면 된다는 신호가 흐려진다. 더 구체적인 예외라 {@link #handleBusinessException} 보다 먼저 고른다.
+     */
+    @ExceptionHandler(FileAccessDeniedException.class)
+    public ResponseEntity<ResponseApi<?>> handleFileAccessDenied(FileAccessDeniedException ex) {
+        logByStatus(ex.getErrorType(), ex, null);
+        // @ResponseStatus 로 두면 springdoc 이 모든 API 에 403 응답을 붙인다 — 사진 API(@Hidden) 하나에만 해당하므로 직접 정한다
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(getExceptionResponse(ex.getErrorType(), messageService.getMessage(ex.getMessageKey())));
+    }
+
+    /**
      * 오류의 성격에 맞는 수준으로 기록한다 (UG-290).
      *
      * <p>예전에는 모든 예외를 {@code log.error} + 스택트레이스로 남겼다. 잘못된 API 키로 한 번

@@ -29,6 +29,7 @@ import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.feature.face.FaceService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.webhook.WebhookEvent;
 import ai.univs.gate.support.project.ProjectSettingsService;
@@ -148,7 +149,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
                         .similarity(new BigDecimal("0.91"))
                         .result(true)
                         .build());
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         // when
         VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);
@@ -205,7 +206,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
         givenCommonFlow(true, UPLOADED_IMAGE_PATH);
         given(faceFeatureService.getFaceFeatureByFaceIdAndProjectId(INPUT_FACE_ID, PROJECT_ID))
                 .willThrow(new CustomGateException(ErrorType.INVALID_USER));
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         // when
         VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);
@@ -239,7 +240,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
         givenFeatureFound();
         given(faceService.verifyByFaceId(any(VerifyFaceByFaceIdFeignRequestDTO.class)))
                 .willThrow(new CustomFeignException("ML-102", "EYES_CLOSED", "liveness failed"));
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         // when
         VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);
@@ -287,7 +288,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
                         .similarity(new BigDecimal("0.33"))
                         .result(false)
                         .build());
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         // when
         VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);
@@ -319,7 +320,7 @@ class FaceVerifyByFeatureIdUseCaseTest {
                         .similarity(new BigDecimal("0.91"))
                         .result(true)
                         .build());
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         // when
         VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);

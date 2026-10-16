@@ -293,6 +293,11 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
       </div>
     </div>
     <div class="intro-sec">
+      <h2>사진 URL</h2>
+      <p>응답과 웹훅에 실리는 사진 URL(<code>featureImagePath</code> · <code>matchingFeatureImagePath</code> · <code>targetMatchingFeatureImagePath</code>)은 <strong>약 10분 동안만 열리는 서명 URL</strong>입니다. 유효 시간이 지나거나 주소를 바꾸면 <strong>HTTP 403</strong>(<code>FILE-106</code>)으로 거절되므로, URL 을 저장해 두었다가 나중에 열지 말고 필요할 때 API 를 다시 호출해 새 URL 을 받으세요. 사진을 보관해야 한다면 받은 즉시 내려받으세요.</p>
+      <p>프로젝트의 개인정보 노출 동의가 꺼져 있으면 사진 URL 은 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 더 이상 열리지 않습니다.</p>
+    </div>
+    <div class="intro-sec">
       <h2>타임존 처리</h2>
       <p>응답의 날짜/시간 필드는 기본적으로 UTC 기준입니다. <code>Accept-TimeZone</code> 헤더로 원하는 타임존을 지정하면 자동 변환됩니다.</p>
       <div class="base-box"><span class="base-lbl">Example</span><span class="base-val">Accept-TimeZone: Asia/Seoul</span></div>
@@ -531,7 +536,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">faceFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">얼굴 특징점 ID</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버에서 발급된 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -764,7 +769,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">faceFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">얼굴 특징점 ID</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">바뀐 메모 (지웠으면 null)</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시 (메모를 바꿔도 그대로)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록 요청의 식별 UUID</td></tr>
@@ -851,7 +856,7 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">faceFeatureId</span></td><td><span class="ptyp">long</span></td><td class="pdsc">얼굴 특징점 ID</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">AI 서버 특징점 식별 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">저장된 얼굴 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">checkLiveness</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 검사 수행 여부</td></tr>
             <tr><td><span class="pname">createdAt</span></td><td><span class="ptyp">datetime</span></td><td class="pdsc">등록 일시</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -1072,8 +1077,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 설명</td></tr>
             <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
             <tr><td><span class="pname">matchingFeatureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 요청에 사용된 특징점 ID</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로</td></tr>
-            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (MISMATCH 등, 성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -1170,8 +1175,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">확인 성공 여부</td></tr>
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">기준 이미지 특징점 ID</td></tr>
             <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
-            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 비교 이미지 경로</td></tr>
-            <tr><td><span class="pname">targetMatchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">기준 이미지 경로</td></tr>
+            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 비교 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
+            <tr><td><span class="pname">targetMatchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">기준 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -1353,8 +1358,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">featureId</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 featureId (성공 시)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭된 특징점 설명 (성공 시)</td></tr>
             <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">decimal</span></td><td class="pdsc">유사도 점수 (0.00 ~ 100.00, 백분율)</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로 (성공 시)</td></tr>
-            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로 (성공 시) · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">제출된 매칭 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (NOT_MATCH 등, 성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -1868,8 +1873,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
             <tr><td><span class="pname">featureSeq</span></td><td><span class="ptyp">long</span></td><td class="pdsc">특징점 식별 번호 (faceFeatureId)</td></tr>
             <tr><td><span class="pname">description</span></td><td><span class="ptyp">string</span></td><td class="pdsc">특징점 설명</td></tr>
             <tr><td><span class="pname">similarity</span></td><td><span class="ptyp">number</span></td><td class="pdsc">매칭 유사도 (source=FEATURE 이면 null)</td></tr>
-            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로. 특징점이 삭제돼 원본이 파기됐으면 빈 문자열 (featureImageDeleted 참고)</td></tr>
-            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 시도 이미지 경로 (source=FEATURE 이면 null)</td></tr>
+            <tr><td><span class="pname">featureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">등록된 특징점 이미지 경로. 특징점이 삭제돼 원본이 파기됐으면 빈 문자열 (featureImageDeleted 참고) · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
+            <tr><td><span class="pname">matchingFeatureImagePath</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 시도 이미지 경로 (source=FEATURE 이면 null) · 약 10분 유효한 서명 URL (「사진 URL」 참고)</td></tr>
             <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 타입 (성공 시 null)</td></tr>
             <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
@@ -2061,7 +2066,7 @@ Object.keys(CODE_MSGS).forEach(function(k) { CODE_MSGS_REV[CODE_MSGS[k]] = k; })
 var INTRO = {
   ko: {
     heroDesc: '얼굴 인식 기반 e-KYC 게이트 서비스의 공식 API 레퍼런스입니다. 얼굴 특징점 관리, 1:1 확인, 1:N 매칭, 라이브니스 감지 기능을 REST API로 제공합니다.',
-    h2: ['소개', '지원 생체인증 모듈', 'Base URL', '인증 방식', '응답 구조', '타임존 처리', '다국어 처리'],
+    h2: ['소개', '지원 생체인증 모듈', 'Base URL', '인증 방식', '응답 구조', '사진 URL', '타임존 처리', '다국어 처리'],
     secP: [
       [
         'UnivsGate API는 프로젝트별 API Key를 기반으로 얼굴 인식 기반 e-KYC 기능을 외부 서비스에 통합할 수 있는 RESTful API입니다. JWT 인증과 API Key 인증을 함께 사용하며, 파일 업로드가 필요한 엔드포인트는 <code>multipart/form-data</code> 형식을 사용합니다.',
@@ -2072,6 +2077,7 @@ var INTRO = {
       [],
       ['특징점 관리 및 매칭 API는 두 가지 인증 헤더가 모두 필요합니다. 로그인 API는 인증이 불필요합니다.'],
       ['모든 응답은 <code>success</code> · <code>data</code> · <code>errors</code> 세 필드로 감싸 반환됩니다. 실패는 대부분 <strong>HTTP 400</strong>이며, 액세스 토큰이 무효로 판정된 경우에는 <strong>본문 없이 401</strong>이 반환됩니다. 상태 코드별 정리와 처리 방법은 <strong>ERRORS › 오류 응답 형식</strong> 페이지를 참고하세요.'],
+      ['응답과 웹훅에 실리는 사진 URL(<code>featureImagePath</code> · <code>matchingFeatureImagePath</code> · <code>targetMatchingFeatureImagePath</code>)은 <strong>약 10분 동안만 열리는 서명 URL</strong>입니다. 유효 시간이 지나거나 주소를 바꾸면 <strong>HTTP 403</strong>(<code>FILE-106</code>)으로 거절되므로, URL 을 저장해 두었다가 나중에 열지 말고 필요할 때 API 를 다시 호출해 새 URL 을 받으세요. 사진을 보관해야 한다면 받은 즉시 내려받으세요.', '프로젝트의 개인정보 노출 동의가 꺼져 있으면 사진 URL 은 빈 문자열이고, 동의를 끄면 이미 받은 URL 도 더 이상 열리지 않습니다.'],
       ['응답의 날짜/시간 필드는 기본적으로 UTC 기준입니다. <code>Accept-TimeZone</code> 헤더로 원하는 타임존을 지정하면 자동 변환됩니다.'],
       ['한국어/영어를 지원합니다. <code>Accept-Language</code> 헤더로 원하는 언어를 지정하면 자동 변환됩니다.']
     ],
@@ -2085,7 +2091,7 @@ var INTRO = {
   },
   en: {
     heroDesc: 'The official API reference for the e-KYC gate service based on facial recognition. Provides face feature management, 1:1 verification, 1:N matching, and liveness detection via REST API.',
-    h2: ['Introduction', 'Supported Biometric Modules', 'Base URL', 'Authentication', 'Response Structure', 'Timezone Handling', 'Internationalization'],
+    h2: ['Introduction', 'Supported Biometric Modules', 'Base URL', 'Authentication', 'Response Structure', 'Photo URLs', 'Timezone Handling', 'Internationalization'],
     secP: [
       [
         'UnivsGate API is a RESTful API that integrates face recognition-based e-KYC functions into external services using a project-specific API Key. Both JWT and API Key authentication are required, and endpoints that need file uploads use <code>multipart/form-data</code>.',
@@ -2096,6 +2102,7 @@ var INTRO = {
       [],
       ['Feature management and matching APIs require both authentication headers. The login API does not require authentication.'],
       ['Every response is wrapped in the same three fields — <code>success</code>, <code>data</code> and <code>errors</code>. Failures are almost always <strong>HTTP 400</strong>; when the access token is judged invalid, a <strong>401 with no body</strong> is returned. See <strong>ERRORS › Response Format</strong> for the status codes and how to handle them.'],
+      ['Photo URLs in responses and webhooks (<code>featureImagePath</code>, <code>matchingFeatureImagePath</code>, <code>targetMatchingFeatureImagePath</code>) are <strong>signed URLs that open for about 10 minutes</strong>. After that, or if the URL is altered, the request is rejected with <strong>HTTP 403</strong> (<code>FILE-106</code>). Do not store a URL to open later — call the API again to get a fresh one. If you need to keep the photo, download it right away.', 'When the project\'s personal-info display consent is off, photo URLs are empty strings, and turning consent off also stops previously issued URLs from opening.'],
       ['Date/time fields in responses default to UTC. Specify your preferred timezone using the <code>Accept-TimeZone</code> header for automatic conversion.'],
       ['Korean and English are supported. Specify your preferred language using the <code>Accept-Language</code> header for automatic conversion.']
     ],
@@ -2702,7 +2709,7 @@ var PAGES = {
       { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
       { ko: '특징점 설명', en: 'Feature description' },
       { ko: 'AI 서버에서 발급된 특징점 식별 ID', en: 'Feature identifier issued by the AI server' },
-      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '저장된 얼굴 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Stored face image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '등록 일시', en: 'Registration timestamp' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
@@ -2765,7 +2772,7 @@ var PAGES = {
       { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
       { ko: '바뀐 메모 (지웠으면 null)', en: 'Updated memo (null if cleared)' },
       { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
-      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '저장된 얼굴 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Stored face image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '등록 일시 (메모를 바꿔도 그대로)', en: 'Registration timestamp (unchanged by memo updates)' },
       { ko: '등록 요청의 식별 UUID', en: 'UUID of the registration request' },
@@ -2788,7 +2795,7 @@ var PAGES = {
       { ko: '얼굴 특징점 ID', en: 'Face feature ID' },
       { ko: '특징점 설명', en: 'Feature description' },
       { ko: 'AI 서버 특징점 식별 ID', en: 'Feature identifier on the AI server' },
-      { ko: '저장된 얼굴 이미지 경로', en: 'Stored face image path' },
+      { ko: '저장된 얼굴 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Stored face image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '라이브니스 검사 수행 여부', en: 'Whether liveness check was performed' },
       { ko: '등록 일시', en: 'Registration timestamp' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
@@ -2862,8 +2869,8 @@ var PAGES = {
       { ko: '매칭된 특징점 설명', en: 'Matched feature description' },
       { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
       { ko: '매칭 요청에 사용된 특징점 ID', en: 'Feature ID used in the match request' },
-      { ko: '등록된 특징점 이미지 경로', en: 'Registered feature image path' },
-      { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
+      { ko: '등록된 특징점 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Registered feature image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
+      { ko: '제출된 매칭 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Submitted matching image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '실패 코드 (MISMATCH 등, 성공 시 null)', en: 'Failure code (MISMATCH etc., null on success)' },
       { ko: '실패 원인 메시지', en: 'Failure reason message' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
@@ -2893,8 +2900,8 @@ var PAGES = {
       { ko: '확인 성공 여부', en: 'Whether verification succeeded' },
       { ko: '기준 이미지 특징점 ID', en: 'Reference image feature ID' },
       { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
-      { ko: '제출된 비교 이미지 경로', en: 'Submitted comparison image path' },
-      { ko: '기준 이미지 경로', en: 'Reference image path' },
+      { ko: '제출된 비교 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Submitted comparison image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
+      { ko: '기준 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Reference image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '실패 코드 (성공 시 null)', en: 'Failure code (null on success)' },
       { ko: '실패 원인 메시지', en: 'Failure reason message' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
@@ -2950,8 +2957,8 @@ var PAGES = {
       { ko: '매칭된 특징점 featureId (성공 시)', en: 'Matched feature featureId (on success)' },
       { ko: '매칭된 특징점 설명 (성공 시)', en: 'Matched feature description (on success)' },
       { ko: '유사도 점수 (0.00 ~ 100.00, 백분율)', en: 'Similarity score (0.00 – 100.00, percentage)' },
-      { ko: '등록된 특징점 이미지 경로 (성공 시)', en: 'Registered feature image path (on success)' },
-      { ko: '제출된 매칭 이미지 경로', en: 'Submitted matching image path' },
+      { ko: '등록된 특징점 이미지 경로 (성공 시) · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Registered feature image path (on success) · signed URL valid for about 10 minutes (see “Photo URLs”)' },
+      { ko: '제출된 매칭 이미지 경로 · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Submitted matching image path · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '실패 코드 (NOT_MATCH 등, 성공 시 null)', en: 'Failure code (NOT_MATCH etc., null on success)' },
       { ko: '실패 원인 메시지', en: 'Failure reason message' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
@@ -3092,8 +3099,8 @@ var PAGES = {
       { ko: '특징점 식별 번호 (faceFeatureId)', en: 'Feature sequence ID (faceFeatureId)' },
       { ko: '특징점 설명', en: 'Feature description' },
       { ko: '매칭 유사도 (source=FEATURE 이면 null)', en: 'Match similarity (null when source=FEATURE)' },
-      { ko: '등록된 특징점 이미지 경로. 특징점이 삭제돼 원본이 파기됐으면 빈 문자열 (featureImageDeleted 참고)', en: 'Registered feature image path. Empty string when the feature was deleted and its original image destroyed (see featureImageDeleted)' },
-      { ko: '매칭 시도 이미지 경로 (source=FEATURE 이면 null)', en: 'Matching attempt image path (null when source=FEATURE)' },
+      { ko: '등록된 특징점 이미지 경로. 특징점이 삭제돼 원본이 파기됐으면 빈 문자열 (featureImageDeleted 참고) · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Registered feature image path. Empty string when the feature was deleted and its original image destroyed (see featureImageDeleted) · signed URL valid for about 10 minutes (see “Photo URLs”)' },
+      { ko: '매칭 시도 이미지 경로 (source=FEATURE 이면 null) · 약 10분 유효한 서명 URL (「사진 URL」 참고)', en: 'Matching attempt image path (null when source=FEATURE) · signed URL valid for about 10 minutes (see “Photo URLs”)' },
       { ko: '매칭 실패 타입 (성공 시 null)', en: 'Failure type (null on success)' },
       { ko: '매칭 실패 사유 (Accept-Language에 따라 다국어 처리, 성공 시 빈 문자열)', en: 'Failure reason (localized via Accept-Language; empty string on success)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },

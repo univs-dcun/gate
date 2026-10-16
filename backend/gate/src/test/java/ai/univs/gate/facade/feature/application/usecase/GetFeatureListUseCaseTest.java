@@ -19,6 +19,7 @@ import ai.univs.gate.modules.project.domain.entity.ProjectSettings;
 import ai.univs.gate.modules.project.domain.enums.ProjectStatus;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -100,7 +101,7 @@ class GetFeatureListUseCaseTest {
         given(featureDSLRepository.findAllRows(eq(PROJECT_ID), any(), eq(999_000L), eq(1000)))
                 .willReturn(List.of(row(FeatureType.FACE, 1L), row(FeatureType.PALM, 2L)));
         given(featureDSLRepository.countAll(PROJECT_ID, q)).willReturn(2_000_000L);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         // when
         FeatureListResult result = useCase.execute(q);
@@ -127,7 +128,7 @@ class GetFeatureListUseCaseTest {
         given(featureDSLRepository.findAllRows(eq(PROJECT_ID), any(), eq(0L), eq(10)))
                 .willReturn(List.of(row(FeatureType.PALM, 1L), row(FeatureType.FACE, 2L)));
         given(featureDSLRepository.countAll(PROJECT_ID, q)).willReturn(2L);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         FeatureListResult result = useCase.execute(q);
 
@@ -141,7 +142,7 @@ class GetFeatureListUseCaseTest {
         given(featureDSLRepository.findFaceRows(eq(PROJECT_ID), any(), eq(40L), eq(20)))
                 .willReturn(List.of(row(FeatureType.FACE, 1L)));
         given(featureDSLRepository.countFace(PROJECT_ID, q)).willReturn(1L);
-        given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         useCase.execute(q);
 
@@ -151,7 +152,7 @@ class GetFeatureListUseCaseTest {
     }
 
     @Test
-    @DisplayName("동의가 꺼진 프로젝트는 이미지 URL 이 비고 파일 서버 경로를 조회하지 않는다")
+    @DisplayName("동의가 꺼진 프로젝트는 이미지 URL 이 빈 값이다 (동의 꺼짐을 ImageUrls 에 넘긴다)")
     void consentDisabled_noImageUrl() {
         given(projectSettingsService.findByProject(project)).willReturn(
                 ProjectSettings.builder().id(2L).project(project).consentEnabled(false).build());
@@ -159,11 +160,12 @@ class GetFeatureListUseCaseTest {
         given(featureDSLRepository.findAllRows(eq(PROJECT_ID), any(), eq(0L), eq(10)))
                 .willReturn(List.of(row(FeatureType.FACE, 1L)));
         given(featureDSLRepository.countAll(PROJECT_ID, q)).willReturn(1L);
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
 
         FeatureListResult result = useCase.execute(q);
 
         assertThat(result.features()).extracting("imageUrl").containsExactly("");
-        verify(fileService, never()).getFileServerPath();
+        verify(fileService).imageUrls(PROJECT_ID, false);
     }
 
     // Mockito 의 anyLong()/anyInt() 는 primitive 매처라 import 충돌을 피하려고 감싼다

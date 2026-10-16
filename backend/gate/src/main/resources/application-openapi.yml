@@ -59,3 +59,6 @@ file:
   algorithm:
     way: AES
     mod: AES/ECB/PKCS5Padding
+  # UG-386: 문서 생성용 기동에만 쓰는 더미 서명키 (FileUrlSigner 는 32자 미만이면 기동하지 않는다)
+  signed-url:
+    secret: openapi-profile-dummy-signed-url-key-0000000000

@@ -62,6 +62,6 @@ public class UpdatePalmFeatureDescriptionUseCase {
         feature.changeDescription(input.description());
 
         ProjectSettings settings = projectSettingsService.findByProject(project);
-        return PalmFeatureResult.from(feature, fileService.getFileServerPath(), settings.getConsentEnabled());
+        return PalmFeatureResult.from(feature, fileService.imageUrls(project.getId(), settings.getConsentEnabled()));
     }
 }

@@ -90,6 +90,9 @@ class UpdateFeatureDescriptionSliceTest {
     @BeforeEach
     void setUp() {
         apiKeyLookupCache.invalidateAll();
+        // UG-386: 응답의 사진 URL 은 ImageUrls 가 만든다 — 이 테스트는 DB 반영만 보므로 서명 없는 가짜로 둔다
+        org.mockito.BDDMockito.given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean()))
+                .willAnswer(ai.univs.gate.support.file.TestImageUrls.prefix("https://gate.test/api/v1/file?filePath="));
         tx.executeWithoutResult(status -> {
             project = Project.builder()
                     .accountId(OWNER).projectName("ug376").branchName("branch-ug376")

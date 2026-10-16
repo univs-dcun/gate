@@ -15,6 +15,7 @@ import ai.univs.gate.support.feature.face.FaceFeatureService;
 import ai.univs.gate.support.feature.palm.CreatePalmFeatureServiceResult;
 import ai.univs.gate.support.feature.palm.PalmFeatureService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.notify.UseCaseNotifyService;
 import ai.univs.gate.support.webhook.WebhookEvent;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +69,7 @@ class CreateFeatureByApiKeyUseCaseTest {
 
         @BeforeEach
         void setUp() {
-            given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+            given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         }
 
         @ParameterizedTest(name = "라이브니스={0}, 동의={1}")
@@ -101,7 +102,7 @@ class CreateFeatureByApiKeyUseCaseTest {
 
         @BeforeEach
         void setUp() {
-            given(fileService.getFileServerPath()).willReturn(FILE_SERVER_PATH);
+            given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
         }
 
         @ParameterizedTest(name = "라이브니스={0}, 동의={1}")

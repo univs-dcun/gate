@@ -52,7 +52,7 @@ public class GetPalmFeaturesUseCase {
 
         boolean consentEnabled = settings.getConsentEnabled();
         List<PalmFeatureResult> contents = page.stream()
-                .map(pm -> PalmFeatureResult.from(pm, fileService.getFileServerPath(), consentEnabled))
+                .map(pm -> PalmFeatureResult.from(pm, fileService.imageUrls(project.getId(), consentEnabled)))
                 .toList();
 
         CustomPageResult pageResult = CustomPageResult.from(

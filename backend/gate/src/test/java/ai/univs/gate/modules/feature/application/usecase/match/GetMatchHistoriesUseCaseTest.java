@@ -22,6 +22,7 @@ import ai.univs.gate.shared.exception.CustomGateException;
 import ai.univs.gate.shared.web.enums.ErrorType;
 import ai.univs.gate.support.api_key.ApiKeyService;
 import ai.univs.gate.support.file.FileService;
+import ai.univs.gate.support.file.TestImageUrls;
 import ai.univs.gate.support.project.ProjectSettingsService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -73,7 +74,7 @@ class GetMatchHistoriesUseCaseTest {
         // 미존재 경로에서는 여기까지 오지 않으므로 lenient — strict stubs 가 "안 쓴 스텁" 으로 실패시키지 않게.
         lenient().when(projectSettingsService.findByProject(project))
                 .thenReturn(ProjectSettings.builder().id(2L).project(project).consentEnabled(true).build());
-        lenient().when(fileService.getFileServerPath()).thenReturn("https://files/");
+        lenient().when(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).thenAnswer(TestImageUrls.prefix("https://files/?filePath="));
 
         listUseCase = new GetMatchHistoriesUseCase(activityLogRepository, apiKeyService, fileService, projectSettingsService);
         singleUseCase = new GetMatchHistoryByTransactionUuidUseCase(activityLogRepository, apiKeyService, fileService, projectSettingsService);
