@@ -119,6 +119,7 @@ public class SwaggerDescriptions {
     public static final String LIVENESS_SUCCESS = "라이브니스 성공 여부";
     public static final String LIVENESS_FAILURE_REASON = "라이브니스 실패 사유";
     public static final String LIVENESS_FAILURE_TYPE = "라이브니스 실패 타입 (예: FAKE, FACE_TOO_CLOSE). 다른 매칭 API 의 failureType 과 같은 이름. 사유 없는 실패는 LIVENESS_FAILED, 성공이면 빈 값";
+    public static final String PALM_LIVENESS_FAILURE_TYPE = "라이브니스 실패 타입. 위조 판정은 LIVENESS_FAILED, 엔진이 검사하지 못한 경우는 엔진 사유를 대문자 식별자로(공백은 _). 매칭 이력의 실패 타입과 같은 값, 성공이면 빈 값";
 
     /* Dashboard 요청/응답 DTO */
     public static final String DASHBOARD_DAILY_STAT_DATE = "날짜 (UTC 기준, yyyy/MM/dd)";
