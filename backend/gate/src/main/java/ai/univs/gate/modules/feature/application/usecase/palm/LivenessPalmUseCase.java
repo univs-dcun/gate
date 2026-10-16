@@ -97,14 +97,15 @@ public class LivenessPalmUseCase {
         // MatchHistory.toPercent()가 × 100을 하므로 미리 ÷ 100 처리.
         BigDecimal score = BigDecimal.valueOf(data.getScore())
                 .divide(BigDecimal.valueOf(100), 4, java.math.RoundingMode.HALF_UP);
-        if (!data.isSuccess()) {
-            matchHistory.fail(score, data.getMessage() != null ? data.getMessage().toUpperCase() : "LIVENESS_FAILED");
+        PalmLivenessResult result = PalmLivenessResult.from(data, input.transactionUuid());
+        if (!result.success()) {
+            matchHistory.fail(score, result.failureType());
             historyRecorder.fail(matchHistory);
         } else {
             matchHistory.success(score);
             historyRecorder.succeed(matchHistory);
         }
 
-        return PalmLivenessResult.from(data, input.transactionUuid());
+        return result;
     }
 }

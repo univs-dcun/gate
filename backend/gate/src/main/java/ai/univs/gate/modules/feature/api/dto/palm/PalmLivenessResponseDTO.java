@@ -8,6 +8,9 @@ public record PalmLivenessResponseDTO(
         @Schema(description = SwaggerDescriptions.LIVENESS_SUCCESS)
         boolean success,
 
+        @Schema(description = SwaggerDescriptions.PALM_LIVENESS_FAILURE_TYPE)
+        String failureType,
+
         @Schema(description = SwaggerDescriptions.LIVENESS_SCORE)
         double score,
 
@@ -24,6 +27,7 @@ public record PalmLivenessResponseDTO(
     public static PalmLivenessResponseDTO from(PalmLivenessResult result, String failureReason) {
         return new PalmLivenessResponseDTO(
                 result.success(),
+                result.failureType(),
                 result.score(),
                 result.threshold(),
                 failureReason,

@@ -132,6 +132,7 @@ class LivenessPalmUseCaseTest {
         assertThat(result.score()).isEqualTo(91.24);
         assertThat(result.threshold()).isEqualTo(80.0);
         assertThat(result.message()).isEqualTo("live");
+        assertThat(result.failureType()).isEmpty();
         assertThat(result.transactionUuid()).isEqualTo(TRANSACTION_UUID);
 
         // then: 이력 상태 전이 — 1:1 성공은 사용자 정보를 남기지 않는다
@@ -173,10 +174,11 @@ class LivenessPalmUseCaseTest {
         // when
         PalmLivenessResult result = livenessPalmUseCase.execute(input);
 
-        // then: 결과는 원본 메시지, 이력은 대문자 실패 타입
+        // then: 결과는 원본 메시지, 응답 · 이력은 같은 대문자 실패 타입 (UG-393)
         assertThat(result.success()).isFalse();
         assertThat(result.score()).isEqualTo(12.5);
         assertThat(result.message()).isEqualTo("spoof");
+        assertThat(result.failureType()).isEqualTo("SPOOF");
 
         MatchHistory saved = capturedMatchHistory();
         assertThat(saved.getSuccess()).isFalse();
@@ -203,10 +205,53 @@ class LivenessPalmUseCaseTest {
         // then
         assertThat(result.success()).isFalse();
         assertThat(result.message()).isNull();
+        assertThat(result.failureType()).isEqualTo("LIVENESS_FAILED");
 
         MatchHistory saved = capturedMatchHistory();
         assertThat(saved.getFailureType()).isEqualTo("LIVENESS_FAILED");
         assertThat(saved.getSimilarity()).isEqualTo(new BigDecimal("0.00"));
+    }
+
+    @Test
+    @DisplayName("UG-393: 라이브니스 실패 응답의 메시지가 공백이면 응답 · 이력 실패 타입이 LIVENESS_FAILED 다")
+    void execute_failureWithBlankMessage_recordsDefaultFailureType() {
+        // given
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        given(palmService.liveness(any(LivenessPalmFeignRequestDTO.class)))
+                .willReturn(LivenessPalmFeignResponseDTO.builder()
+                        .success(false)
+                        .score(3.0)
+                        .threshold(80.0)
+                        .message("  ")
+                        .build());
+
+        // when
+        PalmLivenessResult result = livenessPalmUseCase.execute(input);
+
+        // then
+        assertThat(result.failureType()).isEqualTo("LIVENESS_FAILED");
+        assertThat(capturedMatchHistory().getFailureType()).isEqualTo("LIVENESS_FAILED");
+    }
+
+    @Test
+    @DisplayName("UG-393: 엔진 오류 문장은 응답 · 이력 모두 공백이 _ 인 대문자 식별자로 남는다")
+    void execute_failureWithEngineSentence_recordsIdentifier() {
+        // given: palm 서비스가 흡수한 엔진 4xx — message 는 엔진 detail 문장
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        given(palmService.liveness(any(LivenessPalmFeignRequestDTO.class)))
+                .willReturn(LivenessPalmFeignResponseDTO.builder()
+                        .success(false)
+                        .score(0.0)
+                        .threshold(80.0)
+                        .message("No palm detected")
+                        .build());
+
+        // when
+        PalmLivenessResult result = livenessPalmUseCase.execute(input);
+
+        // then
+        assertThat(result.failureType()).isEqualTo("NO_PALM_DETECTED");
+        assertThat(capturedMatchHistory().getFailureType()).isEqualTo("NO_PALM_DETECTED");
     }
 
     @Test
