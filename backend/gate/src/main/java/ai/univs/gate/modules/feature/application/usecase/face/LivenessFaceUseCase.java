@@ -105,18 +105,15 @@ public class LivenessFaceUseCase {
         // 나면 이력 행까지 사라졌다 — UG-293 이후로는 행이 남으므로 이 가드는 '사유를 남긴다'
         // 는 의미만 갖는다. (palm 쪽은 이미 같은 가드가 있었고 face 만 무방비였다.)
         BigDecimal livenessScore = parseProbability(data.getProbability());
+        var result = LivenessResult.from(data, input.transactionUuid(), findProjectSettings.getConsentEnabled());
         if (!data.isSuccess()) {
-            String reason = StringUtils.hasText(data.getPrdioctionDesc())
-                    ? data.getPrdioctionDesc().toUpperCase()
-                    : "LIVENESS_FAILED";
-            matchHistory.fail(livenessScore, reason);
+            // UG-391: 응답 failureType 과 같은 값 — 한 곳(LivenessResult.failureType)에서 정한다
+            matchHistory.fail(livenessScore, result.failureType());
             historyRecorder.fail(matchHistory);
         } else {
             matchHistory.success(livenessScore);
             historyRecorder.succeed(matchHistory);
         }
-
-        var result = LivenessResult.from(data, input.transactionUuid(), findProjectSettings.getConsentEnabled());
 
         useCaseNotifyService.notify(
                 input.callerType(),

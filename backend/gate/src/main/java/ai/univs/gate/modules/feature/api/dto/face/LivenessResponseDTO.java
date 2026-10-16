@@ -8,6 +8,9 @@ public record LivenessResponseDTO(
         @Schema(description = SwaggerDescriptions.LIVENESS_SUCCESS)
         boolean success,
 
+        @Schema(description = SwaggerDescriptions.LIVENESS_FAILURE_TYPE)
+        String failureType,
+
         @Schema(description = SwaggerDescriptions.LIVENESS_FAILURE_REASON)
         String failureReason,
 
@@ -21,6 +24,7 @@ public record LivenessResponseDTO(
     public static LivenessResponseDTO from(LivenessResult result, String failureReason) {
         return new LivenessResponseDTO(
                 result.success(),
+                result.failureType(),
                 failureReason,
                 result.transactionUuid(),
                 result.consentSnapshot());

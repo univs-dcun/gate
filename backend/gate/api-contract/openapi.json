@@ -12536,6 +12536,10 @@
             "type": "boolean",
             "description": "라이브니스 성공 여부"
           },
+          "failureType": {
+            "type": "string",
+            "description": "라이브니스 실패 타입 (예: FAKE, FACE_TOO_CLOSE). 다른 매칭 API 의 failureType 과 같은 이름. 사유 없는 실패는 LIVENESS_FAILED, 성공이면 빈 값"
+          },
           "failureReason": {
             "type": "string",
             "description": "라이브니스 실패 사유"

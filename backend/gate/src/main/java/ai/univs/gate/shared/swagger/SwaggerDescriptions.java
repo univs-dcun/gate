@@ -118,6 +118,7 @@ public class SwaggerDescriptions {
     public static final String MATCHING_KEYWORD = "매칭 검색 키워드";
     public static final String LIVENESS_SUCCESS = "라이브니스 성공 여부";
     public static final String LIVENESS_FAILURE_REASON = "라이브니스 실패 사유";
+    public static final String LIVENESS_FAILURE_TYPE = "라이브니스 실패 타입 (예: FAKE, FACE_TOO_CLOSE). 다른 매칭 API 의 failureType 과 같은 이름. 사유 없는 실패는 LIVENESS_FAILED, 성공이면 빈 값";
 
     /* Dashboard 요청/응답 DTO */
     public static final String DASHBOARD_DAILY_STAT_DATE = "날짜 (UTC 기준, yyyy/MM/dd)";
