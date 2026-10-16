@@ -348,7 +348,8 @@ public class DemoController {
     ) {
         var input = request.toInput();
         var result = livenessPalmUseCase.execute(input);
-        String failureReason = result.success() ? "" : messageService.getLivenessFailureMessage(result.message());
+        // UG-393: 사유는 failureType 으로 찾는다 — 위조 판정은 엔진 사유가 없어(null) 예전에는 문구가 비었다
+        String failureReason = result.success() ? "" : messageService.getLivenessFailureMessage(result.failureType());
         var response = PalmLivenessResponseDTO.from(result, failureReason);
         return ResponseEntity.ok(ResponseApi.ok(response));
     }
