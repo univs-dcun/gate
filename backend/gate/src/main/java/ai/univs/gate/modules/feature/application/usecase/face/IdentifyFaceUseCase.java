@@ -109,9 +109,10 @@ public class IdentifyFaceUseCase {
             // UG-280: 사유를 먼저 남긴다. 예전에는 라이브니스 계열이 아니면 곧바로 rethrow 해서
             // noRollbackFor 로 커밋된 행의 failure_type 이 NULL 로 남았다 — 응답을 받지 못하고
             // 끊긴 요청과 구분되지 않아 이력만 보고는 원인을 알 수 없었다.
-            matchHistory.fail(BigDecimal.ZERO, e.getType());
+            matchHistory.fail(BigDecimal.ZERO, LivenessErrorType.failureTypeOf(e));
             historyRecorder.fail(matchHistory);
-            if (!LivenessErrorType.contains(e.getType())) throw e;
+            // UG-391: 엔진 판정 거절(-777)은 사유가 목록에 없어도 200 실패로 — 예전엔 400 으로 나갔다
+            if (!LivenessErrorType.absorbs(e)) throw e;
 
             return fail(input.callerType(), matchHistory, consentEnabled);
         } catch (RemoteCallException e) {

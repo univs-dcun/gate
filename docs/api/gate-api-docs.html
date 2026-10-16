@@ -1693,7 +1693,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
           <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
             <tr><td><span class="pname">success</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">라이브니스 통과 여부</td></tr>
-            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지 (성공 시 null)</td></tr>
+            <tr><td><span class="pname">failureType</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 코드 (FAKE · FACE_TOO_CLOSE 등, 사유 없는 실패는 LIVENESS_FAILED, 성공 시 빈 문자열)</td></tr>
+            <tr><td><span class="pname">failureReason</span></td><td><span class="ptyp">string</span></td><td class="pdsc">실패 원인 메시지 (성공 시 빈 문자열)</td></tr>
             <tr><td><span class="pname">transactionUuid</span></td><td><span class="ptyp">string</span></td><td class="pdsc">요청 식별 UUID</td></tr>
             <tr><td><span class="pname">consentSnapshot</span></td><td><span class="ptyp">boolean</span></td><td class="pdsc">동의 여부 스냅샷</td></tr>
           </tbody>
@@ -1710,7 +1711,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"success"</span>: <span class="jb">true</span>,
-    <span class="jk">"failureReason"</span>: <span class="jnu">null</span>,
+    <span class="jk">"failureType"</span>: <span class="js">""</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">""</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>,
     <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>
   },
@@ -1724,7 +1726,8 @@ code{font-family:'Consolas','Fira Code',monospace;font-size:12px;background:#EBF
   <span class="jk">"success"</span>: <span class="jb">true</span>,
   <span class="jk">"data"</span>: {
     <span class="jk">"success"</span>: <span class="jb">false</span>,
-    <span class="jk">"failureReason"</span>: <span class="js">"실제 생체가 아닌 것으로 감지되었습니다."</span>,
+    <span class="jk">"failureType"</span>: <span class="js">"FAKE"</span>,
+    <span class="jk">"failureReason"</span>: <span class="js">"실제 얼굴 이미지로 확인되지 않습니다. 다시 시도해 주시기 바랍니다."</span>,
     <span class="jk">"transactionUuid"</span>: <span class="js">"550e8400-..."</span>,
     <span class="jk">"consentSnapshot"</span>: <span class="jb">true</span>
   },
@@ -2055,6 +2058,7 @@ var CODE_MSGS = {
   '이미지에서 얼굴을 찾을 수 없습니다.':         'No faces are found on the image.',
   '얼굴이 일치하지 않습니다.':                  'Face does not match.',
   '실제 생체가 아닌 것으로 감지되었습니다.':      'Detected as non-live image.',
+  '실제 얼굴 이미지로 확인되지 않습니다. 다시 시도해 주시기 바랍니다.': 'Not verified with a real face image. Please try again.',
   '특징점이 유효하지 않습니다. 특징점 추출 API 가 반환한 값을 그대로 전달해 주시기 바랍니다.':
       'The descriptor is invalid. Please pass the value returned by the descriptor extraction API as is.',
   '매칭 임계값은 0 초과 100 이하로 입력 가능합니다.':
@@ -2313,9 +2317,9 @@ var ERR_REASONS = [
     ko: '얼굴이 일치하지 않습니다.', en: 'Face does not match.' },
   { key: 'INVALID_USER',    where: { ko: '1:1 · 1:N', en: '1:1 · 1:N' },
     ko: '사용자 정보가 유효하지 않습니다.', en: 'User information is invalid.' },
-  { key: 'FACE_NOT_FOUND',  where: { ko: '1:1 · 1:N (이미지) · 라이브니스', en: '1:1 · 1:N (image) · liveness' },
+  { key: 'FACE_NOT_FOUND',  where: { ko: '1:1 · 1:N (이미지)', en: '1:1 · 1:N (image)' },
     ko: '이미지에서 얼굴을 찾을 수 없습니다.', en: 'No faces are found on the image.' },
-  { key: 'TOO_MANY_FACES',  where: { ko: '1:1 · 1:N (이미지) · 라이브니스', en: '1:1 · 1:N (image) · liveness' },
+  { key: 'TOO_MANY_FACES',  where: { ko: '1:1 · 1:N (이미지)', en: '1:1 · 1:N (image)' },
     ko: '이미지에 두 개 이상의 얼굴이 있습니다.', en: 'There is more than one face on the image.' },
   { key: 'FAKE',            where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
     ko: '실제 얼굴 이미지로 확인되지 않습니다. 다시 시도해 주시기 바랍니다.', en: 'Not verified with a real face image. Please try again.' },
@@ -2346,6 +2350,8 @@ var ERR_REASONS = [
   { key: 'FACE_ANGLE_TOO_LARGE', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
     ko: '얼굴의 회전 각도가 너무 큽니다.', en: 'Face angle is too large.' },
   { key: 'LIVENESS_FAILED', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
+    ko: '라이브니스 검증에 실패하였습니다.', en: 'Liveness verification has failed.' },
+  { key: 'LIVENESS_NOT_PASSED', where: { ko: '라이브니스 · 1:1 · 1:N (이미지)', en: 'Liveness · 1:1 · 1:N (image)' },
     ko: '라이브니스 검증에 실패하였습니다.', en: 'Liveness verification has failed.' }
 ];
 
@@ -2491,7 +2497,7 @@ var ERR_FMT = {
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">200 · 매칭 실패</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: {\n    <span class="jk">"success"</span>: <span class="jb">false</span>,\n    <span class="jk">"failureReason"</span>: <span class="js">"얼굴 매칭 결과가 불일치합니다."</span>,\n    <span class="jk">"transactionUuid"</span>: <span class="js">"..."</span>\n  },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
     + '<p class="err-p"><b><code>failureReason</code> 은 코드가 아니라 지역화된 메시지 문자열이다.</b> 문자열 비교로 분기하면 언어 설정이나 문구 변경에 함께 깨진다. 아래는 주로 내려오는 사유들이다 — 각 사유가 어떤 문장으로 오는지 확인하는 용도이며, 프로그램 분기의 근거로 쓰지 않는다.</p>'
     + '<div id="err-reason-body"></div>'
-    + '<p class="err-foot">정의되지 않은 사유는 <b>키 문자열이 그대로</b> 실린다 — 사람에게 보여주기 전에 알려진 사유인지 확인해야 한다. 그리고 <b>이 목록은 위 세 계열(1:1 확인·1:N 매칭·라이브니스)에만 적용된다.</b> 라이브니스를 켠 프로젝트의 <b>등록</b>에서는 같은 사유가 흡수되지 않고 <code>code</code> 가 <code>-777</code> 인 <b>오류</b>로 온다 (사유는 <code>type</code>).</p></div>',
+    + '<p class="err-foot">목록에 없는 사유도 같은 방식으로 온다 — <code>failureType</code> 에는 사유 이름이 그대로 실리고, <code>failureReason</code> 에는 일반 문구(「요청을 처리하지 못했습니다.」, 라이브니스는 「라이브니스 검증에 실패하였습니다.」)가 실린다. 분기는 <code>failureType</code> 으로 하고, 모르는 값은 <code>failureReason</code> 을 그대로 보여주면 된다. 그리고 <b>이 목록은 위 세 계열(1:1 확인·1:N 매칭·라이브니스)에만 적용된다.</b> 라이브니스를 켠 프로젝트의 <b>등록</b>에서는 같은 사유가 흡수되지 않고 <code>code</code> 가 <code>-777</code> 인 <b>오류</b>로 온다 (사유는 <code>type</code>).</p></div>',
 
   en: '<div class="sec-blk"><div class="sec-ttl">Response Envelope</div>'
     + '<p class="err-p">Success and failure share the same three fields. Use <code>success</code> to tell them apart; on failure, <code>errors</code> carries <code>code</code>, <code>type</code> and <code>message</code>. Some errors add a <code>details</code> object — currently only <code>MATCH-003</code>, with <code>faceFeatureId</code> and <code>featureId</code>; when there is nothing to add, the <code>details</code> key is absent.</p>'
@@ -2529,7 +2535,7 @@ var ERR_FMT = {
     + '<div class="cblk"><div class="cblk-hdr"><span class="cblk-ttl">200 · match failed</span><span class="cblk-lng">JSON</span></div><pre>{\n  <span class="jk">"success"</span>: <span class="jb">true</span>,\n  <span class="jk">"data"</span>: {\n    <span class="jk">"success"</span>: <span class="jb">false</span>,\n    <span class="jk">"failureReason"</span>: <span class="js">"Face matching result is a mismatch."</span>,\n    <span class="jk">"transactionUuid"</span>: <span class="js">"..."</span>\n  },\n  <span class="jk">"errors"</span>: <span class="jnu">null</span>\n}</pre></div>'
     + '<p class="err-p"><b><code>failureReason</code> is a localized message, not a code.</b> Comparing strings breaks as soon as the language setting or the wording changes. The list below shows the reasons returned most often, so you can recognize them — not as a basis for branching.</p>'
     + '<div id="err-reason-body"></div>'
-    + '<p class="err-foot">An undefined reason is returned <b>as the raw key string</b>, so check that a reason is known before showing it to a person. Note also that <b>this list applies only to the three families above</b> (1:1 verify, 1:N identify, liveness). On <b>register</b> with liveness enabled, the same reasons are not absorbed: they arrive as an <b>error</b> with <code>code</code> <code>-777</code> and the reason in <code>type</code>.</p></div>'
+    + '<p class="err-foot">A reason not in this list arrives the same way: <code>failureType</code> carries the reason name as is, and <code>failureReason</code> carries a generic message ("The request could not be processed.", or "Liveness verification has failed." for liveness). Branch on <code>failureType</code>, and show <code>failureReason</code> as is for values you do not recognize. Note also that <b>this list applies only to the three families above</b> (1:1 verify, 1:N identify, liveness). On <b>register</b> with liveness enabled, the same reasons are not absorbed: they arrive as an <b>error</b> with <code>code</code> <code>-777</code> and the reason in <code>type</code>.</p></div>'
 };
 
 function renderErrorFormat(lang) {
@@ -3039,7 +3045,8 @@ var PAGES = {
       { ko: '라이브니스 검사할 얼굴 이미지 (jpg, jpeg)', en: 'Face image for liveness check (jpg, jpeg)' },
       { ko: '요청 식별 UUID (최대 36자)', en: 'Request UUID (max 36 chars)' },
       { ko: '라이브니스 통과 여부', en: 'Whether liveness check passed' },
-      { ko: '실패 원인 메시지 (성공 시 null)', en: 'Failure reason message (null on success)' },
+      { ko: '실패 코드 (FAKE · FACE_TOO_CLOSE 등, 사유 없는 실패는 LIVENESS_FAILED, 성공 시 빈 문자열)', en: 'Failure code (FAKE, FACE_TOO_CLOSE etc.; LIVENESS_FAILED when no reason is given; empty string on success)' },
+      { ko: '실패 원인 메시지 (성공 시 빈 문자열)', en: 'Failure reason message (empty string on success)' },
       { ko: '요청 식별 UUID', en: 'Request UUID' },
       { ko: '동의 여부 스냅샷', en: 'Consent snapshot' }
     ],
