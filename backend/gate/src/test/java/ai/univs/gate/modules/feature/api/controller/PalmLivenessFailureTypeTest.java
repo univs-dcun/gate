@@ -1,5 +1,7 @@
 package ai.univs.gate.modules.feature.api.controller;
 
+import ai.univs.gate.facade.demo.api.controller.DemoController;
+import ai.univs.gate.facade.demo.api.dto.DemoPalmLivenessRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmLivenessRequestDTO;
 import ai.univs.gate.modules.feature.api.dto.palm.PalmLivenessResponseDTO;
 import ai.univs.gate.modules.feature.application.result.palm.PalmLivenessResult;
@@ -34,6 +36,7 @@ class PalmLivenessFailureTypeTest {
     @Mock private LivenessPalmUseCase livenessPalmUseCase;
     @Mock private MessageService messageService;
     @InjectMocks private PalmController palmController;
+    @InjectMocks private DemoController demoController;
 
     @BeforeEach
     void 컨텍스트_설정() {
@@ -97,6 +100,29 @@ class PalmLivenessFailureTypeTest {
 
         assertEquals("NO_PALM_DETECTED", body.failureType());
         assertEquals("문구", body.failureReason());
+    }
+
+    @Test
+    @DisplayName("엔진 오류 문장 — 문장부호 · 가변 값도 식별자로, 길이는 64자까지")
+    void 엔진_오류_문장_정규화() {
+        assertEquals("NO_PALM_DETECTED", result(false, "No palm detected.").failureType());
+        assertEquals("IMAGE_TOO_SMALL_120X80", result(false, "Image too small: 120x80").failureType());
+        assertEquals("LIVENESS_FAILED", result(false, " ... ").failureType());
+        String longType = result(false, "word ".repeat(30)).failureType();
+        assertEquals(true, longType.length() <= 64 && !longType.endsWith("_"), longType);
+    }
+
+    @Test
+    @DisplayName("데모 — 위조 판정(사유 없음)도 정식 API 와 같은 failureType · failureReason")
+    void 데모_사유없는_실패() {
+        given(livenessPalmUseCase.execute(any())).willReturn(result(false, null));
+        given(messageService.getLivenessFailureMessage("LIVENESS_FAILED")).willReturn("라이브니스 검증에 실패하였습니다.");
+
+        var response = demoController.palmLivenessByApiKey(new DemoPalmLivenessRequestDTO("AK-UG393", null, "tx-1"));
+        PalmLivenessResponseDTO body = Objects.requireNonNull(Objects.requireNonNull(response.getBody()).data());
+
+        assertEquals("LIVENESS_FAILED", body.failureType());
+        assertEquals("라이브니스 검증에 실패하였습니다.", body.failureReason());
     }
 
     private PalmLivenessResponseDTO call() {
