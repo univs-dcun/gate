@@ -137,6 +137,7 @@ class LivenessFaceUseCaseTest {
         LivenessResult result = livenessFaceUseCase.execute(input);
 
         assertThat(result.success()).isTrue();
+        assertThat(result.failureType()).as("UG-391: 성공이면 빈 값").isEmpty();
         assertThat(result.probability()).isEqualTo("0.97");
         assertThat(result.transactionUuid()).isEqualTo(TRANSACTION_UUID);
 
@@ -157,11 +158,12 @@ class LivenessFaceUseCaseTest {
                         .prdioctionDesc("spoof")
                         .build());
 
-        livenessFaceUseCase.execute(input);
+        LivenessResult result = livenessFaceUseCase.execute(input);
 
         MatchHistory saved = capturedMatchHistory();
         assertThat(saved.getSuccess()).isFalse();
         assertThat(saved.getFailureType()).isEqualTo("SPOOF");
+        assertThat(result.failureType()).as("UG-391: 응답 failureType 은 이력과 같은 값").isEqualTo("SPOOF");
     }
 
     @Test
@@ -186,6 +188,23 @@ class LivenessFaceUseCaseTest {
         assertThat(saved.getFailureType())
                 .as("사유를 못 읽어도 행은 남아야 한다 — 사유 없는 행이 행 없음보다 낫다")
                 .isEqualTo("LIVENESS_FAILED");
+    }
+
+    @Test
+    @DisplayName("UG-391: 사유 없는 실패의 응답 failureType 은 LIVENESS_FAILED — 이력과 같다")
+    void execute_blankReason_failureType() {
+        givenCommonFlow();
+        given(faceService.liveness(any(LivenessFaceFeignRequestDTO.class)))
+                .willReturn(LivenessFaceFeignResponseDTO.builder()
+                        .success(false)
+                        .probability("0.12")
+                        .prdioctionDesc("  ")
+                        .build());
+
+        LivenessResult result = livenessFaceUseCase.execute(input);
+
+        assertThat(result.failureType()).isEqualTo("LIVENESS_FAILED");
+        assertThat(capturedMatchHistory().getFailureType()).isEqualTo("LIVENESS_FAILED");
     }
 
     @Test

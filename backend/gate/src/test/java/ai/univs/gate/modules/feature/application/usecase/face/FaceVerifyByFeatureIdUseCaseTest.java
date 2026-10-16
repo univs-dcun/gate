@@ -260,6 +260,38 @@ class FaceVerifyByFeatureIdUseCaseTest {
     }
 
     @Test
+    @DisplayName("UG-391: 엔진 판정 거절(-777)은 사유가 목록에 없어도(LIVENESS_NOT_PASSED) 200 실패로 흡수한다")
+    void execute_engineRejectUnlistedReason_absorbed() {
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        givenFeatureFound();
+        given(faceService.verifyByFaceId(any(VerifyFaceByFaceIdFeignRequestDTO.class)))
+                .willThrow(new CustomFeignException("-777", "LIVENESS_NOT_PASSED", "liveness failed"));
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
+
+        VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.failureType()).isEqualTo("LIVENESS_NOT_PASSED");
+        assertThat(capturedMatchHistory().getFailureType()).isEqualTo("LIVENESS_NOT_PASSED");
+    }
+
+    @Test
+    @DisplayName("UG-391: 엔진 판정 거절(-777)인데 사유가 비면 LIVENESS_FAILED 로 흡수한다")
+    void execute_engineRejectBlankReason_absorbedAsLivenessFailed() {
+        givenCommonFlow(true, UPLOADED_IMAGE_PATH);
+        givenFeatureFound();
+        given(faceService.verifyByFaceId(any(VerifyFaceByFaceIdFeignRequestDTO.class)))
+                .willThrow(new CustomFeignException("-777", "", "liveness failed"));
+        given(fileService.imageUrls(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyBoolean())).willAnswer(TestImageUrls.prefix(FILE_SERVER_PATH));
+
+        VerifyByFaceIdResult result = faceVerifyByFeatureIdUseCase.execute(input);
+
+        assertThat(result.success()).isFalse();
+        assertThat(result.failureType()).isEqualTo("LIVENESS_FAILED");
+        assertThat(capturedMatchHistory().getFailureType()).isEqualTo("LIVENESS_FAILED");
+    }
+
+    @Test
     @DisplayName("라이브니스 타입이 아닌 CustomFeignException은 그대로 전파된다")
     void execute_nonLivenessFeignException_rethrown() {
         // given

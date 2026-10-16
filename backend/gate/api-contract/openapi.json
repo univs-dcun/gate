@@ -11941,6 +11941,10 @@
             "type": "boolean",
             "description": "라이브니스 성공 여부"
           },
+          "failureType": {
+            "type": "string",
+            "description": "라이브니스 실패 타입. 위조 판정은 LIVENESS_FAILED, 엔진이 검사하지 못한 경우는 엔진 사유를 대문자 식별자로(영문 · 숫자 외는 _, 최대 64자). 매칭 이력의 실패 타입과 같은 값, 성공이면 빈 값"
+          },
           "score": {
             "type": "number",
             "format": "double",
@@ -12535,6 +12539,10 @@
           "success": {
             "type": "boolean",
             "description": "라이브니스 성공 여부"
+          },
+          "failureType": {
+            "type": "string",
+            "description": "라이브니스 실패 타입 (예: FAKE, FACE_TOO_CLOSE). 다른 매칭 API 의 failureType 과 같은 이름. 사유 없는 실패는 LIVENESS_FAILED, 성공이면 빈 값"
           },
           "failureReason": {
             "type": "string",
